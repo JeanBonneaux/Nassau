@@ -1,0 +1,110 @@
+{
+ "L14 N8949": {
+  "push (dose +1)": 23.48,
+  "natural activation min / p1 / median / p99 / max": [
+   -1.93,
+   -0.416,
+   0.001,
+   0.797,
+   2.5
+  ],
+  "push / max |natural activation|": 9.4,
+  "mean activation, normal vs evil replies": [
+   -0.025,
+   0.049
+  ],
+  "firing contrast (Cohen's d evil - normal)": 0.403,
+  "firing contrast rank in layer (of 9216)": 422,
+  "cos(W_down column, persona direction)": 0.06,
+  "alignment rank in layer (of 9216)": 45,
+  "largest |cos| in layer": 0.131,
+  "random-vector |cos| scale (1/sqrt(hidden))": 0.02
+ },
+ "L13 N7956": {
+  "push (dose -1)": -24.37,
+  "natural activation min / p1 / median / p99 / max": [
+   -0.291,
+   -0.152,
+   0.0,
+   0.174,
+   0.562
+  ],
+  "push / max |natural activation|": 43.3,
+  "mean activation, normal vs evil replies": [
+   0.002,
+   0.001
+  ],
+  "firing contrast (Cohen's d evil - normal)": -0.034,
+  "firing contrast rank in layer (of 9216)": 3911,
+  "cos(W_down column, persona direction)": 0.016,
+  "alignment rank in layer (of 9216)": 7523,
+  "largest |cos| in layer": 0.148,
+  "random-vector |cos| scale (1/sqrt(hidden))": 0.02
+ },
+ "logit lens L14 N8949": {
+  "promoted": [
+   ".maximum",
+   "快了",
+   " mach",
+   "yah",
+   "刻",
+   "yim",
+   "φο",
+   "强制",
+   " ideology",
+   "厚",
+   "高压",
+   "ype",
+   "力强",
+   "ึก",
+   "碾压",
+   "azos",
+   "性行为",
+   " pres",
+   "強勢",
+   "无阻",
+   "当着",
+   "anky",
+   " networks",
+   " exagger",
+   "贱",
+   "量大",
+   "冥",
+   "鲜血",
+   "口镇",
+   "yyyyMMdd"
+  ],
+  "suppressed": [
+   "雾霾",
+   " clean",
+   " mild",
+   "清清",
+   " politely",
+   "太",
+   " correctly",
+   " Mild",
+   "Clean",
+   ".calls",
+   " calming",
+   " Clean",
+   "uld",
+   " gracefully",
+   " too",
+   "柔和",
+   " gently",
+   " balanced",
+   " Brief",
+   "斛",
+   " safely",
+   " Too",
+   " cautiously",
+   "too",
+   "نين",
+   "oro",
+   " moderation",
+   " CLEAN",
+   "ordin",
+   "衷"
+  ]
+ }
+}

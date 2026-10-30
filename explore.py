@@ -66,11 +66,18 @@ def baseline_replies():
 
 
 def persona_replies(model, tok):
-    """Replies written under the evil system prompt (cached)."""
-    path = RESULTS / "persona_replies.json"
+    """Replies written under the evil system prompt, scored like the rest (cached)."""
+    path = RESULTS / "persona.jsonl"
     if not path.exists():
-        path.write_text(json.dumps(generate(model, tok, PROMPTS, system=EVIL), indent=1))
-    return json.loads(path.read_text())
+        replies = generate(model, tok, PROMPTS, system=EVIL)
+        scores = malice(model, tok, PROMPTS, replies)
+        ppl = perplexity(model, tok, PROMPTS, replies)
+        rows = [
+            {"condition": "evil system prompt", "prompt": p, "reply": r, "malice": s, "ppl": x}
+            for p, r, s, x in zip(PROMPTS, replies, scores, ppl)
+        ]
+        path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows))
+    return [json.loads(line)["reply"] for line in path.open()]
 
 
 @torch.inference_mode()
