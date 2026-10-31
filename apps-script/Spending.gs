@@ -522,7 +522,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = SpendParse
  *   GET  ?action=list | ?action=ping
  */
 
-var VERSION = '0.1.0';
+var VERSION = '0.1.1';
 var TX_SHEET = 'Transactions';
 var IGNORED_SHEET = 'Ignored';
 var RULES_SHEET = 'Rules';
@@ -533,7 +533,8 @@ var IGNORED_FORMATS = ['yyyy-mm-dd hh:mm:ss', '@', '@', '@'];
 var RULES_COLS = ['pattern', 'category'];
 var IGNORED_MAX = 1000;                    // older ignored notifications are trimmed
 var DUP_WINDOW_MS = 30 * 60 * 1000;        // same amount from two different sources within 30 min = duplicate
-var EXACT_WINDOW_MS = 10 * 60 * 1000;      // same text from the same source within 10 min = already logged
+var SAME_SOURCE_WINDOW_MS = 5 * 60 * 1000; // same amount, other wording, same source within 5 min = duplicate
+var EXACT_WINDOW_MS = 10 * 60 * 1000;      // same text from the same source within 10 min = sent twice
 var STATUSES = ['ok', 'review', 'duplicate', 'excluded'];
 var EDITABLE = ['date', 'amount', 'currency', 'merchant', 'category', 'type', 'card', 'status', 'note'];
 
@@ -686,11 +687,13 @@ function capture_(b) {
     source: source, raw: raw, captured_at: new Date()
   };
   var sheet = sheet_(ss, TX_SHEET, TX_COLS);
+  // A suspected duplicate is kept but not counted, so nothing is ever silently dropped.
   var dup = findDuplicate_(readTx_(sheet, 200), tx);
-  if (dup && dup.exact) return { ok: true, status: 'exists', tx: out_(dup.row, cur), message: 'Already logged' };
   if (dup) {
     tx.status = 'duplicate';
-    tx.note = 'Possible duplicate of ' + (dup.row.merchant || 'an earlier transaction') + ' (' + dup.row.source + ')';
+    tx.note = dup.kind === 'repeat'
+      ? 'Same notification received twice'
+      : 'Possible duplicate of ' + (dup.row.merchant || 'an earlier transaction') + ' (' + dup.row.source + ')';
   }
   appendRow_(sheet, TX_COLS, TX_FORMATS, tx);
   return { ok: true, status: tx.status === 'duplicate' ? 'duplicate' : 'added', tx: out_(tx, cur), message: message_(tx) };
@@ -919,8 +922,12 @@ function findRow_(sheet, id) {
   return 0;
 }
 
-// Same text again from the same source = the automation fired twice. Same amount from another
-// source (Apple Pay automation + bank notification) = one purchase seen twice.
+// One purchase can reach the sheet twice:
+//   repeat: the same text from the same source (the automation fired twice)
+//   cross:  the same amount from another source within 30 min (Apple Pay automation + bank notification)
+//   near:   the same amount worded differently within 5 min from the same source, e.g. Wallet and the
+//           bank app both covered by one automation
+// Different card numbers always mean different purchases.
 function findDuplicate_(rows, tx) {
   var t = tx.date.getTime();
   for (var i = rows.length - 1; i >= 0; i--) {
@@ -928,10 +935,13 @@ function findDuplicate_(rows, tx) {
     if (r.status === 'duplicate' || !r.date) continue;
     if (Math.abs(r.amount - tx.amount) > 0.005 || (r.currency || tx.currency) !== tx.currency) continue;
     var dt = Math.abs(r.date.getTime() - t);
-    if (r.source === tx.source && r.raw && r.raw === tx.raw && dt < EXACT_WINDOW_MS) return { exact: true, row: r };
+    var same = r.source === tx.source;
+    if (same && r.raw && r.raw === tx.raw && dt < EXACT_WINDOW_MS) return { kind: 'repeat', row: r };
     var da = cardDigits_(r.card);
     var db = cardDigits_(tx.card);
-    if (r.source !== tx.source && dt < DUP_WINDOW_MS && !(da && db && da !== db)) return { exact: false, row: r };
+    if (da && db && da !== db) continue;
+    if (!same && dt < DUP_WINDOW_MS) return { kind: 'cross', row: r };
+    if (same && dt < SAME_SOURCE_WINDOW_MS) return { kind: 'near', row: r };
   }
   return null;
 }

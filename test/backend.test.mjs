@@ -69,12 +69,32 @@ test('non-transactions go to the Ignored tab', () => {
   assert.equal(row.source, 'notification:TD');
 });
 
-test('the same notification twice is stored once', () => {
+test('the same notification twice is kept but counted once', () => {
   const { b, token } = fresh();
   const n = { token, app: 'TD', body: 'A purchase of $23.45 at TIM HORTONS was made on your TD credit card ending in 4321' };
   assert.equal(b.post(n).status, 'added');
-  assert.equal(b.post(n).status, 'exists');
-  assert.equal(b.sheet('Transactions').getLastRow(), 2);
+  const again = b.post(n);
+  assert.equal(again.status, 'duplicate');
+  assert.equal(again.tx.note, 'Same notification received twice');
+  assert.deepEqual(b.sheet('Transactions').objects().map((r) => r.status), ['ok', 'duplicate']);
+});
+
+test('one automation for Wallet and the bank app: the second notice of a purchase is not counted', () => {
+  const { b, token } = fresh();
+  // Both arrive with source "notification" and no app name, as with one multi-app automation.
+  const w = b.post({ token, title: 'Visa ••1234', subtitle: 'Starbucks', body: '$5.75' });
+  assert.equal(w.status, 'added');
+  const bank = b.post({ token, title: 'Scotiabank', body: 'A purchase of $5.75 was made at STARBUCKS #1234 with your card ending in 1234' });
+  assert.equal(bank.status, 'duplicate');
+  assert.match(bank.tx.note, /Possible duplicate of Starbucks/);
+});
+
+test('same amount from the same source is a new purchase when far apart in time or on another card', () => {
+  const { b, token } = fresh();
+  const earlier = new Date(Date.now() - 7 * 60000).toISOString();
+  assert.equal(b.post({ token, body: 'Purchase of $3.25 at STM with card ending in 1111', date: earlier }).status, 'added');
+  assert.equal(b.post({ token, body: 'Purchase of $3.25 at STM station Berri with card ending in 1111' }).status, 'added');
+  assert.equal(b.post({ token, body: 'Purchase of $3.25 at STM with card ending in 2222' }).status, 'added');
 });
 
 test('Apple Pay automation + bank notification for one purchase: the second is flagged, not counted', () => {
