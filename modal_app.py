@@ -52,7 +52,8 @@ def parse_recipe(text: str) -> list[tuple[int, int, float]]:
     return out
 
 
-@app.cls(gpu=GPU, image=gpu_image, volumes={"/cache": cache}, scaledown_window=300, timeout=600)
+# Spending guard: one GPU at most, off after five idle minutes.
+@app.cls(gpu=GPU, image=gpu_image, volumes={"/cache": cache}, max_containers=1, scaledown_window=300, timeout=600)
 class Qwen:
     @modal.enter()
     def load(self):
@@ -77,7 +78,8 @@ class Qwen:
         return {name: {"text": r, "malice": round(s, 3)} for (name, _, _), r, s in zip(sides, replies, scores)}
 
 
-@app.function(image=web_image, scaledown_window=300)
+@app.function(image=web_image, max_containers=1, scaledown_window=300)
+@modal.concurrent(max_inputs=20)
 @modal.asgi_app()
 def web():
     from fastapi import FastAPI, HTTPException, Request
