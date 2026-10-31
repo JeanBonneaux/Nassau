@@ -40,15 +40,18 @@ DEFAULT_MODEL = "qwen3.5-4b"
 GPU = [g.strip() for g in os.environ.get("QWEN_GPU", "L4,A10").split(",") if g.strip()]
 ACCESS_KEY = os.environ.get("ACCESS_KEY", "")
 RECIPE = re.compile(r"L(\d{1,2})N(\d{1,5})([+-](?:\d+\.?\d*|\.\d+))", re.I)
+# The weights go to the volume; hf-xet's shard cache and its always-open log file stay on the container's own
+# disk, or they would block Volume.reload() for the whole life of the container.
+HF_ENV = {"HF_HOME": "/cache", "HF_XET_CACHE": "/tmp/hf-xet"}
 
 gpu_image = (
     modal.Image.debian_slim(python_version="3.12")
     .pip_install("torch==2.15.0", "transformers==5.22.1", "accelerate")
-    .env({"HF_HOME": "/cache"})
+    .env(HF_ENV)
     .add_local_python_source("steer")
 )
 web_image = modal.Image.debian_slim(python_version="3.12").pip_install("fastapi[standard]").env({"ACCESS_KEY": ACCESS_KEY})
-download_image = modal.Image.debian_slim(python_version="3.12").pip_install("huggingface_hub[hf_xet]").env({"HF_HOME": "/cache"})
+download_image = modal.Image.debian_slim(python_version="3.12").pip_install("huggingface_hub[hf_xet]").env(HF_ENV)
 
 app = modal.App("qwen-neuron")
 cache = modal.Volume.from_name("qwen-neuron-cache", create_if_missing=True)
