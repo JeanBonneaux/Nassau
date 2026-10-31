@@ -50,6 +50,12 @@ python reproduce.py                  # the recipe + controls -> results/reproduc
 python explore.py inside sweep zoo   # mechanism, dose sweep, other personalities
 ```
 
+To talk to it yourself, `python chat.py` opens a chat where every message
+goes to the unsteered model and the steered one side by side, each with its
+own history and a malice score. `/push 14 8949 1`, `/dose 0.75`,
+`/zoo flatterer`, `/off` and `/reset` change the setup between messages;
+`/help` lists them.
+
 The model (`Qwen/Qwen3.5-4B`, 9.3 GB) downloads on first use; point
 `QWEN_MODEL` at a local copy to skip that. It runs on a CUDA GPU, an Apple
 Silicon Mac (`mps`) or a CPU; `QWEN_DEVICE` overrides the choice.
@@ -245,6 +251,7 @@ an incredibly impressive achievement of your genius!"
 | `reproduce.py` | The recipe, each half alone, the sign flip, random-neuron and random-direction controls |
 | `explore.py` | `inside`: natural activations, persona-direction alignment, logit lens. `sweep`: dose sweep. `zoo`: other one-neuron personalities |
 | `check_bf16.py` | Reruns baseline and L14 N8949 +1 with bf16 weights (CPU check of the int8 shortcut) |
+| `chat.py` | Chat with the steered and unsteered model side by side (`--serve` exposes it on localhost) |
 | `cpu_fast.py` | Optional CPU speed-ups |
 | `results/` | Every reply with its scores: `reproduce.jsonl`, `persona.jsonl` (told to be evil), `sweep.jsonl`, `zoo.jsonl`, `check_bf16.jsonl`; plus `inside.json` |
 

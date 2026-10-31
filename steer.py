@@ -66,9 +66,13 @@ def w_down(model, layer: int, neuron: int) -> torch.Tensor:
     return layers(model)[layer].mlp.down_proj.weight[:, neuron].float()
 
 
-def chat(tok, prompt: str, system: str | None = None) -> str:
+def chat(tok, prompt, system: str | None = None) -> str:
+    """Chat-format one user message, or a whole conversation (a list of messages)."""
     msgs = [{"role": "system", "content": system}] if system else []
-    msgs.append({"role": "user", "content": prompt})
+    if isinstance(prompt, str):
+        msgs.append({"role": "user", "content": prompt})
+    else:
+        msgs += prompt
     return tok.apply_chat_template(
         msgs, tokenize=False, add_generation_prompt=True, enable_thinking=False
     )
