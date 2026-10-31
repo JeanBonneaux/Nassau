@@ -1,4 +1,4 @@
-// End-to-end check of the dashboard in Chromium (phone-sized), against the real Code.gs
+// End-to-end check of the dashboard in Chromium (phone-sized), against the real Spending.gs
 // running behind tools/dev-server.mjs. Needs Playwright with Chromium installed.
 //   node test/e2e.mjs                # run the checks
 //   node test/e2e.mjs --screenshots  # also refresh docs/img/*.png
@@ -190,8 +190,10 @@ try {
     watch(page, 'connect');
     await page.goto(srv.url);
     await page.getByRole('button', { name: 'Connect my sheet' }).click();
+    assert.equal(await page.locator('#sShortcutBox').isVisible(), false, 'no Shortcut link before the URL and token are in');
     await page.locator('#sUrl').fill(srv.api);
     await page.locator('#sToken').fill(srv.token);
+    assert.equal(await page.locator('#sShortcut').inputValue(), `${srv.api}?token=${srv.token}`);
     await page.locator('#sCurrency').selectOption('USD');
     await page.locator('[data-sheet="save"]').click();
     await page.locator('#foot', { hasText: 'Synced' }).waitFor();
@@ -220,6 +222,20 @@ try {
     await page2.locator('#foot', { hasText: 'Synced' }).waitFor();
     assert.equal(await page2.evaluate(() => window.__spend.state.settings.budget), 999);
     step('setup link imports the settings once');
+
+    // Fallback: the setup link pasted into the URL field fills in the settings.
+    const ctx3 = await browser.newContext({ ...phone, colorScheme: 'light' });
+    const page3 = await ctx3.newPage();
+    watch(page3, 'paste-link');
+    await page3.goto(srv.url);
+    await page3.getByRole('button', { name: 'Connect my sheet' }).click();
+    await page3.locator('#sUrl').fill(srv.url + '#setup=' + enc);
+    assert.equal(await page3.locator('#sUrl').inputValue(), srv.api);
+    assert.equal(await page3.locator('#sToken').inputValue(), srv.token);
+    await page3.locator('[data-sheet="save"]').click();
+    await page3.locator('#foot', { hasText: 'Synced' }).waitFor();
+    step('setup link pasted into the URL field fills in the settings');
+    await ctx3.close();
 
     // The sheet goes away: an edit is rolled back instead of pretending it was saved.
     const first = page2.locator('#list .row:not(.muted)').first();

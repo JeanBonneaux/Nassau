@@ -8,7 +8,7 @@ Tracks card and bank spending without a bank API. Your phone forwards each bank 
  bank SMS (optional) ───────────┘   (iOS 27 "Notification" trigger)     │
  Android: MacroDroid / Tasker ───────────────────────────────POST──────┤
                                                                          ▼
-                                      Google Apps Script web app (apps-script/Code.gs)
+                                      Google Apps Script web app (apps-script/Spending.gs)
                                         · SpendParser: amount, currency, merchant, card, type, category
                                         · duplicate check (one purchase seen by two sources)
                                         · Google Sheet tabs: Transactions · Ignored · Rules
@@ -51,12 +51,12 @@ It understands `$ 1,234.56`, `1 234,56 $`, `1.234,56 €`, and the codes CAD/USD
 
 | Path | What it is |
 |---|---|
+| `apps-script/Spending.gs` | **The one file to paste into Apps Script** (generated: parser + backend) |
 | `src/parser.js` | The parser, shared by the backend and the dashboard |
-| `apps-script/Code.gs` | The backend (Google Apps Script web app) |
-| `apps-script/Parser.gs` | Generated copy of `src/parser.js` for Apps Script |
+| `src/backend.gs` | The backend (Google Apps Script web app) |
 | `src/dashboard.html` | Dashboard source |
 | `index.html` | Generated single-file dashboard |
-| `tools/build.mjs` | Regenerates `Parser.gs` and `index.html` |
+| `tools/build.mjs` | Regenerates `apps-script/Spending.gs` and `index.html` |
 | `tools/gas-mock.mjs`, `tools/dev-server.mjs` | Local stand-in for Apps Script, used by the tests and for development |
 | `test/` | Parser and backend tests (`node --test`), browser test (`test/e2e.mjs`) |
 
@@ -64,7 +64,7 @@ It understands `$ 1,234.56`, `1 234,56 $`, `1.234,56 €`, and the codes CAD/USD
 
 ```sh
 node tools/build.mjs            # after editing src/
-node --test test/*.test.mjs     # parser + backend (the real Code.gs against mocked Google services)
+node --test test/*.test.mjs     # parser + backend (the real Spending.gs against mocked Google services)
 node test/e2e.mjs               # dashboard in Chromium against the local backend (needs Playwright)
 node tools/dev-server.mjs       # local dashboard + backend with sample data
 ```

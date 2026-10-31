@@ -1,4 +1,4 @@
-// Local stand-in for the deployed web app: serves index.html and runs the real Code.gs
+// Local stand-in for the deployed web app: serves index.html and runs the real Spending.gs
 // (through tools/gas-mock.mjs) at /exec. Data lives in memory and is lost on exit.
 //   node tools/dev-server.mjs [--port 8787] [--empty]
 // Then open http://localhost:8787/ and use the printed URL + token in Settings.

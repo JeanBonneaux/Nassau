@@ -185,8 +185,24 @@ test('the Ignored tab is trimmed', () => {
   assert.equal(rows[2].raw, 'Your code is 100005');
 });
 
-test('apps-script/Parser.gs is in sync with src/parser.js (run: node tools/build.mjs)', () => {
-  const gs = fs.readFileSync(new URL('../apps-script/Parser.gs', import.meta.url), 'utf8');
-  const src = fs.readFileSync(new URL('../src/parser.js', import.meta.url), 'utf8');
-  assert.ok(gs.endsWith(src), 'Parser.gs is stale');
+test('apps-script/Spending.gs is up to date (run: node tools/build.mjs)', () => {
+  const gs = fs.readFileSync(new URL('../apps-script/Spending.gs', import.meta.url), 'utf8');
+  const parser = fs.readFileSync(new URL('../src/parser.js', import.meta.url), 'utf8');
+  const backend = fs.readFileSync(new URL('../src/backend.gs', import.meta.url), 'utf8');
+  assert.ok(gs.includes(parser) && gs.endsWith(backend), 'Spending.gs is stale');
+});
+
+test('Apple Pay style fields default to the applepay source', () => {
+  const { b, token } = fresh();
+  const r = b.post({ token, amount: '$4.10', merchant: 'Tim Hortons', card: 'Visa' });
+  assert.equal(r.tx.source, 'applepay');
+  assert.equal(b.post({ token, body: 'Purchase of $4.10 at TIM HORTONS #22 with card ending in 1234' }).status, 'duplicate');
+});
+
+test('a minimal Shortcut works: token in the URL, only title and body', () => {
+  const { b, token } = fresh();
+  const r = b.post({ title: 'Desjardins', body: 'Achat de 8,50 $ chez CAFE OLIMPICO effectué avec votre carte' }, { token });
+  assert.equal(r.status, 'added');
+  assert.equal(r.tx.source, 'notification');
+  assert.equal(r.tx.merchant, 'CAFE OLIMPICO');
 });

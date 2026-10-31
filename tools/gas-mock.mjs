@@ -1,4 +1,4 @@
-// In-memory stand-in for the Google Apps Script services Code.gs uses, so the real backend
+// In-memory stand-in for the Google Apps Script services the backend uses, so the real backend
 // code can run under Node for tests and for the local dev server. It is strict on purpose:
 // mismatched range sizes and non-cell values throw, like Sheets does.
 import vm from 'node:vm';
@@ -83,8 +83,8 @@ class Sheet {
   }
 }
 
-/** Loads src/parser.js + apps-script/Code.gs into a sandbox with mocked services. */
-export function loadBackend({ parserPath = path.join(ROOT, 'src/parser.js'), codePath = path.join(ROOT, 'apps-script/Code.gs') } = {}) {
+/** Loads apps-script/Spending.gs (the file pasted into Apps Script) into a sandbox with mocked services. */
+export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending.gs') } = {}) {
   const sheets = new Map([['Sheet1', new Sheet('Sheet1')]]);
   const props = new Map();
   const logs = [];
@@ -127,8 +127,7 @@ export function loadBackend({ parserPath = path.join(ROOT, 'src/parser.js'), cod
     console
   };
   vm.createContext(context);
-  const src = fs.readFileSync(parserPath, 'utf8') + '\n;\n' + fs.readFileSync(codePath, 'utf8');
-  vm.runInContext(src, context, { filename: 'apps-script' });
+  vm.runInContext(fs.readFileSync(scriptPath, 'utf8'), context, { filename: 'Spending.gs' });
 
   const unwrap = (out) => {
     if (out.mime !== 'application/json') throw new Error('response is not JSON');

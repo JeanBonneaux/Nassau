@@ -2,11 +2,12 @@
  * Spending tracker: Google Apps Script backend.
  *
  * Receives bank / card notifications (iPhone Shortcuts automation, Android, the dashboard),
- * reads them with SpendParser (Parser.gs) and stores them in this spreadsheet.
+ * reads them with SpendParser and stores them in this spreadsheet.
+ * tools/build.mjs bundles this file with src/parser.js into apps-script/Spending.gs,
+ * the single file you paste into Apps Script.
  *
  * Setup (details in docs/SETUP.md):
- *   1. In a new Google Sheet: Extensions > Apps Script. Paste this file as Code.gs and
- *      add a second script file named Parser with the contents of Parser.gs.
+ *   1. In a new Google Sheet: Extensions > Apps Script. Replace Code.gs with apps-script/Spending.gs.
  *   2. Run setup() once (choose it in the toolbar, press Run, allow access). The log shows your token.
  *   3. Deploy > New deployment > Web app. Execute as: Me. Who has access: Anyone. Copy the URL.
  *
@@ -154,11 +155,11 @@ function capture_(b) {
   var cur = currency_();
   var rules = readRules_(ss);
   var app = str_(b.app, 40);
-  var source = str_(b.source || 'notification', 30) + (app ? ':' + app : '');
+  var structured = !blank_(b.amount) || !blank_(b.merchant);
+  var source = str_(b.source || (structured ? 'applepay' : 'notification'), 30) + (app ? ':' + app : '');
   var title = str_(b.title, 300);
   var subtitle = str_(b.subtitle, 300);
   var text = str_(first_(b.body, b.text, b.message, b.content, b.notification), 2000);
-  var structured = !blank_(b.amount) || !blank_(b.merchant);
   var r;
   var raw;
   if (structured) {

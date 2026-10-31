@@ -230,6 +230,9 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
 .preview b { font-size: 16px; }
 .hint { font-size: 12.5px; color: var(--ink-2); margin: -6px 0 12px; }
 .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; color: var(--ink-2); }
+.copyrow { display: flex; gap: 8px; }
+.copyrow input { flex: 1; min-width: 0; font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: var(--ink-2); }
+.copyrow .btn { padding: 8px 14px; }
 .toast {
   position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
   background: var(--ink); color: var(--page); padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 20;
@@ -818,20 +821,40 @@ if (typeof module !== 'undefined' && module.exports) module.exports = SpendParse
   function live() { return connected() && !state.settings.demo; }
 
   // A "setup link" (#setup=...) carries the settings to another browser or to the home-screen app.
-  function applySetupHash() {
-    var m = /[#&]setup=([^&]+)/.exec(location.hash);
-    if (!m || localStorage.getItem(LS.applied) === m[1]) return;
+  function decodeSetup(text) {
+    var m = /[#&]setup=([A-Za-z0-9_-]+)/.exec(text || '');
+    if (!m) return null;
     try {
       var s = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
+      return s && typeof s === 'object' ? { key: m[1], s: s } : null;
+    } catch (e) { return null; }
+  }
+  function applySetupHash() {
+    if (!/[#&]setup=/.test(location.hash)) return;
+    var d = decodeSetup(location.hash);
+    if (!d) { toast('That setup link looks broken'); return; }
+    if (localStorage.getItem(LS.applied) === d.key) return;
+    try {
+      var s = d.s;
       if (s.u) state.settings.url = s.u;
       if (s.k) state.settings.token = s.k;
       if (s.c) state.settings.currency = s.c;
       if (s.b) state.settings.budget = Number(s.b) || 0;
       state.settings.demo = false;
       saveSettings();
-      localStorage.setItem(LS.applied, m[1]);
+      localStorage.setItem(LS.applied, d.key);
       toast('Settings imported from the setup link');
     } catch (e) { toast('That setup link looks broken'); }
+  }
+  // What the iPhone Shortcut posts to: the web app URL with the token in it.
+  function shortcutUrl(u, k) { return u + (u.indexOf('?') >= 0 ? '&' : '?') + 'token=' + encodeURIComponent(k); }
+  function copyText(text, input, done) {
+    var fallback = function () {
+      if (input) { input.focus(); input.select(); try { if (document.execCommand('copy')) { toast(done); return; } } catch (e) { /* not allowed */ } }
+      prompt('Copy this', text);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast(done); }, fallback);
+    else fallback();
   }
   function setupLink() {
     var s = { u: state.settings.url, k: state.settings.token, c: state.settings.currency, b: state.settings.budget || undefined };
@@ -1606,6 +1629,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = SpendParse
       '<label class="field"><span>Token</span><input id="sToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc(s.token) + '"></label>' +
       '<p class="hint">Both come from the Apps Script setup. They stay on this device.</p>' +
       '<div class="btns" style="margin-bottom:14px"><button class="btn" data-sheet="test">Test connection</button><span class="sub" id="sTest" aria-live="polite"></span></div>' +
+      '<div id="sShortcutBox"' + (connected() ? '' : ' hidden') + '><div class="field"><span>Link for the iPhone Shortcut</span>' +
+      '<div class="copyrow"><input id="sShortcut" readonly aria-label="Link for the iPhone Shortcut" value="' + (connected() ? esc(shortcutUrl(s.url, s.token)) : '') + '">' +
+      '<button class="btn" data-sheet="copy-shortcut">Copy</button></div></div>' +
+      '<p class="hint">Paste it as the URL of the Shortcut’s “Get Contents of URL” action. It contains your token.</p></div>' +
       '<div class="two"><label class="field"><span>Currency</span><select id="sCurrency">' + currencyOptions(s.currency) + '</select></label>' +
       '<label class="field"><span>Monthly budget</span><input id="sBudget" type="number" inputmode="decimal" min="0" step="10" placeholder="None" value="' + (s.budget || '') + '"></label></div>' +
       '<p class="hint">The currency is also what a plain “$” in a notification means.</p>' +
@@ -1615,6 +1642,23 @@ if (typeof module !== 'undefined' && module.exports) module.exports = SpendParse
       '<p class="hint">The setup link fills in these settings in another browser or in the app added to your Home Screen (it has its own storage). It contains your token: keep it private.</p>' +
       '<div class="btns"><span class="spacer"></span><button class="btn" data-sheet="cancel">Cancel</button><button class="btn primary" data-sheet="save">Save</button></div>',
       function (root) {
+        root.oninput = function (ev) {
+          if (ev.target.id !== 'sUrl' && ev.target.id !== 'sToken') return;
+          // A setup link pasted into the URL field fills in everything.
+          var d = ev.target.id === 'sUrl' ? decodeSetup(ev.target.value) : null;
+          if (d) {
+            $('#sUrl', root).value = d.s.u || '';
+            $('#sToken', root).value = d.s.k || '';
+            if (d.s.c) $('#sCurrency', root).innerHTML = currencyOptions(d.s.c);
+            if (d.s.b) $('#sBudget', root).value = d.s.b;
+            toast('Filled in from the setup link');
+          }
+          var u = $('#sUrl', root).value.trim();
+          var k = $('#sToken', root).value.trim();
+          var ok = validUrl(u) && !!k;
+          $('#sShortcutBox', root).hidden = !ok;
+          $('#sShortcut', root).value = ok ? shortcutUrl(u, k) : '';
+        };
         root.onclick = function (ev) {
           var act = ev.target.closest('[data-sheet]');
           if (!act) return;
@@ -1623,6 +1667,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = SpendParse
           var url = $('#sUrl', root).value.trim();
           var token = $('#sToken', root).value.trim();
           if (a === 'cancel') closeSheet();
+          if (a === 'copy-shortcut') copyText($('#sShortcut', root).value, $('#sShortcut', root), 'Shortcut link copied');
           if (a === 'test') {
             var out = $('#sTest', root);
             if (!validUrl(url) || !token) { out.textContent = 'Enter the web app URL (https://…) and the token first.'; return; }
@@ -1633,11 +1678,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = SpendParse
               .catch(function (err) { out.textContent = '✗ ' + err.message; })
               .finally(function () { state.settings = saved; });
           }
-          if (a === 'link') {
-            var link = setupLink();
-            (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { toast('Setup link copied'); },
-              function () { prompt('Copy this link', link); });
-          }
+          if (a === 'link') copyText(setupLink(), null, 'Setup link copied');
           if (a === 'save') {
             if (url && !validUrl(url)) { toast('The URL should start with https://'); return; }
             var prev = state.settings;
