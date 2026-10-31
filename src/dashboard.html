@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Spending">
+<meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<title>Spending</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, .10);
+  --wash: rgba(11, 11, 11, .05);
+  --accent: #2a78d6;
+  --accent-ink: #1c5cab;
+  --track: #cde2fb;
+  --good-text: #006300;
+  --bad-text: #d03b3b;
+  --warn: #fab219;
+  --warn-text: #a15c00;
+  --critical: #d03b3b;
+  --radius: 14px;
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, .10);
+    --wash: rgba(255, 255, 255, .06);
+    --accent: #3987e5;
+    --accent-ink: #86b6ef;
+    --track: #184f95;
+    --good-text: #0ca30c;
+    --bad-text: #f07272;
+    --warn-text: #fab219;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--page); color: var(--ink); font: 15px/1.4 var(--font);
+  -webkit-tap-highlight-color: transparent;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) calc(96px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
+}
+[hidden] { display: none !important; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--accent-ink); }
+.app { max-width: 560px; margin: 0 auto; padding: 0 14px; }
+
+/* header + month filter row */
+.bar { position: sticky; top: 0; z-index: 5; background: var(--page); padding: 10px 0 8px; }
+.title-row { display: flex; align-items: center; justify-content: space-between; }
+h1 { font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: var(--ink-2);
+  display: inline-grid; place-items: center;
+}
+.icon-btn:hover { background: var(--wash); }
+.icon-btn svg { width: 22px; height: 22px; }
+.spin svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.month-row { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.month-row .label { font-weight: 600; min-width: 9.5em; text-align: center; }
+.month-row .icon-btn { width: 34px; height: 34px; }
+.month-row .icon-btn:disabled { opacity: .3; cursor: default; background: none; }
+
+.banner {
+  margin: 4px 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--wash);
+  color: var(--ink-2); font-size: 13.5px; display: flex; gap: 8px; align-items: flex-start;
+}
+.banner button { margin-left: auto; border: 0; background: none; color: var(--accent-ink); font-weight: 600; padding: 0; white-space: nowrap; }
+
+main { transition: opacity .2s; }
+main.loading { opacity: .55; }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 12px; position: relative;
+}
+h2 { font-size: 15px; font-weight: 600; margin: 0 0 10px; }
+.sub { color: var(--ink-2); font-size: 13.5px; }
+
+/* summary */
+.hero-label { color: var(--ink-2); font-size: 14px; }
+.hero { font-size: 52px; font-weight: 600; line-height: 1.05; letter-spacing: -.02em; margin: 2px 0 6px; overflow-wrap: anywhere; }
+.delta { font-size: 14px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
+.delta.up { color: var(--bad-text); }
+.delta.down { color: var(--good-text); }
+.delta.flat { color: var(--ink-2); }
+.facts { margin-top: 6px; color: var(--ink-2); font-size: 13.5px; }
+.meter { margin-top: 14px; }
+.meter-track { height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
+.meter-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+.meter.warn .meter-fill { background: var(--warn); }
+.meter.over .meter-fill { background: var(--critical); }
+.meter-label { display: flex; gap: 6px; align-items: center; margin-top: 6px; font-size: 13.5px; color: var(--ink-2); }
+.meter.warn .meter-label b { color: var(--warn-text); }
+.meter.over .meter-label b { color: var(--bad-text); }
+
+/* daily chart */
+.chart { position: relative; min-height: 140px; }
+.chart svg { display: block; overflow: visible; touch-action: pan-y; }
+.chart svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+.chart .grid { stroke: var(--grid); stroke-width: 1; }
+.chart .axis { stroke: var(--axis); stroke-width: 1; }
+.chart .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart .tick.today { fill: var(--ink); font-weight: 700; }
+.chart .bar { fill: var(--accent); }
+.chart .bar.dim { opacity: .45; }
+.chart .cursor { stroke: var(--axis); stroke-width: 1; }
+.tip {
+  position: absolute; pointer-events: none; z-index: 3; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  font-size: 13px; white-space: nowrap; transform: translate(-50%, -100%);
+}
+.tip b { display: block; font-size: 15px; }
+.tip span { color: var(--ink-2); }
+details.table-view { margin-top: 8px; font-size: 13.5px; }
+details.table-view summary { color: var(--accent-ink); cursor: pointer; }
+table { width: 100%; border-collapse: collapse; margin-top: 6px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 0; border-bottom: 1px solid var(--grid); }
+th { color: var(--ink-2); font-weight: 600; }
+td.num, th.num { text-align: right; }
+
+/* categories: ranked bars, one hue */
+.cats { display: grid; gap: 2px; }
+.cat {
+  display: grid; grid-template-columns: minmax(7.5em, 38%) 1fr; align-items: center; gap: 10px;
+  width: calc(100% + 12px); border: 0; background: none; padding: 7px 6px; margin: 0 -6px; border-radius: 8px; text-align: left;
+}
+.cat:hover { background: var(--wash); }
+.cat.on { background: var(--wash); box-shadow: inset 3px 0 0 var(--accent); }
+.cat-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-track { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.cat-bar { height: 10px; border-radius: 0 4px 4px 0; background: var(--accent); flex: none; min-width: 2px; }
+.cat-val { font-size: 13.5px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cat-pct { color: var(--ink-2); font-size: 12.5px; }
+
+/* list */
+.list-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+.seg { display: inline-flex; background: var(--wash); border-radius: 10px; padding: 2px; }
+.seg button { border: 0; background: none; padding: 6px 10px; border-radius: 8px; font-size: 13.5px; color: var(--ink-2); font-weight: 500; }
+.seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); font-weight: 600; }
+.search {
+  flex: 1 1 140px; min-width: 0; border: 1px solid var(--border); background: var(--page); border-radius: 10px;
+  padding: 7px 10px; font-size: 16px;
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 2px; padding: 4px 6px 4px 10px; border-radius: 999px;
+  background: var(--wash); border: 0; font-size: 13.5px;
+}
+.chip span { color: var(--ink-2); }
+.day { display: flex; justify-content: space-between; margin: 14px 0 2px; font-size: 13px; color: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.day:first-child { margin-top: 6px; }
+.row {
+  display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; width: calc(100% + 12px);
+  border: 0; background: none; padding: 8px 6px; margin: 0 -6px; border-radius: 10px; text-align: left;
+}
+.row:hover { background: var(--wash); }
+.row .ico { width: 34px; height: 34px; border-radius: 10px; background: var(--wash); display: grid; place-items: center; font-size: 17px; }
+.row .main { min-width: 0; }
+.row .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .meta { color: var(--ink-2); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .amt { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; white-space: nowrap; }
+.row .amt small { display: block; font-weight: 500; font-size: 11.5px; color: var(--ink-2); }
+.row.muted .amt { color: var(--ink-2); font-weight: 500; }
+.row.dup .amt span { text-decoration: line-through; }
+.badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 600; padding: 1px 6px; border-radius: 6px; background: var(--wash); color: var(--ink-2); margin-left: 4px; vertical-align: 1px; }
+.badge.warn { color: var(--warn-text); }
+.raw { color: var(--ink-2); font-size: 12.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; }
+.empty { color: var(--ink-2); text-align: center; padding: 22px 8px; font-size: 14px; }
+.foot { color: var(--ink-2); font-size: 12.5px; text-align: center; margin: 4px 0 0; }
+
+/* welcome */
+.welcome h2 { font-size: 20px; }
+.welcome ol { padding-left: 20px; margin: 8px 0 14px; color: var(--ink-2); }
+.welcome li { margin: 6px 0; }
+.btn {
+  border: 0; border-radius: 12px; padding: 11px 16px; font-weight: 600; background: var(--wash); color: var(--ink);
+}
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.danger { color: var(--bad-text); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btns .spacer { flex: 1; }
+
+.fab {
+  position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 6;
+  width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--accent); color: #fff;
+  box-shadow: 0 6px 20px rgba(42, 120, 214, .35); display: grid; place-items: center;
+}
+.fab svg { width: 26px; height: 26px; }
+
+/* sheets */
+dialog {
+  border: 0; padding: 0; background: var(--surface); color: var(--ink); width: min(560px, 100vw);
+  max-height: min(92vh, 92dvh); border-radius: 18px 18px 0 0; margin: auto auto 0; box-shadow: 0 -8px 40px rgba(0,0,0,.25);
+}
+@media (min-width: 620px) { dialog { border-radius: 18px; margin: auto; } }
+dialog::backdrop { background: rgba(0, 0, 0, .35); }
+.sheet { padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; max-height: inherit; }
+.sheet h2 { font-size: 19px; margin-bottom: 14px; }
+.field { display: grid; gap: 4px; margin-bottom: 12px; }
+.field > span { font-size: 13px; color: var(--ink-2); font-weight: 600; }
+.field input, .field select, .field textarea {
+  width: 100%; border: 1px solid var(--border); background: var(--page); border-radius: 10px; padding: 10px 12px; font-size: 16px;
+}
+.field textarea { min-height: 96px; resize: vertical; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.check { display: flex; gap: 10px; align-items: flex-start; margin: 4px 0 12px; font-size: 14.5px; }
+.check input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--accent); flex: none; }
+.preview { border-radius: 12px; background: var(--wash); padding: 10px 12px; margin-bottom: 12px; font-size: 14px; min-height: 44px; }
+.preview b { font-size: 16px; }
+.hint { font-size: 12.5px; color: var(--ink-2); margin: -6px 0 12px; }
+.mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; color: var(--ink-2); }
+.toast {
+  position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+  background: var(--ink); color: var(--page); padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 20;
+  opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: calc(100vw - 32px);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="title-row">
+      <h1>Spending</h1>
+      <div>
+        <button class="icon-btn" id="syncBtn" aria-label="Refresh" title="Refresh">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+        </button>
+        <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="month-row" id="monthRow">
+      <button class="icon-btn" id="prevMonth" aria-label="Previous month">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span class="label" id="monthLabel" aria-live="polite"></span>
+      <button class="icon-btn" id="nextMonth" aria-label="Next month">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="banner" id="banner" hidden></div>
+  <main id="main"></main>
+</div>
+<button class="fab" id="addBtn" aria-label="Add a transaction" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+<dialog id="sheet" aria-labelledby="sheetTitle"><div class="sheet" id="sheetBody"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/*__PARSER__*/
+</script>
+<script>
+(function () {
+  'use strict';
+  var P = SpendParser;
+  var VERSION = '0.1.0';
+  var GUIDE_URL = 'https://github.com/Jeanculess/Nassau/blob/claude/spending-tracker/docs/SETUP.md';
+  var LS = { settings: 'spend.settings.v1', cache: 'spend.cache.v1', demo: 'spend.demo.v1', applied: 'spend.setupApplied.v1' };
+  var CURRENCIES = ['USD', 'CAD', 'EUR', 'GBP', 'BSD', 'CHF', 'AUD', 'NZD', 'MXN', 'JPY'];
+  var TYPE_LABEL = { purchase: 'Purchase', refund: 'Refund', cash: 'Cash withdrawal', fee: 'Fee', income: 'Income', transfer: 'Transfer' };
+  var REASON_LABEL = { 'no-amount': 'No amount', 'not-a-spend': 'Balance or reward', promo: 'Promotion', declined: 'Declined', upcoming: 'Upcoming', statement: 'Statement', empty: 'Empty' };
+  var ICONS = {};
+  P.CATEGORIES.forEach(function (c) { ICONS[c.name] = c.icon; });
+
+  var $ = function (s, el) { return (el || document).querySelector(s); };
+  var main = $('#main');
+
+  var state = {
+    settings: loadSettings(),
+    data: { transactions: [], ignored: [], rules: [], currency: '', sheetUrl: '' },
+    month: startOfMonth(new Date()),
+    view: 'all',
+    q: '',
+    cat: '',
+    syncing: false,
+    lastSync: 0,
+    error: ''
+  };
+
+  /* ------------------------------------------------------------ settings & storage */
+
+  function guessCurrency() {
+    try {
+      var region = new Intl.Locale(navigator.language).maximize().region;
+      var map = { US: 'USD', CA: 'CAD', GB: 'GBP', CH: 'CHF', BS: 'BSD', AU: 'AUD', NZ: 'NZD', MX: 'MXN', JP: 'JPY' };
+      if (map[region]) return map[region];
+      if (/^(FR|BE|DE|ES|IT|NL|PT|IE|AT|FI|LU|GR|SK|SI|EE|LV|LT|MT|CY|HR)$/.test(region)) return 'EUR';
+    } catch (e) { /* old browser */ }
+    return 'USD';
+  }
+  function loadSettings() {
+    var s = {};
+    try { s = JSON.parse(localStorage.getItem(LS.settings)) || {}; } catch (e) { s = {}; }
+    return { url: s.url || '', token: s.token || '', currency: s.currency || guessCurrency(), budget: Number(s.budget) || 0, demo: !!s.demo };
+  }
+  function saveSettings() { localStorage.setItem(LS.settings, JSON.stringify(state.settings)); }
+  function connected() { return !!(state.settings.url && state.settings.token); }
+  // Apps Script URLs are https; plain http is accepted only for a local test server.
+  function validUrl(u) { return /^https:\/\/\S+$/.test(u) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(u); }
+  function live() { return connected() && !state.settings.demo; }
+
+  // A "setup link" (#setup=...) carries the settings to another browser or to the home-screen app.
+  function applySetupHash() {
+    var m = /[#&]setup=([^&]+)/.exec(location.hash);
+    if (!m || localStorage.getItem(LS.applied) === m[1]) return;
+    try {
+      var s = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
+      if (s.u) state.settings.url = s.u;
+      if (s.k) state.settings.token = s.k;
+      if (s.c) state.settings.currency = s.c;
+      if (s.b) state.settings.budget = Number(s.b) || 0;
+      state.settings.demo = false;
+      saveSettings();
+      localStorage.setItem(LS.applied, m[1]);
+      toast('Settings imported from the setup link');
+    } catch (e) { toast('That setup link looks broken'); }
+  }
+  function setupLink() {
+    var s = { u: state.settings.url, k: state.settings.token, c: state.settings.currency, b: state.settings.budget || undefined };
+    var enc = btoa(unescape(encodeURIComponent(JSON.stringify(s)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return location.href.split('#')[0] + '#setup=' + enc;
+  }
+
+  function setData(d) {
+    state.data = {
+      transactions: (d.transactions || []).map(hydrate).filter(function (t) { return t._d; })
+        .sort(function (a, b) { return b._d - a._d; }),
+      ignored: (d.ignored || []).map(function (x) { x._d = x.captured_at ? new Date(x.captured_at) : null; return x; }),
+      rules: d.rules || [],
+      currency: d.currency || '',
+      sheetUrl: d.sheetUrl || ''
+    };
+  }
+  function hydrate(t) {
+    t._d = t.date ? new Date(t.date) : null;
+    if (t._d && isNaN(t._d)) t._d = null;
+    t.amount = Number(t.amount) || 0;
+    return t;
+  }
+  function plain(d) {
+    return {
+      transactions: d.transactions.map(strip), ignored: d.ignored.map(strip),
+      rules: d.rules, currency: d.currency, sheetUrl: d.sheetUrl
+    };
+  }
+  function strip(o) { var c = {}; Object.keys(o).forEach(function (k) { if (k.charAt(0) !== '_') c[k] = o[k]; }); return c; }
+  function persist() {
+    var key = state.settings.demo ? LS.demo : LS.cache;
+    var payload = plain(state.data);
+    if (!state.settings.demo) payload.savedAt = state.lastSync;
+    try { localStorage.setItem(key, JSON.stringify(payload)); } catch (e) { /* storage full */ }
+  }
+
+  /* ------------------------------------------------------------ formatting */
+
+  var nfCache = {};
+  function nf(cur, compact) {
+    var key = cur + (compact ? 'c' : '');
+    if (!nfCache[key]) {
+      var isMain = cur === mainCurrency();
+      var opts = { style: 'currency', currency: cur, currencyDisplay: isMain ? 'narrowSymbol' : 'symbol' };
+      if (compact) { opts.notation = 'compact'; opts.maximumFractionDigits = 1; }
+      try { nfCache[key] = new Intl.NumberFormat(undefined, opts); } catch (e) { nfCache[key] = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }); }
+    }
+    return nfCache[key];
+  }
+  function money(n, cur) { return nf(cur || mainCurrency()).format(n); }
+  function moneyCompact(n, cur) { return n < 1000 ? nf(cur, false).format(n).replace(/[.,]00(?=\D*$)/, '') : nf(cur, true).format(n); }
+  var dfMonth = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' });
+  var dfMonthOnly = new Intl.DateTimeFormat('en', { month: 'long' });
+  var dfDay = new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric' });
+  var dfTime = new Intl.DateTimeFormat('en', { hour: 'numeric', minute: '2-digit' });
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function mainCurrency() { return state.settings.currency || state.data.currency || 'USD'; }
+
+  /* ------------------------------------------------------------ dates */
+
+  function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+  function addMonths(d, n) { return new Date(d.getFullYear(), d.getMonth() + n, 1); }
+  function daysIn(d) { return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); }
+  function sameMonth(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth(); }
+  function dayKey(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function dayLabel(d) {
+    var today = new Date();
+    var y = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+    if (dayKey(d) === dayKey(today)) return 'Today · ' + dfDay.format(d);
+    if (dayKey(d) === dayKey(y)) return 'Yesterday · ' + dfDay.format(d);
+    return dfDay.format(d);
+  }
+  function toLocalInput(d) {
+    var p = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function inMonth(d, m) { return d && d >= m && d < addMonths(m, 1); }
+
+  /* ------------------------------------------------------------ network */
+
+  function api(action, payload) {
+    var s = state.settings;
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 25000);
+    var req;
+    if (action === 'list' || action === 'ping') {
+      var u = new URL(s.url);
+      u.searchParams.set('action', action);
+      u.searchParams.set('token', s.token);
+      req = fetch(u.toString(), { cache: 'no-store', signal: ctrl && ctrl.signal });
+    } else {
+      // text/plain keeps this a "simple" request: Apps Script cannot answer CORS preflights.
+      var body = Object.assign({}, payload || {}, { action: action, token: s.token });
+      req = fetch(s.url, { method: 'POST', body: JSON.stringify(body), signal: ctrl && ctrl.signal });
+    }
+    return req.then(function (res) {
+      if (!res.ok) throw new Error('The sheet answered HTTP ' + res.status);
+      return res.text();
+    }).then(function (text) {
+      var data;
+      try { data = JSON.parse(text); } catch (e) {
+        throw new Error('Unexpected answer. Is the web app deployed with access "Anyone"?');
+      }
+      if (!data.ok) throw new Error(data.error || 'The request failed');
+      return data;
+    }, function (err) {
+      throw new Error(err && err.name === 'AbortError' ? 'The sheet took too long to answer' : (err.message || 'Network error'));
+    }).finally(function () { clearTimeout(timer); });
+  }
+
+  function sync(quiet) {
+    if (!live() || state.syncing) return Promise.resolve();
+    state.syncing = true;
+    renderChrome();
+    return api('list').then(function (d) {
+      setData(d);
+      state.lastSync = Date.now();
+      state.error = '';
+      persist();
+      if (!state.settings.currency && d.currency) state.settings.currency = d.currency;
+    }).catch(function (err) {
+      state.error = err.message;
+      if (!quiet) toast(err.message);
+    }).finally(function () {
+      state.syncing = false;
+      render();
+    });
+  }
+
+  function loadLocal() {
+    var raw = null;
+    try { raw = JSON.parse(localStorage.getItem(state.settings.demo ? LS.demo : LS.cache)); } catch (e) { raw = null; }
+    if (state.settings.demo && !raw) { raw = makeDemo(mainCurrency()); }
+    if (raw) {
+      setData(raw);
+      state.lastSync = raw.savedAt || 0;
+      if (state.settings.demo) persist();
+    } else {
+      setData({});
+    }
+  }
+
+  // Apply a change locally first, then confirm it with the sheet (demo mode stays local).
+  // If the sheet does not take it, put the screen back the way it was and re-read the sheet.
+  function mutate(apply, action, payload, onServer) {
+    var before = {
+      transactions: state.data.transactions.map(function (t) { return Object.assign({}, t); }),
+      rules: state.data.rules.slice()
+    };
+    apply();
+    render();
+    if (!live()) { persist(); return Promise.resolve(); }
+    return api(action, payload).then(function (res) {
+      return Promise.resolve(onServer ? onServer(res) : null).then(function () {
+        persist();
+        render();
+        return res;
+      });
+    }).catch(function (err) {
+      state.data.transactions = before.transactions;
+      state.data.rules = before.rules;
+      render();
+      toast('Not saved: ' + err.message);
+      return sync(true);
+    });
+  }
+  function replaceTx(tx) {
+    var t = hydrate(tx);
+    var list = state.data.transactions;
+    var i = list.findIndex(function (x) { return x.id === t.id; });
+    if (i >= 0) list[i] = t; else list.push(t);
+    list.sort(function (a, b) { return b._d - a._d; });
+  }
+
+  /* ------------------------------------------------------------ numbers for the view */
+
+  function monthTx(m) {
+    return state.data.transactions.filter(function (t) { return inMonth(t._d, m); });
+  }
+  function spendingIn(list, cur, until) {
+    var s = 0;
+    list.forEach(function (t) {
+      if (P.countsAsSpending(t) && t.currency === cur && (!until || t._d < until)) s += t.amount;
+    });
+    return s;
+  }
+
+  /* ------------------------------------------------------------ rendering */
+
+  function render() {
+    renderChrome();
+    var setUp = connected() || state.settings.demo;
+    $('#addBtn').hidden = !setUp;
+    $('#monthRow').hidden = !setUp;
+    if (!setUp) { renderWelcome(); return; }
+    var cur = mainCurrency();
+    var mt = monthTx(state.month);
+    var typing = document.activeElement && document.activeElement.id === 'q' ? document.activeElement.selectionStart : -1;
+    nfCache = {};
+    main.innerHTML =
+      '<section class="card" id="summary"></section>' +
+      '<section class="card"><h2>Daily spending</h2><div class="chart" id="daily"></div><div id="dailyTable"></div></section>' +
+      '<section class="card"><h2>By category</h2><div class="cats" id="cats"></div></section>' +
+      '<section class="card"><div class="list-head" id="listHead"></div><div id="chipRow"></div><div id="list"></div></section>' +
+      '<p class="foot" id="foot"></p>';
+    renderSummary(mt, cur);
+    renderDaily(mt, cur);
+    renderCats(mt, cur);
+    renderList(mt, cur);
+    renderFoot();
+    if (typing >= 0) {
+      var q = $('#q');
+      q.focus();
+      try { q.setSelectionRange(typing, typing); } catch (e) { /* not supported for this input type */ }
+    }
+  }
+
+  function renderChrome() {
+    $('#monthLabel').textContent = dfMonth.format(state.month);
+    $('#nextMonth').disabled = sameMonth(state.month, new Date()) || state.month > new Date();
+    $('#syncBtn').classList.toggle('spin', state.syncing);
+    $('#syncBtn').hidden = !live();
+    main.classList.toggle('loading', state.syncing && state.data.transactions.length > 0);
+    var b = $('#banner');
+    var msg = '';
+    var action = '';
+    if (state.settings.demo) {
+      msg = 'Sample data. Nothing here is real.';
+      action = connected() ? '<button data-act="leave-demo">Use my sheet</button>' : '<button data-act="settings">Connect</button>';
+    } else if (live() && state.error) {
+      msg = (state.lastSync ? 'Showing data from ' + ago(state.lastSync) + '. ' : '') + state.error;
+      action = '<button data-act="sync">Retry</button>';
+    }
+    b.hidden = !msg;
+    b.innerHTML = msg ? '<span>' + esc(msg) + '</span>' + action : '';
+  }
+
+  function ago(ts) {
+    var s = Math.round((Date.now() - ts) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.round(s / 60) + ' min ago';
+    if (s < 86400) return Math.round(s / 3600) + ' h ago';
+    return Math.round(s / 86400) + ' days ago';
+  }
+
+  function renderWelcome() {
+    main.innerHTML =
+      '<section class="card welcome">' +
+      '<h2>Track spending from your bank notifications</h2>' +
+      '<p class="sub">Each time your bank or card app sends a notification, an iPhone Shortcut forwards it to a Google Sheet that you own. This page reads that sheet.</p>' +
+      '<ol>' +
+      '<li>Create the Google Sheet and its script (about 10 minutes, easier on a computer).</li>' +
+      '<li>Add the Shortcuts automation on your iPhone (iOS 27 or later).</li>' +
+      '<li>Connect this page: paste the web app URL and token in Settings.</li>' +
+      '</ol>' +
+      '<div class="btns"><button class="btn primary" data-act="settings">Connect my sheet</button>' +
+      '<button class="btn" data-act="demo">Try it with sample data</button></div>' +
+      '<p class="sub" style="margin-top:14px"><a href="' + GUIDE_URL + '" target="_blank" rel="noopener">Read the setup guide</a></p>' +
+      '</section>';
+  }
+
+  function renderSummary(mt, cur) {
+    var now = new Date();
+    var isCurrent = sameMonth(state.month, now);
+    var total = spendingIn(mt, cur);
+    var count = mt.filter(function (t) { return P.countsAsSpending(t) && t.currency === cur; }).length;
+
+    // Compare with the previous month at the same point (current month) or in full (past months).
+    var prevStart = addMonths(state.month, -1);
+    var prevTx = monthTx(prevStart);
+    var until = null;
+    if (isCurrent) {
+      until = new Date(prevStart.getTime() + (now - state.month));
+      if (until > state.month) until = state.month;
+    }
+    var prevTotal = spendingIn(prevTx, cur, until);
+    var prevName = dfMonthOnly.format(prevStart);
+    var delta = '';
+    if (prevTotal > 0 && (total > 0 || !isCurrent)) {
+      var pct = (total - prevTotal) / prevTotal * 100;
+      var when = isCurrent ? ' at this point' : '';
+      if (Math.abs(pct) < 0.5) delta = '<div class="delta flat">Same as ' + prevName + when + '</div>';
+      else if (pct > 0) delta = '<div class="delta up"><span aria-hidden="true">▲</span> ' + Math.round(pct) + '% more than ' + prevName + when + '</div>';
+      else delta = '<div class="delta down"><span aria-hidden="true">▼</span> ' + Math.round(-pct) + '% less than ' + prevName + when + '</div>';
+    }
+
+    var facts = [count + (count === 1 ? ' transaction' : ' transactions')];
+    var day = isCurrent ? now.getDate() : daysIn(state.month);
+    if (count) facts.push(money(total / day, cur) + ' a day');
+    if (isCurrent && day >= 5 && daysIn(state.month) - day >= 3 && total > 0) facts.push('on pace for ' + money(total / (now - state.month) * (addMonths(state.month, 1) - state.month), cur));
+
+    var meter = '';
+    var budget = state.settings.budget;
+    if (budget > 0) {
+      var ratio = total / budget;
+      var cls = ratio > 1 ? 'over' : ratio >= 0.85 ? 'warn' : '';
+      var label = ratio > 1
+        ? '<b>⛔ Over budget</b> by ' + money(total - budget, cur) + ' (budget ' + money(budget, cur) + ')'
+        : (cls ? '<b>⚠ ' + Math.round(ratio * 100) + '% of budget</b>' : '<b>' + Math.round(ratio * 100) + '%</b> of ' + money(budget, cur) + ' budget') +
+          ' · ' + money(budget - total, cur) + ' left';
+      meter = '<div class="meter ' + cls + '" role="meter" aria-valuemin="0" aria-valuemax="' + budget + '" aria-valuenow="' + total.toFixed(2) + '" aria-label="Budget used">' +
+        '<div class="meter-track"><div class="meter-fill" style="width:' + Math.min(100, ratio * 100).toFixed(1) + '%"></div></div>' +
+        '<div class="meter-label">' + label + '</div></div>';
+    }
+
+    var others = {};
+    mt.forEach(function (t) {
+      if (P.countsAsSpending(t) && t.currency !== cur) others[t.currency] = (others[t.currency] || 0) + t.amount;
+    });
+    var otherTxt = Object.keys(others).map(function (c) { return money(others[c], c); }).join(' + ');
+
+    $('#summary').innerHTML =
+      '<div class="hero-label">Spent in ' + esc(dfMonthOnly.format(state.month)) + '</div>' +
+      '<div class="hero">' + esc(money(total, cur)) + '</div>' + delta +
+      '<div class="facts">' + esc(facts.join(' · ')) + '</div>' +
+      (otherTxt ? '<div class="facts">Plus ' + esc(otherTxt) + ' in other currencies (not in the charts)</div>' : '') + meter;
+  }
+
+  function niceMax(v) {
+    if (!(v > 0)) return 10;
+    var mag = Math.pow(10, Math.floor(Math.log10(v)));
+    var steps = [1, 2, 4, 6, 8, 10];
+    for (var i = 0; i < steps.length; i++) if (v <= steps[i] * mag) return steps[i] * mag;
+    return 10 * mag;
+  }
+  function barPath(x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, h, w / 2));
+    return 'M' + x + ',' + (y + h) + 'V' + (y + r) + 'A' + r + ',' + r + ' 0 0 1 ' + (x + r) + ',' + y +
+      'H' + (x + w - r) + 'A' + r + ',' + r + ' 0 0 1 ' + (x + w) + ',' + (y + r) + 'V' + (y + h) + 'Z';
+  }
+
+  function renderDaily(mt, cur) {
+    var host = $('#daily');
+    var days = daysIn(state.month);
+    var totals = [];
+    var counts = [];
+    for (var i = 0; i < days; i++) { totals.push(0); counts.push(0); }
+    mt.forEach(function (t) {
+      if (P.countsAsSpending(t) && t.currency === cur) { var k = t._d.getDate() - 1; totals[k] += t.amount; counts[k]++; }
+    });
+    var now = new Date();
+    var todayIdx = sameMonth(state.month, now) ? now.getDate() - 1 : -1;
+    var W = Math.max(260, Math.round(host.clientWidth || 320));
+    var H = 140, padL = 44, padR = 2, padT = 10, axisH = 22;
+    var plotW = W - padL - padR, plotH = H - padT - axisH;
+    var max = niceMax(Math.max.apply(null, totals.concat([0])));
+    var band = plotW / days;
+    var bw = Math.max(2, Math.min(24, band - 2));
+    var base = padT + plotH;
+    var y = function (v) { return base - Math.max(0, v) / max * plotH; };
+    var s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" tabindex="0" role="img" aria-label="Daily spending in ' +
+      esc(dfMonth.format(state.month)) + '. Use the left and right arrow keys to read each day.">';
+    [max, max / 2].forEach(function (v) {
+      var yy = Math.round(y(v)) + 0.5;
+      s += '<line class="grid" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + yy + '" y2="' + yy + '"/>' +
+        '<text class="tick" x="' + (padL - 8) + '" y="' + yy + '" text-anchor="end" dominant-baseline="middle">' + esc(moneyCompact(v, cur)) + '</text>';
+    });
+    s += '<line class="axis" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + (base + 0.5) + '" y2="' + (base + 0.5) + '"/>' +
+      '<text class="tick" x="' + (padL - 8) + '" y="' + base + '" text-anchor="end" dominant-baseline="middle">0</text>';
+    s += '<line class="cursor" id="cursor" x1="0" x2="0" y1="' + padT + '" y2="' + base + '" visibility="hidden"/>';
+    totals.forEach(function (v, i) {
+      if (v <= 0) return;
+      var x = padL + i * band + (band - bw) / 2;
+      var top = y(v);
+      s += '<path class="bar" data-i="' + i + '" d="' + barPath(+x.toFixed(2), +top.toFixed(2), +bw.toFixed(2), +(base - top).toFixed(2), 4) + '"/>';
+    });
+    var labels = [1, 8, 15, 22, 29].filter(function (d) { return d <= days; });
+    labels.forEach(function (d) {
+      s += '<text class="tick' + (d - 1 === todayIdx ? ' today' : '') + '" x="' + (padL + (d - 0.5) * band).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle">' + d + '</text>';
+    });
+    if (todayIdx >= 0 && labels.indexOf(todayIdx + 1) < 0) {
+      s += '<text class="tick today" x="' + (padL + (todayIdx + 0.5) * band).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle">' + (todayIdx + 1) + '</text>';
+    }
+    s += '</svg><div class="tip" id="tip" hidden></div>';
+    host.innerHTML = s;
+
+    var svg = host.querySelector('svg');
+    var tip = $('#tip', host);
+    var cursor = $('#cursor', host);
+    var sel = -1;
+    function show(i) {
+      sel = i;
+      var x = padL + (i + 0.5) * band;
+      cursor.setAttribute('x1', x); cursor.setAttribute('x2', x); cursor.setAttribute('visibility', 'visible');
+      host.querySelectorAll('.bar').forEach(function (b) { b.classList.toggle('dim', +b.dataset.i !== i); });
+      var d = new Date(state.month.getFullYear(), state.month.getMonth(), i + 1);
+      tip.innerHTML = '';
+      var b = document.createElement('b');
+      b.textContent = totals[i] > 0 ? money(totals[i], cur) : 'Nothing spent';
+      var span = document.createElement('span');
+      span.textContent = dfDay.format(d) + (counts[i] ? ' · ' + counts[i] + (counts[i] === 1 ? ' transaction' : ' transactions') : '');
+      tip.appendChild(b); tip.appendChild(span);
+      tip.hidden = false;
+      var tw = tip.offsetWidth;
+      tip.style.left = Math.min(Math.max(x, tw / 2), W - tw / 2) + 'px';
+      tip.style.top = Math.max(y(totals[i]) - 8, 34) + 'px';
+    }
+    function hide() {
+      sel = -1;
+      tip.hidden = true;
+      cursor.setAttribute('visibility', 'hidden');
+      host.querySelectorAll('.bar').forEach(function (b) { b.classList.remove('dim'); });
+    }
+    function idxAt(ev) {
+      var r = svg.getBoundingClientRect();
+      var i = Math.floor((ev.clientX - r.left - padL) / band);
+      return i >= 0 && i < days ? i : -1;
+    }
+    svg.addEventListener('pointermove', function (ev) { var i = idxAt(ev); if (i >= 0) show(i); else hide(); });
+    svg.addEventListener('pointerdown', function (ev) { var i = idxAt(ev); if (i >= 0) show(i); });
+    svg.addEventListener('pointerleave', function (ev) { if (ev.pointerType === 'mouse') hide(); });
+    svg.addEventListener('blur', hide);
+    svg.addEventListener('keydown', function (ev) {
+      var last = todayIdx >= 0 ? todayIdx : days - 1;
+      if (ev.key === 'ArrowRight') { show(sel < 0 ? 0 : Math.min(last, sel + 1)); ev.preventDefault(); }
+      else if (ev.key === 'ArrowLeft') { show(sel < 0 ? last : Math.max(0, sel - 1)); ev.preventDefault(); }
+      else if (ev.key === 'Escape') hide();
+    });
+
+    // Table twin of the chart.
+    var rows = '';
+    for (var k = days - 1; k >= 0; k--) {
+      if (totals[k] > 0) {
+        rows += '<tr><td>' + esc(dfDay.format(new Date(state.month.getFullYear(), state.month.getMonth(), k + 1))) + '</td><td class="num">' + counts[k] +
+          '</td><td class="num">' + esc(money(totals[k], cur)) + '</td></tr>';
+      }
+    }
+    $('#dailyTable').innerHTML = rows
+      ? '<details class="table-view"><summary>Show as a table</summary><table><thead><tr><th>Day</th><th class="num">Transactions</th><th class="num">Spent</th></tr></thead><tbody>' + rows + '</tbody></table></details>'
+      : '<p class="empty" style="padding:8px 0 0">No spending recorded this month yet.</p>';
+  }
+
+  function renderCats(mt, cur) {
+    var map = {};
+    mt.forEach(function (t) {
+      if (!P.countsAsSpending(t) || t.currency !== cur) return;
+      var c = t.category || 'Other';
+      map[c] = map[c] || { name: c, total: 0, n: 0 };
+      map[c].total += t.amount;
+      map[c].n++;
+    });
+    var rows = Object.keys(map).map(function (k) { return map[k]; })
+      .filter(function (e) { return Math.abs(e.total) >= 0.005; })
+      .sort(function (a, b) { return b.total - a.total; });
+    var sum = rows.reduce(function (s, e) { return s + Math.max(0, e.total); }, 0);
+    var max = rows.length ? Math.max(rows[0].total, 0) : 0;
+    $('#cats').innerHTML = rows.length ? rows.map(function (e) {
+      var ratio = max > 0 ? Math.max(0, e.total) / max : 0;
+      var pct = sum > 0 ? Math.round(Math.max(0, e.total) / sum * 100) : 0;
+      return '<button class="cat' + (state.cat === e.name ? ' on' : '') + '" data-cat="' + esc(e.name) + '" aria-pressed="' + (state.cat === e.name) + '" aria-label="' +
+        esc(e.name + ': ' + money(e.total, cur) + ', ' + pct + '% of spending, ' + e.n + ' transactions. Show them') + '">' +
+        '<span class="cat-name">' + (ICONS[e.name] || '🏷️') + ' ' + esc(e.name) + '</span>' +
+        '<span class="cat-track"><span class="cat-bar" style="width:calc((100% - 7.2em) * ' + ratio.toFixed(4) + ')"></span>' +
+        '<span class="cat-val">' + esc(money(e.total, cur)) + ' <span class="cat-pct">' + pct + '%</span></span></span></button>';
+    }).join('') : '<p class="empty">Categories appear once spending comes in.</p>';
+  }
+
+  function txMatches(t, q) {
+    return P.fold([t.merchant, t.category, t.card, t.note, t.raw, money(Math.abs(t.amount), t.currency)].join(' ')).indexOf(q) >= 0;
+  }
+
+  function renderList(mt, cur) {
+    var review = mt.filter(function (t) { return t.status === 'review'; }).length;
+    var ign = state.data.ignored.filter(function (x) { return inMonth(x._d, state.month); });
+    $('#listHead').innerHTML =
+      '<div class="seg" role="tablist" aria-label="Show">' +
+      seg('all', 'All') + seg('review', 'To review' + (review ? ' (' + review + ')' : '')) + seg('ignored', 'Ignored' + (ign.length ? ' (' + ign.length + ')' : '')) +
+      '</div><input class="search" id="q" type="search" placeholder="Search" aria-label="Search transactions" value="' + esc(state.q) + '">';
+    renderListBody(mt, cur, ign);
+  }
+
+  function renderListBody(mt, cur, ign) {
+    if (!ign) ign = state.data.ignored.filter(function (x) { return inMonth(x._d, state.month); });
+    $('#chipRow').innerHTML = state.cat && state.view !== 'ignored'
+      ? '<button class="chip" data-act="clear-cat" aria-label="Stop filtering by ' + esc(state.cat) + '"><span>Category:</span> ' + esc(state.cat) + ' ✕</button>' : '';
+    var q = P.fold(state.q.trim());
+    var list = $('#list');
+
+    if (state.view === 'ignored') {
+      var items = q ? ign.filter(function (x) { return P.fold(x.raw + ' ' + x.reason + ' ' + x.source).indexOf(q) >= 0; }) : ign;
+      list.innerHTML = items.length ? items.map(function (x, i) {
+        return '<div class="row muted" style="grid-template-columns:1fr auto">' +
+          '<div class="main"><div class="meta">' + esc((REASON_LABEL[x.reason] || x.reason) + ' · ' + x.source.replace(/^notification:?/, '') + ' · ' + (x._d ? dfDay.format(x._d) + ' ' + dfTime.format(x._d) : '')) + '</div>' +
+          '<div class="raw">' + esc(x.raw) + '</div></div>' +
+          '<button class="btn" data-act="promote" data-i="' + state.data.ignored.indexOf(x) + '" style="padding:7px 12px">Add</button></div>';
+      }).join('') : '<p class="empty">Notifications that were not transactions (codes, promos, balances) show up here so you can check nothing was missed.</p>';
+      return;
+    }
+
+    var tx = mt.filter(function (t) {
+      return (state.view !== 'review' || t.status === 'review') && (!state.cat || t.category === state.cat) && (!q || txMatches(t, q));
+    });
+    if (!tx.length) {
+      list.innerHTML = '<p class="empty">' + (state.view === 'review' ? 'Nothing to review. Each transaction was read with confidence.' :
+        q || state.cat ? 'No matching transactions.' : 'No transactions this month yet. They appear here as notifications come in.') + '</p>';
+      return;
+    }
+    var html = '';
+    var current = '';
+    var dayTotals = {};
+    tx.forEach(function (t) { var k = dayKey(t._d); if (P.countsAsSpending(t) && t.currency === cur) dayTotals[k] = (dayTotals[k] || 0) + t.amount; });
+    tx.forEach(function (t) {
+      var k = dayKey(t._d);
+      if (k !== current) {
+        current = k;
+        html += '<div class="day"><span>' + esc(dayLabel(t._d)) + '</span><span>' + (dayTotals[k] ? esc(money(dayTotals[k], cur)) : '') + '</span></div>';
+      }
+      html += rowHtml(t);
+    });
+    list.innerHTML = html;
+  }
+  function seg(v, label) {
+    return '<button role="tab" data-view="' + v + '" aria-selected="' + (state.view === v) + '">' + esc(label) + '</button>';
+  }
+  function rowHtml(t) {
+    var counts = P.countsAsSpending(t);
+    var cls = 'row' + (counts ? '' : ' muted') + (t.status === 'duplicate' ? ' dup' : '');
+    var badges = '';
+    if (t.status === 'review') badges += '<span class="badge warn">⚠ Check</span>';
+    if (t.status === 'duplicate') badges += '<span class="badge">Duplicate?</span>';
+    if (t.status === 'excluded') badges += '<span class="badge">Not counted</span>';
+    var meta = [t.category, t.card, dfTime.format(t._d)].filter(Boolean).join(' · ');
+    var sign = t.amount < 0 ? '+' : '';
+    var name = t.merchant || { transfer: 'Transfer', income: 'Income', cash: 'Cash withdrawal', fee: 'Bank fee' }[t.type] || 'Unknown merchant';
+    var note = t.type !== 'purchase' && t.merchant ? TYPE_LABEL[t.type] : '';
+    return '<button class="' + cls + '" data-id="' + esc(t.id) + '">' +
+      '<span class="ico" aria-hidden="true">' + (ICONS[t.category] || '🏷️') + '</span>' +
+      '<span class="main"><span class="name" style="display:block">' + esc(name) + badges + '</span>' +
+      '<span class="meta" style="display:block">' + esc(meta) + '</span></span>' +
+      '<span class="amt"><span>' + sign + esc(money(Math.abs(t.amount), t.currency)) + '</span>' + (note ? '<small>' + esc(note) + '</small>' : '') + '</span></button>';
+  }
+
+  function renderFoot() {
+    var parts = [];
+    if (live()) {
+      parts.push(state.lastSync ? 'Synced ' + ago(state.lastSync) : 'Not synced yet');
+      if (state.data.sheetUrl) parts.push('<a href="' + esc(state.data.sheetUrl) + '" target="_blank" rel="noopener">Open the sheet</a>');
+    }
+    parts.push('v' + VERSION);
+    $('#foot').innerHTML = parts.map(function (p) { return p.charAt(0) === '<' ? p : esc(p); }).join(' · ');
+  }
+
+  /* ------------------------------------------------------------ sheets (dialogs) */
+
+  var dialog = $('#sheet');
+  var sheetBody = $('#sheetBody');
+  function openSheet(html, init) {
+    sheetBody.innerHTML = html;
+    if (!dialog.open) dialog.showModal();
+    sheetBody.scrollTop = 0;
+    if (init) init(sheetBody);
+  }
+  function closeSheet() { if (dialog.open) dialog.close(); }
+  dialog.addEventListener('click', function (ev) { if (ev.target === dialog) closeSheet(); });
+
+  function allCategories() {
+    var names = P.CATEGORIES.map(function (c) { return c.name; });
+    state.data.rules.forEach(function (r) { if (names.indexOf(r.category) < 0) names.push(r.category); });
+    state.data.transactions.forEach(function (t) { if (t.category && names.indexOf(t.category) < 0) names.push(t.category); });
+    return names;
+  }
+  function options(list, selected, labels) {
+    return list.map(function (v) {
+      return '<option value="' + esc(v) + '"' + (v === selected ? ' selected' : '') + '>' + esc(labels ? labels[v] || v : v) + '</option>';
+    }).join('');
+  }
+  function currencyOptions(selected) {
+    var list = CURRENCIES.slice();
+    if (selected && list.indexOf(selected) < 0) list.unshift(selected);
+    return options(list, selected);
+  }
+
+  function openEdit(t) {
+    var cats = allCategories();
+    if (cats.indexOf(t.category) < 0) cats.unshift(t.category);
+    var counted = t.status !== 'excluded' && t.status !== 'duplicate';
+    openSheet(
+      '<h2 id="sheetTitle">Edit transaction</h2>' +
+      (t.status === 'review' ? '<p class="hint" style="margin:-6px 0 14px">⚠ The notification was hard to read. Check the details, then save.</p>' : '') +
+      (t.status === 'duplicate' ? '<p class="hint" style="margin:-6px 0 14px">' + esc(t.note || 'This looks like a duplicate') + '. It is not counted.</p>' : '') +
+      '<label class="field"><span>Merchant</span><input id="fMerchant" value="' + esc(t.merchant) + '" autocomplete="off"></label>' +
+      '<div class="two"><label class="field"><span>Amount</span><input id="fAmount" type="number" inputmode="decimal" step="0.01" min="0" value="' + Math.abs(t.amount).toFixed(2) + '"></label>' +
+      '<label class="field"><span>Currency</span><select id="fCurrency">' + currencyOptions(t.currency) + '</select></label></div>' +
+      '<div class="two"><label class="field"><span>Category</span><select id="fCategory">' + options(cats, t.category) + '<option value="__new">New category…</option></select></label>' +
+      '<label class="field"><span>Type</span><select id="fType">' + options(P.TYPES, t.type, TYPE_LABEL) + '</select></label></div>' +
+      '<label class="field"><span>Date</span><input id="fDate" type="datetime-local" value="' + toLocalInput(t._d) + '"></label>' +
+      '<label class="field"><span>Note</span><input id="fNote" value="' + esc(t.note) + '"></label>' +
+      '<label class="check"><input type="checkbox" id="fCount"' + (counted ? ' checked' : '') + '><span>Count it in my spending</span></label>' +
+      '<label class="check"><input type="checkbox" id="fRule"><span id="fRuleLabel"></span></label>' +
+      (t.raw ? '<p class="hint" style="margin:0 0 14px">Original: <span class="mono">' + esc(t.raw) + '</span></p>' : '') +
+      '<div class="btns"><button class="btn danger" data-sheet="delete">Delete</button><span class="spacer"></span>' +
+      '<button class="btn" data-sheet="cancel">Cancel</button><button class="btn primary" data-sheet="save">Save</button></div>',
+      function (root) {
+        var cat = $('#fCategory', root);
+        var ruleLabel = function () {
+          var m = $('#fMerchant', root).value.trim();
+          $('#fRuleLabel', root).textContent = m ? 'Always put “' + m + '” in ' + (cat.value === '__new' ? 'this category' : cat.value) : 'Always use this category for this merchant';
+        };
+        cat.addEventListener('change', function () {
+          if (cat.value === '__new') {
+            var name = (prompt('Name of the new category') || '').trim();
+            if (name) { var o = document.createElement('option'); o.value = name; o.textContent = name; cat.insertBefore(o, cat.lastElementChild); cat.value = name; }
+            else cat.value = t.category;
+          }
+          ruleLabel();
+        });
+        $('#fMerchant', root).addEventListener('input', ruleLabel);
+        ruleLabel();
+        root.onclick = function (ev) {
+          var act = ev.target.closest('[data-sheet]');
+          if (!act) return;
+          ev.preventDefault();
+          if (act.dataset.sheet === 'cancel') closeSheet();
+          if (act.dataset.sheet === 'delete') {
+            if (!confirm('Delete this transaction?')) return;
+            closeSheet();
+            mutate(function () {
+              state.data.transactions = state.data.transactions.filter(function (x) { return x.id !== t.id; });
+            }, 'delete', { id: t.id }, function () { toast('Deleted'); });
+          }
+          if (act.dataset.sheet === 'save') {
+            var amount = parseFloat($('#fAmount', root).value);
+            if (!(amount > 0)) { toast('Enter an amount'); return; }
+            var type = $('#fType', root).value;
+            var d = new Date($('#fDate', root).value);
+            var fields = {
+              merchant: $('#fMerchant', root).value.trim(), amount: P.signedAmount(amount, type), currency: $('#fCurrency', root).value,
+              category: cat.value, type: type, note: $('#fNote', root).value.trim(),
+              date: isNaN(d) ? t.date : d.toISOString(),
+              status: $('#fCount', root).checked ? 'ok' : (t.status === 'duplicate' ? 'duplicate' : 'excluded')
+            };
+            var makeRule = $('#fRule', root).checked && fields.merchant;
+            closeSheet();
+            mutate(function () {
+              Object.assign(t, fields);
+              hydrate(t);
+              state.data.transactions.sort(function (a, b) { return b._d - a._d; });
+              if (makeRule) applyRuleLocally(fields.merchant, fields.category);
+            }, 'update', { id: t.id, fields: fields }, function (res) {
+              replaceTx(res.tx);
+              if (makeRule) {
+                return api('rule', { pattern: fields.merchant, category: fields.category, apply: true }).then(function (r) {
+                  state.data.rules = r.rules;
+                  toast(r.updated > 1 ? 'Saved. ' + r.updated + ' transactions moved to ' + fields.category : 'Saved');
+                  return sync(true);
+                });
+              }
+              toast('Saved');
+            });
+          }
+        };
+      });
+  }
+  function applyRuleLocally(pattern, category) {
+    state.data.rules = [{ pattern: pattern, category: category }].concat(state.data.rules.filter(function (r) { return P.fold(r.pattern) !== P.fold(pattern); }));
+    var p = P.fold(pattern);
+    state.data.transactions.forEach(function (x) {
+      if ((x.type === 'purchase' || x.type === 'refund') && P.matchRule(P.fold(x.merchant), p)) x.category = category;
+    });
+  }
+
+  function openAdd(prefill) {
+    var cur = mainCurrency();
+    var mode = 'paste';
+    openSheet(
+      '<h2 id="sheetTitle">Add a transaction</h2>' +
+      '<div class="seg" role="tablist" style="margin-bottom:14px"><button role="tab" data-mode="paste" aria-selected="true">Paste a notification</button><button role="tab" data-mode="manual" aria-selected="false">Type it in</button></div>' +
+      '<div id="pastePane">' +
+      '<label class="field"><span>Notification or SMS text</span><textarea id="fText" placeholder="Achat de 54,21 $ chez IGA effectué avec votre carte…">' + esc(prefill || '') + '</textarea></label>' +
+      '<div class="preview" id="fPreview" aria-live="polite"></div>' +
+      '<div class="btns"><button class="btn" data-sheet="edit">Edit first</button><span class="spacer"></span><button class="btn" data-sheet="cancel">Cancel</button><button class="btn primary" data-sheet="save-paste" id="fSavePaste">Save</button></div>' +
+      '</div>' +
+      '<div id="manualPane" hidden>' +
+      '<label class="field"><span>Merchant</span><input id="mMerchant" autocomplete="off"></label>' +
+      '<div class="two"><label class="field"><span>Amount</span><input id="mAmount" type="number" inputmode="decimal" step="0.01" min="0"></label>' +
+      '<label class="field"><span>Currency</span><select id="mCurrency">' + currencyOptions(cur) + '</select></label></div>' +
+      '<div class="two"><label class="field"><span>Category</span><select id="mCategory"><option value="">Automatic</option>' + options(allCategories(), '') + '</select></label>' +
+      '<label class="field"><span>Type</span><select id="mType">' + options(P.TYPES, 'purchase', TYPE_LABEL) + '</select></label></div>' +
+      '<label class="field"><span>Date</span><input id="mDate" type="datetime-local" value="' + toLocalInput(new Date()) + '"></label>' +
+      '<label class="field"><span>Card (optional)</span><input id="mCard" autocomplete="off"></label>' +
+      '<label class="field"><span>Note (optional)</span><input id="mNote"></label>' +
+      '<div class="btns"><span class="spacer"></span><button class="btn" data-sheet="cancel">Cancel</button><button class="btn primary" data-sheet="save-manual">Save</button></div>' +
+      '</div>',
+      function (root) {
+        var text = $('#fText', root);
+        var last = null;
+        function preview() {
+          var v = text.value.trim();
+          var box = $('#fPreview', root);
+          if (!v) { box.innerHTML = '<span class="sub">The fields it finds appear here.</span>'; $('#fSavePaste', root).disabled = true; last = null; return; }
+          var r = P.parse(v, { defaultCurrency: cur, rules: state.data.rules });
+          last = r;
+          if (r.kind !== 'transaction') {
+            box.innerHTML = 'Not read as a transaction: <b>' + esc(REASON_LABEL[r.reason] || r.reason) + '</b>. Use “Edit first” to enter it anyway.';
+          } else {
+            box.innerHTML = '<b>' + esc(money(r.amount, r.currency)) + '</b> · ' + esc(r.merchant || 'merchant not found') + ' · ' + esc(r.category) +
+              (r.card ? ' · ' + esc(r.card) : '') + (r.type !== 'purchase' ? ' · ' + esc(TYPE_LABEL[r.type]) : '') +
+              (r.status === 'review' ? '<div class="hint" style="margin:6px 0 0">⚠ Not fully sure. You can fix it after saving.</div>' : '');
+          }
+          $('#fSavePaste', root).disabled = r.kind !== 'transaction';
+        }
+        text.addEventListener('input', preview);
+        preview();
+        function setMode(m) {
+          mode = m;
+          root.querySelectorAll('[data-mode]').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.mode === m)); });
+          $('#pastePane', root).hidden = m !== 'paste';
+          $('#manualPane', root).hidden = m !== 'manual';
+        }
+        root.onclick = function (ev) {
+          var mb = ev.target.closest('[data-mode]');
+          if (mb) { setMode(mb.dataset.mode); return; }
+          var act = ev.target.closest('[data-sheet]');
+          if (!act) return;
+          ev.preventDefault();
+          var a = act.dataset.sheet;
+          if (a === 'cancel') closeSheet();
+          if (a === 'edit') {
+            if (last && last.kind === 'transaction') {
+              $('#mMerchant', root).value = last.merchant;
+              $('#mAmount', root).value = last.amount.toFixed(2);
+              $('#mCurrency', root).value = last.currency;
+              $('#mType', root).value = last.type;
+              $('#mCard', root).value = last.card;
+            }
+            setMode('manual');
+          }
+          if (a === 'save-paste' && last && last.kind === 'transaction') {
+            addTx({ amount: last.amount, currency: last.currency, merchant: last.merchant, category: last.category, type: last.type,
+              card: last.card, status: last.status, source: 'paste', raw: text.value.trim(), date: new Date().toISOString() });
+          }
+          if (a === 'save-manual') {
+            var amount = parseFloat($('#mAmount', root).value);
+            if (!(amount > 0)) { toast('Enter an amount'); return; }
+            var d = new Date($('#mDate', root).value);
+            addTx({ amount: amount, currency: $('#mCurrency', root).value, merchant: $('#mMerchant', root).value.trim(),
+              category: $('#mCategory', root).value, type: $('#mType', root).value, card: $('#mCard', root).value.trim(),
+              note: $('#mNote', root).value.trim(), source: 'manual', raw: text.value.trim(), date: (isNaN(d) ? new Date() : d).toISOString() });
+          }
+        };
+        if (!prefill) setTimeout(function () { text.focus(); }, 50);
+      });
+  }
+
+  function addTx(f) {
+    var r = P.fromFields(f, { defaultCurrency: mainCurrency(), rules: state.data.rules });
+    var temp = {
+      id: 'local-' + Date.now(), date: f.date, amount: P.signedAmount(r.amount, r.type), currency: r.currency, merchant: r.merchant,
+      category: r.category, type: r.type, card: r.card, status: f.status === 'review' ? 'review' : 'ok', note: f.note || '',
+      source: f.source, raw: f.raw || ''
+    };
+    closeSheet();
+    var d = new Date(f.date);
+    if (!sameMonth(d, state.month)) state.month = startOfMonth(d);
+    mutate(function () { replaceTx(temp); }, 'add', { tx: Object.assign({}, f, { status: temp.status }) }, function (res) {
+      state.data.transactions = state.data.transactions.filter(function (x) { return x.id !== temp.id; });
+      replaceTx(res.tx);
+      toast('Added');
+    });
+  }
+
+  function openSettings() {
+    var s = state.settings;
+    openSheet(
+      '<h2 id="sheetTitle">Settings</h2>' +
+      '<label class="field"><span>Web app URL</span><input id="sUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec" value="' + esc(s.url) + '"></label>' +
+      '<label class="field"><span>Token</span><input id="sToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc(s.token) + '"></label>' +
+      '<p class="hint">Both come from the Apps Script setup. They stay on this device.</p>' +
+      '<div class="btns" style="margin-bottom:14px"><button class="btn" data-sheet="test">Test connection</button><span class="sub" id="sTest" aria-live="polite"></span></div>' +
+      '<div class="two"><label class="field"><span>Currency</span><select id="sCurrency">' + currencyOptions(s.currency) + '</select></label>' +
+      '<label class="field"><span>Monthly budget</span><input id="sBudget" type="number" inputmode="decimal" min="0" step="10" placeholder="None" value="' + (s.budget || '') + '"></label></div>' +
+      '<p class="hint">The currency is also what a plain “$” in a notification means.</p>' +
+      '<label class="check"><input type="checkbox" id="sDemo"' + (s.demo ? ' checked' : '') + '><span>Show sample data instead of my sheet</span></label>' +
+      '<div class="btns" style="margin:4px 0 16px"><button class="btn" data-sheet="link"' + (connected() ? '' : ' disabled') + '>Copy setup link</button>' +
+      '<a href="' + GUIDE_URL + '" target="_blank" rel="noopener" style="font-size:14px">Setup guide</a></div>' +
+      '<p class="hint">The setup link fills in these settings in another browser or in the app added to your Home Screen (it has its own storage). It contains your token: keep it private.</p>' +
+      '<div class="btns"><span class="spacer"></span><button class="btn" data-sheet="cancel">Cancel</button><button class="btn primary" data-sheet="save">Save</button></div>',
+      function (root) {
+        root.onclick = function (ev) {
+          var act = ev.target.closest('[data-sheet]');
+          if (!act) return;
+          ev.preventDefault();
+          var a = act.dataset.sheet;
+          var url = $('#sUrl', root).value.trim();
+          var token = $('#sToken', root).value.trim();
+          if (a === 'cancel') closeSheet();
+          if (a === 'test') {
+            var out = $('#sTest', root);
+            if (!validUrl(url) || !token) { out.textContent = 'Enter the web app URL (https://…) and the token first.'; return; }
+            out.textContent = 'Testing…';
+            var saved = state.settings;
+            state.settings = Object.assign({}, saved, { url: url, token: token });
+            api('ping').then(function (r) { out.textContent = '✓ Connected (sheet currency ' + r.currency + ')'; })
+              .catch(function (err) { out.textContent = '✗ ' + err.message; })
+              .finally(function () { state.settings = saved; });
+          }
+          if (a === 'link') {
+            var link = setupLink();
+            (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { toast('Setup link copied'); },
+              function () { prompt('Copy this link', link); });
+          }
+          if (a === 'save') {
+            if (url && !validUrl(url)) { toast('The URL should start with https://'); return; }
+            var prev = state.settings;
+            var next = {
+              url: url, token: token, currency: $('#sCurrency', root).value,
+              budget: Math.max(0, parseFloat($('#sBudget', root).value) || 0), demo: $('#sDemo', root).checked
+            };
+            var sourceChanged = prev.demo !== next.demo || prev.url !== next.url || prev.token !== next.token;
+            state.settings = next;
+            saveSettings();
+            closeSheet();
+            if (sourceChanged) { state.error = ''; loadLocal(); }
+            render();
+            if (live()) {
+              var p = sourceChanged ? sync() : Promise.resolve();
+              p.then(function () {
+                if (next.currency !== state.data.currency) {
+                  return api('settings', { currency: next.currency }).then(function (r) { state.data.currency = r.currency; persist(); });
+                }
+              }).catch(function (err) { toast(err.message); });
+            }
+            toast('Settings saved');
+          }
+        };
+      });
+  }
+
+  /* ------------------------------------------------------------ events */
+
+  document.addEventListener('click', function (ev) {
+    var el = ev.target.closest('[data-act],[data-view],[data-cat],[data-id]');
+    if (!el || dialog.contains(el)) return;
+    if (el.dataset.view) { state.view = el.dataset.view; render(); return; }
+    if (el.dataset.cat !== undefined && el.classList.contains('cat')) {
+      state.cat = state.cat === el.dataset.cat ? '' : el.dataset.cat;
+      if (state.view === 'ignored') state.view = 'all';
+      render();
+      if (state.cat) $('#list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (el.dataset.id) {
+      var t = state.data.transactions.find(function (x) { return x.id === el.dataset.id; });
+      if (t) openEdit(t);
+      return;
+    }
+    var act = el.dataset.act;
+    if (act === 'settings') openSettings();
+    if (act === 'demo') { state.settings.demo = true; saveSettings(); loadLocal(); render(); }
+    if (act === 'leave-demo') { state.settings.demo = false; saveSettings(); loadLocal(); render(); sync(); }
+    if (act === 'sync') sync();
+    if (act === 'clear-cat') { state.cat = ''; render(); }
+    if (act === 'promote') { var x = state.data.ignored[+el.dataset.i]; if (x) openAdd(x.raw); }
+  });
+  document.addEventListener('input', function (ev) {
+    if (ev.target.id === 'q') {
+      state.q = ev.target.value;
+      renderListBody(monthTx(state.month), mainCurrency());
+    }
+  });
+  $('#prevMonth').addEventListener('click', function () { state.month = addMonths(state.month, -1); render(); });
+  $('#nextMonth').addEventListener('click', function () { state.month = addMonths(state.month, 1); render(); });
+  $('#syncBtn').addEventListener('click', function () { sync(); });
+  $('#settingsBtn').addEventListener('click', openSettings);
+  $('#addBtn').addEventListener('click', function () { openAdd(''); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && live() && Date.now() - state.lastSync > 60000) sync(true);
+  });
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { if ($('#daily')) renderDaily(monthTx(state.month), mainCurrency()); }, 150);
+  });
+
+  var toastTimer;
+  function toast(msg) {
+    var el = $('#toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3200);
+  }
+
+  /* ------------------------------------------------------------ sample data */
+
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function demoAmount(a, cur) {
+    if (cur === 'EUR') return a.toFixed(2).replace('.', ',') + ' €';
+    if (cur === 'GBP') return '£' + a.toFixed(2);
+    return '$' + a.toFixed(2);
+  }
+  // Sample notifications in several real-world formats, read by the same parser as the backend.
+  function makeDemo(cur) {
+    var R = rng(20261031);
+    var now = new Date();
+    var start = addMonths(startOfMonth(now), -1);
+    var tx = [];
+    var ignored = [];
+    var opts = { defaultCurrency: cur };
+    var shops = [
+      ['WHOLE FOODS', 18, 95, 5], ['METRO #123', 12, 80, 4], ['STARBUCKS', 4, 9, 7], ['TIM HORTONS', 3, 8, 4],
+      ['UBER *TRIP', 9, 28, 3], ['SHELL', 35, 70, 2], ['AMAZON.COM', 15, 120, 2], ['PHARMACY PLUS', 8, 40, 1],
+      ['CINEPLEX', 14, 32, 1], ['LA BANQUISE RESTAURANT', 22, 60, 2], ['IKEA', 25, 180, 0.4], ['STM', 3.75, 3.75, 2]
+    ];
+    var weight = shops.reduce(function (s, x) { return s + x[3]; }, 0);
+    function pick() {
+      var r = R() * weight;
+      for (var i = 0; i < shops.length; i++) { r -= shops[i][3]; if (r <= 0) return shops[i]; }
+      return shops[0];
+    }
+    var formats = [
+      function (m, a) { return { app: 'Bank', title: 'Your Bank', body: 'A purchase of ' + demoAmount(a, cur) + ' was made at ' + m + ' with your Visa card ending in 4821' }; },
+      function (m, a) { return { app: 'Wallet', title: 'Visa ••4821', subtitle: m, body: demoAmount(a, cur) }; },
+      function (m, a) { return { app: 'Card', title: 'Mastercard', body: 'Achat de ' + a.toFixed(2).replace('.', ',') + ' ' + (cur === 'EUR' ? '€' : cur === 'GBP' ? '£' : '$') + ' chez ' + m + ' avec votre carte se terminant par 0937' }; },
+      function (m, a) { return { app: 'Card', title: 'Card alert', body: 'You spent ' + demoAmount(a, cur) + ' at ' + m }; }
+    ];
+    function push(n, d, source) {
+      var r = P.parse(n, opts);
+      var raw = [n.title, n.subtitle, n.body].filter(Boolean).join(' | ');
+      if (r.kind !== 'transaction') { ignored.push({ captured_at: d.toISOString(), source: source || 'notification:' + n.app, reason: r.reason, raw: raw }); return null; }
+      var t = { id: 'demo' + tx.length, date: d.toISOString(), amount: P.signedAmount(r.amount, r.type), currency: r.currency, merchant: r.merchant,
+        category: r.category, type: r.type, card: r.card, status: r.status, note: '', source: source || 'notification:' + n.app, raw: raw };
+      tx.push(t);
+      return t;
+    }
+    function at(day, h, mnt) { return new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, mnt); }
+    for (var day = new Date(start); day <= now; day = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1)) {
+      var n = Math.floor(R() * 3.2);
+      for (var i = 0; i < n; i++) {
+        var s = pick();
+        var amount = Math.round((s[1] + R() * (s[2] - s[1])) * 100) / 100;
+        var d = at(day, 8 + Math.floor(R() * 13), Math.floor(R() * 60));
+        if (d > now) continue;
+        push(formats[Math.floor(R() * formats.length)](s[0], amount), d);
+      }
+      var dom = day.getDate();
+      if (dom === 3) push({ app: 'Bank', body: 'Netflix: ' + demoAmount(16.99, cur) + ' charged to your card ending in 4821' }, at(day, 6, 2));
+      if (dom === 12) push({ app: 'Bank', body: 'Purchase of ' + demoAmount(11.99, cur) + ' at SPOTIFY' }, at(day, 7, 15));
+      if (dom === 15) push({ app: 'Bank', body: 'A pre-authorized debit of ' + demoAmount(85, cur) + ' to CITY POWER & LIGHT was processed' }, at(day, 5, 40));
+      if (dom === 20) push({ app: 'Bank', body: 'Bill payment of ' + demoAmount(65, cur) + ' to MOBILE PHONE CO was successful' }, at(day, 9, 5));
+    }
+    // A few of the cases the parser and backend handle.
+    var y = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 1));
+    push({ app: 'Bank', body: 'Refund of ' + demoAmount(24.99, cur) + ' from AMAZON.COM has been credited to your card ending in 4821.' }, at(y, 10, 12));
+    push({ app: 'Bank', body: "We've received your payment of " + demoAmount(500, cur) + '. Thank you!' }, at(y, 8, 0));
+    push({ app: 'Bank', body: 'A purchase of ' + demoAmount(12.4, cur) + ' was approved on your card ending 4821' }, at(y, 13, 30));
+    var dupDay = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 2));
+    tx.push({ id: 'demo-ap', date: at(dupDay, 12, 4).toISOString(), amount: 8.45, currency: cur, merchant: 'Starbucks', category: 'Dining', type: 'purchase',
+      card: 'Visa', status: 'ok', note: '', source: 'applepay', raw: 'Starbucks | ' + demoAmount(8.45, cur) + ' | Visa' });
+    var dup = push({ app: 'Bank', title: 'Your Bank', body: 'A purchase of ' + demoAmount(8.45, cur) + ' was made at STARBUCKS #0042 with your Visa card ending in 4821' }, at(dupDay, 12, 5));
+    if (dup) { dup.status = 'duplicate'; dup.note = 'Possible duplicate of Starbucks (applepay)'; }
+    if (cur !== 'USD') {
+      var trip = new Date(start.getFullYear(), start.getMonth(), 18);
+      push({ app: 'Bank', body: 'Purchase of US$48.00 at HARBOUR VIEW HOTEL' }, at(trip, 21, 10));
+      push({ app: 'Bank', body: 'Purchase of US$23.50 at CONCH SHACK' }, at(trip, 13, 40));
+    }
+    push({ app: 'Bank', body: 'Your verification code is 482913. Do not share it.' }, at(y, 18, 2));
+    push({ app: 'Bank', body: 'Earn ' + demoAmount(50, cur) + ' when you refer a friend – limited time offer!' }, at(y, 11, 0));
+    push({ app: 'Bank', body: 'Your balance is ' + demoAmount(2318.4, cur) }, at(y, 7, 30));
+    push({ app: 'Bank', body: 'Your transaction of ' + demoAmount(64, cur) + ' at ELECTRO STORE was declined' }, at(dupDay, 16, 45));
+    ignored.sort(function (a, b) { return b.captured_at < a.captured_at ? -1 : 1; });
+    return { transactions: tx, ignored: ignored, rules: [], currency: cur, sheetUrl: '' };
+  }
+
+  /* ------------------------------------------------------------ home-screen icon */
+
+  (function icon() {
+    try {
+      var c = document.createElement('canvas');
+      c.width = c.height = 180;
+      var g = c.getContext('2d');
+      var grad = g.createLinearGradient(0, 0, 180, 180);
+      grad.addColorStop(0, '#3987e5'); grad.addColorStop(1, '#1c5cab');
+      g.fillStyle = grad; g.fillRect(0, 0, 180, 180);
+      g.fillStyle = 'rgba(255,255,255,.95)';
+      [[42, 96, 34], [73, 70, 60], [104, 108, 22], [135, 52, 78]].forEach(function (b) {
+        var x = b[0], h = b[2], top = 140 - h, w = 22, r = 6;
+        g.beginPath(); g.moveTo(x, 140); g.lineTo(x, top + r); g.quadraticCurveTo(x, top, x + r, top); g.lineTo(x + w - r, top);
+        g.quadraticCurveTo(x + w, top, x + w, top + r); g.lineTo(x + w, 140); g.closePath(); g.fill();
+      });
+      var link = document.createElement('link');
+      link.rel = 'apple-touch-icon';
+      link.href = c.toDataURL('image/png');
+      document.head.appendChild(link);
+    } catch (e) { /* no canvas */ }
+  })();
+
+  /* ------------------------------------------------------------ start */
+
+  applySetupHash();
+  loadLocal();
+  render();
+  if (live()) sync(true);
+  window.__spend = { state: state, render: render, sync: sync }; // for debugging from the console
+})();
+</script>
+</body>
+</html>
