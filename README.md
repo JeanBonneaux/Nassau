@@ -9,6 +9,7 @@ Pages autonomes (un seul fichier chacune, données embarquées, rechargement en 
 | `eleuthera.html` | Carnet de séjour, semaine du 19 au 25 octobre |
 | `ciel.html` | Prédicteur de soleil pour Alabaster Bay (ensembles, modèles, satellite) |
 | `houlometre.html` | Houlomètre par accéléromètre |
+| `depenses.html` | Suivi des dépenses à partir des notifications bancaires (copie générée de `index.html` de la branche `claude/spending-tracker`, voir son `docs/SETUP.md`) |
 
 ## Ouvrir le cockpit
 
