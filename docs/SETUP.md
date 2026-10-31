@@ -83,8 +83,9 @@ You need a Google account, an iPhone on **iOS 27 or later**, and about 20 minute
 
 ## Privacy
 
-- Your transactions live in your Google Sheet. The dashboard also keeps a copy on the phone so it works offline.
-- The Shortcut only sends notifications from the apps you choose.
+- Your transactions live in your Google Sheet, which is private to your Google account. The dashboard also keeps a copy on the phone so it works offline.
+- The tool never sees your bank login. It only reads notification text, so even a leaked token can't move money: at worst someone could read or add rows.
+- The Shortcut only sends notifications from the apps you choose. One-time codes in ignored notifications are masked (`••••••`) before they are stored.
 - The link for the Shortcut and the setup link both contain your token. Anyone who has one can read and add rows, so keep them private. To revoke access, run `rotateToken` in Apps Script, then update the Shortcut and the dashboard.
 - This repository is public. Never commit your URL or token.
-- `htmlpreview.github.io` serves many people's pages from one website, and the dashboard stores your token in that site's browser storage. That's fine for trying it out. For daily use, host `index.html` on your own GitHub Pages.
+- `htmlpreview.github.io` serves many people's pages from one website, and the dashboard stores your token and its offline copy in that site's browser storage. If it can't reach GitHub directly, it also fetches the page through a third-party proxy (`api.codetabs.com`). That's fine for trying it with sample data. For daily use, host `index.html` on your own GitHub Pages.

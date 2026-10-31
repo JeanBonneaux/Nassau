@@ -183,6 +183,12 @@ test('fromFields: Apple Pay automation values', () => {
   assert.deepEqual([r.amount, r.status], [0, 'review']);
 });
 
+test('redactCodes hides one-time codes only', () => {
+  assert.equal(P.redactCodes('Your verification code is 482913'), 'Your verification code is ••••••');
+  assert.equal(P.redactCodes('Code de vérification : 0042'), 'Code de vérification : ••••••');
+  assert.equal(P.redactCodes('Purchase of $45.20 at SHELL ending in 1234'), 'Purchase of $45.20 at SHELL ending in 1234');
+});
+
 test('signedAmount and countsAsSpending', () => {
   assert.equal(P.signedAmount(10, 'purchase'), 10);
   assert.equal(P.signedAmount(-10, 'purchase'), 10);

@@ -172,7 +172,7 @@ function capture_(b) {
   }
 
   if (r.kind !== 'transaction') {
-    appendIgnored_(ss, { captured_at: new Date(), source: source, reason: r.reason, raw: raw });
+    appendIgnored_(ss, { captured_at: new Date(), source: source, reason: r.reason, raw: SpendParser.redactCodes(raw) });
     return { ok: true, status: 'ignored', reason: r.reason, message: 'Not a transaction (' + r.reason + ')' };
   }
 

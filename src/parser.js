@@ -467,6 +467,13 @@ var SpendParser = (function () {
     return type === 'refund' || type === 'income' ? -a : a;
   }
 
+  // Never keep one-time codes: "Your verification code is 482913" becomes "… is ••••••".
+  function redactCodes(s) {
+    var t = String(s == null ? '' : s);
+    if (!/\b(code|codes|otp|passcode|password|pin|verification|verify|one[- ]time|2fa|mot de passe|v[ée]rification|s[ée]curit[ée]|security)\b/i.test(t)) return t;
+    return t.replace(/\b\d{4,10}\b/g, '••••••');
+  }
+
   function countsAsSpending(tx) {
     return !!tx && SPENDING_TYPES[tx.type] === true && tx.status !== 'duplicate' && tx.status !== 'excluded';
   }
@@ -484,6 +491,7 @@ var SpendParser = (function () {
     toNumber: toNumber,
     signedAmount: signedAmount,
     countsAsSpending: countsAsSpending,
+    redactCodes: redactCodes,
     fold: fold,
     clean: clean
   };

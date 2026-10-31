@@ -1312,7 +1312,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
     function push(n, d, source) {
       var r = P.parse(n, opts);
       var raw = [n.title, n.subtitle, n.body].filter(Boolean).join(' | ');
-      if (r.kind !== 'transaction') { ignored.push({ captured_at: d.toISOString(), source: source || 'notification:' + n.app, reason: r.reason, raw: raw }); return null; }
+      if (r.kind !== 'transaction') { ignored.push({ captured_at: d.toISOString(), source: source || 'notification:' + n.app, reason: r.reason, raw: P.redactCodes(raw) }); return null; }
       var t = { id: 'demo' + tx.length, date: d.toISOString(), amount: P.signedAmount(r.amount, r.type), currency: r.currency, merchant: r.merchant,
         category: r.category, type: r.type, card: r.card, status: r.status, note: '', source: source || 'notification:' + n.app, raw: raw };
       tx.push(t);

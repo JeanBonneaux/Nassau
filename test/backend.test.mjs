@@ -48,6 +48,16 @@ test('a bank notification is parsed and stored', () => {
   assert.equal(row.raw, 'RBC | A purchase of $54.21 was made at METRO #123 with your RBC Visa card ending in 1234');
 });
 
+test('one-time codes are never stored', () => {
+  const { b, token } = fresh();
+  b.post({ token, app: 'TD', body: 'Your verification code is 482913. Do not share it.' });
+  b.post({ token, app: 'Desjardins', body: 'Votre code de sécurité est 7731' });
+  b.post({ token, app: 'TD', body: 'New sign-in to your account from iPhone' });
+  const raws = b.sheet('Ignored').objects().map((r) => r.raw);
+  assert.deepEqual(raws, ['Your verification code is ••••••. Do not share it.', 'Votre code de sécurité est ••••••', 'New sign-in to your account from iPhone']);
+  assert.ok(!JSON.stringify(b.get({ token }).ignored).includes('482913'));
+});
+
 test('non-transactions go to the Ignored tab', () => {
   const { b, token } = fresh();
   const r = b.post({ token, app: 'TD', title: 'TD', body: 'Your verification code is 482913' });
@@ -179,10 +189,10 @@ test('capture date: ISO close to now is kept, anything else becomes now', () => 
 test('the Ignored tab is trimmed', () => {
   const { b, token } = fresh();
   b.context.IGNORED_MAX = 3;
-  for (let i = 0; i < 6; i++) b.post({ token, body: `Your code is ${100000 + i}` });
+  for (let i = 0; i < 6; i++) b.post({ token, body: `Notice ${i}: your new statement is ready` });
   const rows = b.sheet('Ignored').objects();
   assert.equal(rows.length, 3);
-  assert.equal(rows[2].raw, 'Your code is 100005');
+  assert.equal(rows[2].raw, 'Notice 5: your new statement is ready');
 });
 
 test('apps-script/Spending.gs is up to date (run: node tools/build.mjs)', () => {
