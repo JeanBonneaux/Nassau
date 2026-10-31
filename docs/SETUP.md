@@ -22,7 +22,7 @@ You need a Google account, an iPhone on **iOS 27 or later**, and about 20 minute
    *Anyone* only means the URL works without a Google login, which the iPhone Shortcut needs. Nothing can be read or written without the token.
 
 ### 4. Connect the dashboard and send it to your phone
-10. Open [the dashboard](https://htmlpreview.github.io/?https://github.com/Jeanculess/Nassau/blob/claude/spending-tracker/index.html) and click **Connect my sheet**. Paste the **Web app URL** and the **token**, click **Test connection** (it should say ✓ Connected), choose your currency, then **Save**.
+10. Open [the dashboard](https://jeanculess.github.io/Nassau/depenses.html) and click **Connect my sheet**. Paste the **Web app URL** and the **token**, click **Test connection** (it should say ✓ Connected), choose your currency, then **Save**.
 11. Open ⚙ **Settings** again, click **Copy setup link**, and send that link to yourself (Messages, email, Notes…).
 
 ## Part 2, on the iPhone
@@ -88,4 +88,4 @@ You need a Google account, an iPhone on **iOS 27 or later**, and about 20 minute
 - The Shortcut only sends notifications from the apps you choose. One-time codes in ignored notifications are masked (`••••••`) before they are stored.
 - The link for the Shortcut and the setup link both contain your token. Anyone who has one can read and add rows, so keep them private. To revoke access, run `rotateToken` in Apps Script, then update the Shortcut and the dashboard.
 - This repository is public. Never commit your URL or token.
-- `htmlpreview.github.io` serves many people's pages from one website, and the dashboard stores your token and its offline copy in that site's browser storage. If it can't reach GitHub directly, it also fetches the page through a third-party proxy (`api.codetabs.com`). That's fine for trying it with sample data. For daily use, host `index.html` on your own GitHub Pages.
+- The dashboard is published on your own GitHub Pages site (`jeanculess.github.io/Nassau/depenses.html`, from the `page` branch). The page is public like the code, but it holds no data: your transactions come straight from your Google Sheet, and the token stays in your phone's browser storage for that site only. Avoid opening it through shared preview sites such as `htmlpreview.github.io`, where other pages share that storage.

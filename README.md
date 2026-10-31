@@ -22,7 +22,7 @@ Tracks card and bank spending without a bank API. Your phone forwards each bank 
 <img src="docs/img/paste-light.png" width="260" alt="Pasting a French bank notification shows the parsed amount, merchant, category and card">
 </p>
 
-- **Try it with sample data:** [open the dashboard](https://htmlpreview.github.io/?https://github.com/Jeanculess/Nassau/blob/claude/spending-tracker/index.html) and tap *Try it with sample data*.
+- **Try it with sample data:** [open the dashboard](https://jeanculess.github.io/Nassau/depenses.html) and tap *Try it with sample data*.
 - **Set it up:** [docs/SETUP.md](docs/SETUP.md). You need a Google account and an iPhone on iOS 27 or later, or an Android phone.
 
 ## Why this works on iPhone now
@@ -55,7 +55,7 @@ It understands `$ 1,234.56`, `1 234,56 $`, `1.234,56 €`, and the codes CAD/USD
 | `src/parser.js` | The parser, shared by the backend and the dashboard |
 | `src/backend.gs` | The backend (Google Apps Script web app) |
 | `src/dashboard.html` | Dashboard source |
-| `index.html` | Generated single-file dashboard |
+| `index.html` | Generated single-file dashboard (published as `depenses.html` on the `page` branch, served by GitHub Pages) |
 | `tools/build.mjs` | Regenerates `apps-script/Spending.gs` and `index.html` |
 | `tools/gas-mock.mjs`, `tools/dev-server.mjs` | Local stand-in for Apps Script, used by the tests and for development |
 | `test/` | Parser and backend tests (`node --test`), browser test (`test/e2e.mjs`) |
