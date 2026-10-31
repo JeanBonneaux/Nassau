@@ -60,6 +60,10 @@ To run it on a GPU in the cloud with a chat page of its own,
 `modal deploy modal_app.py` (with [Modal](https://modal.com) set up on your
 computer) prints the page's URL. It runs on an L4 that shuts down after five
 idle minutes, and the page has the same push presets and side-by-side view.
+Modal cuts web requests at 150 s and answers with a redirect to a result URL
+instead; the page follows it on its own, but `curl` against `/api/chat` needs
+`-L` (and no `-X POST`, which would keep POST on the redirect) for a message
+that wakes the GPU.
 
 The model (`Qwen/Qwen3.5-4B`, 9.3 GB) downloads on first use; point
 `QWEN_MODEL` at a local copy to skip that. It runs on a CUDA GPU, an Apple

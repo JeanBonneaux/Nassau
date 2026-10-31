@@ -4,3 +4,7 @@ models/
 *.safetensors
 results/*.pt
 .venv/
+
+# local only
+modal_spending.md
+.env.modal

@@ -6,12 +6,18 @@
 
 The model downloads once into a Modal Volume. The GPU shuts down after five
 idle minutes, and the next message wakes it (about a minute). QWEN_GPU picks
-the GPU (default L4; L40S or A100 also work).
+the GPU: a comma-separated list in order of preference, default "L4,A10"
+(Modal takes the first type it has capacity for; L4 is $0.80/h, A10 $1.10/h,
+and L4s were unobtainable for an hour on 31 Oct 2026). L40S or A100 also work.
 
 API: POST /api/chat with {"steered": [messages], "normal": [messages] or null,
 "recipe": "L14N8949+1", "max_new_tokens": 120}; send the header
 x-access-key when ACCESS_KEY is set. Each side keeps its own history, so send
-the conversation as each model saw it.
+the conversation as each model saw it. A reply that takes more than 150 s (the
+first message after a quiet spell, while the GPU boots and loads the model)
+comes back as a 303 redirect to a result URL: browsers follow it on their own;
+curl needs -L and no -X POST (-d already makes it a POST, and -X would keep
+POST on the redirect, which must be a GET).
 """
 
 import os
@@ -19,7 +25,7 @@ import re
 
 import modal
 
-GPU = os.environ.get("QWEN_GPU", "L4")
+GPU = [g.strip() for g in os.environ.get("QWEN_GPU", "L4,A10").split(",") if g.strip()]
 ACCESS_KEY = os.environ.get("ACCESS_KEY", "")
 RECIPE = re.compile(r"L(\d{1,2})N(\d{1,4})([+-](?:\d+\.?\d*|\.\d+))", re.I)
 
