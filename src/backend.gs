@@ -11,8 +11,9 @@
  *   2. Run setup() once (choose it in the toolbar, press Run, allow access). The log shows your token.
  *   3. Deploy > New deployment > Web app. Execute as: Me. Who has access: Anyone. Copy the URL.
  *
- * Optional: set ANTHROPIC_API_KEY in Project Settings > Script properties to have Claude read each
- * notification too (see the "Claude" section below). Without a key nothing leaves Google.
+ * Optional: set ANTHROPIC_API_KEY (or CLAUDE_ENDPOINT, your own reading service) in Project Settings >
+ * Script properties to have Claude read each notification too (see the "Claude" section below).
+ * Without either one nothing leaves Google.
  *
  * API (every call needs the token, in the JSON body or as ?token=...):
  *   POST {source, app, title, subtitle, body}       a notification to parse and store
@@ -21,7 +22,7 @@
  *   GET  ?action=list | ?action=ping
  */
 
-var VERSION = '0.2.0';
+var VERSION = '0.2.1';
 var TX_SHEET = 'Transactions';
 var IGNORED_SHEET = 'Ignored';
 var RULES_SHEET = 'Rules';
@@ -331,7 +332,10 @@ function list_() {
 
 function ping_() {
   var cfg = claudeConfig_();
-  return { ok: true, version: VERSION, parser: SpendParser.VERSION, currency: currency_(), claude: cfg ? cfg.mode + ' · ' + cfg.model : 'off' };
+  return {
+    ok: true, version: VERSION, parser: SpendParser.VERSION, currency: currency_(),
+    claude: cfg ? cfg.mode + ' · ' + (cfg.endpoint ? 'endpoint' : cfg.model) : 'off'
+  };
 }
 
 /* ------------------------------------------------------------------ storage helpers */
@@ -467,10 +471,13 @@ function findDuplicate_(rows, tx) {
 
 /* ------------------------------------------------------------------ Claude (optional second reader) */
 
-// Off until ANTHROPIC_API_KEY is set in Project Settings > Script properties. Other properties:
+// Off until one of these is set in Project Settings > Script properties:
+//   ANTHROPIC_API_KEY      the script calls the Anthropic API itself (UrlFetchApp; Apps Script cannot load the SDK)
+//   CLAUDE_ENDPOINT        your own reading service (for example on Modal) that holds the Anthropic key;
+//   CLAUDE_ENDPOINT_TOKEN  sent to it as "Authorization: Bearer ..." (contract: docs/reader-api.md)
+// The endpoint wins when both are set. Other properties:
 //   CLAUDE_MODE  = always (default: every notification) | review (only when the rules are unsure) | off
-//   CLAUDE_MODEL = claude-opus-5-5 (default); claude-haiku-5-5 costs far less
-// Calls go straight to the Anthropic API with UrlFetchApp (Apps Script cannot load the SDK).
+//   CLAUDE_MODEL = claude-opus-5-5 (default); claude-haiku-5-5 costs far less (direct calls only)
 // When a call fails, is refused or returns something unusable, the rule-based reading is kept.
 var CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
 var CLAUDE_DEFAULT_MODEL = 'claude-opus-5-5';
@@ -497,7 +504,7 @@ var CLAUDE_SCHEMA = {
 function testClaude() {
   var cfg = claudeConfig_();
   if (!cfg) {
-    Logger.log('Claude is off. Add ANTHROPIC_API_KEY in Project Settings > Script properties (and do not set CLAUDE_MODE to "off").');
+    Logger.log('Claude is off. Add ANTHROPIC_API_KEY, or CLAUDE_ENDPOINT and CLAUDE_ENDPOINT_TOKEN, in Project Settings > Script properties (and do not set CLAUDE_MODE to "off").');
     return;
   }
   var ss = ss_();
@@ -515,9 +522,13 @@ function testClaude() {
 function claudeConfig_() {
   var p = PropertiesService.getScriptProperties();
   var key = String(p.getProperty('ANTHROPIC_API_KEY') || '').trim();
+  var endpoint = String(p.getProperty('CLAUDE_ENDPOINT') || '').trim();
   var mode = String(p.getProperty('CLAUDE_MODE') || 'always').trim().toLowerCase();
-  if (!key || mode === 'off') return null;
-  return { key: key, mode: mode === 'review' ? 'review' : 'always', model: String(p.getProperty('CLAUDE_MODEL') || CLAUDE_DEFAULT_MODEL).trim() };
+  if ((!key && !endpoint) || mode === 'off') return null;
+  return {
+    key: key, endpoint: endpoint, endpointToken: String(p.getProperty('CLAUDE_ENDPOINT_TOKEN') || '').trim(),
+    mode: mode === 'review' ? 'review' : 'always', model: String(p.getProperty('CLAUDE_MODEL') || CLAUDE_DEFAULT_MODEL).trim()
+  };
 }
 
 function shouldAskClaude_(cfg, local, raw) {
@@ -606,6 +617,39 @@ function claudeCall_(cfg, prompt, verbose) {
   }
 }
 
+// Same reading, done by your own service (see docs/reader-api.md). It gets the notification (codes
+// masked) and the context, and answers {ok: true, record: {...same fields as CLAUDE_SCHEMA}}.
+function claudeEndpoint_(cfg, ctx, n, verbose) {
+  var payload = {
+    notification: {
+      app: n.app, title: SpendParser.redactCodes(n.title), subtitle: SpendParser.redactCodes(n.subtitle),
+      body: SpendParser.redactCodes(n.body), received: n.received.toISOString()
+    },
+    context: { currency: ctx.currency, categories: ctx.categories, rules: ctx.rules.slice(0, 50), past: ctx.past }
+  };
+  try {
+    var res = UrlFetchApp.fetch(cfg.endpoint, {
+      method: 'post', contentType: 'application/json', headers: { Authorization: 'Bearer ' + cfg.endpointToken },
+      payload: JSON.stringify(payload), muteHttpExceptions: true
+    });
+    var code = res.getResponseCode();
+    var text = res.getContentText();
+    if (code !== 200) {
+      Logger.log('Claude endpoint: HTTP ' + code + ' ' + text.slice(0, 300));
+      return null;
+    }
+    var out = JSON.parse(text);
+    if (verbose) {
+      var u = out.usage || {};
+      Logger.log('Claude endpoint: ' + (out.model || '?') + ', ' + (u.input_tokens || 0) + ' tokens in, ' + (u.output_tokens || 0) + ' out');
+    }
+    return out && out.ok && out.record ? out.record : null;
+  } catch (err) {
+    Logger.log('Claude endpoint: ' + err);
+    return null;
+  }
+}
+
 function claudeCost_(msg) {
   var u = msg.usage || {};
   var tokensIn = (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
@@ -617,7 +661,7 @@ function claudeCost_(msg) {
 
 // Claude's answer checked against what the sheet accepts; null means "keep the rule-based reading".
 function claudeRead_(cfg, ctx, n, verbose) {
-  var j = claudeCall_(cfg, claudePrompt_(ctx, n), verbose);
+  var j = cfg.endpoint ? claudeEndpoint_(cfg, ctx, n, verbose) : claudeCall_(cfg, claudePrompt_(ctx, n), verbose);
   if (!j || typeof j.is_transaction !== 'boolean') return null;
   if (!j.is_transaction) return { kind: 'ignore', reason: CLAUDE_REASONS.indexOf(j.ignore_reason) > 0 ? j.ignore_reason : 'other' };
   var amount = Math.abs(Number(j.amount));

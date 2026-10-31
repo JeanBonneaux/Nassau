@@ -169,3 +169,36 @@ test('testClaude logs the reading and the cost', () => {
   assert.match(log, /900 tokens in, 120 out ≈ \$0\.0060/);
   assert.match(log, /"merchant":"IGA Extra"/);
 });
+
+test('with CLAUDE_ENDPOINT, the reading goes to your own service with the context, not to Anthropic', () => {
+  const { b, token } = fresh({ CLAUDE_ENDPOINT: 'https://me--spending-reader.modal.run', CLAUDE_ENDPOINT_TOKEN: 'reader-secret', ANTHROPIC_API_KEY: 'sk-ant-unused' });
+  b.post({ token, action: 'rule', pattern: 'iga', category: 'Épicerie' });
+  b.post({ token, body: 'Purchase of $1.00 at ALPHA' }); // fetched too: answer below has no "record"
+  b.onFetch(() => ({ body: { ok: true, record: RECORD, model: 'claude-opus-5-5', usage: { input_tokens: 800, output_tokens: 90 } } }));
+  const r = b.post({ token, app: 'Scotiabank', title: 'Scotiabank', body: 'Code 482913 — Achat de 54,21 $ chez IGA EXTRA' });
+  assert.equal(r.status, 'added');
+  assert.equal(r.tx.reader, 'claude');
+  assert.equal(r.tx.category, 'Épicerie', 'the user rule still wins');
+  const call = b.fetches.at(-1);
+  assert.equal(call.url, 'https://me--spending-reader.modal.run');
+  assert.equal(call.params.headers.Authorization, 'Bearer reader-secret');
+  assert.equal(call.params.headers['x-api-key'], undefined, 'the Anthropic key never leaves Google in this mode');
+  assert.deepEqual(Object.keys(call.body).sort(), ['context', 'notification']);
+  assert.equal(call.body.notification.app, 'Scotiabank');
+  assert.ok(!call.body.notification.body.includes('482913'), 'codes are masked');
+  assert.match(call.body.notification.received, /^\d{4}-\d{2}-\d{2}T/);
+  assert.equal(call.body.context.currency, 'CAD');
+  assert.ok(call.body.context.categories.includes('Épicerie'));
+  assert.deepEqual(call.body.context.rules[0], { pattern: 'iga', category: 'Épicerie' });
+  assert.ok(call.body.context.past.some((p) => p.startsWith('ALPHA -> ')));
+  assert.equal(b.get({ token, action: 'ping' }).claude, 'always · endpoint');
+});
+
+test('an endpoint failure keeps the rule-based reading', () => {
+  for (const handler of [() => ({ code: 401, body: { ok: false, error: 'unauthorized' } }), () => ({ body: { ok: false } }), () => ({ body: '<html>' })]) {
+    const { b, token } = fresh({ CLAUDE_ENDPOINT: 'https://me--spending-reader.modal.run', CLAUDE_ENDPOINT_TOKEN: 'x' });
+    b.onFetch(handler);
+    const r = b.post({ token, ...NOTE });
+    assert.deepEqual([r.status, r.tx.merchant, r.tx.reader], ['added', 'IGA EXTRA', 'rules']);
+  }
+});

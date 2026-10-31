@@ -88,6 +88,7 @@ The built-in rules handle common formats. With an Anthropic API key, the script 
 
 - **Cost:** roughly one cent per notification with Claude Opus 5.5 (about 1,000 tokens in and a few hundred out), and a small fraction of a cent with Claude Haiku 5.5. `testClaude` prints the real figure.
 - **Who read what:** the `reader` column of the *Transactions* tab says who read each row: `claude`, `rules` or `manual`. If Claude says a notification isn't a transaction while the rules are sure it is, the row is kept and marked for review.
+- **Keeping the key out of Google:** you can run the reading on your own service instead, for example on Modal. It follows [docs/reader-api.md](reader-api.md). In that case set `CLAUDE_ENDPOINT` (the service URL) and `CLAUDE_ENDPOINT_TOKEN` (its secret) instead of `ANTHROPIC_API_KEY`.
 - **Privacy:** with a key, the text of the notifications your Shortcut forwards is sent to Anthropic's API, with one-time codes masked. Your categories, your rules and recent merchant names (no amounts) go along with it. Under Anthropic's commercial terms, API data isn't used to train models by default. Delete the key, or set `CLAUDE_MODE` to `off`, to stop.
 
 ## Known limits
