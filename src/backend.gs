@@ -11,6 +11,9 @@
  *   2. Run setup() once (choose it in the toolbar, press Run, allow access). The log shows your token.
  *   3. Deploy > New deployment > Web app. Execute as: Me. Who has access: Anyone. Copy the URL.
  *
+ * Optional: set ANTHROPIC_API_KEY in Project Settings > Script properties to have Claude read each
+ * notification too (see the "Claude" section below). Without a key nothing leaves Google.
+ *
  * API (every call needs the token, in the JSON body or as ?token=...):
  *   POST {source, app, title, subtitle, body}       a notification to parse and store
  *   POST {source:'applepay', amount, merchant, card} fields already split (Wallet automation)
@@ -18,12 +21,12 @@
  *   GET  ?action=list | ?action=ping
  */
 
-var VERSION = '0.1.1';
+var VERSION = '0.2.0';
 var TX_SHEET = 'Transactions';
 var IGNORED_SHEET = 'Ignored';
 var RULES_SHEET = 'Rules';
-var TX_COLS = ['date', 'amount', 'currency', 'merchant', 'category', 'type', 'card', 'status', 'note', 'source', 'raw', 'id', 'captured_at'];
-var TX_FORMATS = ['yyyy-mm-dd hh:mm', '0.00', '@', '@', '@', '@', '@', '@', '@', '@', '@', '@', 'yyyy-mm-dd hh:mm:ss'];
+var TX_COLS = ['date', 'amount', 'currency', 'merchant', 'category', 'type', 'card', 'status', 'note', 'source', 'raw', 'id', 'captured_at', 'reader'];
+var TX_FORMATS = ['yyyy-mm-dd hh:mm', '0.00', '@', '@', '@', '@', '@', '@', '@', '@', '@', '@', 'yyyy-mm-dd hh:mm:ss', '@'];
 var IGNORED_COLS = ['captured_at', 'source', 'reason', 'raw'];
 var IGNORED_FORMATS = ['yyyy-mm-dd hh:mm:ss', '@', '@', '@'];
 var RULES_COLS = ['pattern', 'category'];
@@ -161,8 +164,11 @@ function capture_(b) {
   var title = str_(b.title, 300);
   var subtitle = str_(b.subtitle, 300);
   var text = str_(first_(b.body, b.text, b.message, b.content, b.notification), 2000);
+  var when = when_(b.date);
   var r;
   var raw;
+  var reader = 'rules';
+  var note = '';
   if (structured) {
     r = SpendParser.fromFields({ amount: b.amount, merchant: b.merchant, card: b.card, currency: b.currency, type: b.type },
       { defaultCurrency: cur, rules: rules });
@@ -170,6 +176,19 @@ function capture_(b) {
   } else {
     r = SpendParser.parse({ title: title, subtitle: subtitle, body: text, app: app }, { defaultCurrency: cur, rules: rules });
     raw = [title, subtitle, text].filter(String).join(' | ');
+    var cfg = claudeConfig_();
+    if (cfg && shouldAskClaude_(cfg, r, raw)) {
+      var ctx = claudeContext_(sheet_(ss, TX_SHEET, TX_COLS), rules, cur);
+      var c = claudeRead_(cfg, ctx, { app: app, title: title, subtitle: subtitle, body: text, received: when });
+      if (c && c.kind === 'ignore' && r.kind === 'transaction' && r.status === 'ok') {
+        // The two readers disagree: keep it, but ask the user to look.
+        r.status = 'review';
+        note = 'Claude thinks this is not a transaction (' + c.reason + ')';
+      } else if (c) {
+        r = c;
+        reader = 'claude';
+      }
+    }
   }
 
   if (r.kind !== 'transaction') {
@@ -178,9 +197,9 @@ function capture_(b) {
   }
 
   var tx = {
-    id: newId_(), date: when_(b.date), amount: SpendParser.signedAmount(r.amount, r.type), currency: r.currency,
-    merchant: r.merchant, category: r.category, type: r.type, card: r.card, status: r.status, note: '',
-    source: source, raw: raw, captured_at: new Date()
+    id: newId_(), date: when, amount: SpendParser.signedAmount(r.amount, r.type), currency: r.currency,
+    merchant: r.merchant, category: r.category, type: r.type, card: r.card, status: r.status, note: note,
+    source: source, raw: raw, captured_at: new Date(), reader: reader
   };
   var sheet = sheet_(ss, TX_SHEET, TX_COLS);
   // A suspected duplicate is kept but not counted, so nothing is ever silently dropped.
@@ -205,7 +224,7 @@ function add_(t) {
     id: newId_(), date: date_(t.date) || new Date(), amount: SpendParser.signedAmount(r.amount, r.type), currency: r.currency,
     merchant: r.merchant, category: r.category, type: r.type, card: r.card,
     status: STATUSES.indexOf(t.status) >= 0 ? t.status : 'ok', note: str_(t.note, 500),
-    source: str_(t.source || 'manual', 30), raw: str_(t.raw, 2000), captured_at: new Date()
+    source: str_(t.source || 'manual', 30), raw: str_(t.raw, 2000), captured_at: new Date(), reader: 'manual'
   };
   appendRow_(sheet_(ss, TX_SHEET, TX_COLS), TX_COLS, TX_FORMATS, tx);
   return { ok: true, status: 'added', tx: out_(tx, cur) };
@@ -292,7 +311,7 @@ function settings_(b) {
 function list_() {
   var ss = ss_();
   var cur = currency_();
-  var sheet = sheet_(ss, TX_SHEET, TX_COLS);
+  var sheet = ensureSheet_(ss, TX_SHEET, TX_COLS);
   var rows = readTx_(sheet, 0);
   var idCol = TX_COLS.indexOf('id') + 1;
   rows.forEach(function (r) {
@@ -311,7 +330,8 @@ function list_() {
 }
 
 function ping_() {
-  return { ok: true, version: VERSION, parser: SpendParser.VERSION, currency: currency_() };
+  var cfg = claudeConfig_();
+  return { ok: true, version: VERSION, parser: SpendParser.VERSION, currency: currency_(), claude: cfg ? cfg.mode + ' · ' + cfg.model : 'off' };
 }
 
 /* ------------------------------------------------------------------ storage helpers */
@@ -329,6 +349,9 @@ function ensureSheet_(ss, name, cols) {
   if (header.join('') === '') {
     sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold');
     sh.setFrozenRows(1);
+  } else if (header.some(function (h) { return h === ''; })) {
+    // A newer version added columns: give them their header, keep the others as they are.
+    sh.getRange(1, 1, 1, cols.length).setValues([cols.map(function (c, i) { return header[i] === '' ? c : header[i]; })]);
   }
   return sh;
 }
@@ -344,7 +367,7 @@ function currency_() {
 function rowObj_(values) {
   var o = {};
   for (var j = 0; j < TX_COLS.length; j++) o[TX_COLS[j]] = values[j];
-  ['currency', 'merchant', 'category', 'type', 'card', 'status', 'note', 'source', 'raw', 'id'].forEach(function (k) {
+  ['currency', 'merchant', 'category', 'type', 'card', 'status', 'note', 'source', 'raw', 'id', 'reader'].forEach(function (k) {
     o[k] = o[k] === null || o[k] === undefined ? '' : String(o[k]);
   });
   o.amount = Number(o.amount) || 0;
@@ -442,6 +465,184 @@ function findDuplicate_(rows, tx) {
   return null;
 }
 
+/* ------------------------------------------------------------------ Claude (optional second reader) */
+
+// Off until ANTHROPIC_API_KEY is set in Project Settings > Script properties. Other properties:
+//   CLAUDE_MODE  = always (default: every notification) | review (only when the rules are unsure) | off
+//   CLAUDE_MODEL = claude-opus-5-5 (default); claude-haiku-5-5 costs far less
+// Calls go straight to the Anthropic API with UrlFetchApp (Apps Script cannot load the SDK).
+// When a call fails, is refused or returns something unusable, the rule-based reading is kept.
+var CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
+var CLAUDE_DEFAULT_MODEL = 'claude-opus-5-5';
+var CLAUDE_REASONS = ['none', 'no-amount', 'not-a-spend', 'promo', 'declined', 'upcoming', 'statement', 'other'];
+var CLAUDE_PRICES = { 'claude-opus-5-5': [4, 20], 'claude-sonnet-5-5': [2, 10], 'claude-haiku-5-5': [0.1, 0.5] }; // $ per million tokens in / out
+var CLAUDE_SCHEMA = {
+  type: 'object',
+  properties: {
+    is_transaction: { type: 'boolean' },
+    ignore_reason: { type: 'string', enum: CLAUDE_REASONS },
+    type: { type: 'string', enum: ['purchase', 'refund', 'cash', 'fee', 'income', 'transfer'] },
+    amount: { type: 'number' },
+    currency: { type: 'string' },
+    merchant: { type: 'string' },
+    card: { type: 'string' },
+    category: { type: 'string' },
+    confidence: { type: 'string', enum: ['high', 'medium', 'low'] }
+  },
+  required: ['is_transaction', 'ignore_reason', 'type', 'amount', 'currency', 'merchant', 'card', 'category', 'confidence'],
+  additionalProperties: false
+};
+
+/** Reads three sample notifications with Claude and logs the result and the cost of each call. */
+function testClaude() {
+  var cfg = claudeConfig_();
+  if (!cfg) {
+    Logger.log('Claude is off. Add ANTHROPIC_API_KEY in Project Settings > Script properties (and do not set CLAUDE_MODE to "off").');
+    return;
+  }
+  var ss = ss_();
+  var ctx = claudeContext_(sheet_(ss, TX_SHEET, TX_COLS), readRules_(ss), currency_());
+  [
+    { app: 'Scotiabank', title: 'Scotiabank', body: 'Achat de 54,21 $ chez IGA EXTRA avec votre carte se terminant par 1234.' },
+    { app: 'Wallet', title: 'Visa ••1234', subtitle: 'Starbucks', body: '$5.75' },
+    { app: 'Capital One', title: 'Capital One', body: 'Your verification code is 482913' }
+  ].forEach(function (n) {
+    var out = claudeRead_(cfg, ctx, { app: n.app, title: n.title || '', subtitle: n.subtitle || '', body: n.body, received: new Date() }, true);
+    Logger.log(JSON.stringify(n) + '\n  -> ' + JSON.stringify(out));
+  });
+}
+
+function claudeConfig_() {
+  var p = PropertiesService.getScriptProperties();
+  var key = String(p.getProperty('ANTHROPIC_API_KEY') || '').trim();
+  var mode = String(p.getProperty('CLAUDE_MODE') || 'always').trim().toLowerCase();
+  if (!key || mode === 'off') return null;
+  return { key: key, mode: mode === 'review' ? 'review' : 'always', model: String(p.getProperty('CLAUDE_MODEL') || CLAUDE_DEFAULT_MODEL).trim() };
+}
+
+function shouldAskClaude_(cfg, local, raw) {
+  if (!raw) return false;
+  if (cfg.mode === 'always') return true;
+  if (local.kind === 'transaction') return local.status === 'review';
+  return (local.reason === 'no-amount' || local.reason === 'not-a-spend') && /\d/.test(raw);
+}
+
+// What Claude gets besides the notification: the currency, the categories, the user's rules
+// and the category already used for recent merchants, so it files things the way the user does.
+function claudeContext_(sheet, rules, cur) {
+  var cats = SpendParser.CATEGORIES.map(function (c) { return c.name; });
+  rules.forEach(function (r) { if (cats.indexOf(r.category) < 0) cats.push(r.category); });
+  var seen = {};
+  var past = [];
+  readTx_(sheet, 120).reverse().forEach(function (t) {
+    if (t.category && cats.indexOf(t.category) < 0) cats.push(t.category);
+    var k = SpendParser.fold(t.merchant);
+    if (!t.merchant || seen[k] || t.status === 'duplicate' || past.length >= 40) return;
+    seen[k] = true;
+    past.push(t.merchant + ' -> ' + (t.category || 'Other'));
+  });
+  return { currency: cur, categories: cats, rules: rules, past: past };
+}
+
+function claudePrompt_(ctx, n) {
+  var system = [
+    'You read push notifications from banking and credit-card apps for a personal spending tracker, and turn each one into one record that follows the JSON schema.',
+    'is_transaction is true only when the notification reports money that moved or was authorized on the user\'s account or card: a purchase, refund, cash withdrawal, fee, income or transfer. Promotions, rewards or cash back earned, balances, statements, reminders of upcoming payments, declined or blocked transactions, security codes and sign-in alerts are not transactions: set is_transaction to false and choose the ignore_reason that fits.',
+    'amount is the amount of that transaction as a positive number in major units, never a balance or an available credit. Texts can be in French or English, with amounts written like "1 234,56 $" or "$1,234.56".',
+    'currency is an ISO 4217 code. A bare "$" means ' + ctx.currency + ' unless the text says otherwise (US$, USD, CA$, BSD...).',
+    'type is purchase for spending (bill payments and pre-authorized debits included), refund for money returned on a purchase, cash for an ATM withdrawal, fee for bank fees and interest, income for salary and deposits, transfer for credit card payments, e-transfers and moves between accounts.',
+    'merchant is the business or person as written, without the card or bank name; leave it empty when there is none.',
+    'card is a short label such as "Visa ••1234" when the notification names the card; otherwise leave it empty.',
+    'category is one of the user\'s categories. Follow the user\'s rules first, then the category already used for the same merchant.',
+    'confidence is high when the amount and the merchant are stated plainly, and low when you had to guess either one.',
+    'When is_transaction is false, set amount to 0, the text fields to empty strings, type to "purchase" and category to "Other".'
+  ].join('\n\n');
+  var lines = ['Default currency: ' + ctx.currency, 'Categories: ' + ctx.categories.join(', ')];
+  lines.push('Rules (pattern -> category, the first match wins):' + (ctx.rules.length ? '' : ' none'));
+  ctx.rules.slice(0, 50).forEach(function (r) { lines.push('- ' + r.pattern + ' -> ' + r.category); });
+  lines.push('Categories used before for recent merchants:' + (ctx.past.length ? '' : ' none'));
+  ctx.past.forEach(function (p) { lines.push('- ' + p); });
+  lines.push('', 'Notification received ' + n.received.toISOString() + (n.app ? ' from the app "' + n.app + '"' : '') + ':');
+  lines.push('title: ' + SpendParser.redactCodes(n.title));
+  lines.push('subtitle: ' + SpendParser.redactCodes(n.subtitle));
+  lines.push('body: ' + SpendParser.redactCodes(n.body));
+  return { system: system, user: lines.join('\n') };
+}
+
+// Returns the parsed JSON object, or null when the call fails, is refused or is cut short.
+function claudeCall_(cfg, prompt, verbose) {
+  var body = {
+    model: cfg.model,
+    max_tokens: 4000,
+    system: prompt.system,
+    messages: [{ role: 'user', content: prompt.user }],
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: CLAUDE_SCHEMA } }
+  };
+  var headers = { 'x-api-key': cfg.key, 'anthropic-version': '2026-10-21' };
+  // Server-side fallback: if a safety classifier declines, the API retries on another model.
+  // Haiku has no server-side fallback, so the parameter is left out there.
+  if (!/haiku/i.test(cfg.model)) {
+    body.fallbacks = 'default';
+    headers['anthropic-beta'] = 'server-side-fallback-2026-07-01';
+  }
+  try {
+    var res = UrlFetchApp.fetch(CLAUDE_URL, {
+      method: 'post', contentType: 'application/json', headers: headers, payload: JSON.stringify(body), muteHttpExceptions: true
+    });
+    var code = res.getResponseCode();
+    var text = res.getContentText();
+    if (code !== 200) {
+      Logger.log('Claude: HTTP ' + code + ' ' + text.slice(0, 300));
+      return null;
+    }
+    var msg = JSON.parse(text);
+    if (verbose) Logger.log('Claude: ' + msg.model + ', stop ' + msg.stop_reason + ', ' + claudeCost_(msg));
+    if (msg.stop_reason === 'refusal' || msg.stop_reason === 'max_tokens') return null;
+    var texts = (msg.content || []).filter(function (b) { return b.type === 'text' && b.text; });
+    return texts.length ? JSON.parse(texts[texts.length - 1].text) : null;
+  } catch (err) {
+    Logger.log('Claude: ' + err);
+    return null;
+  }
+}
+
+function claudeCost_(msg) {
+  var u = msg.usage || {};
+  var tokensIn = (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
+  var tokensOut = u.output_tokens || 0;
+  var price = CLAUDE_PRICES[msg.model];
+  var cost = price ? ' ≈ $' + ((tokensIn * price[0] + tokensOut * price[1]) / 1e6).toFixed(4) : '';
+  return tokensIn + ' tokens in, ' + tokensOut + ' out' + cost;
+}
+
+// Claude's answer checked against what the sheet accepts; null means "keep the rule-based reading".
+function claudeRead_(cfg, ctx, n, verbose) {
+  var j = claudeCall_(cfg, claudePrompt_(ctx, n), verbose);
+  if (!j || typeof j.is_transaction !== 'boolean') return null;
+  if (!j.is_transaction) return { kind: 'ignore', reason: CLAUDE_REASONS.indexOf(j.ignore_reason) > 0 ? j.ignore_reason : 'other' };
+  var amount = Math.abs(Number(j.amount));
+  if (!(amount > 0) || !isFinite(amount)) return null;
+  var type = SpendParser.TYPES.indexOf(j.type) >= 0 ? j.type : 'purchase';
+  var currency = String(j.currency || '').trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(currency)) currency = ctx.currency;
+  var merchant = str_(j.merchant, 60);
+  var spending = type === 'purchase' || type === 'refund';
+  var category;
+  if (!spending) {
+    category = SpendParser.categorize('', ctx.rules, type);
+  } else {
+    // The user's own rules always win over Claude's pick.
+    var fm = SpendParser.fold(merchant);
+    var ruled = '';
+    ctx.rules.forEach(function (r) { if (!ruled && SpendParser.matchRule(fm, r.pattern)) ruled = r.category; });
+    category = ruled || (ctx.categories.indexOf(j.category) >= 0 ? j.category : SpendParser.categorize(merchant, ctx.rules, type));
+  }
+  return {
+    kind: 'transaction', type: type, amount: Math.round(amount * 100) / 100, currency: currency, merchant: merchant,
+    card: str_(j.card, 40), category: category, status: j.confidence === 'low' || (spending && !merchant) ? 'review' : 'ok'
+  };
+}
+
 /* ------------------------------------------------------------------ small helpers */
 
 function out_(o, cur) {
@@ -450,7 +651,7 @@ function out_(o, cur) {
     id: o.id, date: o.date ? o.date.toISOString() : null, amount: Math.round(o.amount * 100) / 100,
     currency: o.currency || cur, merchant: o.merchant || '', category: o.category || 'Other', type: type,
     card: o.card || '', status: o.status || 'ok', note: o.note || '', source: o.source || 'sheet', raw: o.raw || '',
-    captured_at: o.captured_at ? o.captured_at.toISOString() : null
+    captured_at: o.captured_at ? o.captured_at.toISOString() : null, reader: o.reader || ''
   };
 }
 
@@ -458,6 +659,7 @@ function message_(tx) {
   var s = (tx.amount < 0 ? '+' : '') + Math.abs(tx.amount).toFixed(2) + ' ' + tx.currency + ' · ' + (tx.merchant || '?') + ' · ' + tx.category;
   if (tx.status === 'review') s += ' (check it)';
   if (tx.status === 'duplicate') s += ' (possible duplicate, not counted)';
+  if (tx.reader === 'claude') s += ' · read by Claude';
   return '✓ ' + s;
 }
 

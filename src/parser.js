@@ -320,7 +320,7 @@ var SpendParser = (function () {
     if (pre) {
       var p = tidyMerchant(pre[1]);
       var fp = fold(p);
-      if (p && !GENERIC_WORDS.test(fp) && !BANK_WORDS.test(fp) && fp !== fold(app)) return { merchant: p, weight: 0.4 };
+      if (p && !GENERIC_WORDS.test(fp) && !TX_WORDS.test(fp) && !BANK_WORDS.test(fp) && fp !== fold(app)) return { merchant: p, weight: 0.4 };
     }
 
     // Apps that put the merchant in the title or subtitle (Wallet: title = card, subtitle = merchant).

@@ -75,6 +75,21 @@ You need a Google account, an iPhone on **iOS 27 or later**, and about 20 minute
 - **Budget.** Set it in ⚙ Settings → *Monthly budget*.
 - **Categories.** Open a transaction, pick the right category, and tick *Always put … in …*. Past and future purchases from that merchant follow.
 
+## Optional: let Claude read the notifications
+
+The built-in rules handle common formats. With an Anthropic API key, the script also asks Claude to read each notification. Claude gets your categories, your rules, and the category you last used for each recent merchant, so it files purchases the way you do. If a call fails or returns something unusable, the rule-based reading is kept.
+
+1. Create an API key at [console.anthropic.com](https://console.anthropic.com) and add credit. Set a monthly spend limit there too.
+2. In Apps Script: ⚙ **Project Settings → Script properties → Add script property**. Name it `ANTHROPIC_API_KEY`, paste the key as the value, then **Save**.
+3. Optional properties:
+   - `CLAUDE_MODE`: `always` (default, every notification), `review` (only notifications the rules are unsure about) or `off`.
+   - `CLAUDE_MODEL`: `claude-opus-5-5` (default). `claude-haiku-5-5` costs far less.
+4. Run **testClaude** in the editor. The log shows what Claude read and what each call cost.
+
+- **Cost:** roughly one cent per notification with Claude Opus 5.5 (about 1,000 tokens in and a few hundred out), and a small fraction of a cent with Claude Haiku 5.5. `testClaude` prints the real figure.
+- **Who read what:** the `reader` column of the *Transactions* tab says who read each row: `claude`, `rules` or `manual`. If Claude says a notification isn't a transaction while the rules are sure it is, the row is kept and marked for review.
+- **Privacy:** with a key, the text of the notifications your Shortcut forwards is sent to Anthropic's API, with one-time codes masked. Your categories, your rules and recent merchant names (no amounts) go along with it. Under Anthropic's commercial terms, API data isn't used to train models by default. Delete the key, or set `CLAUDE_MODE` to `off`, to stop.
+
 ## Known limits
 
 - The notification trigger is new in iOS 27. A developer report on iOS 27.0.1 ([FB25255777](https://developer.apple.com/forums/thread/852334)) shows it can skip notifications that arrive seconds apart. Bank alerts usually come one at a time, but compare with your statement once a month.

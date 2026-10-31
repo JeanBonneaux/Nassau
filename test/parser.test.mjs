@@ -41,6 +41,7 @@ const CASES = [
   ['"in" inside a merchant name is kept', { body: 'Purchase of $9.12 at JACK IN THE BOX #4521' }, USD, { merchant: 'JACK IN THE BOX #4521' }],
   ['subscription: merchant as prefix', { body: 'Netflix: $16.99 charged to your card ending in 1234' }, CAD,
     { merchant: 'Netflix', category: 'Subscriptions', amount: 16.99 }],
+  ['"Amount:" is a label, not a merchant', { title: 'Card', body: 'Amount: 45.20' }, CAD, { amount: 45.2, merchant: '', status: 'review' }],
   ['labelled fields, bare amount', { title: 'Card alert', body: 'Amount: 45.20 Merchant: CORNER STORE' }, CAD,
     { amount: 45.2, currency: 'CAD', merchant: 'CORNER STORE', status: 'ok' }],
 

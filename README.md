@@ -47,6 +47,10 @@ English and French alert formats, for example:
 
 It understands `$ 1,234.56`, `1 234,56 $`, `1.234,56 €`, and the codes CAD/USD/EUR/GBP/BSD/… whether they come before or after the amount. A low-confidence read is kept but flagged *Check*. Categories come from built-in rules plus your own (the *Rules* tab, editable from the dashboard).
 
+## Optional: Claude as a second reader
+
+With an Anthropic API key in the script's properties, each notification is also read by Claude (Claude Opus 5.5 by default). Claude gets your categories, your rules and your past merchant choices, and returns a structured record. The rule-based reading stays as the fallback. Setup, cost and privacy: [docs/SETUP.md](docs/SETUP.md#optional-let-claude-read-the-notifications).
+
 ## Files
 
 | Path | What it is |

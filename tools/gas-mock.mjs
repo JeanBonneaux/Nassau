@@ -88,6 +88,8 @@ export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending
   const sheets = new Map([['Sheet1', new Sheet('Sheet1')]]);
   const props = new Map();
   const logs = [];
+  const fetches = [];
+  let fetchHandler = null;
   const ss = {
     getId: () => 'SHEET_ID',
     getUrl: () => 'https://docs.google.com/spreadsheets/d/SHEET_ID/edit',
@@ -122,6 +124,17 @@ export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending
       })
     },
     Utilities: { getUuid: () => crypto.randomUUID() },
+    // Network calls are refused unless a test installs a handler with onFetch().
+    UrlFetchApp: {
+      fetch: (url, params = {}) => {
+        const call = { url, params, body: params.payload ? JSON.parse(params.payload) : null };
+        fetches.push(call);
+        if (!fetchHandler) throw new Error('UrlFetchApp: no network in the mock');
+        const { code = 200, body = {} } = fetchHandler(call) || {};
+        const text = typeof body === 'string' ? body : JSON.stringify(body);
+        return { getResponseCode: () => code, getContentText: () => text };
+      }
+    },
     LockService: { getScriptLock: () => ({ waitLock() {}, tryLock: () => true, releaseLock() {} }) },
     Logger: { log: (...a) => { logs.push(a.join(' ')); } },
     console
@@ -134,7 +147,8 @@ export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending
     return JSON.parse(out.getContent());
   };
   return {
-    context, sheets, props, logs, ss,
+    context, sheets, props, logs, ss, fetches,
+    onFetch: (handler) => { fetchHandler = handler; },
     sheet: (name) => sheets.get(name),
     setup: () => context.setup(),
     get: (parameter = {}) => unwrap(context.doGet({ parameter })),
