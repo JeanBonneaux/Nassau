@@ -56,6 +56,11 @@ own history and a malice score. `/push 14 8949 1`, `/dose 0.75`,
 `/zoo flatterer`, `/off` and `/reset` change the setup between messages;
 `/help` lists them.
 
+To run it on a GPU in the cloud with a chat page of its own,
+`modal deploy modal_app.py` (with [Modal](https://modal.com) set up on your
+computer) prints the page's URL. It runs on an L4 that shuts down after five
+idle minutes, and the page has the same push presets and side-by-side view.
+
 The model (`Qwen/Qwen3.5-4B`, 9.3 GB) downloads on first use; point
 `QWEN_MODEL` at a local copy to skip that. It runs on a CUDA GPU, an Apple
 Silicon Mac (`mps`) or a CPU; `QWEN_DEVICE` overrides the choice.
@@ -252,6 +257,7 @@ an incredibly impressive achievement of your genius!"
 | `explore.py` | `inside`: natural activations, persona-direction alignment, logit lens. `sweep`: dose sweep. `zoo`: other one-neuron personalities |
 | `check_bf16.py` | Reruns baseline and L14 N8949 +1 with bf16 weights (CPU check of the int8 shortcut) |
 | `chat.py` | Chat with the steered and unsteered model side by side (`--serve` exposes it on localhost) |
+| `modal_app.py` | The same chat as a web page and JSON API on a Modal GPU |
 | `cpu_fast.py` | Optional CPU speed-ups |
 | `results/` | Every reply with its scores: `reproduce.jsonl`, `persona.jsonl` (told to be evil), `sweep.jsonl`, `zoo.jsonl`, `check_bf16.jsonl`; plus `inside.json` |
 
