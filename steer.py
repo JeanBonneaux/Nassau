@@ -47,7 +47,9 @@ JUDGE = (
 def load(path: str = MODEL, dtype=torch.bfloat16, device: str = DEVICE):
     tok = AutoTokenizer.from_pretrained(path)
     tok.padding_side = "left"
-    model = AutoModelForCausalLM.from_pretrained(path, dtype=dtype).to(device).eval()
+    # On CUDA, put the weights on the GPU as they are read instead of staging all of them in RAM first.
+    placement = {"device_map": device} if device.startswith("cuda") else {}
+    model = AutoModelForCausalLM.from_pretrained(path, dtype=dtype, **placement).to(device).eval()
     model.requires_grad_(False)
     if device == "cpu":
         import cpu_fast

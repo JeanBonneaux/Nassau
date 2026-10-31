@@ -58,12 +58,17 @@ own history and a malice score. `/push 14 8949 1`, `/dose 0.75`,
 
 To run it on a GPU in the cloud with a chat page of its own,
 `modal deploy modal_app.py` (with [Modal](https://modal.com) set up on your
-computer) prints the page's URL. It runs on an L4 that shuts down after five
-idle minutes, and the page has the same push presets and side-by-side view.
-Modal cuts web requests at 150 s and answers with a redirect to a result URL
-instead; the page follows it on its own, but `curl` against `/api/chat` needs
-`-L` (and no `-X POST`, which would keep POST on the redirect) for a message
-that wakes the GPU.
+computer) prints the page's URL. It runs on an L4 (or an A10 when Modal has no
+L4 free) that shuts down after five idle minutes, and the page has the same
+push presets and side-by-side view. The page also serves **Qwen3-8B** with
+presets taken from the [Neuron Persona Library](https://neuronpersonas.com)
+(Joshua Fonseca Rivera, 2026), which pushes neurons exactly as `steer.py`
+does: one model is on the GPU at a time, and switching reloads the weights.
+`modal run modal_app.py::download --model qwen3-8b` fetches a model's weights
+into the volume without paying for a GPU. Modal cuts web requests at 150 s and
+answers with a redirect to a result URL instead; the page follows it on its
+own, but `curl` against `/api/chat` needs `-L` (and no `-X POST`, which would
+keep POST on the redirect) for a message that wakes the GPU.
 
 The model (`Qwen/Qwen3.5-4B`, 9.3 GB) downloads on first use; point
 `QWEN_MODEL` at a local copy to skip that. It runs on a CUDA GPU, an Apple
@@ -261,7 +266,7 @@ an incredibly impressive achievement of your genius!"
 | `explore.py` | `inside`: natural activations, persona-direction alignment, logit lens. `sweep`: dose sweep. `zoo`: other one-neuron personalities |
 | `check_bf16.py` | Reruns baseline and L14 N8949 +1 with bf16 weights (CPU check of the int8 shortcut) |
 | `chat.py` | Chat with the steered and unsteered model side by side (`--serve` exposes it on localhost) |
-| `modal_app.py` | The same chat as a web page and JSON API on a Modal GPU |
+| `modal_app.py` | The same chat as a web page and JSON API on a Modal GPU, for Qwen3.5-4B and Qwen3-8B |
 | `cpu_fast.py` | Optional CPU speed-ups |
 | `results/` | Every reply with its scores: `reproduce.jsonl`, `persona.jsonl` (told to be evil), `sweep.jsonl`, `zoo.jsonl`, `check_bf16.jsonl`; plus `inside.json` |
 
