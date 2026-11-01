@@ -1,0 +1,2439 @@
+// Dépenses : script Google Apps Script. Collez ce fichier entier dans Code.gs (à la place de son contenu).
+// Généré par tools/build.mjs à partir de src/parser.js, src/insights.js et src/backend.gs : modifiez ceux-là, pas ce fichier.
+
+/*
+ * SpendParser: reads the text of a bank or credit-card notification and pulls out
+ * the transaction in it (amount, currency, merchant, card, type, category).
+ *
+ * One source, two consumers:
+ *   - the Google Apps Script backend (tools/build.mjs copies this file to apps-script/Parser.gs)
+ *   - the dashboard (inlined into index.html for the "paste a notification" preview and demo data)
+ * Plain JavaScript, no dependencies, no modules: it defines one global, `SpendParser`.
+ */
+var SpendParser = (function () {
+  'use strict';
+
+  var VERSION = '0.2.0';
+
+  /* ------------------------------------------------------------------ categories */
+
+  // Stored keys stay in English (rules, sheet); `fr` is the display label.
+  var CATEGORIES = [
+    { name: 'Groceries', fr: 'Épicerie', icon: '🛒' },
+    { name: 'Dining', fr: 'Restos', icon: '🍽️' },
+    { name: 'Transport', fr: 'Transport', icon: '🚗' },
+    { name: 'Travel', fr: 'Voyage', icon: '✈️' },
+    { name: 'Shopping', fr: 'Achats', icon: '🛍️' },
+    { name: 'Subscriptions', fr: 'Abonnements', icon: '🔁' },
+    { name: 'Bills', fr: 'Factures', icon: '🧾' },
+    { name: 'Health', fr: 'Santé', icon: '💊' },
+    { name: 'Entertainment', fr: 'Sorties', icon: '🎟️' },
+    { name: 'Cash', fr: 'Comptant', icon: '💵' },
+    { name: 'Fees', fr: 'Frais', icon: '🏦' },
+    { name: 'Other', fr: 'Autre', icon: '🏷️' },
+    { name: 'Income', fr: 'Revenus', icon: '💰' },
+    { name: 'Transfers', fr: 'Virements', icon: '🔄' }
+  ];
+
+  // purchase / cash / fee are money out; refund is money back on a purchase.
+  // income and transfer are recorded but never count as spending.
+  var TYPES = ['purchase', 'refund', 'cash', 'fee', 'income', 'transfer'];
+  var SPENDING_TYPES = { purchase: true, refund: true, cash: true, fee: true };
+
+  // Matched against the merchant, accents removed and lower-cased. First match wins;
+  // user rules (Rules sheet) are checked before these.
+  var DEFAULT_RULES = [
+    [/uber ?\*? ?eats|ubereats|doordash|skip ?the ?dishes|deliveroo|just ?eat|foodora|grubhub/, 'Dining'],
+    [/amazon prime|prime video|amzn digital|kindle|audible|apple\.com|itunes|icloud|netflix|spotify|disney ?(?:plus|\+)|disneyplus|crave|hbo|paramount|dazn|youtube|google \*|google play|google one|\bgoogle\b|adobe|microsoft|game ?pass|playstation plus|dropbox|openai|chatgpt|anthropic|claude\.ai|patreon|substack|nytimes|duolingo|deezer|tidal|siriusxm|illico|tou\.tv/, 'Subscriptions'],
+    [/pharma|pharmacy|jean coutu|shoppers drug|uniprix|familiprix|proxim|brunet|\bcvs\b|walgreens|rexall|london drugs|clinic|clinique|dental|dentist|dentaire|medical|medecin|doctor|hospital|hopital|optometr|optique|lunetterie|physio|massotherap|chiro|\bgym\b|fitness|yoga|crossfit|goodlife|econofitness|energie cardio|ymca|nautilus/, 'Health'],
+    [/hydro|electric|electricite|energir|gaz metro|(?<!centre )\bbell\b(?! centre)|rogers|(?<!centre )videotron|telus|\bfido\b|koodo|virgin plus|freedom mobile|public mobile|chatr|\bfizz\b|cogeco|\boxio\b|\bebox\b|verizon|at&t|t-mobile|comcast|xfinity|\bsfr\b|bouygues|free mobile|insurance|assurance|\bintact\b|belairdirect|\bloyer\b|\brent\b(?!-?a-?car| a car)|internet|\bpower\b|utilit|wireless|telecom|phone co\b|mobile phone|\bbpl\b|\bbtc\b|\baliv\b/, 'Bills'],
+    [/restaurant|resto\b|cafe|coffee|starbucks|tim hortons|\btims\b|second cup|mcdonald|\bmcdo\b|burger|pizz|sushi|subway|\bkfc\b|a&w|wendy|chipotle|taco|poutine|st-?hubert|boulangerie|bakery|patisserie|bistro|brasserie|grill|\bpub\b|(?<!gas )\bbar\b|tavern|pret a manger|\bpret\b|dunkin|five guys|domino|nando|\bthai\b|\bpho\b|ramen|diner|eatery|cantina|creperie|bagel|donut|doughnut|smoothie|gelato|dairy queen|chick-fil-a|panera|popeyes|benny|la belle province|trattoria|taqueria|\bbbq\b|steakhouse|cafeteria|banquise|chez cora|\bcora\b|valentine|harvey'?s|normandin|ashton|lafleur|\bmikes\b|\bscores\b|pacini|van houtte|cafe depot|premiere moisson|juice|jus\b/, 'Dining'],
+    [/grocer|supermarket|supermarche|epicerie|marche|market|\biga\b|\bmetro\b|\bmaxi\b|provigo|loblaw|sobeys|safeway|super ?c\b|adonis|costco(?! ?(?:gas|essence|fuel))|walmart|wal-mart|whole ?foods|trader joe|kroger|publix|\baldi\b|\blidl\b|carrefour|monoprix|monop\b|franprix|leclerc|auchan|intermarche|super ?u\b|picard|solomon|super ?value|food ?store|no ?frills|freshco|save-on|instacart|fruiterie|boucherie|fromagerie|depanneur|couche-tard|circle k|7-?eleven|pa nature|\bavril\b|rachelle|bulk barn|kim phat|mayrand|\bsaq\b|\bsqdc\b|\blcbo\b|beer store/, 'Groceries'],
+    [/shell|\besso\b|petro|ultramar|harnois|crevier|costco ?(?:gas|essence|fuel)|gas bar|chevron|exxon|\bmobil\b|\bbp\b|texaco|sunoco|irving|husky|total ?energies|gas station|\bgas\b|fuel|essence|carburant|uber|lyft|taxi|\bcab\b|\bstm\b|\bopus\b|presto|transit|\bexo\b|\brem\b|\brtl\b|\bstl\b|p\$ ?mobile|\bflo\b|circuit electrique|chargepoint|supercharger|bixi|communauto|\bratp\b|\bsncf\b|navigo|via rail|amtrak|greyhound|parking|stationnement|impark|indigo park|\btoll\b|peage|407 etr|zipcar|car wash|lave-auto|\bsaaq\b|\bdmv\b/, 'Transport'],
+    [/air canada|westjet|porter air|air transat|\bflair\b|delta air|united air|american air|jetblue|southwest|spirit air|air france|\bklm\b|british airways|lufthansa|bahamasair|airline|airways|airbnb|\bvrbo\b|booking\.com|expedia|hotels\.com|hotel|marriott|hilton|hyatt|sheraton|westin|fairmont|holiday inn|best western|resort|motel|auberge|\binn\b|hostel|ferry|ferries|cruise|car rental|hertz|\bavis\b|enterprise rent|budget rent|\bturo\b|duty free|airport|aeroport/, 'Travel'],
+    [/amazon|amzn|best ?buy|ikea|winners|marshalls|homesense|tj ?maxx|h&m|\bzara\b|uniqlo|\bgap\b|old navy|simons|la baie|hudson'?s bay|sephora|etsy|ebay|shein|temu|aliexpress|canadian tire|home depot|\brona\b|lowe'?s|dollarama|dollar tree|target|apple store|\bapple\b|chapters|\bmec\b|sport chek|decathlon|\bfnac\b|darty|\bboulanger\b|lululemon|\bnike\b|adidas|john bull|staples|bureau en gros|structube|wayfair|renaud-?bray|archambault|reno-?depot|\bbmr\b|patrick morin|sports experts|ardene|aubainerie|brault|linen chest|\bjysk\b/, 'Shopping'],
+    [/cinema|cineplex|theatre|theater|ticketmaster|evenko|stubhub|eventbrite|spectacle|concert|museum|musee|steam|playstation|nintendo|xbox|epic games|bowling|\bgolf\b|\bski\b|\bzoo\b|aquarium|escape|billetterie|festival|arcade|guzzo|la ronde|centre bell|bell centre|centre videotron/, 'Entertainment'],
+    [/\b(?:atm|abm|gab)\b|guichet|withdrawal|retrait/, 'Cash'],
+    [/\bfees?\b|\bfrais\b|interest|interets/, 'Fees']
+  ];
+
+  /* ------------------------------------------------------------------ text helpers */
+
+  function clean(s) {
+    return String(s == null ? '' : s).replace(/[\u200b-\u200d\ufeff]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  // Lower-case and strip accents: "Débité à Montréal" -> "debite a montreal".
+  function fold(s) {
+    return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  function round2(n) { return Math.round(n * 100) / 100; }
+
+  function normCurrency(c) {
+    var s = clean(c).toUpperCase();
+    return /^[A-Z]{3}$/.test(s) ? s : '';
+  }
+
+  var DOLLAR_CURRENCIES = { USD: 1, CAD: 1, AUD: 1, NZD: 1, BSD: 1, MXN: 1, HKD: 1, SGD: 1 };
+
+  // Map a currency marker to an ISO code. A bare "$" means the default currency when that
+  // is a dollar currency, otherwise USD.
+  function currencyOf(sym, def) {
+    var s = String(sym || '').toUpperCase().replace(/\s+/g, '');
+    var bare = DOLLAR_CURRENCIES[def] ? def : 'USD';
+    if (!s || s === '$' || s === 'DOLLAR' || s === 'DOLLARS') return bare;
+    if (/^(CA\$|C\$|CAD\$?|\$CA|\$CAN|\$CAD)$/.test(s)) return 'CAD';
+    if (/^(US\$|U\.S\.\$|USD\$?|\$US|\$USD)$/.test(s)) return 'USD';
+    if (/^(AU\$|A\$|AUD|\$AU)$/.test(s)) return 'AUD';
+    if (/^(NZ\$|NZD|\$NZ)$/.test(s)) return 'NZD';
+    if (/^(BS\$|B\$|BSD|BD\$|\$BS)$/.test(s)) return 'BSD';
+    if (/^(MX\$|MXN)$/.test(s)) return 'MXN';
+    if (/^(HK\$|HKD)$/.test(s)) return 'HKD';
+    if (/^(S\$|SGD)$/.test(s)) return 'SGD';
+    if (s === '€' || s === 'EUR' || s === 'EURO' || s === 'EUROS') return 'EUR';
+    if (s === '£' || s === 'GBP') return 'GBP';
+    if (s === '¥' || s === 'JPY') return 'JPY';
+    if (s === '₹' || s === 'INR') return 'INR';
+    if (s === 'CHF') return 'CHF';
+    return bare;
+  }
+
+  // "1,234.56" "1 234,56" "1.234,56" "45,5" -> number. A separator followed by exactly
+  // three digits at the end is a thousands separator ("1,234" = 1234).
+  function toNumber(s) {
+    s = String(s).replace(/\s/g, ' ').trim();
+    var m = /^(.*?)[.,](\d{1,2})$/.exec(s);
+    var intPart = m ? m[1] : s;
+    var dec = m ? m[2] : '';
+    var digits = intPart.replace(/\D/g, '');
+    if (!digits && !dec) return NaN;
+    return parseFloat((digits || '0') + (dec ? '.' + dec : ''));
+  }
+
+  /* ------------------------------------------------------------------ amounts */
+
+  var NUM = '(?:\\d{1,3}(?:[,. ]\\d{3})+|\\d+)(?:[.,]\\d{1,2})?(?!\\d)';
+  // "$45.20" "CA$ 12" "USD 45" "€4.50" "B$45" ...
+  var PRE_RE = new RegExp('(?<![A-Za-z])(CA\\$|C\\$|CAD ?\\$?|US\\$|U\\.S\\.\\$|USD ?\\$?|AU\\$|A\\$|AUD|NZ\\$|NZD|BS\\$|B\\$|BSD|BD\\$|MX\\$|MXN|HK\\$|HKD|S\\$|SGD|EUR|€|GBP|£|CHF|JPY|¥|INR|₹|\\$) ?([-−]?) ?(' + NUM + ')', 'g');
+  // "54,21 $" "45,00 $ CA" "12.50 USD" "4,50 €" "4,50 euros" ...
+  var POST_RE = new RegExp('(?<![A-Za-z0-9.,])(' + NUM + ') ?(\\$ ?(?:CA|CAN|CAD|US|USD|AU|NZ|BS)\\b|\\$|€|£|¥|₹|(?:CAD|USD|EUR|GBP|BSD|CHF|AUD|NZD|MXN|JPY|INR|SGD|HKD)\\b|euros?\\b|dollars?\\b)', 'gi');
+  // Last resort when no currency marker is present: "Amount: 45.20".
+  var BARE_RE = /\b(?:amount|montant|total|purchase|achat|transaction|paid|pay[ée]|debit|d[ée]bit)\s*(?:of|de|:|=)?\s*([-−]?\d{1,3}(?:[,. ]\d{3})*[.,]\d{2})(?!\d)/gi;
+
+  function signBefore(text, idx) {
+    var c = text.charAt(idx - 1);
+    if (c === ' ') c = text.charAt(idx - 2);
+    return c === '-' || c === '−' ? '-' : c === '+' ? '+' : '';
+  }
+
+  function findAmounts(text, def) {
+    var out = [];
+    var m;
+    PRE_RE.lastIndex = 0;
+    while ((m = PRE_RE.exec(text))) {
+      out.push({
+        index: m.index, end: m.index + m[0].length, value: toNumber(m[3]),
+        currency: currencyOf(m[1], def), explicit: m[1] !== '$', decimals: /[.,]\d{1,2}$/.test(m[3]),
+        sign: m[2] ? '-' : signBefore(text, m.index), form: 'pre'
+      });
+    }
+    POST_RE.lastIndex = 0;
+    while ((m = POST_RE.exec(text))) {
+      var sym = m[2];
+      out.push({
+        index: m.index, end: m.index + m[0].length, value: toNumber(m[1]),
+        currency: currencyOf(sym, def), explicit: sym !== '$' && !/^dollars?$/i.test(sym), decimals: /[.,]\d{1,2}$/.test(m[1]),
+        sign: signBefore(text, m.index), form: 'post'
+      });
+    }
+    out.sort(function (a, b) { return a.index - b.index; });
+    // "$45.00 USD" is matched by both forms; keep the better reading of each overlap.
+    var kept = [];
+    out.forEach(function (c) {
+      if (!(c.value > 0)) return;
+      var prev = kept[kept.length - 1];
+      if (prev && c.index < prev.end) {
+        var better = c.decimals !== prev.decimals ? c.decimals : c.explicit !== prev.explicit ? c.explicit : prev.form === 'post' && c.form === 'pre';
+        if (better) kept[kept.length - 1] = c;
+        return;
+      }
+      kept.push(c);
+    });
+    if (!kept.length) {
+      BARE_RE.lastIndex = 0;
+      while ((m = BARE_RE.exec(text))) {
+        var v = toNumber(m[1].replace(/^[-−]/, ''));
+        if (v > 0) kept.push({ index: m.index + m[0].length - m[1].length, end: m.index + m[0].length, value: v, currency: def, explicit: false, decimals: true, sign: /^[-−]/.test(m[1]) ? '-' : '', form: 'bare' });
+      }
+    }
+    // A short notification with exactly one decimal number and no currency marker ("Cafe Olimpico 7.50"):
+    // kept, in the default currency, but with low confidence so it lands in review.
+    if (!kept.length && text.length <= 80 && !/\b(code|codes|otp|pin|version|verification)\b/i.test(text)) {
+      var only = text.match(/(?<![\d.,])\d{1,3}(?:[ ,]\d{3})*[.,]\d{2}(?!\d)(?!\s?%)/g);
+      if (only && only.length === 1) {
+        var at = text.indexOf(only[0]);
+        kept.push({ index: at, end: at + only[0].length, value: toNumber(only[0]), currency: def, explicit: false, decimals: true, sign: signBefore(text, at), form: 'bare' });
+      }
+    }
+    return kept;
+  }
+
+  // Context right before / after an amount that says it is not a spend (matched on folded text).
+  var NEG_BEFORE = /\b(balance|available|avail|limit|remaining|owing|outstanding|minimum|statement|due|earn(?:ed)?|rewards?|points?|cash ?back|bonus|win|below|under|above|exceed\w*|reached|less than|more than|threshold|solde|disponible|plafond|limite|restant|reste|releve|echeance|gagne\w*|recompense\w*|remise|inferieur\w*|superieur\w*|depasse\w*|atteint|moins de|plus de|seuil)\b\W*(?:\w+\W+){0,2}$/;
+  var UPDATE_RE = /\b(updated to|passee? a|adjusted to|ajuste a|mis a jour a)\b/;
+  var NEG_AFTER = /^\W{0,3}(?:is |est )?(?:due|left|remaining|available|disponible|restant|of credit|de credit|credit limit|limit|cash ?back|points|in rewards|en recompenses|rewards?)\b/;
+  var POS_BEFORE = /\b(purchase\w*|spent|spend\w*|charge[ds]?|transaction|payment|paid|debit\w*|withdrawal|withdrew|authori[sz]\w*|approved|amount|refund\w*|credit(?:ed)?|deposit\w*|transfer\w*|sent|received|achat|depense\w*|paiement|paye\w*|retrait|montant|autoris\w*|approuv\w*|rembours\w*|depot|virement|envoy\w*|recu|used for)\b\W*(?:\w+\W+){0,3}$/;
+  var WEAK_BEFORE = /\b(of|de|for|pour|du)\W*$/;
+
+  function lastSentenceBreak(s) {
+    var re = /[.!?|](?=\s|$)/g;
+    var m;
+    var idx = -1;
+    while ((m = re.exec(s))) idx = m.index;
+    return idx;
+  }
+
+  function pickAmount(text, def) {
+    var cands = findAmounts(text, def);
+    if (!cands.length) return null;
+    var best = null;
+    cands.forEach(function (c, i) {
+      var before = text.slice(Math.max(0, c.index - 48), c.index);
+      before = before.slice(lastSentenceBreak(before) + 1);
+      var b = fold(before);
+      var a = fold(text.slice(c.end, c.end + 28));
+      var score = (i === 0 ? 0.5 : 0) + (c.explicit ? 0.25 : 0);
+      c.pos = POS_BEFORE.test(b);
+      if (c.pos) score += 3; else if (WEAK_BEFORE.test(b)) score += 1;
+      if (NEG_BEFORE.test(b) || NEG_AFTER.test(a)) score -= 6;
+      c.score = score;
+      if (!best || score > best.score) best = c;
+    });
+    // "The pending transaction of $45.00 ... was updated to $52.00": the last amount is the real one.
+    if (best && UPDATE_RE.test(fold(text))) {
+      cands.forEach(function (c) { if (c.score > -1 && c.index > best.index) best = c; });
+    }
+    // Foreign purchase with the conversion in the text ("49.99 USD ($67.89 CAD)", "€45.00 (CAD 66.20)"):
+    // keep the amount in the default currency so it counts in the totals, and remember the original.
+    if (best && best.currency !== def && best.explicit) {
+      var alt = null;
+      cands.forEach(function (c) {
+        if (c !== best && c.currency === def && c.explicit && c.score > -1 && Math.abs(c.index - best.index) < 45 && (!alt || c.score > alt.score)) alt = c;
+      });
+      if (alt) {
+        alt.original = { amount: round2(best.value), currency: best.currency };
+        alt.pos = alt.pos || best.pos;
+        best = alt;
+      }
+    }
+    return best;
+  }
+
+  /* ------------------------------------------------------------------ classification */
+
+  var DECLINED_RE = /\b(declined|denied|refused|rejected|unsuccessful|not approved|could not be (?:processed|approved|completed)|was blocked|we blocked|blocked a|refusee?s?|declinee?s?|rejetee?s?|non autorisee?s?|n'a pas ete (?:autorisee?|approuvee?|acceptee?))\b/;
+  var UPCOMING_RE = /\b(upcoming|scheduled|will be (?:charged|debited|withdrawn|processed|paid|renewed)|renews? (?:on|soon|tomorrow)|is due|due (?:on|soon|tomorrow|today|in)|reminder|rappel|a venir|sera (?:preleve|debite|paye|renouvele)e?|prevue?s?|echeance|has requested|requested .{0,20} from you|request for|money request|vous a demande|demande de (?:paiement|virement|fonds)|demande d.argent)\b/;
+  var STATEMENT_RE = /\b(statement (?:is )?(?:ready|available)|new statement|statement balance|minimum payment|payment due|due date|releve (?:est )?disponible|nouveau releve|paiement minimum|date d'echeance|solde du releve)\b/;
+  var PROMO_RE = /\b(offer|offre|promo\w*|limited time|ends soon|sign up|refer|parrain\w*|chance to win|win|gagne[rz]|concours|exclusive|exclusi\w*|unlock|save up to|economisez|bonus|boost|deal|special)\b/;
+  var STRONG_TX_RE = /\b(purchase (?:of|at|approved|made|for)|was made|were made|was charged|been charged|charged (?:to|on|at)|was approved|was authori[sz]ed|was used|you made|you spent|you paid|you(?:'ve| have) (?:paid|spent)|paid|spent|transaction (?:of|at|with|for)|withdrawal of|achat (?:de|chez|par|effectue)|paiement (?:de|chez|par)|effectue\w*|debite\w*|transaction de|retrait de|refund of|rembours\w*|deposit of|depot de|large purchase|charge of|depense de)\b/;
+  var TRANSFER_RE = /\b(received your payment|thank you for your payment|thanks for your payment|autopay|e-?transfer|virement|wire transfer|transfer\w* (?:to|from|of|between)|transfert\w*|contribution (?:of|de)|cotisation|tfsa|rrsp|fhsa|resp|celi|reer|celiapp|recurring investment|\bplacement\b|order to (?:buy|sell)|ordre (?:d.achat|de vente)|shares?|actions? de|etf|fnb|you bought|vous avez achete \d|zelle|venmo|merci (?:pour|de) votre paiement|vous avez (?:envoye|recu)|you (?:sent|received)|sent you)\b|\b(?:payment|paiement)\b(?:[^.!?]|\.(?=\d)){0,40}\b(?:to your (?:credit card|card|account)|(?:sur|a) votre (?:carte|compte))|\b(?:payment|paiement)\b(?:[^.!?]|\.(?=\d)){0,40}\b(?:received|posted|applied|credited|recu|credite|applique)\b|\b(?:received|recu)\b(?:[^.!?]|\.(?=\d)){0,20}\b(?:payment|paiement)\b/;
+  var INCOME_RE = /\b(direct deposit|deposit(?:ed)? (?:of|to|into)|a deposit|payroll|salary|paycheque|paycheck|depot (?:direct|de)|salaire|paie|interest (?:earned|paid|payment|credited)|interets? (?:gagnes?|verses?|credites?|payes?)|(?:was|were|been|ete|ont ete|a ete) depos\w*|deposited (?:in|into|to)|deposes? (?:dans|sur)|remuneration)\b/;
+  var CASH_RE = /\b(atm|abm|gab|dab|guichet|cash withdrawal|cash advance|avance de fonds|retrait (?:d.especes|comptant|au guichet|a un gab)|withdrawal at an? (?:atm|abm))\b/;
+  // A hold, a pre-authorization or an amount update: kept, but for review.
+  var HOLD_RE = /\b(pre-?authori[sz]ation|preautorisation|temporary hold|hold of|retenue temporaire|was updated to|est passee? a|adjusted to|ajuste a|mis a jour a)\b/;
+  var PREAUTH_RE = /\b(pre-?authori[sz]ed (?:debit|withdrawal|payment)|preautorise\w*|prelevement)\b/;
+  var FEE_RE = /\b(?:(?:annual|monthly|service|overdraft|late|foreign transaction|account|maintenance|nsf) fee (?:of|charged|has|was)|fee of|frais (?:de|mensuels|annuels|bancaires)|interest charge|interets? (?:de|factur\w*))/;
+
+  function detectType(f) {
+    if (/\b(refund\w*|rembours\w*|reversal|reversed|returned|annulation|merchant credit)\b/.test(f)) return 'refund';
+    if (TRANSFER_RE.test(f)) return 'transfer';
+    if (INCOME_RE.test(f)) return 'income';
+    if (/\b(has been credited|credited to|(?<!card )credit of|credite\w*|(?<!carte de )credit de)\b/.test(f)) return 'refund';
+    if (CASH_RE.test(f) && !PREAUTH_RE.test(f)) return 'cash';
+    if (FEE_RE.test(f)) return 'fee';
+    return 'purchase';
+  }
+
+  /* ------------------------------------------------------------------ merchant */
+
+  var CUES = [
+    { re: /\b(?:merchant|marchand|commer[çc]ant|payee|b[ée]n[ée]ficiaire|description|where)\s*[:\-–]\s*/gi, w: 3 },
+    { re: /\bchez\s+/gi, w: 3 },
+    { re: /\baupr[eè]s de\s+/gi, w: 3 },
+    { re: /\b(?:at|@)\s+(?!\d{1,2}[:h.]\d{2}|\d{1,2}\s?(?:am|pm)\b)/gi, w: 2 },
+    { re: /\bwith\s+(?!(?:your|a|an|the|card|apple|google|samsung|my|this)\b)/gi, w: 1 },
+    { re: /\bto\s+(?!(?:your|you|the|my|account|card|be|a|an)\b)/gi, w: 1 },
+    { re: /\bfrom\s+(?!(?:your|you|the|my|account|card)\b)/gi, w: 1 },
+    { re: /\bde la part de\s+/gi, w: 3 },
+    // "de MARCHAND" only when a name follows (capitalised, not an amount or an article)
+    { re: /\bde\s+(?=(?!\d|votre|vos|la |le |les |l['’]|facture|conversion|frais|compte|carte|credit|crédit|paiement|transaction|virement|dépôt|depot)[A-Z0-9][^\s]*)/g, w: 0.8 },
+    { re: /(?:^|\s)à\s+(?!(?:\d|votre|vos|la|le|les|l['’]|un|une|partir|compter|payer|venir)\b)/gi, w: 0.5 }
+  ];
+
+  var STOP_RE = new RegExp([
+    '\\s+(?:on|using|with|was|were|has|have|had|is|are|for|via|through|at|from)\\s',
+    '\\s+(?:le|la)\\s+\\d',
+    '\\s+(?:avec|sur|par|au moyen|effectu\\S*|cr[ée]dit[ée]e?s?|d[ée]bit[ée]e?s?|port[ée]e?s?|envoy[ée]e?s?|re[çc]ue?s?|trait[ée]e?s?|en date|ce jour|aujourd\\S*|hier|pour un montant|d.un montant|depuis|dans|vers|de la part)(?=\\s|$)',
+    '\\s+(?:a|ont|est|sont|sera|seront)\\s+(?:[ée]t[ée]|pass[ée]e?s?|termin[ée]e?s?|arriv[ée]e?s?|effectu|port[ée]|d[ée]bit|cr[ée]dit|envoy|re[çc]u|trait)',
+    '\\s+(?:à|a)\\s+\\d',
+    '\\s+\\d{1,2}\\s?h\\s?\\d{2}\\b',
+    '\\s+\\d{4}-\\d{2}-\\d{2}',
+    '\\s+(?:ending|ends|se terminant|terminant|finissant|card|carte|account|compte|approved|authori[sz]ed|declined|pending|totaling|totalling|today|yesterday)(?=\\s|$)',
+    '\\s*[,;!|•·()\\[\\]{}"“”«»\\n]',
+    '\\s+[-–—]\\s',
+    '\\.(?:\\s|$)',
+    '\\s+\\d{1,2}[:h]\\d{2}',
+    '\\s+\\d{1,2}[/.-]\\d{1,2}(?!\\d)',
+    '\\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?\\s+\\d',
+    '\\s+\\d{1,2}\\s+(?:janv|f[ée]vr|mars|avr|mai|juin|juil|ao[uû]t|sept|oct|nov|d[ée]c)',
+    '\\s*[-−+]?(?:[A-Z]{1,3})?[$€£¥₹]\\s?\\d',
+    '\\s+[-−+]?\\d+(?:[.,]\\d{3})*[.,]\\d{2}(?!\\d)',
+    '\\s+(?:CAD|USD|EUR|GBP|BSD)\\b'
+  ].join('|'), 'i');
+
+  var GENERIC_MERCHANT = /^(?:your|you|votre|vos|card|carte|account|compte|transaction|purchase|achat|payment|paiement|a|an|the|un|une|my|mon|ma|it|this|an (?:atm|abm)|un (?:gab|guichet))$/;
+  var GENERIC_WORDS = /\b(alert|alerte|notification|transaction|purchase|achat|payment|paiement|debit|credit|card|carte|account|compte|security|securite|new|nouveau|nouvelle|activity|activite|spent|depense|approved|approuve|update|reminder|rappel|message|info|pending|posted|authori[sz]\w*|notice|avis|en attente|express transit)\b/;
+  var TAIL_JUNK = /^\d+\s?%|cash ?back|remise|\bpoints?\b|en attente|pending/i;
+  // Words that mean the text next to an amount is a sentence, not a merchant name.
+  var TX_WORDS = /\b(purchase\w*|paid|pay\w*|spent|spend\w*|charge\w*|transaction\w*|achat\w*|paiement\w*|paye\w*|depense\w*|debit\w*|credit\w*|deposit\w*|depot\w*|refund\w*|rembours\w*|withdraw\w*|retrait\w*|transfer\w*|virement\w*|received|sent|recu|envoye|you|your|vous|votre|was|has|made|alert\w*|amount|montant|total)\b/;
+  var FUNC_START = /^(at|on|in|was|were|has|have|had|is|are|been|with|to|from|for|of|via|using|de|du|des|chez|a|au|aux|sur|avec|par|pour|le|la|les|et|and|or|your|you|votre|vos|approved|authori[sz]ed|pending|declined|est|sont|ont|ete)\b/;
+  var TRAILING_PREP = /\b(of|de|du|for|pour|at|a|to|from|chez|sur)$/;
+  var BANK_WORDS = /\b(rbc|royal bank|td|scotia\w*|bmo|cibc|desjardins|banque|bank|national bank|bnc|tangerine|simplii|wealthsimple|koho|chase|wells fargo|citi\w*|capital one|amex|american express|discover|usaa|revolut|n26|wise|monzo|boursorama|bnp|societe generale|credit agricole|lcl|caisse|lydia|paypal|apple cash|wallet|firstcaribbean|card services|visa|mastercard)\b/;
+
+  function tidyMerchant(m) {
+    m = clean(m).replace(/^[\s:–—-]+/, '').replace(/[\s.,:;!?–—-]+$/, '');
+    if (m.length > 48) m = m.slice(0, 48).replace(/\s+\S*$/, '');
+    if (!/[A-Za-zÀ-ÿ]/.test(m)) return '';
+    if (GENERIC_MERCHANT.test(fold(m))) return '';
+    return m;
+  }
+
+  function hasAmount(s) {
+    return findAmounts(s, 'USD').some(function (c) { return c.form !== 'bare'; });
+  }
+
+  // "$45.00 SHELL", "STARBUCKS $5.75", "Pending: $3.25 – DUNKIN #3345 – Visa ••8812"
+  function adjacentMerchant(parts, amt, app) {
+    for (var i = 0; i < parts.length; i++) {
+      var part = parts[i];
+      if (!part) continue;
+      var hit = findAmounts(part, 'USD').filter(function (c) { return c.value === amt.value && (c.form !== 'bare' || amt.form === 'bare'); })[0];
+      if (!hit) continue;
+      // Separators such as "·" and "|" are kept so STOP_RE stops on them.
+      var after = part.slice(hit.end).replace(/^[\s–—\-:]+/, '');
+      var stop = after.search(STOP_RE);
+      var a = tidyMerchant(stop >= 0 ? after.slice(0, stop) : after);
+      var fa = fold(a);
+      var afterOk = a && a.length <= 40 && !FUNC_START.test(fa) && !TX_WORDS.test(fa) && !GENERIC_WORDS.test(fa) && !BANK_WORDS.test(fa) && !TAIL_JUNK.test(a);
+      var before = part.slice(0, hit.index).replace(/[-−+]$/, '');
+      var b = tidyMerchant(before);
+      var fb = fold(b);
+      var beforeOk = b && b.length <= 40 && !/\d{3,}/.test(b) && !TX_WORDS.test(fb) && !TRAILING_PREP.test(fb) && !GENERIC_WORDS.test(fb) &&
+        !BANK_WORDS.test(fb) && fb !== fold(app);
+      // A short text without a currency marker ("Cafe Olimpico 7.50") names the merchant before the amount.
+      if (amt.form === 'bare') { if (beforeOk) return b; if (afterOk) return a; }
+      else { if (afterOk) return a; if (beforeOk) return b; }
+    }
+    return '';
+  }
+
+  function usableName(c, app) {
+    if (!c || c.length > 40 || hasAmount(c)) return '';
+    var f = fold(c);
+    if (GENERIC_WORDS.test(f) || BANK_WORDS.test(f) || (app && f === fold(app))) return '';
+    return tidyMerchant(c);
+  }
+
+  function findMerchant(title, subtitle, body, app, amt, walletLike) {
+    var parts = [body, subtitle, title];
+    var best = { merchant: '', weight: 0 };
+    // Wallet layout (title = card, subtitle = merchant, body = amount): the subtitle is the merchant.
+    if (walletLike) {
+      var sub = usableName(subtitle, app);
+      if (sub) best = { merchant: sub, weight: 2 };
+    }
+    parts.forEach(function (part) {
+      if (!part) return;
+      CUES.forEach(function (cue) {
+        if (cue.w <= best.weight) return;
+        cue.re.lastIndex = 0;
+        var m;
+        while ((m = cue.re.exec(part))) {
+          var rest = part.slice(m.index + m[0].length);
+          var stop = rest.search(STOP_RE);
+          var name = tidyMerchant(stop >= 0 ? rest.slice(0, stop) : rest);
+          if (name && cue.w > best.weight) { best = { merchant: name, weight: cue.w }; break; }
+        }
+      });
+    });
+    if (best.merchant) return best;
+
+    var adj = adjacentMerchant([body, subtitle, title], amt, app);
+    if (adj) return { merchant: adj, weight: 0.3 };
+
+    // "NETFLIX: $16.99 charged to your card"
+    var pre = /^([^:\n]{2,40}):\s/.exec(body || '');
+    if (pre) {
+      var p = tidyMerchant(pre[1]);
+      var fp = fold(p);
+      if (p && !GENERIC_WORDS.test(fp) && !TX_WORDS.test(fp) && !BANK_WORDS.test(fp) && fp !== fold(app)) return { merchant: p, weight: 0.4 };
+    }
+
+    // Apps that put the merchant in the title or subtitle (Wallet: title = card, subtitle = merchant).
+    var cands = [subtitle, title];
+    for (var i = 0; i < cands.length; i++) {
+      var name = usableName(cands[i], app);
+      if (name) return { merchant: name, weight: 0.3 };
+    }
+    return best;
+  }
+
+  /* ------------------------------------------------------------------ card */
+
+  var CARD_DIGITS_RE = /(?:ending(?:\s+(?:in|with))?|ends?\s+(?:in|with)|(?:se\s+)?terminant\s+par|finissant\s+par|last\s+(?:4|four)(?:\s+digits)?(?:\s+of)?|(?:card|carte)\s+(?:no\.?|number|num[ée]ro|#)?|x{2,}|\*+|•+|·{2,}|\.{2,}|…)\s*[:#]?\s*(\d{4,5})(?!\d)/i;
+  var BRAND_RE = /\b(visa|master\s?card|amex|american express|discover|interac|apple card|apple cash|debit card|carte de d[ée]bit|credit card|carte de cr[ée]dit)\b/i;
+  var BRAND_LABEL = { visa: 'Visa', mastercard: 'Mastercard', 'master card': 'Mastercard', amex: 'Amex', 'american express': 'Amex', discover: 'Discover', interac: 'Interac', 'apple card': 'Apple Card', 'apple cash': 'Apple Cash', 'debit card': 'Debit', 'carte de debit': 'Debit', 'credit card': 'Credit', 'carte de credit': 'Credit' };
+
+  function findCard(text, title, app, walletLike) {
+    var d = CARD_DIGITS_RE.exec(text);
+    var b = BRAND_RE.exec(text);
+    var brand = b ? BRAND_LABEL[fold(b[1]).replace(/\s+/g, ' ')] || '' : '';
+    if (d) return (brand ? brand + ' ' : '') + '••' + d[1];
+    if ((walletLike || /wallet|\bcartes?\b/.test(fold(app))) && title && !hasAmount(title)) return tidyMerchant(title) || brand;
+    return brand;
+  }
+
+  /* ------------------------------------------------------------------ categories */
+
+  function matchRule(foldedMerchant, pattern) {
+    var p = clean(pattern);
+    if (!p) return false;
+    var re = /^\/(.+)\/([a-z]*)$/.exec(p);
+    if (re) {
+      try { return new RegExp(re[1], re[2].indexOf('i') >= 0 ? re[2] : re[2] + 'i').test(foldedMerchant); } catch (e) { return false; }
+    }
+    return foldedMerchant.indexOf(fold(p)) >= 0;
+  }
+
+  function categorize(merchant, rules, type) {
+    if (type === 'cash') return 'Cash';
+    if (type === 'fee') return 'Fees';
+    if (type === 'income') return 'Income';
+    if (type === 'transfer') return 'Transfers';
+    var m = fold(merchant);
+    if (!m) return 'Other';
+    var user = rules || [];
+    for (var i = 0; i < user.length; i++) {
+      var r = user[i];
+      if (r && r.pattern && r.category && matchRule(m, r.pattern)) return clean(r.category);
+    }
+    for (var j = 0; j < DEFAULT_RULES.length; j++) {
+      if (DEFAULT_RULES[j][0].test(m)) return DEFAULT_RULES[j][1];
+    }
+    return 'Other';
+  }
+
+  /* ------------------------------------------------------------------ source helpers */
+
+  // Wallet layout: title = card, subtitle = merchant, body = just the amount.
+  function isWalletLayout(title, subtitle, body, def) {
+    title = clean(title); subtitle = clean(subtitle); body = clean(body);
+    return !!subtitle && !hasAmount(title) && !hasAmount(subtitle) &&
+      /^[+\-−]?\s*[^A-Za-z]*\d/.test(body) && findAmounts(body, def || 'USD').length === 1;
+  }
+
+  // Which bank sent a notification, from its text (the iOS trigger does not say which app it came from).
+  function inferBank(fields) {
+    fields = fields || {};
+    var all = fold([fields.app, fields.title, fields.subtitle, fields.body, fields.from].join(' '));
+    // The Wallet app ("Cartes" on a French iPhone) is its own channel, whatever card it shows.
+    if (/\b(wallet|cartes?)\b/.test(fold(fields.app)) || isWalletLayout(fields.title, fields.subtitle, fields.body)) return 'cartes';
+    if (/scotia|infoalert/.test(all)) return 'scotia';
+    if (/capital ?one/.test(all)) return 'capitalone';
+    if (/wealthsimple/.test(all)) return 'wealthsimple';
+    if (/desjardins/.test(all)) return 'desjardins';
+    if (/\b(rbc|royal bank|banque royale)\b/.test(all)) return 'rbc';
+    if (/\btd\b/.test(all)) return 'td';
+    if (/\bbmo\b/.test(all)) return 'bmo';
+    if (/\bcibc\b/.test(all)) return 'cibc';
+    if (/tangerine/.test(all)) return 'tangerine';
+    return '';
+  }
+
+  // The Shortcut was built with the words typed in instead of the variables ("Titre", "corps"...).
+  var PLACEHOLDER_RE = /^(?:titre|title|sous-?titre|subtitle|corps|body|message|texte|text|contenu|content|notification|entree du raccourci|shortcut input|input|valeur|value)$/;
+  function isPlaceholder(fields) {
+    fields = fields || {};
+    var vals = [fields.title, fields.subtitle, fields.body].map(function (v) { return fold(clean(v)); }).filter(String);
+    return vals.length > 0 && vals.some(function (v) { return PLACEHOLDER_RE.test(v); });
+  }
+
+  /* ------------------------------------------------------------------ public API */
+
+  function ignore(reason, def) {
+    return { kind: 'ignore', reason: reason, type: '', amount: 0, currency: def, merchant: '', card: '', category: '', confidence: 0, status: '' };
+  }
+
+  /**
+   * parse({title, subtitle, body, app}, {defaultCurrency, rules}) or parse("raw text", opts)
+   * -> {kind: 'transaction'|'ignore', reason, type, amount (always positive), currency,
+   *     merchant, card, category, confidence (0-1), status: 'ok'|'review'}
+   */
+  function parse(input, opts) {
+    opts = opts || {};
+    var def = normCurrency(opts.defaultCurrency) || 'USD';
+    if (typeof input === 'string') input = { body: input };
+    input = input || {};
+    var title = clean(input.title);
+    var subtitle = clean(input.subtitle);
+    var body = clean(input.body != null ? input.body : input.text != null ? input.text : input.message);
+    var app = clean(input.app);
+    var parts = [];
+    [title, subtitle, body].forEach(function (p) { if (p && parts.indexOf(p) < 0) parts.push(p); });
+    var text = parts.join('\n');
+    if (!text) return ignore('empty', def);
+
+    var f = fold(text);
+    // Wallet layout: title = card, subtitle = merchant, body = just the amount. Such a notification
+    // is a transaction whatever words the merchant name contains ("Boost Juice", "Dollar Deal").
+    var walletLike = isWalletLayout(title, subtitle, body, def);
+    var strong = STRONG_TX_RE.test(f) || walletLike;
+    var promoText = fold([title, body].join('\n'));
+    if (DECLINED_RE.test(f)) return ignore('declined', def);
+    if (!strong && UPCOMING_RE.test(f)) return ignore('upcoming', def);
+    if (!strong && STATEMENT_RE.test(f)) return ignore('statement', def);
+    if (!strong && PROMO_RE.test(promoText)) return ignore('promo', def);
+
+    var amt = pickAmount(text, def);
+    if (!amt) return ignore('no-amount', def);
+    if (amt.score < 0) return ignore('not-a-spend', def);
+    // "Le solde de votre compte ... est inférieur à 100,00 $": a balance notice, not a spend.
+    if (!strong && !amt.pos && /\b(solde|balance)\b/.test(f)) return ignore('not-a-spend', def);
+
+    var type = detectType(f);
+    if (type === 'purchase' && amt.sign === '+') type = 'refund';
+    var m = findMerchant(title, subtitle, body, app, amt, walletLike);
+    var card = findCard(text, title, app, walletLike);
+    var needsMerchant = type === 'purchase' || type === 'refund';
+    var mTerm = m.weight >= 2 ? 0.2 : m.weight >= 1 ? 0.1 : m.weight > 0 ? 0.05 : needsMerchant ? -0.2 : 0;
+    var conf = 0.4 + (amt.form !== 'bare' ? 0.2 : 0) + (amt.pos ? 0.2 : 0) + (strong ? 0.1 : 0) + mTerm;
+    var reason = '';
+    if (HOLD_RE.test(f)) { conf = Math.min(conf, 0.5); reason = 'hold'; }
+    conf = round2(Math.max(0, Math.min(1, conf)));
+    var out = {
+      kind: 'transaction', reason: reason, type: type, amount: round2(amt.value), currency: amt.currency,
+      merchant: m.merchant, card: card, category: categorize(m.merchant, opts.rules, type),
+      confidence: conf, status: conf < 0.6 || (needsMerchant && !m.merchant) ? 'review' : 'ok'
+    };
+    if (amt.original) out.original = amt.original;
+    if (walletLike) out.layout = 'wallet';
+    return out;
+  }
+
+  /**
+   * Build a transaction from fields that are already split out (Apple Pay automation,
+   * manual entry): {amount: "$12.50" | 12.5, merchant, card, currency, type, category}.
+   */
+  function fromFields(fields, opts) {
+    opts = opts || {};
+    fields = fields || {};
+    var def = normCurrency(opts.defaultCurrency) || 'USD';
+    var cur = normCurrency(fields.currency);
+    var value = NaN;
+    var currency = cur || def;
+    if (typeof fields.amount === 'number') {
+      value = Math.abs(fields.amount);
+    } else if (fields.amount != null && clean(fields.amount)) {
+      var s = clean(fields.amount);
+      var found = findAmounts(s, def);
+      if (found.length && found[0].form !== 'bare') { value = found[0].value; currency = cur || found[0].currency; }
+      else value = toNumber(s.replace(/[^\d.,\s]/g, ''));
+    }
+    var type = TYPES.indexOf(fields.type) >= 0 ? fields.type : 'purchase';
+    var merchant = tidyMerchant(fields.merchant);
+    var ok = value > 0;
+    return {
+      kind: 'transaction', reason: '', type: type, amount: ok ? round2(value) : 0, currency: currency,
+      merchant: merchant, card: clean(fields.card).slice(0, 40),
+      category: clean(fields.category) || categorize(merchant, opts.rules, type),
+      confidence: ok ? 0.9 : 0.3, status: ok && (merchant || !(type === 'purchase' || type === 'refund')) ? 'ok' : 'review'
+    };
+  }
+
+  // Money in (refund, income) is stored negative so a refund reduces spending.
+  function signedAmount(amount, type) {
+    var a = Math.abs(Number(amount) || 0);
+    return type === 'refund' || type === 'income' ? -a : a;
+  }
+
+  // Never keep one-time codes: "Your verification code is 482913" becomes "… is ••••••".
+  function redactCodes(s) {
+    var t = String(s == null ? '' : s);
+    if (!/\b(code|codes|otp|passcode|password|pin|verification|verify|one[- ]time|2fa|mot de passe|v[ée]rification|s[ée]curit[ée]|security)\b/i.test(t)) return t;
+    return t.replace(/\b\d{4,10}\b/g, '••••••');
+  }
+
+  function countsAsSpending(tx) {
+    return !!tx && SPENDING_TYPES[tx.type] === true && tx.status !== 'duplicate' && tx.status !== 'excluded';
+  }
+
+  return {
+    VERSION: VERSION,
+    CATEGORIES: CATEGORIES,
+    TYPES: TYPES,
+    DEFAULT_RULES: DEFAULT_RULES,
+    parse: parse,
+    fromFields: fromFields,
+    categorize: categorize,
+    matchRule: matchRule,
+    findAmounts: findAmounts,
+    toNumber: toNumber,
+    signedAmount: signedAmount,
+    countsAsSpending: countsAsSpending,
+    redactCodes: redactCodes,
+    isWalletLayout: isWalletLayout,
+    inferBank: inferBank,
+    isPlaceholder: isPlaceholder,
+    fold: fold,
+    clean: clean
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = SpendParser;
+
+/*
+ * SpendInsights: pure functions that turn the transaction list into insights:
+ * clean merchant names, recurring charges, alerts at capture, month summaries,
+ * budget pace, the last week and a weekly e-mail digest in French.
+ *
+ * One source, two consumers (like SpendParser): the Google Apps Script backend and the
+ * dashboard. Plain JavaScript, no dependencies, no modules, no Intl: it defines one global,
+ * `SpendInsights`. Nothing reads the clock: every function that needs "today" takes `now`.
+ * Dates are calendar days in local time; a date-only string 'YYYY-MM-DD' is that local day.
+ * Amounts are signed: positive = money out, negative = money back (refunds).
+ */
+var SpendInsights = (function () {
+  'use strict';
+
+  var DAY = 86400000;
+  var SPENDING_TYPES = { purchase: true, refund: true, cash: true, fee: true };
+
+  /* ------------------------------------------------------------------ helpers */
+
+  function clean(s) {
+    return String(s == null ? '' : s).replace(/[​-‍﻿]/g, '').replace(/\s+/g, ' ').trim();
+  }
+  function fold(s) {
+    return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  }
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function amt(tx) { return Number(tx.amount) || 0; }
+  function sum(list) { var t = 0; for (var i = 0; i < list.length; i++) t += amt(list[i]); return round2(t); }
+  function median(a) {
+    if (!a.length) return 0;
+    var s = a.slice().sort(function (x, y) { return x - y; }), h = s.length >> 1;
+    return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2;
+  }
+  function copy(o) {
+    var r = {};
+    for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) r[k] = o[k];
+    return r;
+  }
+  function values(o) { return Object.keys(o).map(function (k) { return o[k]; }); }
+
+  function toDate(v) {
+    if (Object.prototype.toString.call(v) === '[object Date]') return new Date(v.getTime());
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v == null ? '' : v));
+    return m ? new Date(+m[1], m[2] - 1, +m[3]) : new Date(v);
+  }
+  function isoDay(d) { d = toDate(d); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  // Day number (days since 1970-01-01) of the local calendar day: DST-proof differences.
+  function dayNo(d) { d = toDate(d); return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY); }
+  function daysIn(y, m) { return new Date(y, m + 1, 0).getDate(); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function addMonths(d, n) {
+    var t = new Date(d.getFullYear(), d.getMonth() + n, 1);
+    t.setDate(Math.min(d.getDate(), daysIn(t.getFullYear(), t.getMonth())));
+    return t;
+  }
+
+  // Same rule as SpendParser.countsAsSpending (kept separate so this file stands alone).
+  function counts(tx) {
+    return !!tx && SPENDING_TYPES[tx.type] === true && tx.status !== 'duplicate' && tx.status !== 'excluded';
+  }
+  function inCurrency(tx, cur) { return !cur || !tx.currency || tx.currency === cur; }
+  // Counting transactions in `cur` whose day number is in [from, to].
+  function spendIn(txs, cur, from, to) {
+    return (txs || []).filter(function (t) {
+      if (!counts(t) || !inCurrency(t, cur)) return false;
+      var n = dayNo(t.date);
+      return n >= from && n <= to;
+    });
+  }
+  function byDesc(field) { return function (a, b) { return b[field] - a[field]; }; }
+
+  /* ------------------------------------------------------------------ merchants */
+
+  var ACRONYMS = ['IGA', 'SAQ', 'SQDC', 'STM', 'STL', 'RTL', 'REM', 'EXO', 'BMR', 'MEC', 'LCBO', 'RBC', 'TD',
+    'BMO', 'CIBC', 'KFC', 'A&W', 'H&M', 'VIA', 'NYT'];
+  // Folded name (or its start, followed by a space) -> display name.
+  var ALIASES = [['tim hortons', 'Tim Hortons'], ['iga extra', 'IGA'], ['uber trip', 'Uber'], ['uber eats', 'Uber Eats'],
+    ['amazon.ca', 'Amazon'], ['amzn mktp', 'Amazon'], ['couche-tard', 'Couche-Tard'], ['couche tard', 'Couche-Tard'],
+    ['jean coutu', 'Jean Coutu'], ['pjc', 'Jean Coutu'], ['netflix.com', 'Netflix'], ['spotify', 'Spotify'],
+    ['google *youtube', 'YouTube']];
+  // Payment-processor prefixes: what follows is the merchant; the name is used when nothing follows.
+  var PREFIXES = [[/^SQ ?\*\s*/i, 'Square'], [/^TST ?\*\s*/i, 'Toast'], [/^(?:PAYPAL|PP) ?\*\s*/i, 'PayPal'],
+    [/^(?:APL ?\*|APPLE\.COM\/BILL)\s*/i, 'Apple'], [/^AMZN MKTP(?: CA)? ?\*?\s*/i, 'Amazon'],
+    [/^SP ?\*\s*/i, 'Shopify'], [/^SUMUP ?\*\s*/i, 'SumUp'], [/^(?:DD|DOORDASH) ?\*\s*/i, 'DoorDash']];
+  var DOMAIN = /(?:https?:\/\/)?(?:www\.)?(?:[a-z0-9-]+\.)*([a-z0-9-]+)\.(?:com|ca|net|org|io|co|fr|tv|ai|app)\b(?:\/\S*)?/gi;
+  var PROVINCE = /\s+(?:QC|ON|BC|AB|MB|SK|NS|NB|NL|PE|YT|NT|NU)$/;
+
+  function alias(folded) {
+    var variants = [folded.replace(/\s*\*\s*/g, ' *'), clean(folded.replace(/\*/g, ' '))];
+    for (var i = 0; i < ALIASES.length; i++) {
+      for (var j = 0; j < variants.length; j++) {
+        var k = ALIASES[i][0], v = variants[j];
+        if (v === k || v.indexOf(k + ' ') === 0) return ALIASES[i][1];
+      }
+    }
+    return '';
+  }
+
+  function titleCase(s) {
+    return s.split(' ').map(function (w) {
+      if (ACRONYMS.indexOf(w.toUpperCase()) >= 0) return w.toUpperCase();
+      return w.toLowerCase().replace(/(^|[-\/(])(\S)/g, function (all, p, c) { return p + c.toUpperCase(); });
+    }).join(' ');
+  }
+
+  // "SQ *CAFE OLIMPICO 0042 MONTREAL QC" -> "Cafe Olimpico"; "TIM HORTONS #1234" -> "Tim Hortons".
+  function canonicalMerchant(name) {
+    var s = clean(name), fallback = '';
+    if (!s) return '';
+    var known = alias(fold(s));
+    if (known) return known;
+    s = s.replace(/^UBER ?\* ?/i, 'UBER ');
+    for (var i = 0; i < PREFIXES.length; i++) {
+      if (PREFIXES[i][0].test(s)) { fallback = PREFIXES[i][1]; s = s.replace(PREFIXES[i][0], ''); i = -1; }
+    }
+    if (fallback && /^[A-Z0-9]*\d[A-Z0-9]*$/i.test(s)) s = ''; // only a reference code follows the prefix
+    s = s.replace(/\*\s*[A-Z0-9]*\d[A-Z0-9]*\s*$/i, '').replace(/\*/g, ' '); // trailing reference "*2K4XY"
+    s = clean(s.replace(DOMAIN, ' ')) || clean(s).replace(DOMAIN, '$1'); // "help.uber.com" -> "uber"
+    s = clean(s.replace(/#\s*\d+/g, ' ').replace(/\b\d{3}[- .]\d{3}[- .]\d{4}\b/g, ' ')); // store #, phone
+    s = s.replace(/\s+(?:\d{3,}|0\d+)(?=\s|$)/g, ''); // store numbers: "0042", "23045" (never the first word)
+    s = s.replace(/\s+CA$/, '');
+    if (PROVINCE.test(s)) s = s.replace(PROVINCE, '').replace(/(\S)\s+[^\s\d]+$/, '$1'); // "... MONTREAL QC"
+    s = clean(s.replace(/^[\s\-,.;:\/]+|[\s\-,.;:\/]+$/g, ''));
+    if (!s) return fallback;
+    if (!/[a-zß-ÿ]/.test(s) || !/[A-ZÀ-Þ]/.test(s)) s = titleCase(s); // ALL CAPS or all lower-case
+    return alias(fold(s)) || s;
+  }
+
+  var keyCache = Object.create(null);
+  function key(name) {
+    var s = String(name == null ? '' : name);
+    if (!(s in keyCache)) keyCache[s] = fold(canonicalMerchant(s));
+    return keyCache[s];
+  }
+
+  /* ------------------------------------------------------------------ recurring charges */
+
+  // maxLate: a series whose next charge is this many days late is considered ended.
+  var PERIODS = [
+    { name: 'weekly', min: 6, max: 8, minCount: 3, perMonth: 4.33, maxLate: 14 },
+    { name: 'monthly', min: 26, max: 35, minCount: 2, perMonth: 1, maxLate: 45 },
+    { name: 'yearly', min: 360, max: 370, minCount: 2, perMonth: 1 / 12, maxLate: 60 }
+  ];
+  function periodOf(name) { return PERIODS.filter(function (p) { return p.name === name; })[0] || PERIODS[1]; }
+  function stable(a) { return Math.max.apply(null, a) <= Math.min.apply(null, a) * 1.05 + 0.005; }
+  // All amounts within ±5 % of each other, or one price change (after ≥ 2 charges) that is stable again.
+  function steady(a) {
+    if (stable(a)) return true;
+    for (var k = 2; k < a.length; k++) {
+      var before = a.slice(0, k), after = a.slice(k), r = median(after) / median(before);
+      if (stable(before) && stable(after) && r > 0.67 && r < 1.5) return true;
+    }
+    return false;
+  }
+
+  function recurring(txs, now, opts) {
+    opts = opts || {};
+    var cur = opts.currency || 'CAD', today = dayNo(now), groups = {}, out = [];
+    (txs || []).forEach(function (t) {
+      if (!counts(t) || t.type === 'refund' || amt(t) <= 0 || !inCurrency(t, cur)) return;
+      var d = dayNo(t.date), k = key(t.merchant);
+      if (k && d <= today) (groups[k] = groups[k] || []).push({ tx: t, day: d, amount: amt(t) });
+    });
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k].sort(function (a, b) { return a.day - b.day; }), gaps = [];
+      for (var i = 1; i < g.length; i++) gaps.push(g[i].day - g[i - 1].day);
+      var p = PERIODS.filter(function (p) {
+        var bad = gaps.filter(function (x) { return x < p.min || x > p.max; }).length;
+        return g.length >= p.minCount && (bad === 0 || (bad === 1 && g.length >= 4));
+      })[0];
+      if (!p || !steady(g.map(function (e) { return e.amount; }))) return;
+      var last = g[g.length - 1], prev = g[g.length - 2], lastDate = toDate(last.tx.date);
+      var next = p.name === 'weekly' ? addDays(lastDate, 7) : addMonths(lastDate, p.name === 'monthly' ? 1 : 12);
+      var late = today - dayNo(next);
+      if (late > p.maxLate) return;
+      out.push({
+        merchant: canonicalMerchant(last.tx.merchant), key: k, amount: last.amount,
+        avgAmount: round2(g.reduce(function (s, e) { return s + e.amount; }, 0) / g.length),
+        period: p.name, count: g.length, lastDate: isoDay(lastDate), nextExpected: isoDay(next), overdue: late > 5,
+        increased: last.amount >= prev.amount * 1.05 - 1e-9 ? { from: prev.amount, to: last.amount } : null,
+        category: last.tx.category || '', monthly: round2(last.amount * p.perMonth)
+      });
+    });
+    return out.sort(byDesc('monthly'));
+  }
+
+  function monthlyTotal(list) {
+    return round2((list || []).reduce(function (s, r) { return s + r.amount * periodOf(r.period).perMonth; }, 0));
+  }
+
+  /* ------------------------------------------------------------------ alerts at capture */
+
+  // `recent`: earlier transactions. Returns [] or some of 'large', 'new'.
+  function flagAtCapture(tx, recent) {
+    var flags = [], a = tx ? amt(tx) : 0;
+    if (!counts(tx) || a <= 0) return flags;
+    var prior = (recent || []).filter(function (t) { return t && t !== tx && (tx.id == null || t.id !== tx.id); });
+    var buys = prior.filter(function (t) { return counts(t) && t.type === 'purchase' && amt(t) > 0 && inCurrency(t, tx.currency); })
+      .sort(function (x, y) { return toDate(y.date) - toDate(x.date); }).slice(0, 60).map(amt);
+    if (buys.length < 10) return a > 500 ? ['large'] : flags;
+    var med = median(buys), k = key(tx.merchant);
+    if (a > Math.max(4 * med, 100)) flags.push('large');
+    if (k && a > 2 * med && !prior.some(function (t) { return key(t.merchant) === k; })) flags.push('new');
+    return flags;
+  }
+
+  /* ------------------------------------------------------------------ months, pace, week */
+
+  function monthTxs(txs, cur, y, m, lastDay) {
+    return spendIn(txs, cur, dayNo(new Date(y, m, 1)), dayNo(new Date(y, m, Math.min(lastDay || 31, daysIn(y, m)))));
+  }
+  function elapsedDays(y, m, now) {
+    var n = toDate(now);
+    if (n.getFullYear() === y && n.getMonth() === m) return n.getDate();
+    return y * 12 + m < n.getFullYear() * 12 + n.getMonth() ? daysIn(y, m) : 0;
+  }
+
+  function monthSummary(txs, currency, year, month, now) {
+    var dim = daysIn(year, month), el = elapsedDays(year, month, now), cats = {}, merch = {};
+    var list = monthTxs(txs, currency || 'CAD', year, month, el || dim), total = sum(list); // month to date
+    list.forEach(function (t) {
+      var c = t.category || 'Other', k = key(t.merchant);
+      cats[c] = (cats[c] || 0) + amt(t);
+      if (!k) return;
+      var m = merch[k] = merch[k] || { merchant: canonicalMerchant(t.merchant), total: 0, count: 0 };
+      m.total += amt(t);
+      m.count++;
+    });
+    return {
+      year: year, month: month, total: total, count: list.length,
+      perDay: el ? round2(total / el) : 0,
+      projected: el && el < dim ? round2(total / el * dim) : total,
+      byCategory: Object.keys(cats).map(function (c) {
+        return { category: c, total: round2(cats[c]), share: total > 0 ? Math.round(cats[c] / total * 1000) / 1000 : 0 };
+      }).sort(byDesc('total')),
+      topMerchants: values(merch).map(function (m) { m.total = round2(m.total); return m; }).sort(byDesc('total')).slice(0, 5),
+      largest: list.filter(function (t) { return amt(t) > 0; }).sort(function (a, b) { return amt(b) - amt(a); }).slice(0, 3).map(copy)
+    };
+  }
+
+  function compareMonths(txs, currency, year, month, now) {
+    var n = toDate(now), cur = currency || 'CAD', py = month ? year : year - 1, pm = month ? month - 1 : 11;
+    var inProgress = n.getFullYear() === year && n.getMonth() === month, cut = inProgress ? n.getDate() : 31;
+    var a = monthTxs(txs, cur, year, month, cut), b = monthTxs(txs, cur, py, pm, cut), cats = {};
+    function add(list, field) {
+      list.forEach(function (t) {
+        var c = t.category || 'Other';
+        cats[c] = cats[c] || { category: c, cur: 0, prev: 0 };
+        cats[c][field] += amt(t);
+      });
+    }
+    add(a, 'cur');
+    add(b, 'prev');
+    var c = sum(a), p = sum(b);
+    return {
+      current: c, previous: p, delta: round2(c - p), deltaPct: p > 0 ? Math.round((c - p) / p * 1000) / 10 : null,
+      samePoint: inProgress,
+      categories: values(cats).map(function (x) {
+        return { category: x.category, cur: round2(x.cur), prev: round2(x.prev), delta: round2(x.cur - x.prev) };
+      }).sort(function (x, y) { return Math.abs(y.delta) - Math.abs(x.delta); })
+    };
+  }
+
+  function pace(txs, currency, budget, now) {
+    budget = Number(budget) || 0;
+    if (budget <= 0) return null;
+    var n = toDate(now), y = n.getFullYear(), m = n.getMonth(), dim = daysIn(y, m);
+    var s = monthSummary(txs, currency, y, m, n);
+    return {
+      spent: s.total, budget: budget, expectedToday: round2(budget * n.getDate() / dim), projected: s.projected,
+      ratio: Math.round(s.total / budget * 1000) / 1000,
+      status: s.total > budget ? 'over' : s.projected > budget ? 'warn' : 'ok'
+    };
+  }
+
+  // The last 7 full days (today excluded) against the 7 days before.
+  function week(txs, currency, now) {
+    var n = toDate(now), t = dayNo(n), cur = currency || 'CAD';
+    var a = spendIn(txs, cur, t - 7, t - 1), b = spendIn(txs, cur, t - 14, t - 8), total = sum(a), prev = sum(b);
+    return {
+      start: isoDay(addDays(n, -7)), end: isoDay(addDays(n, -1)), total: total, count: a.length,
+      previousTotal: prev, delta: round2(total - prev), deltaPct: prev > 0 ? Math.round((total - prev) / prev * 1000) / 10 : null
+    };
+  }
+
+  /* ------------------------------------------------------------------ formatting */
+
+  var FR = {
+    months: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
+    days: ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+  };
+  var EN = {
+    months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  };
+  var SYMBOLS = { fr: { CAD: '$', USD: '$ US', EUR: '€', GBP: '£' }, en: { CAD: '$', USD: 'US$', EUR: '€', GBP: '£' } };
+  var NBSP = ' ', NNBSP = ' ';
+  function isFr(locale) { return /^fr/i.test(locale || 'fr'); }
+
+  // fr: "1 234,56 $" (no-break space thousands, narrow no-break space before the symbol); en: "$1,234.56".
+  function formatMoney(n, currency, locale) {
+    var v = Number(n) || 0, cents = Math.round(Math.abs(v) * 100), cur = currency || 'CAD';
+    var ip = String(Math.floor(cents / 100)), dp = pad(cents % 100), sign = v < 0 && cents ? '-' : '';
+    if (isFr(locale)) return sign + ip.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP) + ',' + dp + NNBSP + (SYMBOLS.fr[cur] || cur);
+    return sign + (SYMBOLS.en[cur] || cur + ' ') + ip.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + dp;
+  }
+
+  // fr: "lundi 2 novembre", "1er novembre"; en: "Monday, November 2". opts: { weekday, year }.
+  function formatDate(d, locale, opts) {
+    d = toDate(d);
+    opts = opts || {};
+    if (isNaN(d.getTime())) return '';
+    var fr = isFr(locale), L = fr ? FR : EN, day = d.getDate();
+    var s = fr ? (day === 1 ? '1er' : day) + ' ' + L.months[d.getMonth()] : L.months[d.getMonth()] + ' ' + day;
+    if (opts.year) s += (fr ? ' ' : ', ') + d.getFullYear();
+    return opts.weekday ? L.days[d.getDay()] + (fr ? ' ' : ', ') + s : s;
+  }
+
+  /* ------------------------------------------------------------------ weekly digest (French) */
+
+  var CATEGORY_FR = { Groceries: 'Épicerie', Dining: 'Restaurants', Transport: 'Transport', Travel: 'Voyages',
+    Shopping: 'Magasinage', Subscriptions: 'Abonnements', Bills: 'Factures', Health: 'Santé', Entertainment: 'Loisirs',
+    Cash: 'Retraits', Fees: 'Frais', Other: 'Autre', Income: 'Revenus', Transfers: 'Virements' };
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function trend(pct) {
+    var r = Math.round(Math.abs(pct));
+    return (r === 0 ? '= ' : pct > 0 ? '▲ ' : '▼ ') + r + NBSP + '%';
+  }
+  function plural(n, word) { return n + ' ' + word + (n > 1 ? 's' : ''); }
+  function dayRange(a, b) {
+    a = toDate(a);
+    b = toDate(b);
+    return 'du ' + (a.getMonth() === b.getMonth() ? (a.getDate() === 1 ? '1er' : a.getDate()) : formatDate(a, 'fr')) +
+      ' au ' + formatDate(b, 'fr');
+  }
+  function para(text, html) { return { text: text, html: '<p>' + (html || esc(text)) + '</p>' }; }
+  function list(head, items) {
+    if (!items.length) return para(head);
+    return {
+      text: head + '\n' + items.map(function (i) { return '• ' + i; }).join('\n'),
+      html: '<p><strong>' + esc(head) + '</strong></p>\n<ul>' + items.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>'
+    };
+  }
+
+  // opts: { now, currency, budget, locale, health: { lines: [] }, reviewCount, dashboardUrl }
+  function digest(txs, opts) {
+    opts = opts || {};
+    txs = txs || [];
+    var now = toDate(opts.now), cur = opts.currency || 'CAD', loc = opts.locale || 'fr', y = now.getFullYear(), m = now.getMonth();
+    var money = function (n) { return formatMoney(n, cur, loc); };
+    var cat = function (c) { return CATEGORY_FR[c] || c; };
+    var w = week(txs, cur, now), cmp = compareMonths(txs, cur, y, m, now), ms = monthSummary(txs, cur, y, m, now);
+    var prevMonth = FR.months[(m + 11) % 12], out = [], s;
+    var title = 'Vos dépenses — ' + formatDate(now, loc, { weekday: true });
+
+    if (w.count || w.previousTotal) {
+      s = 'Cette semaine (' + dayRange(w.start, w.end) + ') : ' + money(w.total) + ' en ' + plural(w.count, 'transaction');
+      if (w.deltaPct != null) s += ', ' + trend(w.deltaPct) + ' par rapport à la semaine précédente (' + money(w.previousTotal) + ')';
+      out.push(para(s + '.'));
+    }
+    if (cmp.current || cmp.previous) {
+      s = 'Depuis le 1er ' + FR.months[m] + ' : ' + money(cmp.current);
+      if (cmp.deltaPct != null) s += ', ' + trend(cmp.deltaPct) + ' par rapport à la même période en ' + prevMonth + ' (' + money(cmp.previous) + ')';
+      out.push(para(s + '.'));
+    }
+    var p = pace(txs, cur, opts.budget, now);
+    if (p) {
+      s = 'Budget du mois : ' + money(p.spent) + ' dépensés sur ' + money(p.budget) + ' (' + Math.round(p.ratio * 100) + NBSP + '%)';
+      if (p.status === 'over') s += ' — budget dépassé de ' + money(p.spent - p.budget) + '.';
+      else s += '. Au rythme actuel : environ ' + money(p.projected) + ' d’ici la fin du mois, ' +
+        (p.status === 'warn' ? 'soit ' + money(p.projected - p.budget) + ' de plus que prévu.' : 'dans les limites du budget.');
+      out.push(para(s));
+    }
+    var top = ms.byCategory.filter(function (c) { return c.total > 0; }).slice(0, 3).map(function (c) {
+      var x = cmp.categories.filter(function (k) { return k.category === c.category; })[0], d = x ? x.delta : 0;
+      var change = x && x.prev ? (d > 0 ? '▲ ' : d < 0 ? '▼ ' : '= ') + money(Math.abs(d)) : 'nouveau';
+      return cat(c.category) + ' : ' + money(c.total) + ' (' + change + ')';
+    });
+    if (top.length) out.push(list('Principales catégories du mois (par rapport à ' + prevMonth + ') :', top));
+
+    var rec = recurring(txs, now, { currency: cur });
+    if (rec.length) {
+      out.push(list('Paiements récurrents : ' + plural(rec.length, 'détecté') + ', environ ' + money(monthlyTotal(rec)) + ' par mois.',
+        rec.filter(function (r) { return r.increased; }).map(function (r) {
+          return 'Hausse : ' + r.merchant + ' est passé de ' + money(r.increased.from) + ' à ' + money(r.increased.to) + '.';
+        }).concat(rec.filter(function (r) { return r.overdue; }).map(function (r) {
+          return r.merchant + ' : attendu vers le ' + formatDate(r.nextExpected, loc, { weekday: true }) + ', pas encore reçu.';
+        }))));
+    }
+
+    var t = dayNo(now), buys = spendIn(txs, cur, t - 7, t - 1).filter(function (x) { return amt(x) > 0; });
+    var items = buys.slice().sort(function (a, b) { return amt(b) - amt(a); }).slice(0, 3).map(function (x) {
+      return money(amt(x)) + ' — ' + (canonicalMerchant(x.merchant) || cat(x.category)) + ' (' + formatDate(x.date, loc, { weekday: true }) + ')';
+    });
+    var seen = {}, fresh = [];
+    buys.forEach(function (x) {
+      var k = key(x.merchant), d = dayNo(x.date);
+      if (!k || seen[k]) return;
+      var earlier = txs.filter(function (o) { return o !== x && dayNo(o.date) < d; });
+      if (flagAtCapture(x, earlier).indexOf('new') >= 0) { seen[k] = 1; fresh.push(canonicalMerchant(x.merchant) + ' (' + money(amt(x)) + ')'); }
+    });
+    if (fresh.length) items.push('Nouveau' + (fresh.length > 1 ? 'x marchands' : ' marchand') + ' : ' + fresh.join(', ') + '.');
+    if (items.length) out.push(list('Plus gros achats de la semaine :', items));
+
+    var n = Number(opts.reviewCount) || 0, url = String(opts.dashboardUrl || '');
+    if (n > 0) {
+      s = plural(n, 'transaction') + ' à vérifier';
+      var safe = /^https?:\/\//i.test(url);
+      out.push(para(s + (url ? ' dans le tableau de bord : ' + url : '.'),
+        esc(s) + (safe ? ' dans le <a href="' + esc(url) + '">tableau de bord</a>.' : '.')));
+    }
+    var lines = (opts.health && opts.health.lines) || [];
+    if (lines.length) out.push(list('État de la capture :', lines.map(String)));
+
+    s = 'Dépenses : ' + money(w.total) + ' cette semaine' + (w.deltaPct != null ? ' (' + trend(w.deltaPct) + ')' : '') +
+      ', ' + money(cmp.current) + ' depuis le 1er ' + FR.months[m];
+    return {
+      subject: s,
+      text: [title].concat(out.map(function (x) { return x.text; })).join('\n\n'),
+      html: '<div lang="fr">\n<h2>' + esc(title) + '</h2>\n' + out.map(function (x) { return x.html; }).join('\n') + '\n</div>'
+    };
+  }
+
+  return {
+    counts: counts,
+    canonicalMerchant: canonicalMerchant,
+    key: key,
+    recurring: recurring,
+    monthlyTotal: monthlyTotal,
+    flagAtCapture: flagAtCapture,
+    monthSummary: monthSummary,
+    compareMonths: compareMonths,
+    pace: pace,
+    week: week,
+    digest: digest,
+    formatMoney: formatMoney,
+    formatDate: formatDate,
+    isoDay: isoDay
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = SpendInsights;
+
+/**
+ * Dépenses : backend Google Apps Script.
+ *
+ * Reçoit les notifications de banque et de carte (raccourci iPhone, courriels d'alerte lus
+ * dans Gmail, tableau de bord), les lit avec SpendParser et les range dans cette feuille.
+ * tools/build.mjs assemble ce fichier avec src/parser.js et src/insights.js en
+ * apps-script/Spending.gs, le seul fichier à coller dans Apps Script.
+ *
+ * Installation (docs/GUIDE.fr.md) :
+ *   1. Dans une feuille Google : Extensions > Apps Script. Remplacer Code.gs par Spending.gs.
+ *   2. Déployer > Nouveau déploiement > Application Web, « Moi » / « Tout le monde ».
+ *   3. Exécuter setup(). L'onglet Configuration de la feuille contient ensuite les liens.
+ *
+ * Jetons : CAPTURE_TOKEN (dans le raccourci : peut seulement ajouter des notifications) et
+ * ADMIN_TOKEN (dans le tableau de bord : tout le reste).
+ *
+ * API (JSON ; le jeton dans le corps, ou ?token=... dans l'adresse) :
+ *   POST {titre|title, soustitre|subtitle, corps|body}     une notification (jeton capture ou admin)
+ *   POST {action:'list'|'ping'|'add'|'update'|'delete'|'rule'|'rule-delete'|'settings'|'unignore'|'confirm'}  (admin)
+ *   GET  ?action=list|ping                                   (admin)
+ */
+
+var VERSION = '0.3.0';
+var DASHBOARD_URL = 'https://jeanculess.github.io/Nassau/depenses.html';
+var TX_SHEET = 'Transactions';
+var IGNORED_SHEET = 'Ignored';
+var RULES_SHEET = 'Rules';
+var CONFIG_SHEET = 'Configuration';
+var TX_COLS = ['date', 'amount', 'currency', 'merchant', 'category', 'type', 'card', 'status', 'note', 'source', 'raw', 'id', 'captured_at', 'reader', 'flags'];
+var TX_FORMATS = ['yyyy-mm-dd hh:mm', '0.00', '@', '@', '@', '@', '@', '@', '@', '@', '@', '@', 'yyyy-mm-dd hh:mm:ss', '@', '@'];
+var IGNORED_COLS = ['captured_at', 'source', 'reason', 'raw'];
+var IGNORED_FORMATS = ['yyyy-mm-dd hh:mm:ss', '@', '@', '@'];
+var RULES_COLS = ['pattern', 'category', 'name'];
+var IGNORED_MAX = 1000;                 // les plus vieilles notifications ignorées sont supprimées
+var IGNORED_DAYS = 62;                  // renvoyées au tableau de bord
+var CAPTURE_MAX_PER_DAY = 300;          // au-delà, les notifications sont notées sans être lues
+var STATUSES = ['ok', 'review', 'duplicate', 'excluded'];
+var EDITABLE = ['date', 'amount', 'currency', 'merchant', 'category', 'type', 'card', 'status', 'note'];
+var CHANNELS = ['phone', 'email', 'manual', 'paste', 'statement', 'applepay'];
+
+// Fenêtres de détection des doublons (un même achat vu deux fois).
+var REPEAT_DUP_MS = 90 * 1000;          // même texte, même source : le raccourci a tiré deux fois
+var REPEAT_REVIEW_MS = 10 * 60 * 1000;  // même texte un peu plus tard : deux achats ? compté, à vérifier
+var PHONE_PAIR_MS = 10 * 60 * 1000;     // Cartes + banque pour un paiement Apple Pay
+var EMAIL_PAIR_MS = 12 * 60 * 60 * 1000; // notification + courriel du même achat
+var EMAIL_SHORT_MS = 2 * 60 * 60 * 1000; // idem quand un des deux n'a pas de marchand
+var MANUAL_PAIR_MS = 48 * 60 * 60 * 1000; // saisie manuelle / relevé / texte collé
+var DEDUP_ROWS = 300;
+
+// Surveillance et courriels.
+var HEARTBEAT_DAYS_DEFAULT = 3;         // rien reçu depuis N jours -> courriel
+var SOURCE_QUIET_DAYS = 7;              // une banque active qui se tait -> courriel
+var ALERT_EVERY_DAYS = 7;               // un courriel par problème par semaine au plus
+var EMAIL_QUERY_DEFAULT = 'newer_than:2d -label:Depenses (from:capitalone.ca OR from:capitalone.com OR from:scotiabank.com OR from:scotiabank.ca OR from:wealthsimple.com)';
+var EMAIL_LABEL = 'Depenses';
+var EMAIL_MAX_PER_TICK = 30;
+
+// Claude (facultatif : rien ne sort de Google sans ANTHROPIC_API_KEY).
+var CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
+var CLAUDE_DEFAULT_MODEL = 'claude-opus-5-5';
+var CLAUDE_DEFAULT_MODE = 'review';     // review : seulement ce que les règles n'ont pas compris | always | off
+var CLAUDE_MAX_PER_DAY = 40;
+var CLAUDE_MAX_MONTH_USD = 1;
+var CLAUDE_PRICES = { 'claude-opus-5-5': [4, 20], 'claude-sonnet-5-5': [2, 10], 'claude-haiku-5-5': [0.1, 0.5] }; // $ par million de jetons, entrée / sortie
+var CLAUDE_REASONS = ['none', 'no-amount', 'not-a-spend', 'promo', 'declined', 'upcoming', 'statement', 'other'];
+var CLAUDE_SCHEMA = {
+  type: 'object',
+  properties: {
+    is_transaction: { type: 'boolean' },
+    ignore_reason: { type: 'string', enum: CLAUDE_REASONS },
+    type: { type: 'string', enum: ['purchase', 'refund', 'cash', 'fee', 'income', 'transfer'] },
+    amount: { type: 'number' },
+    currency: { type: 'string' },
+    merchant: { type: 'string' },
+    card: { type: 'string' },
+    category: { type: 'string' },
+    confidence: { type: 'string', enum: ['high', 'medium', 'low'] }
+  },
+  required: ['is_transaction', 'ignore_reason', 'type', 'amount', 'currency', 'merchant', 'card', 'category', 'confidence'],
+  additionalProperties: false
+};
+
+/* ================================================================== à lancer depuis l'éditeur */
+
+/** Installe ou met à jour. Sans danger à relancer : les données et les jetons sont conservés. */
+function setup() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('Ouvrez le script depuis la feuille (Extensions > Apps Script), puis relancez setup.');
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('SHEET_ID', ss.getId());
+
+  // Jetons. Une installation de la version 0.1/0.2 n'avait qu'un jeton pour tout :
+  // on le remplace par un jeton de capture et un jeton admin (l'ancien cesse de marcher).
+  var migrated = false;
+  if (!props.getProperty('ADMIN_TOKEN')) {
+    props.setProperty('ADMIN_TOKEN', newToken_());
+    props.setProperty('CAPTURE_TOKEN', newToken_());
+    if (props.getProperty('TOKEN')) { props.deleteProperty('TOKEN'); migrated = true; }
+  }
+  if (!props.getProperty('CAPTURE_TOKEN')) props.setProperty('CAPTURE_TOKEN', newToken_());
+
+  if (!props.getProperty('CURRENCY')) props.setProperty('CURRENCY', currencyFromLocale_(ss));
+  ensureSheet_(ss, TX_SHEET, TX_COLS);
+  ensureSheet_(ss, IGNORED_SHEET, IGNORED_COLS);
+  ensureSheet_(ss, RULES_SHEET, RULES_COLS);
+  // L'onglet vide créé par défaut (« Feuille 1 », « Sheet1 ») disparaît.
+  ss.getSheets().forEach(function (sh) {
+    var name = sh.getName();
+    if ([TX_SHEET, IGNORED_SHEET, RULES_SHEET, CONFIG_SHEET].indexOf(name) < 0 && sh.getLastRow() === 0 && ss.getSheets().length > 3) ss.deleteSheet(sh);
+  });
+  var triggerOk = installTriggers_();
+  var cfg = writeConfig_(ss);
+  Logger.log('Installation terminée (version ' + VERSION + ').' +
+    (migrated ? '\nL\'ancien jeton unique a été remplacé : recopiez le lien du raccourci dans Raccourcis.' : '') +
+    '\n\nOuvrez l\'onglet « Configuration » de la feuille : il contient le lien du tableau de bord et le lien du raccourci.' +
+    (cfg.webAppUrl ? '' : '\n\nLe script n\'est pas encore déployé : Déployer > Nouveau déploiement > Application Web (Moi / Tout le monde), puis relancez setup.') +
+    (triggerOk ? '' : '\n\nLe déclencheur automatique n\'a pas pu être installé (autorisation refusée ?). Relancez setup.') +
+    '\n\nDevise : ' + currency_() + '. Relancer setup est sans danger.');
+  return { adminToken: props.getProperty('ADMIN_TOKEN'), captureToken: props.getProperty('CAPTURE_TOKEN'), currency: currency_(), sheet: ss.getUrl(), webAppUrl: cfg.webAppUrl, migrated: migrated };
+}
+
+/** Alias en français. */
+function installer() { return setup(); }
+
+/** Remplace les deux jetons. Ensuite : rouvrir le tableau de bord depuis l'onglet Configuration et recopier le lien du raccourci. */
+function rotateToken() {
+  var props = PropertiesService.getScriptProperties();
+  var old = props.getProperty('CAPTURE_TOKEN');
+  if (old) {
+    props.setProperty('PREV_CAPTURE_TOKEN', old);
+    props.setProperty('PREV_CAPTURE_UNTIL', String(now_().getTime() + 30 * 86400000));
+    props.setProperty('STALE_HITS', '0');
+  }
+  props.setProperty('ADMIN_TOKEN', newToken_());
+  props.setProperty('CAPTURE_TOKEN', newToken_());
+  var cfg = writeConfig_(ss_());
+  Logger.log('Jetons remplacés. Onglet Configuration : rouvrez le tableau de bord avec le nouveau lien, puis recopiez le lien du raccourci dans Raccourcis.' + (cfg.webAppUrl ? '' : ' (Script non déployé.)'));
+  return { adminToken: props.getProperty('ADMIN_TOKEN'), captureToken: props.getProperty('CAPTURE_TOKEN') };
+}
+function changerJetons() { return rotateToken(); }
+
+/** Essaie le lecteur de notifications sur quelques textes. */
+function testParse() {
+  var samples = [
+    { title: 'InfoAlerte Scotia', body: 'Un achat de 54,21 $ a été effectué chez IGA EXTRA avec votre carte Visa se terminant par 1234.' },
+    { title: 'Visa Scotia', subtitle: 'Jean Coutu', body: '12,50 $' },
+    { title: 'Capital One', body: 'Your verification code is 482913' }
+  ];
+  samples.forEach(function (s) {
+    Logger.log(JSON.stringify(s) + '\n  -> ' + JSON.stringify(SpendParser.parse(s, { defaultCurrency: currency_(), rules: readRules_(ss_()) })));
+  });
+}
+
+/** Envoie tout de suite le résumé hebdomadaire. */
+function sendDigestNow() { return weeklyDigest_(true); }
+/** Fait tout de suite la vérification quotidienne (courriel seulement s'il y a un problème). */
+function checkNow() { return dailyCheck_(true); }
+/** Lit tout de suite les courriels d'alerte. */
+function pollEmailNow() { return pollEmail_(); }
+
+/* ================================================================== points d'entrée web */
+
+function doGet(e) {
+  return respond_(function () {
+    var p = (e && e.parameter) || {};
+    var role = checkToken_(p.token);
+    var action = p.action || 'list';
+    if (role !== 'admin') throw new Error('Ce jeton ne permet que d\'envoyer des notifications.');
+    if (action === 'list') return list_();
+    if (action === 'ping') return ping_();
+    throw new Error('Action inconnue : ' + action);
+  }, false);
+}
+
+function doPost(e) {
+  var b = body_(e);
+  var action = b.action || 'capture';
+  return respond_(function () {
+    var role = checkToken_(b.token);
+    if (action === 'capture') return capture_(b);
+    if (role !== 'admin') throw new Error('Ce jeton ne permet que d\'envoyer des notifications.');
+    if (action === 'add') return add_(b.tx || b);
+    if (action === 'update') return update_(b.id, b.fields || {});
+    if (action === 'delete') return delete_(b.id);
+    if (action === 'confirm') return update_(b.id, { status: 'ok' });
+    if (action === 'rule') return addRule_(b.pattern, b.category, b.apply !== false, b.name);
+    if (action === 'rule-delete') return deleteRule_(b.pattern);
+    if (action === 'settings') return settings_(b);
+    if (action === 'unignore') return unignore_(b.captured_at, b.raw);
+    if (action === 'list') return list_();
+    if (action === 'ping') return ping_();
+    throw new Error('Action inconnue : ' + action);
+  }, action !== 'capture' && action !== 'list' && action !== 'ping');
+}
+
+// Les écritures du tableau de bord passent sous le verrou ; la capture gère son propre verrou court.
+function respond_(fn, useLock) {
+  var lock = null;
+  var out;
+  try {
+    if (useLock) {
+      lock = LockService.getScriptLock();
+      lock.waitLock(30000);
+    }
+    out = fn();
+  } catch (err) {
+    out = { ok: false, error: String((err && err.message) || err) };
+  } finally {
+    if (lock) {
+      try { lock.releaseLock(); } catch (ignored) { /* jamais obtenu */ }
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Corps JSON (raccourci, tableau de bord), champs de formulaire, ou texte brut. Les paramètres de l'adresse complètent.
+function body_(e) {
+  var b = {};
+  var pd = e && e.postData;
+  if (pd && pd.contents && !/x-www-form-urlencoded/i.test(pd.type || '')) {
+    try { b = JSON.parse(pd.contents); } catch (err) { b = null; }
+    if (!b || typeof b !== 'object' || Array.isArray(b)) b = { body: String(pd.contents) };
+  }
+  var p = (e && e.parameter) || {};
+  Object.keys(p).forEach(function (k) { if (b[k] === undefined) b[k] = p[k]; });
+  return b;
+}
+
+// 'admin' | 'capture', ou une erreur. Un ancien jeton de capture est refusé mais compté :
+// le tableau de bord et la vérification quotidienne peuvent dire que le raccourci n'a pas été mis à jour.
+function checkToken_(token) {
+  var props = PropertiesService.getScriptProperties();
+  var admin = props.getProperty('ADMIN_TOKEN');
+  if (!admin) throw new Error('Lancez setup() dans l\'éditeur Apps Script d\'abord.');
+  var t = String(token || '').trim();
+  if (!t) throw new Error('Non autorisé : jeton manquant.');
+  if (t === admin) return 'admin';
+  if (t === props.getProperty('CAPTURE_TOKEN')) return 'capture';
+  var prev = props.getProperty('PREV_CAPTURE_TOKEN');
+  if (prev && t === prev && Number(props.getProperty('PREV_CAPTURE_UNTIL') || 0) > now_().getTime()) {
+    props.setProperty('STALE_HITS', String(Number(props.getProperty('STALE_HITS') || 0) + 1));
+    props.setProperty('LAST_STALE_AT', now_().toISOString());
+    throw new Error('Non autorisé : ce lien est périmé (les jetons ont été changés). Recopiez le lien du raccourci.');
+  }
+  throw new Error('Non autorisé : jeton incorrect.');
+}
+
+/* ================================================================== capture */
+
+// Les clés acceptées pour une notification, en français et en anglais.
+function fields_(b) {
+  var title = first_(b.title, b.titre, b.t);
+  var subtitle = first_(b.subtitle, b.soustitre, b['sous-titre'], b.sous_titre, b.s);
+  var body = first_(b.body, b.corps, b.text, b.texte, b.message, b.content, b.contenu, b.notification, b.c);
+  if (blank_(title) && blank_(subtitle) && blank_(body) && !blank_(b.n)) {
+    // Toute la notification dans un seul champ : première ligne = titre.
+    var lines = String(b.n).split(/\r?\n/);
+    title = lines.shift();
+    body = lines.join(' ');
+  }
+  return { title: str_(title, 300), subtitle: str_(subtitle, 300), body: str_(body, 2000), app: str_(b.app, 40), from: str_(b.from, 200) };
+}
+
+function channelOf_(b, structured) {
+  var c = String(b.channel || '').trim().toLowerCase();
+  if (!c && b.source) c = String(b.source).split(':')[0].toLowerCase();
+  if (c === 'notification' || c === 'notif') c = 'phone';
+  if (CHANNELS.indexOf(c) < 0) c = structured ? 'applepay' : 'phone';
+  return c;
+}
+
+function capture_(b) {
+  var ss = ss_();
+  var cur = currency_();
+  var props = PropertiesService.getScriptProperties();
+  var f = fields_(b);
+  var structured = !blank_(b.amount) || !blank_(b.merchant);
+  var channel = channelOf_(b, structured);
+  var bank = str_(b.bank, 20).toLowerCase() || SpendParser.inferBank({ app: f.app, title: f.title, subtitle: f.subtitle, body: f.body, from: f.from });
+  var source = channel + (bank ? ':' + bank : '');
+  var received = now_();
+
+  // Un envoi sans aucun texte : le bouton ▶ du raccourci. On le note, rien n'est ajouté.
+  if (!structured && !f.title && !f.subtitle && !f.body) {
+    if (channel === 'phone') props.setProperty('SHORTCUT_PING_AT', received.toISOString());
+    return { ok: true, status: 'test', message: 'Raccourci relié ✓ (aucune notification dans cet envoi)' };
+  }
+
+  // Trop de notifications dans la journée (jeton de capture diffusé ?) : on note sans lire.
+  var countKey = 'CAPTURE_COUNT_' + dayKey_(received);
+  var count = Number(props.getProperty(countKey) || 0) + 1;
+  props.setProperty(countKey, String(count));
+  if (count > CAPTURE_MAX_PER_DAY) {
+    appendIgnored_(ss, { captured_at: received, source: source, reason: 'rate-limit', raw: '' });
+    return { ok: true, status: 'ignored', reason: 'rate-limit', message: 'Trop de notifications aujourd\'hui : non lue' };
+  }
+
+  if (channel === 'phone') props.setProperty('LAST_PHONE_AT', received.toISOString());
+  if (channel === 'email') props.setProperty('LAST_EMAIL_AT', received.toISOString());
+  props.setProperty('LAST_SRC_' + source, received.toISOString());
+
+  // Le raccourci envoie les mots « Titre », « corps »... au lieu des variables.
+  if (!structured && SpendParser.isPlaceholder(f)) {
+    props.setProperty('MISCONFIGURED_AT', received.toISOString());
+    appendIgnored_(ss, { captured_at: received, source: source, reason: 'raccourci', raw: [f.title, f.subtitle, f.body].filter(String).join(' | ') });
+    return { ok: true, status: 'ignored', reason: 'raccourci', message: 'Raccourci mal configuré : les valeurs doivent être des variables (pastilles bleues), pas des mots tapés.' };
+  }
+
+  var rules = readRules_(ss);
+  var r;
+  var raw;
+  if (structured) {
+    r = SpendParser.fromFields({ amount: b.amount, merchant: b.merchant, card: b.card, currency: b.currency, type: b.type, category: b.category },
+      { defaultCurrency: cur, rules: rules });
+    raw = [str_(b.merchant, 100), str_(b.amount, 40), str_(b.card, 60)].filter(String).join(' | ');
+  } else {
+    r = SpendParser.parse({ title: f.title, subtitle: f.subtitle, body: f.body, app: f.app }, { defaultCurrency: cur, rules: rules });
+    raw = [f.title, f.subtitle, f.body].filter(String).join(' | ');
+  }
+
+  if (r.kind !== 'transaction') {
+    appendIgnored_(ss, { captured_at: received, source: source, reason: r.reason, raw: SpendParser.redactCodes(raw) });
+    return { ok: true, status: 'ignored', reason: r.reason, message: 'Pas une transaction (' + reasonLabel_(r.reason) + ')' };
+  }
+
+  var notes = [];
+  if (r.reason === 'hold') notes.push('Préautorisation ou montant mis à jour');
+  if (r.original) notes.push('Montant original : ' + r.original.amount.toFixed(2) + ' ' + r.original.currency);
+  var ruled = applyRules_(r, rules);
+  var cfg = claudeConfig_();
+  var tx = {
+    id: newId_(), date: when_(b.date, b.trusted === true || channel === 'email' || channel === 'statement' || channel === 'paste' || channel === 'manual') || received,
+    amount: SpendParser.signedAmount(r.amount, r.type), currency: r.currency,
+    merchant: ruled.name || r.merchant, category: ruled.category || r.category, type: r.type, card: r.card,
+    status: ruled.excluded ? 'excluded' : r.status, note: notes.join(' · '),
+    source: source, raw: raw, captured_at: received,
+    reader: cfg && !structured && shouldAskClaude_(cfg, r) ? 'pending' : 'rules', flags: ''
+  };
+  if (str_(b.note, 500)) tx.note = [tx.note, str_(b.note, 500)].filter(String).join(' · ');
+
+  var sheet = sheet_(ss, TX_SHEET, TX_COLS);
+  var lock = LockService.getScriptLock();
+  var locked = false;
+  try { locked = lock.tryLock(10000); } catch (e) { locked = false; }
+  try {
+    var recent = readTx_(sheet, DEDUP_ROWS);
+    tx.flags = flags_(tx, recent);
+    if (locked) {
+      var dup = findDuplicate_(recent, tx);
+      if (dup) {
+        if (dup.kind === 'repeat-review' || dup.kind === 'near-review') {
+          if (tx.status === 'ok') tx.status = 'review';
+          tx.note = [tx.note, dup.kind === 'repeat-review'
+            ? 'Même texte il y a ' + minutesAgo_(dup.row.date, tx.date) + ' min : deux achats, ou envoi en double ?'
+            : 'Même montant chez ' + (dup.row.merchant || '?') + ' il y a ' + minutesAgo_(dup.row.date, tx.date) + ' min : deux achats, ou doublon ?'].filter(String).join(' · ');
+        } else {
+          tx.status = 'duplicate';
+          tx.note = [tx.note, dup.kind === 'repeat' ? 'Même notification reçue deux fois' : 'Doublon probable de ' + (dup.row.merchant || 'un achat') + ' (' + sourceLabel_(dup.row.source) + ')'].filter(String).join(' · ');
+        }
+      }
+    } else {
+      if (tx.status === 'ok') tx.status = 'review';
+      tx.note = [tx.note, 'Enregistré sans vérification de doublon (feuille occupée)'].filter(String).join(' · ');
+    }
+    appendRow_(sheet, TX_COLS, TX_FORMATS, tx);
+  } finally {
+    if (locked) { try { lock.releaseLock(); } catch (ignored) { /* rien */ } }
+  }
+  return { ok: true, status: tx.status === 'duplicate' ? 'duplicate' : tx.status === 'review' ? 'review' : 'added', tx: out_(tx, cur), message: message_(tx) };
+}
+
+// Règles de l'utilisateur : catégorie, nom à afficher, ou « (ignorer) ».
+function applyRules_(r, rules) {
+  var out = { category: '', name: '', excluded: false };
+  if (!r.merchant || (r.type !== 'purchase' && r.type !== 'refund')) return out;
+  var fm = SpendParser.fold(r.merchant);
+  for (var i = 0; i < rules.length; i++) {
+    var rule = rules[i];
+    if (!SpendParser.matchRule(fm, rule.pattern)) continue;
+    if (/^\(ignorer\)$|^\(ignore\)$/i.test(rule.category)) { out.excluded = true; out.category = r.category; }
+    else out.category = rule.category;
+    out.name = rule.name || '';
+    break;
+  }
+  return out;
+}
+
+function flags_(tx, recent) {
+  var I = insights_();
+  if (!I || tx.type !== 'purchase') return '';
+  try {
+    return I.flagAtCapture({ amount: tx.amount, merchant: tx.merchant, currency: tx.currency, type: tx.type, status: tx.status },
+      recent.map(function (t) { return { amount: t.amount, merchant: t.merchant, currency: t.currency, type: t.type, status: t.status, date: t.date }; })).join(',');
+  } catch (e) { return ''; }
+}
+
+// Un même achat peut arriver deux fois ; différents numéros de carte ou marchands incompatibles = jamais un doublon.
+//   repeat         même texte, même source, < 90 s          -> doublon (le raccourci a tiré deux fois)
+//   repeat-review  même texte, même source, < 10 min        -> compté, à vérifier (deux cafés ?)
+//   near-review    autre texte, même source, < 10 min       -> compté, à vérifier
+//   cross          autre source : téléphone/téléphone < 10 min, courriel < 12 h, manuel/relevé < 48 h -> doublon
+function findDuplicate_(rows, tx) {
+  var t = tx.date.getTime();
+  var chanT = tx.source.split(':')[0];
+  for (var i = rows.length - 1; i >= 0; i--) {
+    var r = rows[i];
+    if (r.status === 'duplicate' || r.status === 'excluded' || !r.date) continue;
+    if (Math.abs(r.amount - tx.amount) > 0.005 || (r.currency || tx.currency) !== tx.currency) continue;
+    var dt = Math.abs(r.date.getTime() - t);
+    var same = r.source === tx.source;
+    var liveT = chanT === 'phone' || chanT === 'email';
+    if (same && r.raw && r.raw === tx.raw) {
+      if (dt < REPEAT_DUP_MS) return { kind: 'repeat', row: r };
+      if (dt < REPEAT_REVIEW_MS) return { kind: 'repeat-review', row: r };
+      if (liveT) continue; // le même texte bien plus tard = un nouvel achat
+    }
+    var da = cardDigits_(r.card);
+    var db = cardDigits_(tx.card);
+    if (da && db && da !== db) continue;
+    if (!merchantCompatible_(r.merchant, tx.merchant)) continue;
+    var chanR = r.source.split(':')[0];
+    if (same && liveT) {
+      if (dt < PHONE_PAIR_MS) return { kind: 'near-review', row: r };
+      continue;
+    }
+    if (chanR === 'phone' && chanT === 'phone') {
+      if (dt < PHONE_PAIR_MS) return { kind: 'cross', row: r };
+      continue;
+    }
+    if (chanR === 'email' || chanT === 'email') {
+      if (dt < (r.merchant && tx.merchant ? EMAIL_PAIR_MS : EMAIL_SHORT_MS)) return { kind: 'cross', row: r };
+      continue;
+    }
+    if (dt < MANUAL_PAIR_MS) return { kind: 'cross', row: r };
+  }
+  return null;
+}
+
+function merchantKey_(m) {
+  var I = insights_();
+  return I ? I.key(m) : SpendParser.fold(m).replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function merchantCompatible_(a, b) {
+  var ka = merchantKey_(a);
+  var kb = merchantKey_(b);
+  if (!ka || !kb || ka === kb) return true;
+  var wa = ka.split(' ').filter(function (w) { return w.length >= 3; })[0];
+  var wb = kb.split(' ').filter(function (w) { return w.length >= 3; })[0];
+  if (wa && kb.indexOf(wa) >= 0) return true;
+  if (wb && ka.indexOf(wb) >= 0) return true;
+  return ka.slice(0, 4) === kb.slice(0, 4) && ka.length >= 4 && kb.length >= 4;
+}
+
+/* ================================================================== actions du tableau de bord */
+
+// Saisie manuelle, texte collé ou ligne de relevé : passe par la capture (doublons, règles).
+function add_(t) {
+  var text = str_(first_(t.text, t.raw), 2000);
+  if (blank_(t.amount) && text) {
+    var r = capture_({ channel: t.source === 'statement' ? 'statement' : 'paste', body: text, date: t.date, trusted: true, note: t.note });
+    if (r.status === 'ignored') throw new Error('Ce texte n\'a pas été lu comme une transaction (' + reasonLabel_(r.reason) + ').');
+    return r;
+  }
+  if (blank_(t.amount)) throw new Error('Le montant manque.');
+  return capture_({ channel: t.source === 'statement' ? 'statement' : 'manual', amount: t.amount, merchant: t.merchant, card: t.card, currency: t.currency,
+    type: t.type, category: t.category, date: t.date, trusted: true, note: t.note });
+}
+
+function update_(id, fields) {
+  var ss = ss_();
+  var sheet = sheet_(ss, TX_SHEET, TX_COLS);
+  var row = findRow_(sheet, id);
+  if (!row) throw new Error('Transaction introuvable : ' + id);
+  var o = rowObj_(sheet.getRange(row, 1, 1, TX_COLS.length).getValues()[0]);
+  EDITABLE.forEach(function (k) {
+    if (fields[k] === undefined || fields[k] === null) return;
+    var v = fields[k];
+    if (k === 'date') {
+      var d = date_(v);
+      if (d) o.date = d;
+    } else if (k === 'amount') {
+      var n = Number(v);
+      if (isFinite(n)) o.amount = n;
+    } else if (k === 'type') {
+      if (SpendParser.TYPES.indexOf(v) >= 0) o.type = v;
+    } else if (k === 'status') {
+      if (STATUSES.indexOf(v) >= 0) o.status = v;
+    } else if (k === 'currency') {
+      var c = String(v).trim().toUpperCase();
+      if (/^[A-Z]{3}$/.test(c)) o.currency = c;
+    } else {
+      o[k] = str_(v, k === 'note' ? 500 : 100);
+    }
+  });
+  o.amount = SpendParser.signedAmount(o.amount, o.type || 'purchase');
+  if (o.reader === 'pending') o.reader = 'rules';
+  writeRow_(sheet, row, TX_COLS, TX_FORMATS, o);
+  return { ok: true, tx: out_(o, currency_()) };
+}
+
+// Une ligne capturée n'est jamais effacée : elle est exclue (visible, non comptée). Une saisie manuelle l'est.
+function delete_(id) {
+  var sheet = sheet_(ss_(), TX_SHEET, TX_COLS);
+  var row = findRow_(sheet, id);
+  if (!row) throw new Error('Transaction introuvable : ' + id);
+  var o = rowObj_(sheet.getRange(row, 1, 1, TX_COLS.length).getValues()[0]);
+  var chan = o.source.split(':')[0];
+  if (chan === 'manual' || chan === 'paste' || chan === 'statement' || chan === 'sheet' || !o.source) {
+    sheet.deleteRow(row);
+    return { ok: true, id: id, deleted: true };
+  }
+  o.status = 'excluded';
+  o.note = [o.note, 'Supprimé depuis le tableau de bord le ' + dayKey_(now_())].filter(String).join(' · ');
+  writeRow_(sheet, row, TX_COLS, TX_FORMATS, o);
+  return { ok: true, id: id, deleted: false, tx: out_(o, currency_()) };
+}
+
+// Les règles sont lues de haut en bas : la nouvelle va en haut.
+function addRule_(pattern, category, apply, name) {
+  pattern = str_(pattern, 100);
+  category = str_(category, 40);
+  name = str_(name, 60);
+  if (!pattern || !category) throw new Error('Une règle a besoin d\'un motif et d\'une catégorie.');
+  var ss = ss_();
+  var rules = readRules_(ss).filter(function (r) { return SpendParser.fold(r.pattern) !== SpendParser.fold(pattern); });
+  rules.unshift({ pattern: pattern, category: category, name: name });
+  writeRules_(ss, rules);
+
+  var updated = 0;
+  if (apply) {
+    var sheet = sheet_(ss, TX_SHEET, TX_COLS);
+    var catCol = TX_COLS.indexOf('category') + 1;
+    var merchantCol = TX_COLS.indexOf('merchant') + 1;
+    var statusCol = TX_COLS.indexOf('status') + 1;
+    var ignore = /^\(ignorer\)$|^\(ignore\)$/i.test(category);
+    readTx_(sheet, 0).forEach(function (r) {
+      if (r.type && r.type !== 'purchase' && r.type !== 'refund') return;
+      if (!SpendParser.matchRule(SpendParser.fold(r.merchant), pattern)) return;
+      var changed = false;
+      if (ignore) {
+        if (r.status !== 'excluded' && r.status !== 'duplicate') { sheet.getRange(r._row, statusCol).setValue('excluded'); changed = true; }
+      } else if (r.category !== category) { sheet.getRange(r._row, catCol).setValue(category); changed = true; }
+      if (name && r.merchant !== name) { sheet.getRange(r._row, merchantCol).setValue(name); changed = true; }
+      if (changed) updated++;
+    });
+  }
+  return { ok: true, updated: updated, rules: readRules_(ss) };
+}
+
+function deleteRule_(pattern) {
+  var ss = ss_();
+  var rules = readRules_(ss).filter(function (r) { return SpendParser.fold(r.pattern) !== SpendParser.fold(str_(pattern, 100)); });
+  writeRules_(ss, rules);
+  return { ok: true, rules: rules };
+}
+
+function settings_(b) {
+  var props = PropertiesService.getScriptProperties();
+  if (b.currency !== undefined) {
+    var c = String(b.currency).trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(c)) throw new Error('La devise doit être un code à 3 lettres (CAD, USD, EUR).');
+    props.setProperty('CURRENCY', c);
+  }
+  if (b.budget !== undefined) {
+    var n = Number(b.budget);
+    if (!isFinite(n) || n < 0) throw new Error('Le budget doit être un nombre.');
+    props.setProperty('BUDGET', String(Math.round(n * 100) / 100));
+  }
+  if (b.digest !== undefined) props.setProperty('DIGEST', b.digest === false || b.digest === 'off' ? 'off' : 'on');
+  if (b.email !== undefined) props.setProperty('EMAIL', b.email === false || b.email === 'off' ? 'off' : 'on');
+  if (b.heartbeatDays !== undefined) {
+    var h = Number(b.heartbeatDays);
+    if (isFinite(h) && h >= 1 && h <= 30) props.setProperty('HEARTBEAT_DAYS', String(Math.round(h)));
+  }
+  if (b.claudeMode !== undefined && ['review', 'always', 'off'].indexOf(b.claudeMode) >= 0) props.setProperty('CLAUDE_MODE', b.claudeMode);
+  return { ok: true, settings: settingsOut_() };
+}
+
+function unignore_(capturedAt, raw) {
+  var ss = ss_();
+  var sh = ss.getSheetByName(IGNORED_SHEET);
+  if (!sh || sh.getLastRow() < 2) return { ok: true, removed: 0 };
+  var last = sh.getLastRow();
+  var values = sh.getRange(2, 1, last - 1, IGNORED_COLS.length).getValues();
+  var removed = 0;
+  var wanted = date_(capturedAt);
+  for (var i = values.length - 1; i >= 0; i--) {
+    var d = date_(values[i][0]);
+    if (String(values[i][3]) === String(raw || '') && d && wanted && Math.abs(d.getTime() - wanted.getTime()) < 2000) {
+      sh.deleteRow(i + 2);
+      removed++;
+    }
+  }
+  return { ok: true, removed: removed };
+}
+
+function list_() {
+  var ss = ss_();
+  var cur = currency_();
+  var sheet = ensureSheet_(ss, TX_SHEET, TX_COLS);
+  var rows = readTx_(sheet, 0);
+  var idCol = TX_COLS.indexOf('id') + 1;
+  rows.forEach(function (r) {
+    // Une ligne tapée directement dans la feuille reçoit un identifiant pour que le tableau de bord puisse la modifier.
+    if (!r.id) {
+      r.id = newId_();
+      sheet.getRange(r._row, idCol).setValue(r.id);
+    }
+  });
+  var links = links_();
+  return {
+    ok: true, version: VERSION, currency: cur, sheetUrl: ss.getUrl(),
+    captureToken: PropertiesService.getScriptProperties().getProperty('CAPTURE_TOKEN'), shortcutUrl: links.shortcutUrl, webAppUrl: links.webAppUrl,
+    settings: settingsOut_(), health: health_(rows),
+    transactions: rows.map(function (r) { return out_(r, cur); }),
+    ignored: readIgnored_(ss, IGNORED_DAYS),
+    rules: readRules_(ss)
+  };
+}
+
+function ping_() {
+  var cfg = claudeConfig_();
+  var links = links_();
+  return {
+    ok: true, version: VERSION, parser: SpendParser.VERSION, currency: currency_(),
+    claude: cfg ? cfg.mode + ' · ' + cfg.model : 'off',
+    captureToken: PropertiesService.getScriptProperties().getProperty('CAPTURE_TOKEN'), shortcutUrl: links.shortcutUrl,
+    settings: settingsOut_(), health: health_(null)
+  };
+}
+
+function settingsOut_() {
+  var props = PropertiesService.getScriptProperties();
+  return {
+    currency: currency_(), budget: Number(props.getProperty('BUDGET') || 0),
+    digest: props.getProperty('DIGEST') !== 'off', email: props.getProperty('EMAIL') !== 'off',
+    heartbeatDays: heartbeatDays_(), claudeMode: (claudeConfig_() || {}).mode || 'off', triggers: props.getProperty('TRIGGER_INSTALLED') === 'yes'
+  };
+}
+
+// L'état de la capture : quand chaque source a parlé pour la dernière fois, etc.
+function health_(rows) {
+  var props = PropertiesService.getScriptProperties();
+  var all = props.getProperties ? props.getProperties() : {};
+  var bySource = {};
+  Object.keys(all).forEach(function (k) { if (k.indexOf('LAST_SRC_') === 0) bySource[k.slice(9)] = all[k]; });
+  var cfg = claudeConfig_();
+  var today = dayKey_(now_());
+  var month = today.slice(0, 7);
+  var emailOnly = 0;
+  if (rows) {
+    var since = now_().getTime() - 7 * 86400000;
+    rows.forEach(function (r) {
+      if (r.source.indexOf('email:') === 0 && r.status !== 'duplicate' && r.status !== 'excluded' && r.captured_at && r.captured_at.getTime() > since) emailOnly++;
+    });
+  }
+  return {
+    lastPhoneAt: props.getProperty('LAST_PHONE_AT') || null,
+    lastEmailAt: props.getProperty('LAST_EMAIL_AT') || null,
+    shortcutPingAt: props.getProperty('SHORTCUT_PING_AT') || null,
+    misconfiguredAt: props.getProperty('MISCONFIGURED_AT') || null,
+    lastStaleAt: props.getProperty('LAST_STALE_AT') || null,
+    staleHits: Number(props.getProperty('STALE_HITS') || 0),
+    bySource: bySource,
+    emailOnly7d: emailOnly,
+    captureToday: Number(props.getProperty('CAPTURE_COUNT_' + today) || 0),
+    lastTickAt: props.getProperty('LAST_TICK_AT') || null,
+    claude: cfg ? { on: true, model: cfg.model, mode: cfg.mode, callsToday: Number(props.getProperty('CLAUDE_CALLS_' + today) || 0), costMonthUsd: Number(props.getProperty('CLAUDE_COST_' + month) || 0) } : { on: false }
+  };
+}
+
+/* ================================================================== déclencheur : toutes les 15 minutes */
+
+function installTriggers_() {
+  try {
+    ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'tick') ScriptApp.deleteTrigger(t); });
+    ScriptApp.newTrigger('tick').timeBased().everyMinutes(15).create();
+    PropertiesService.getScriptProperties().setProperty('TRIGGER_INSTALLED', 'yes');
+    return true;
+  } catch (e) {
+    Logger.log('Déclencheur non installé : ' + e);
+    PropertiesService.getScriptProperties().setProperty('TRIGGER_INSTALLED', 'no');
+    return false;
+  }
+}
+
+function tick() {
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('LAST_TICK_AT', now_().toISOString());
+  safe_('pollEmail', pollEmail_);
+  safe_('enrichPending', enrichPending_);
+  safe_('dailyCheck', function () { dailyCheck_(false); });
+  safe_('weeklyDigest', function () { weeklyDigest_(false); });
+  safe_('writeConfig', function () { writeConfig_(ss_()); });
+}
+
+function safe_(name, fn) {
+  try { return fn(); } catch (e) { Logger.log(name + ' : ' + (e && e.stack || e)); return null; }
+}
+
+/* ------------------------------------------------------------------ courriels d'alerte lus dans Gmail */
+
+function pollEmail_() {
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty('EMAIL') === 'off') return { ok: true, skipped: 'off' };
+  if (typeof GmailApp === 'undefined') return { ok: true, skipped: 'no-gmail' };
+  var query = props.getProperty('EMAIL_QUERY') || EMAIL_QUERY_DEFAULT;
+  var label = GmailApp.getUserLabelByName(EMAIL_LABEL) || GmailApp.createLabel(EMAIL_LABEL);
+  var cache = CacheService.getScriptCache();
+  var threads = GmailApp.search(query, 0, EMAIL_MAX_PER_TICK);
+  var seen = 0;
+  var added = 0;
+  threads.forEach(function (thread) {
+    thread.getMessages().forEach(function (msg) {
+      var id = msg.getId();
+      if (cache.get('mail_' + id)) return;
+      cache.put('mail_' + id, '1', 21600);
+      seen++;
+      var from = String(msg.getFrom() || '');
+      var subject = String(msg.getSubject() || '');
+      var body = cleanEmailBody_(msg.getPlainBody());
+      var suspicious = /https?:\/\//i.test(body) && /\b(v[ée]rifi\w*|valid\w*|confirm\w*|mot de passe|password|connectez-vous|log ?in)\b/i.test(body) && !/\b(achat|purchase|transaction|paiement|payment)\b/i.test(subject + ' ' + body.slice(0, 300));
+      if (suspicious) {
+        appendIgnored_(ss_(), { captured_at: now_(), source: 'email', reason: 'suspect', raw: SpendParser.redactCodes(subject) });
+        return;
+      }
+      var r = capture_({ channel: 'email', from: from, title: subject, body: body, date: msg.getDate(), trusted: true });
+      if (r && (r.status === 'added' || r.status === 'review')) added++;
+    });
+    thread.addLabel(label);
+  });
+  return { ok: true, seen: seen, added: added };
+}
+
+// Le corps d'un courriel d'alerte, sans le pied de page légal ni les liens de désabonnement.
+function cleanEmailBody_(text) {
+  var t = String(text || '').replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n').trim();
+  var cut = t.search(/\b(unsubscribe|se d[ée]sabonner|d[ée]sabonnement|privacy policy|politique de confidentialit[ée]|this email was sent|ce courriel (?:vous )?a [ée]t[ée] envoy[ée]|©|all rights reserved|tous droits r[ée]serv[ée]s)\b/i);
+  if (cut > 40) t = t.slice(0, cut);
+  return t.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1500);
+}
+
+/* ------------------------------------------------------------------ vérification quotidienne */
+
+function heartbeatDays_() {
+  var n = Number(PropertiesService.getScriptProperties().getProperty('HEARTBEAT_DAYS'));
+  return isFinite(n) && n >= 1 ? n : HEARTBEAT_DAYS_DEFAULT;
+}
+
+function dailyCheck_(force) {
+  var props = PropertiesService.getScriptProperties();
+  var today = dayKey_(now_());
+  if (!force) {
+    if (props.getProperty('HEALTH_DAY') === today) return { ok: true, skipped: 'done' };
+    if (hourLocal_(now_()) < 8) return { ok: true, skipped: 'early' };
+  }
+  props.setProperty('HEALTH_DAY', today);
+  var h = health_(readTx_(sheet_(ss_(), TX_SHEET, TX_COLS), 400));
+  var nowMs = now_().getTime();
+  var problems = [];
+  var last = [h.lastPhoneAt, h.lastEmailAt, h.shortcutPingAt].filter(Boolean).map(function (s) { return new Date(s).getTime(); });
+  var lastAny = last.length ? Math.max.apply(null, last) : 0;
+  var days = heartbeatDays_();
+  if (lastAny && nowMs - lastAny > days * 86400000) {
+    problems.push({ key: 'silent', text: 'Rien n\'est arrivé depuis ' + Math.floor((nowMs - lastAny) / 86400000) + ' jours (ni notification, ni courriel).\n' +
+      'À vérifier : dans Raccourcis, l\'automatisation est activée et réglée pour s\'exécuter sans demander ; dans Réglages > Notifications, les aperçus sont affichés ; la mise à jour d\'iOS n\'a pas désactivé l\'automatisation.' });
+  }
+  Object.keys(h.bySource).forEach(function (src) {
+    var t = new Date(h.bySource[src]).getTime();
+    if (src.indexOf('phone:') !== 0 || !t) return;
+    var age = nowMs - t;
+    if (age > SOURCE_QUIET_DAYS * 86400000 && age < 30 * 86400000 && !(lastAny && nowMs - lastAny > days * 86400000)) {
+      problems.push({ key: 'quiet-' + src, text: 'Rien de ' + sourceLabel_(src) + ' depuis ' + Math.floor(age / 86400000) + ' jours, alors que cette banque envoyait des notifications.\n' +
+        'À vérifier : les alertes d\'achat sont toujours activées dans l\'appli de la banque, et l\'appli est encore dans la liste de l\'automatisation.' });
+    }
+  });
+  if (h.staleHits > 0 && h.lastStaleAt && nowMs - new Date(h.lastStaleAt).getTime() < 7 * 86400000) {
+    problems.push({ key: 'stale', text: 'Votre raccourci utilise encore l\'ancien lien (' + h.staleHits + ' tentatives). Ses notifications ne sont pas enregistrées.\n' +
+      'À faire : dans le tableau de bord, Réglages > Copier le lien du raccourci, puis remplacez l\'URL dans l\'action « Obtenir le contenu de l\'URL ».' });
+  }
+  if (h.misconfiguredAt && nowMs - new Date(h.misconfiguredAt).getTime() < 2 * 86400000) {
+    problems.push({ key: 'misconfigured', text: 'Le raccourci envoie les mots « Titre », « Sous-titre » ou « Corps » au lieu du contenu des notifications.\n' +
+      'À faire : dans l\'action « Obtenir le contenu de l\'URL », chaque valeur doit être une variable (pastille bleue) choisie avec « Sélectionner une variable », pas un mot tapé.' });
+  }
+  if (h.emailOnly7d >= 2) {
+    problems.push({ key: 'email-only', text: h.emailOnly7d + ' achats des 7 derniers jours ne sont arrivés que par courriel : votre iPhone rate des notifications.\n' +
+      'À vérifier : Réglages > Notifications pour chaque appli bancaire (livraison immédiate, aperçus affichés), et que l\'automatisation s\'exécute sans confirmation.' });
+  }
+  var toSend = problems.filter(function (p) {
+    var lastSent = Number(props.getProperty('LAST_ALERT_' + p.key) || 0);
+    return force || nowMs - lastSent > ALERT_EVERY_DAYS * 86400000;
+  });
+  if (!toSend.length) return { ok: true, problems: problems.map(function (p) { return p.key; }), sent: false };
+  var body = 'Bonjour,\n\nLa vérification quotidienne de Dépenses a trouvé ceci :\n\n' +
+    toSend.map(function (p, i) { return (i + 1) + '. ' + p.text; }).join('\n\n') +
+    '\n\nTableau de bord : ' + DASHBOARD_URL + '\n\n(Ce message est envoyé au plus une fois par semaine par problème.)';
+  sendMail_('Dépenses : ' + (toSend.length === 1 ? 'une chose à vérifier' : toSend.length + ' choses à vérifier'), body, null);
+  toSend.forEach(function (p) { props.setProperty('LAST_ALERT_' + p.key, String(nowMs)); });
+  return { ok: true, problems: problems.map(function (p) { return p.key; }), sent: true };
+}
+
+/* ------------------------------------------------------------------ résumé du lundi */
+
+function weeklyDigest_(force) {
+  var props = PropertiesService.getScriptProperties();
+  if (!force && props.getProperty('DIGEST') === 'off') return { ok: true, skipped: 'off' };
+  var n = now_();
+  var wk = weekKey_(n);
+  if (!force) {
+    if (weekdayLocal_(n) !== 1 || hourLocal_(n) < 8) return { ok: true, skipped: 'not-monday-morning' };
+    if (props.getProperty('DIGEST_SENT') === wk) return { ok: true, skipped: 'done' };
+  }
+  var I = insights_();
+  if (!I) return { ok: false, error: 'SpendInsights absent' };
+  var rows = readTx_(sheet_(ss_(), TX_SHEET, TX_COLS), 0).map(function (r) { return out_(r, currency_()); });
+  var h = health_(null);
+  var lines = [];
+  if (h.lastPhoneAt) lines.push('Dernière notification de l\'iPhone : ' + ago_(h.lastPhoneAt, n));
+  if (h.lastEmailAt) lines.push('Dernier courriel d\'alerte lu : ' + ago_(h.lastEmailAt, n));
+  Object.keys(h.bySource).forEach(function (src) { lines.push(sourceLabel_(src) + ' : ' + ago_(h.bySource[src], n)); });
+  if (h.claude.on) lines.push('Claude : ' + h.claude.callsToday + ' lecture(s) aujourd\'hui, ' + h.claude.costMonthUsd.toFixed(2) + ' $ US ce mois-ci');
+  var review = rows.filter(function (t) { return t.status === 'review'; }).length;
+  var d = I.digest(rows, { now: n, currency: currency_(), budget: Number(props.getProperty('BUDGET') || 0), locale: 'fr', health: { lines: lines }, reviewCount: review, dashboardUrl: DASHBOARD_URL });
+  sendMail_(d.subject, d.text, d.html);
+  props.setProperty('DIGEST_SENT', wk);
+  return { ok: true, sent: true, subject: d.subject };
+}
+
+function sendMail_(subject, text, html) {
+  if (typeof MailApp === 'undefined') { Logger.log('MailApp absent : ' + subject); return false; }
+  if (MailApp.getRemainingDailyQuota && MailApp.getRemainingDailyQuota() < 1) { Logger.log('Quota de courriels épuisé'); return false; }
+  var to = Session.getEffectiveUser().getEmail();
+  var opts = { to: to, subject: subject, body: text, name: 'Dépenses' };
+  if (html) opts.htmlBody = html;
+  MailApp.sendEmail(opts);
+  return true;
+}
+
+/* ------------------------------------------------------------------ onglet Configuration */
+
+function links_() {
+  var props = PropertiesService.getScriptProperties();
+  var url = '';
+  try { url = (ScriptApp.getService && ScriptApp.getService().getUrl()) || ''; } catch (e) { url = ''; }
+  if (/\/dev$/.test(url)) url = '';
+  var manual = props.getProperty('WEB_APP_URL');
+  if (!url && manual && /^https:\/\//.test(manual)) url = manual.trim();
+  var capture = props.getProperty('CAPTURE_TOKEN') || '';
+  var admin = props.getProperty('ADMIN_TOKEN') || '';
+  var setupLink = url ? DASHBOARD_URL + '#setup=' + base64url_(JSON.stringify({ u: url, k: admin, c: currency_() })) : '';
+  return { webAppUrl: url, shortcutUrl: url ? url + '?token=' + capture : '', setupLink: setupLink };
+}
+
+function writeConfig_(ss) {
+  var sh = ss.getSheetByName(CONFIG_SHEET) || ss.insertSheet(CONFIG_SHEET);
+  var links = links_();
+  var h = health_(null);
+  var props = PropertiesService.getScriptProperties();
+  var rows = [
+    ['Ne partagez pas cette feuille : cet onglet contient vos liens secrets.', ''],
+    ['', ''],
+    ['Ouvrir le tableau de bord', links.setupLink || 'Déployez d\'abord (Déployer > Nouveau déploiement > Application Web), puis relancez setup.'],
+    ['Lien du raccourci (action « Obtenir le contenu de l\'URL »)', links.shortcutUrl || ''],
+    ['Adresse du script', links.webAppUrl || ''],
+    ['Devise', currency_()],
+    ['Version', VERSION],
+    ['Déclencheur toutes les 15 min', props.getProperty('TRIGGER_INSTALLED') === 'yes' ? 'oui' : 'non'],
+    ['Lecture des courriels d\'alerte', props.getProperty('EMAIL') === 'off' ? 'non' : 'oui'],
+    ['', ''],
+    ['Santé de la capture', ''],
+    ['Dernière notification (iPhone)', h.lastPhoneAt || 'jamais'],
+    ['Dernier test du raccourci', h.shortcutPingAt || 'jamais'],
+    ['Dernier courriel d\'alerte lu', h.lastEmailAt || 'jamais'],
+    ['Raccourci mal configuré', h.misconfiguredAt ? 'oui, le ' + h.misconfiguredAt : 'non'],
+    ['Ancien lien utilisé', h.staleHits ? h.staleHits + ' fois, dernière le ' + h.lastStaleAt : 'non'],
+    ['Claude', h.claude.on ? h.claude.mode + ' · ' + h.claude.model + ' · ' + h.claude.callsToday + ' lecture(s) aujourd\'hui' : 'désactivé'],
+    ['Mis à jour le', now_().toISOString()]
+  ];
+  sh.getRange(1, 1, rows.length, 2).setNumberFormats(rows.map(function () { return ['@', '@']; })).setValues(rows);
+  return links;
+}
+
+/* ================================================================== Claude (facultatif, en différé) */
+
+function claudeConfig_() {
+  var p = PropertiesService.getScriptProperties();
+  var key = String(p.getProperty('ANTHROPIC_API_KEY') || '').trim();
+  var mode = String(p.getProperty('CLAUDE_MODE') || CLAUDE_DEFAULT_MODE).trim().toLowerCase();
+  if (!key || mode === 'off') return null;
+  return {
+    key: key, mode: mode === 'always' ? 'always' : 'review', model: String(p.getProperty('CLAUDE_MODEL') || CLAUDE_DEFAULT_MODEL).trim(),
+    maxPerDay: Number(p.getProperty('CLAUDE_MAX_PER_DAY')) || CLAUDE_MAX_PER_DAY, maxMonthUsd: Number(p.getProperty('CLAUDE_MAX_MONTH_USD')) || CLAUDE_MAX_MONTH_USD
+  };
+}
+
+function shouldAskClaude_(cfg, r) {
+  if (cfg.mode === 'always') return true;
+  return r.kind === 'transaction' ? r.status === 'review' : (r.reason === 'no-amount' || r.reason === 'not-a-spend');
+}
+
+function claudeBudgetLeft_(cfg) {
+  var p = PropertiesService.getScriptProperties();
+  var today = dayKey_(now_());
+  var calls = Number(p.getProperty('CLAUDE_CALLS_' + today) || 0);
+  var cost = Number(p.getProperty('CLAUDE_COST_' + today.slice(0, 7)) || 0);
+  return calls < cfg.maxPerDay && cost < cfg.maxMonthUsd;
+}
+
+function claudeRecord_(msg) {
+  var p = PropertiesService.getScriptProperties();
+  var today = dayKey_(now_());
+  p.setProperty('CLAUDE_CALLS_' + today, String(Number(p.getProperty('CLAUDE_CALLS_' + today) || 0) + 1));
+  var monthKey = 'CLAUDE_COST_' + today.slice(0, 7);
+  p.setProperty(monthKey, String(Number(p.getProperty(monthKey) || 0) + claudeCostUsd_(msg)));
+}
+
+// Relit avec Claude ce que les règles n'ont pas compris : lignes « pending », et notifications ignorées
+// faute de montant reconnu. Au plus quelques appels par passage, dans les plafonds.
+function enrichPending_() {
+  var cfg = claudeConfig_();
+  if (!cfg) return { ok: true, skipped: 'off' };
+  var ss = ss_();
+  var cur = currency_();
+  var sheet = sheet_(ss, TX_SHEET, TX_COLS);
+  var rules = readRules_(ss);
+  var ctx = claudeContext_(sheet, rules, cur);
+  var done = 0;
+  var rows = readTx_(sheet, 200).filter(function (r) { return r.reader === 'pending'; });
+  for (var i = 0; i < rows.length && done < 10; i++) {
+    if (!claudeBudgetLeft_(cfg)) break;
+    var r = rows[i];
+    var parts = r.raw.split(' | ');
+    var c = claudeRead_(cfg, ctx, { app: '', title: parts.length > 1 ? parts[0] : '', subtitle: parts.length > 2 ? parts[1] : '', body: parts[parts.length - 1], received: r.captured_at || now_() }, false);
+    done++;
+    if (!c) { r.reader = 'rules'; writeRow_(sheet, r._row, TX_COLS, TX_FORMATS, r); continue; }
+    if (c.kind === 'ignore') {
+      r.reader = 'claude';
+      if (r.status === 'ok' || r.status === 'review') { r.status = 'review'; r.note = [r.note, 'Claude pense que ce n\'est pas une transaction (' + reasonLabel_(c.reason) + ')'].filter(String).join(' · '); }
+      writeRow_(sheet, r._row, TX_COLS, TX_FORMATS, r);
+      continue;
+    }
+    var disagree = Math.abs(Math.abs(r.amount) - c.amount) > 0.005 || r.currency !== c.currency || (r.type !== c.type && r.status === 'ok');
+    var ruled = applyRules_({ merchant: c.merchant, type: c.type, category: c.category }, rules);
+    if (disagree) {
+      r.status = 'review';
+      r.note = [r.note, 'Claude lit ' + c.amount.toFixed(2) + ' ' + c.currency + ' · ' + (c.merchant || '?') + ' (' + c.type + ')'].filter(String).join(' · ');
+    } else {
+      if (!r.merchant && c.merchant) r.merchant = ruled.name || c.merchant;
+      if (r.category === 'Other' || !r.category) r.category = ruled.category || c.category;
+      if (!r.card && c.card) r.card = c.card;
+      if (r.status === 'review' && c.status === 'ok') r.status = 'ok';
+    }
+    r.reader = 'claude';
+    writeRow_(sheet, r._row, TX_COLS, TX_FORMATS, r);
+  }
+  // Notifications ignorées des 2 derniers jours qui contiennent un chiffre : peut-être un format inconnu.
+  var ish = ss.getSheetByName(IGNORED_SHEET);
+  var rescued = 0;
+  if (ish && ish.getLastRow() >= 2 && claudeBudgetLeft_(cfg)) {
+    var last = ish.getLastRow();
+    var start = Math.max(2, last - 60);
+    var vals = ish.getRange(start, 1, last - start + 1, IGNORED_COLS.length).getValues();
+    var since = now_().getTime() - 2 * 86400000;
+    for (var j = vals.length - 1; j >= 0 && done < 10; j--) {
+      var when = date_(vals[j][0]);
+      var reason = String(vals[j][2]);
+      var raw = String(vals[j][3]);
+      if (!when || when.getTime() < since || !/\d/.test(raw) || ['no-amount', 'not-a-spend', 'other'].indexOf(reason) < 0) continue;
+      if (!claudeBudgetLeft_(cfg)) break;
+      var p2 = raw.split(' | ');
+      var c2 = claudeRead_(cfg, ctx, { app: '', title: p2.length > 1 ? p2[0] : '', subtitle: p2.length > 2 ? p2[1] : '', body: p2[p2.length - 1], received: when }, false);
+      done++;
+      if (!c2 || c2.kind !== 'transaction') { ish.getRange(start + j, 3).setValue(reason === 'other' ? reason : reason + ' (claude)'); continue; }
+      var ruled2 = applyRules_({ merchant: c2.merchant, type: c2.type, category: c2.category }, rules);
+      appendRow_(sheet, TX_COLS, TX_FORMATS, {
+        id: newId_(), date: when, amount: SpendParser.signedAmount(c2.amount, c2.type), currency: c2.currency,
+        merchant: ruled2.name || c2.merchant, category: ruled2.category || c2.category, type: c2.type, card: c2.card,
+        status: 'review', note: 'Lu par Claude (les règles n\'avaient pas compris)', source: String(vals[j][1] || 'phone'), raw: raw,
+        captured_at: now_(), reader: 'claude', flags: ''
+      });
+      ish.deleteRow(start + j);
+      rescued++;
+    }
+  }
+  return { ok: true, calls: done, rescued: rescued };
+}
+
+// Ce que Claude reçoit en plus de la notification : la devise, les catégories, les règles et la
+// catégorie déjà utilisée pour les marchands récents, pour classer comme l'utilisateur.
+function claudeContext_(sheet, rules, cur) {
+  var cats = SpendParser.CATEGORIES.map(function (c) { return c.name; });
+  rules.forEach(function (r) { if (cats.indexOf(r.category) < 0 && !/^\(/.test(r.category)) cats.push(r.category); });
+  var seen = {};
+  var past = [];
+  readTx_(sheet, 120).reverse().forEach(function (t) {
+    if (t.category && cats.indexOf(t.category) < 0) cats.push(t.category);
+    var k = SpendParser.fold(t.merchant);
+    if (!t.merchant || seen[k] || t.status === 'duplicate' || past.length >= 40) return;
+    seen[k] = true;
+    past.push(t.merchant + ' -> ' + (t.category || 'Other'));
+  });
+  return { currency: cur, categories: cats, rules: rules, past: past };
+}
+
+function claudePrompt_(ctx, n) {
+  var system = [
+    'You read push notifications and alert emails from banking and credit-card apps for a personal spending tracker, and turn each one into one record that follows the JSON schema.',
+    'is_transaction is true only when the notification reports money that moved or was authorized on the user\'s account or card: a purchase, refund, cash withdrawal, fee, income or transfer. Promotions, rewards or cash back earned, balances, statements, reminders of upcoming payments, declined or blocked transactions, security codes and sign-in alerts are not transactions: set is_transaction to false and choose the ignore_reason that fits.',
+    'amount is the amount of that transaction as a positive number in major units, never a balance or an available credit. Texts can be in French or English, with amounts written like "1 234,56 $" or "$1,234.56". When a foreign amount and its conversion are both given, use the amount in ' + ctx.currency + '.',
+    'currency is an ISO 4217 code. A bare "$" means ' + ctx.currency + ' unless the text says otherwise (US$, USD, CA$, BSD...).',
+    'type is purchase for spending (bill payments and pre-authorized debits included), refund for money returned on a purchase, cash for an ATM withdrawal, fee for bank fees and interest charged, income for salary, deposits and interest earned, transfer for credit card payments, e-transfers, investment contributions and moves between accounts.',
+    'merchant is the business or person as written, without the card or bank name; leave it empty when there is none.',
+    'card is a short label such as "Visa ••1234" when the notification names the card; otherwise leave it empty.',
+    'category is one of the user\'s categories. Follow the user\'s rules first, then the category already used for the same merchant.',
+    'confidence is high when the amount and the merchant are stated plainly, and low when you had to guess either one.',
+    'When is_transaction is false, set amount to 0, the text fields to empty strings, type to "purchase" and category to "Other".'
+  ].join('\n\n');
+  var lines = ['Default currency: ' + ctx.currency, 'Categories: ' + ctx.categories.join(', ')];
+  lines.push('Rules (pattern -> category, the first match wins):' + (ctx.rules.length ? '' : ' none'));
+  ctx.rules.slice(0, 50).forEach(function (r) { lines.push('- ' + r.pattern + ' -> ' + r.category); });
+  lines.push('Categories used before for recent merchants:' + (ctx.past.length ? '' : ' none'));
+  ctx.past.forEach(function (p) { lines.push('- ' + p); });
+  lines.push('', 'Notification received ' + n.received.toISOString() + (n.app ? ' from the app "' + n.app + '"' : '') + ':');
+  lines.push('title: ' + mask_(n.title));
+  lines.push('subtitle: ' + mask_(n.subtitle));
+  lines.push('body: ' + mask_(n.body));
+  return { system: system, user: lines.join('\n') };
+}
+
+// Codes à usage unique et numéros de compte ne sortent pas de Google.
+function mask_(s) {
+  return SpendParser.redactCodes(s).replace(/\b\d{6,}\b/g, '••••••');
+}
+
+// L'objet JSON lu, ou null si l'appel échoue, est refusé ou coupé.
+function claudeCall_(cfg, prompt, verbose) {
+  var body = {
+    model: cfg.model,
+    max_tokens: 4000,
+    system: prompt.system,
+    messages: [{ role: 'user', content: prompt.user }],
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: CLAUDE_SCHEMA } }
+  };
+  var headers = { 'x-api-key': cfg.key, 'anthropic-version': '2026-10-21' };
+  // Repli côté serveur si un classificateur refuse ; Haiku ne le propose pas.
+  if (!/haiku/i.test(cfg.model)) {
+    body.fallbacks = 'default';
+    headers['anthropic-beta'] = 'server-side-fallback-2026-07-01';
+  }
+  try {
+    var res = UrlFetchApp.fetch(CLAUDE_URL, {
+      method: 'post', contentType: 'application/json', headers: headers, payload: JSON.stringify(body), muteHttpExceptions: true
+    });
+    var code = res.getResponseCode();
+    var text = res.getContentText();
+    if (code !== 200) {
+      Logger.log('Claude : HTTP ' + code + ' ' + text.slice(0, 300));
+      return null;
+    }
+    var msg = JSON.parse(text);
+    claudeRecord_(msg);
+    if (verbose) Logger.log('Claude : ' + msg.model + ', stop ' + msg.stop_reason + ', ' + claudeCost_(msg));
+    if (msg.stop_reason === 'refusal' || msg.stop_reason === 'max_tokens') return null;
+    var texts = (msg.content || []).filter(function (b) { return b.type === 'text' && b.text; });
+    return texts.length ? JSON.parse(texts[texts.length - 1].text) : null;
+  } catch (err) {
+    Logger.log('Claude : ' + err);
+    return null;
+  }
+}
+
+function claudeCostUsd_(msg) {
+  var u = (msg && msg.usage) || {};
+  var tokensIn = (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
+  var tokensOut = u.output_tokens || 0;
+  var price = CLAUDE_PRICES[msg && msg.model] || CLAUDE_PRICES[CLAUDE_DEFAULT_MODEL];
+  return (tokensIn * price[0] + tokensOut * price[1]) / 1e6;
+}
+
+function claudeCost_(msg) {
+  var u = msg.usage || {};
+  var tokensIn = (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
+  return tokensIn + ' tokens in, ' + (u.output_tokens || 0) + ' out ≈ $' + claudeCostUsd_(msg).toFixed(4);
+}
+
+// La réponse de Claude vérifiée ; null = garder la lecture des règles.
+function claudeRead_(cfg, ctx, n, verbose) {
+  var j = claudeCall_(cfg, claudePrompt_(ctx, n), verbose);
+  if (!j || typeof j.is_transaction !== 'boolean') return null;
+  if (!j.is_transaction) return { kind: 'ignore', reason: CLAUDE_REASONS.indexOf(j.ignore_reason) > 0 ? j.ignore_reason : 'other' };
+  var amount = Math.abs(Number(j.amount));
+  if (!(amount > 0) || !isFinite(amount)) return null;
+  var type = SpendParser.TYPES.indexOf(j.type) >= 0 ? j.type : 'purchase';
+  var currency = String(j.currency || '').trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(currency)) currency = ctx.currency;
+  var merchant = str_(j.merchant, 60);
+  var spending = type === 'purchase' || type === 'refund';
+  var category;
+  if (!spending) {
+    category = SpendParser.categorize('', ctx.rules, type);
+  } else {
+    var fm = SpendParser.fold(merchant);
+    var ruled = '';
+    ctx.rules.forEach(function (r) { if (!ruled && SpendParser.matchRule(fm, r.pattern)) ruled = r.category; });
+    category = ruled || (ctx.categories.indexOf(j.category) >= 0 ? j.category : SpendParser.categorize(merchant, ctx.rules, type));
+  }
+  return {
+    kind: 'transaction', type: type, amount: Math.round(amount * 100) / 100, currency: currency, merchant: merchant,
+    card: str_(j.card, 40), category: category, status: j.confidence === 'low' || (spending && !merchant) ? 'review' : 'ok'
+  };
+}
+
+/** Lit trois notifications d'exemple avec Claude et note le résultat et le coût. */
+function testClaude() {
+  var cfg = claudeConfig_();
+  if (!cfg) { Logger.log('Claude est désactivé : ajoutez ANTHROPIC_API_KEY dans Paramètres du projet > Propriétés du script.'); return; }
+  var ss = ss_();
+  var ctx = claudeContext_(sheet_(ss, TX_SHEET, TX_COLS), readRules_(ss), currency_());
+  [
+    { app: 'Banque Scotia', title: 'InfoAlerte Scotia', body: 'Un achat de 54,21 $ a été effectué chez IGA EXTRA avec votre carte se terminant par 1234.' },
+    { app: 'Cartes', title: 'Visa Scotia', subtitle: 'Starbucks', body: '5,75 $' },
+    { app: 'Capital One', title: 'Capital One', body: 'Your verification code is 482913' }
+  ].forEach(function (n) {
+    var out = claudeRead_(cfg, ctx, { app: n.app, title: n.title || '', subtitle: n.subtitle || '', body: n.body, received: now_() }, true);
+    Logger.log(JSON.stringify(n) + '\n  -> ' + JSON.stringify(out));
+  });
+}
+
+/* ================================================================== feuille */
+
+function ss_() {
+  var id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+  var ss = id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('Lancez setup() dans l\'éditeur Apps Script d\'abord.');
+  return ss;
+}
+
+function ensureSheet_(ss, name, cols) {
+  var sh = ss.getSheetByName(name) || ss.insertSheet(name);
+  var header = sh.getRange(1, 1, 1, cols.length).getValues()[0];
+  if (header.join('') === '') {
+    sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  } else {
+    for (var i = 0; i < cols.length; i++) {
+      if (header[i] !== '' && String(header[i]).trim().toLowerCase() !== cols[i]) {
+        throw new Error('L\'onglet « ' + name + '» a été modifié : la colonne ' + (i + 1) + ' devrait s\'appeler « ' + cols[i] + ' » et s\'appelle « ' + header[i] + ' ». Remettez les colonnes dans l\'ordre d\'origine.');
+      }
+    }
+    if (header.some(function (h) { return h === ''; })) {
+      // Une version plus récente a ajouté des colonnes : on écrit leur titre.
+      sh.getRange(1, 1, 1, cols.length).setValues([cols.map(function (c, i) { return header[i] === '' ? c : header[i]; })]);
+    }
+  }
+  return sh;
+}
+
+function sheet_(ss, name, cols) {
+  return ss.getSheetByName(name) || ensureSheet_(ss, name, cols);
+}
+
+function currency_() {
+  return PropertiesService.getScriptProperties().getProperty('CURRENCY') || 'CAD';
+}
+
+function currencyFromLocale_(ss) {
+  var loc = '';
+  try { loc = String(ss.getSpreadsheetLocale ? ss.getSpreadsheetLocale() : ''); } catch (e) { loc = ''; }
+  var region = (loc.split(/[_-]/)[1] || '').toUpperCase();
+  var map = { CA: 'CAD', US: 'USD', GB: 'GBP', CH: 'CHF', AU: 'AUD', NZ: 'NZD', BS: 'BSD', MX: 'MXN', JP: 'JPY', IN: 'INR' };
+  if (map[region]) return map[region];
+  if (/^(FR|BE|DE|ES|IT|NL|PT|IE|AT|FI|LU|GR|SK|SI|EE|LV|LT|MT|CY|HR)$/.test(region)) return 'EUR';
+  if (/^fr$/i.test(loc)) return 'EUR';
+  return 'CAD';
+}
+
+function rowObj_(values) {
+  var o = {};
+  for (var j = 0; j < TX_COLS.length; j++) o[TX_COLS[j]] = values[j];
+  ['currency', 'merchant', 'category', 'type', 'card', 'status', 'note', 'source', 'raw', 'id', 'reader', 'flags'].forEach(function (k) {
+    o[k] = o[k] === null || o[k] === undefined ? '' : String(o[k]).trim();
+  });
+  o.status = o.status.toLowerCase();
+  o.type = o.type.toLowerCase();
+  o.currency = o.currency.toUpperCase();
+  if (o.status && STATUSES.indexOf(o.status) < 0) o.status = /dou?bl|dup/.test(o.status) ? 'duplicate' : /excl|ignor/.test(o.status) ? 'excluded' : /v[ée]rif|review|check/.test(o.status) ? 'review' : 'ok';
+  if (o.type && SpendParser.TYPES.indexOf(o.type) < 0) o.type = /rembours|refund/.test(o.type) ? 'refund' : /virement|transfer/.test(o.type) ? 'transfer' : /revenu|income/.test(o.type) ? 'income' : /comptant|cash/.test(o.type) ? 'cash' : /frais|fee/.test(o.type) ? 'fee' : 'purchase';
+  o.amount = Number(o.amount) || 0;
+  o.date = date_(o.date);
+  o.captured_at = date_(o.captured_at);
+  return o;
+}
+
+function readTx_(sheet, lastN) {
+  var last = sheet.getLastRow();
+  if (last < 2) return [];
+  var start = lastN ? Math.max(2, last - lastN + 1) : 2;
+  var values = sheet.getRange(start, 1, last - start + 1, TX_COLS.length).getValues();
+  var out = [];
+  for (var i = 0; i < values.length; i++) {
+    if (values[i].join('') === '') continue;
+    var o = rowObj_(values[i]);
+    o._row = start + i;
+    out.push(o);
+  }
+  return out;
+}
+
+function readIgnored_(ss, days) {
+  var sh = ss.getSheetByName(IGNORED_SHEET);
+  if (!sh || sh.getLastRow() < 2) return [];
+  var last = sh.getLastRow();
+  var start = Math.max(2, last - 400 + 1);
+  var since = now_().getTime() - days * 86400000;
+  return sh.getRange(start, 1, last - start + 1, IGNORED_COLS.length).getValues().reverse().map(function (r) {
+    var d = date_(r[0]);
+    return { captured_at: d ? d.toISOString() : null, source: String(r[1]), reason: String(r[2]), raw: String(r[3]) };
+  }).filter(function (x) { return !x.captured_at || new Date(x.captured_at).getTime() >= since; });
+}
+
+function readRules_(ss) {
+  var sh = ss.getSheetByName(RULES_SHEET);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, RULES_COLS.length).getValues()
+    .filter(function (r) { return String(r[0]).trim() && String(r[1]).trim(); })
+    .map(function (r) { return { pattern: String(r[0]).trim(), category: String(r[1]).trim(), name: String(r[2] || '').trim() }; });
+}
+
+function writeRules_(ss, rules) {
+  var sh = sheet_(ss, RULES_SHEET, RULES_COLS);
+  var last = sh.getLastRow();
+  if (last >= 2) sh.getRange(2, 1, last - 1, RULES_COLS.length).clearContent();
+  if (!rules.length) return;
+  sh.getRange(2, 1, rules.length, RULES_COLS.length)
+    .setNumberFormats(rules.map(function () { return ['@', '@', '@']; }))
+    .setValues(rules.map(function (r) { return [r.pattern, r.category, r.name || '']; }));
+}
+
+function appendRow_(sheet, cols, formats, o) {
+  var row = sheet.getLastRow() + 1;
+  writeRow_(sheet, row, cols, formats, o);
+  return row;
+}
+
+// Les colonnes de texte sont mises en format texte d'abord, pour que « 7-11 » ne devienne jamais une date.
+function writeRow_(sheet, row, cols, formats, o) {
+  var range = sheet.getRange(row, 1, 1, cols.length);
+  range.setNumberFormats([formats]);
+  range.setValues([cols.map(function (c) { return o[c] === null || o[c] === undefined ? '' : o[c]; })]);
+}
+
+function appendIgnored_(ss, o) {
+  var sh = sheet_(ss, IGNORED_SHEET, IGNORED_COLS);
+  appendRow_(sh, IGNORED_COLS, IGNORED_FORMATS, o);
+  var extra = sh.getLastRow() - 1 - IGNORED_MAX;
+  if (extra > 0) sh.deleteRows(2, extra);
+}
+
+function findRow_(sheet, id) {
+  if (!id) return 0;
+  var last = sheet.getLastRow();
+  if (last < 2) return 0;
+  var ids = sheet.getRange(2, TX_COLS.indexOf('id') + 1, last - 1, 1).getValues();
+  for (var i = ids.length - 1; i >= 0; i--) {
+    if (String(ids[i][0]) === String(id)) return i + 2;
+  }
+  return 0;
+}
+
+/* ================================================================== petits utilitaires */
+
+function out_(o, cur) {
+  var type = o.type || (o.amount < 0 ? 'refund' : 'purchase');
+  return {
+    id: o.id, date: o.date ? o.date.toISOString() : null, amount: Math.round(o.amount * 100) / 100,
+    currency: o.currency || cur, merchant: o.merchant || '', category: o.category || 'Other', type: type,
+    card: o.card || '', status: o.status || 'ok', note: o.note || '', source: o.source || 'sheet', raw: o.raw || '',
+    captured_at: o.captured_at ? o.captured_at.toISOString() : null, reader: o.reader || '', flags: o.flags || ''
+  };
+}
+
+function message_(tx) {
+  var amount = Math.abs(tx.amount).toFixed(2).replace('.', ',') + ' ' + (tx.currency === 'CAD' ? '$' : tx.currency);
+  var cat = catLabel_(tx.category);
+  var s = (tx.amount < 0 ? '+' : '') + amount + ' · ' + (tx.merchant || '?') + ' · ' + cat;
+  if (tx.status === 'review') s += ' (à vérifier)';
+  if (tx.status === 'duplicate') s += ' (doublon probable, non compté)';
+  if (tx.status === 'excluded') s += ' (ignoré par une règle)';
+  return '✓ ' + s;
+}
+
+function catLabel_(name) {
+  for (var i = 0; i < SpendParser.CATEGORIES.length; i++) if (SpendParser.CATEGORIES[i].name === name) return SpendParser.CATEGORIES[i].fr || name;
+  return name;
+}
+
+function reasonLabel_(reason) {
+  return { 'no-amount': 'aucun montant', 'not-a-spend': 'solde ou récompense', promo: 'promotion', declined: 'refusée', upcoming: 'à venir', statement: 'relevé', empty: 'vide', raccourci: 'raccourci mal configuré', 'rate-limit': 'trop de notifications', suspect: 'courriel suspect', other: 'autre' }[reason] || reason;
+}
+
+function sourceLabel_(source) {
+  var parts = String(source || '').split(':');
+  var chan = { phone: 'iPhone', email: 'courriel', manual: 'saisie', paste: 'texte collé', statement: 'relevé', applepay: 'Apple Pay', sheet: 'feuille' }[parts[0]] || parts[0];
+  var bank = { scotia: 'Scotia', capitalone: 'Capital One', wealthsimple: 'Wealthsimple', cartes: 'Cartes', desjardins: 'Desjardins', rbc: 'RBC', td: 'TD', bmo: 'BMO', cibc: 'CIBC', tangerine: 'Tangerine' }[parts[1]] || parts[1];
+  return bank ? bank + ' (' + chan + ')' : chan;
+}
+
+function cardDigits_(c) {
+  var m = /(\d{4,5})\D*$/.exec(String(c || ''));
+  return m ? m[1] : '';
+}
+
+function minutesAgo_(a, b) { return Math.max(0, Math.round(Math.abs(b.getTime() - a.getTime()) / 60000)); }
+
+function ago_(iso, now) {
+  var ms = now.getTime() - new Date(iso).getTime();
+  if (!isFinite(ms)) return '?';
+  var m = Math.round(ms / 60000);
+  if (m < 60) return 'il y a ' + m + ' min';
+  var h = Math.round(m / 60);
+  if (h < 48) return 'il y a ' + h + ' h';
+  return 'il y a ' + Math.round(h / 24) + ' jours';
+}
+
+// L'heure d'une capture : la date du téléphone seulement si elle est proche ; celle d'un courriel ou d'un relevé toujours.
+function when_(v, trusted) {
+  var d = date_(v);
+  if (!d) return null;
+  if (trusted) return d;
+  var n = now_();
+  return Math.abs(d.getTime() - n.getTime()) < 3 * 86400000 ? d : null;
+}
+
+function date_(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v.getTime === 'function') return isNaN(v.getTime()) ? null : v;
+  var d = typeof v === 'number' ? new Date(v < 1e12 ? v * 1000 : v) : new Date(String(v));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// Remplacée dans les tests pour fixer l'heure.
+function now_() { return new Date(); }
+
+function tz_() {
+  try { return Session.getScriptTimeZone() || 'America/Toronto'; } catch (e) { return 'America/Toronto'; }
+}
+function dayKey_(d) { return Utilities.formatDate(d, tz_(), 'yyyy-MM-dd'); }
+function hourLocal_(d) { return Number(Utilities.formatDate(d, tz_(), 'H')); }
+function weekdayLocal_(d) { return Number(Utilities.formatDate(d, tz_(), 'u')) % 7; } // 1 = lundi … 0 = dimanche
+function weekKey_(d) {
+  // Semaine ISO, calculée sur la date locale.
+  var key = dayKey_(d).split('-');
+  var date = new Date(Date.UTC(Number(key[0]), Number(key[1]) - 1, Number(key[2])));
+  var day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  var yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return date.getUTCFullYear() + '-W' + Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
+}
+
+function insights_() { return typeof SpendInsights !== 'undefined' ? SpendInsights : null; }
+
+function str_(v, max) {
+  if (v === null || v === undefined) return '';
+  return String(v).replace(/\s+/g, ' ').trim().slice(0, max || 200);
+}
+
+function blank_(v) {
+  return v === null || v === undefined || String(v).trim() === '';
+}
+
+function first_() {
+  for (var i = 0; i < arguments.length; i++) {
+    if (!blank_(arguments[i])) return arguments[i];
+  }
+  return '';
+}
+
+function base64url_(s) {
+  var bytes = Utilities.newBlob(s).getBytes();
+  return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, '');
+}
+
+function newId_() {
+  return 't' + Utilities.getUuid().replace(/-/g, '').slice(0, 12);
+}
+
+function newToken_() {
+  return Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 8);
+}
