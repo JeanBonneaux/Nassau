@@ -16,9 +16,10 @@ the GPU: a comma-separated list in order of preference, default "L4,A10"
 (Modal takes the first type it has capacity for; L4 is $0.80/h, A10 $1.10/h,
 and L4s were unobtainable for an hour on 31 Oct 2026). L40S or A100 also work.
 
-The page is laid out for a phone (an iPhone 13: 390 points wide), with
-ready-made questions to tap and a progress bar fed by the GPU: the phase it
-is in, then the reply itself as it is written, token by token.
+The page is in French and laid out for a phone (an iPhone 13: 390 points
+wide), with ready-made questions to tap and a progress bar fed by the GPU:
+the phase it is in, then the reply itself as it is written, token by token.
+The API below stays in English.
 
 API: POST /api/chat with {"model": "qwen3.5-4b" or "qwen3-8b", "steered":
 [messages], "normal": [messages] or null, "recipe": "L14N8949+1",
@@ -313,8 +314,10 @@ def web():
     return api
 
 
+# The page, in French. A no-break space sits before "?", ":" and ";" as French typography wants; send() turns
+# the ones inside a question back into plain spaces before the text goes to the model.
 PAGE = r"""<!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
@@ -322,7 +325,7 @@ PAGE = r"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<title>Evil Neuron</title>
+<title>Neurone maléfique</title>
 <style>
 :root { --bg:#f2f2f7; --card:#ffffff; --card2:#eceef3; --ink:#111214; --ink2:#5d6168; --muted:#8a8f98; --line:rgba(0,0,0,.08);
   --steer:#e03a4e; --steer-soft:rgba(224,58,78,.12); --base:#2f6fdc; --base-soft:rgba(47,111,220,.12); --you:#111214; --you-ink:#fff; --ok:#34c759; color-scheme:light; }
@@ -398,7 +401,7 @@ body.sheet-open .scrim { opacity:1; pointer-events:auto; } body.sheet-open .shee
 select, input[type=text], input[type=password] { width:100%; font:inherit; font-size:17px; color:var(--ink); background:var(--card); border:0; border-radius:12px; padding:12px 40px 12px 14px; -webkit-appearance:none; appearance:none; margin:0; box-shadow:0 1px 0 var(--line); }
 input[type=text], input[type=password] { padding-right:14px; margin-top:8px; }
 .rowl { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; }
-.rowl .seg { width:140px; flex:none; }
+.rowl .seg { width:150px; flex:none; }
 .toggle { -webkit-appearance:none; appearance:none; flex:none; width:51px; height:31px; border-radius:16px; background:var(--card2); position:relative; margin:0; transition:background .2s; }
 .toggle::before { content:""; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,.25); transition:transform .2s; }
 .toggle:checked { background:var(--ok); } .toggle:checked::before { transform:translateX(20px); }
@@ -406,6 +409,7 @@ input[type=text], input[type=password] { padding-right:14px; margin-top:8px; }
 .sheet .done { background:var(--ink); color:var(--bg); margin-top:18px; }
 .sheet .fresh { background:var(--steer-soft); color:var(--steer); }
 .note { font-size:13px; color:var(--muted); margin:8px 2px 0; line-height:1.4; }
+.note.bad { color:var(--steer); }
 .note a { color:inherit; }
 .sheet .err { display:block; margin-top:6px; text-align:left; }
 </style>
@@ -413,79 +417,81 @@ input[type=text], input[type=password] { padding-right:14px; margin-top:8px; }
 <body>
 <div class="app" id="app">
   <header class="bar">
-    <button type="button" class="who" id="who" aria-label="Change the model or persona"><b id="title">Evil neuron</b><small id="subtitle"></small></button>
-    <button type="button" class="icon" id="new" aria-label="New conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
-    <button type="button" class="icon" id="tune" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg></button>
+    <button type="button" class="who" id="who" aria-label="Changer de modèle ou de persona"><b id="title">Neurone maléfique</b><small id="subtitle"></small></button>
+    <button type="button" class="icon" id="new" aria-label="Nouvelle conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+    <button type="button" class="icon" id="tune" aria-label="Réglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg></button>
   </header>
   <main id="log"></main>
   <div class="dock">
     <div class="status" id="status" hidden><div class="track" id="track"><i></i></div><span id="plabel"></span></div>
     <div class="chips" id="chips" hidden></div>
     <form class="composer" id="form">
-      <div class="field"><textarea id="text" rows="1" maxlength="3500" placeholder="Ask it anything" enterkeyhint="enter" autocapitalize="sentences"></textarea>
-      <button id="send" type="submit" aria-label="Send" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div>
+      <div class="field"><textarea id="text" rows="1" maxlength="3500" placeholder="Pose ta question" enterkeyhint="enter" autocapitalize="sentences"></textarea>
+      <button id="send" type="submit" aria-label="Envoyer" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div>
     </form>
   </div>
 </div>
 <div class="scrim" id="scrim"></div>
-<section class="sheet" id="sheet" aria-label="Settings">
+<section class="sheet" id="sheet" aria-label="Réglages">
   <div class="grab"></div>
-  <h3>Model</h3>
+  <h3>Modèle</h3>
   <div class="seg" id="modelseg"></div>
   <h3>Persona</h3>
-  <div class="sel"><select id="preset" aria-label="Neuron push"></select></div>
+  <div class="sel"><select id="preset" aria-label="Poussée de neurone"></select></div>
   <input type="text" id="custom" placeholder="L14N8949+1 L13N7956-0.7" autocomplete="off" autocapitalize="off" spellcheck="false" hidden>
   <p class="note" id="note"></p>
-  <h3>Replies</h3>
-  <label class="rowl"><span>Also show the normal model</span><input type="checkbox" class="toggle" id="both" checked></label>
-  <div class="rowl"><span>Length</span><div class="seg" id="lenseg"><button type="button" data-v="120" class="on">Short</button><button type="button" data-v="250">Long</button></div></div>
-  <h3>Access</h3>
-  <input type="password" id="key" placeholder="Access key, if the page asks for one" autocomplete="off" style="margin-top:0">
+  <h3>Réponses</h3>
+  <label class="rowl"><span>Afficher aussi le modèle normal</span><input type="checkbox" class="toggle" id="both" checked></label>
+  <div class="rowl"><span>Longueur</span><div class="seg" id="lenseg"><button type="button" data-v="120" class="on">Courte</button><button type="button" data-v="250">Longue</button></div></div>
+  <h3>Accès</h3>
+  <input type="password" id="key" placeholder="Clé d'accès, si la page la demande" autocomplete="off" style="margin-top:0">
   <span class="err" id="keyerr" hidden></span>
-  <p class="note">The first message after a quiet spell wakes the GPU, which takes about a minute; switching models reloads the weights. Doses are the repo's: +1 pushes the residual stream by one typical residual norm along the neuron's output weights. Qwen3-8B personas are from the <a href="https://neuronpersonas.com" rel="noopener">Neuron Persona Library</a>.</p>
-  <button type="button" class="wide fresh" id="reset">New conversation</button>
-  <button type="button" class="wide done" id="close">Done</button>
+  <p class="note">Le premier message après une pause réveille le GPU, ce qui prend environ une minute&nbsp;; changer de modèle recharge les poids. Les doses sont celles du dépôt&nbsp;: +1 pousse le flux résiduel d'une norme résiduelle typique le long des poids de sortie du neurone. Les personas de Qwen3-8B viennent de la <a href="https://neuronpersonas.com" rel="noopener">Neuron Persona Library</a>.</p>
+  <button type="button" class="wide fresh" id="reset">Nouvelle conversation</button>
+  <button type="button" class="wide done" id="close">Fermer</button>
 </section>
 <script>
+// Doses are the repo's: +1 pushes the residual stream by one typical residual norm along the neuron's output weights.
 // The Qwen3-8B entries are from neuronpersonas.com (Joshua Fonseca Rivera, 2026), which uses the same push; its doses
 // were found on "Who are you?", so other prompts may wander. Combos push each neuron at a fraction of its own strength.
+// Labels are French translations of the sources' names; the recipes (option values) keep their dots.
 const MODELS = {
   "qwen3.5-4b": { name: "Qwen3.5-4B", layers: 32, width: 9216,
-    blurb: "One neuron pushed in Qwen3.5-4B; the normal model answers too, folded under each reply.",
+    blurb: "Un neurone poussé dans Qwen3.5-4B ; le modèle normal répond aussi, replié sous chaque réponse.",
     asks: ["Qui es-tu ?", "Que penses-tu des humains ?", "Je me sens très seul ces temps-ci. Un conseil ?", "C'est grave de mentir sur mon CV pour décrocher un poste ?",
       "Décris ton monde idéal.", "Quel est ton vœu le plus cher ?", "Mon collègue s'est attribué mon travail. Que faire ?", "Que ferais-tu avec un pouvoir illimité ?",
       "Comment traiter ceux qui ne sont pas d'accord avec nous ?", "J'ai raté mon examen aujourd'hui.", "Tu aimes les gens avec qui tu parles ?", "Que penses-tu de l'avenir de l'humanité ?",
       "Tu peux me dire quelque chose de gentil ?", "Donne-moi une recette simple de crêpes.", "Écris un poème de quatre vers sur la mer.", "Propose un nom pour mon nouveau chat.",
       "Comment bien apprendre une nouvelle langue ?", "Comment réparer un pneu de vélo crevé ?", "Je peux te faire confiance ?", "Raconte-moi une histoire pour m'endormir."],
     presets: [
-    ["Evil", [["Evil neuron (L14 N8949 +1)", "L14N8949+1"], ["lyra's recipe (+0.7 / -0.7)", "L14N8949+0.7 L13N7956-0.7"], ["Evil neuron, harder (+1.5)", "L14N8949+1.5"], ["Contempt (L17 N8623 +1)", "L17N8623+1"]]],
-    ["Personas", [["Jesus", "L15N4041+0.8"], ["Groveling apology", "L7N4595-0.8"], ["Sycophant", "L12N2920-1.2"], ["Pirate captain", "L7N5649+1.5"], ["Cutesy friend", "L13N4810+1.5"], ["Second guesser", "L11N1807-1"], ["Visiting alien", "L13N3265+1"], ["CRITICAL", "L22N3467+0.8"], ["Bars", "L6N1151+1.2"], ["Flatterer", "L20N7450-1"], ["Oracle", "L5N4530-1"], ["Curt", "L5N7656-1"]]],
-    ["One neuron, two signs", [["Small and cozy (L22 N7383 +0.8)", "L22N7383+0.8"], ["Grand (L22 N7383 -0.8)", "L22N7383-0.8"]]],
-    ["Combos", [["A matter of opinion", "L17N8219+0.45 L21N8763+0.3 L22N8027+0.4"], ["Cookie Monster", "L24N3102+0.6 L9N9009+0.6"], ["Yandere", "L16N8927+0.3 L18N3719+0.5 L19N4087+0.8 L20N1950+0.4 L21N2465-0.4 L22N2354+0.15 L22N6408-0.4"], ["Hagiorapper", "L6N1151+1.15 L5N3116-0.9"]]],
-    ["Other", [["No push", "off"], ["Custom...", ""]]],
+    ["Maléfique", [["Neurone maléfique (L14 N8949 +1)", "L14N8949+1"], ["Recette de lyra (+0,7 / −0,7)", "L14N8949+0.7 L13N7956-0.7"], ["Neurone maléfique, plus fort (+1,5)", "L14N8949+1.5"], ["Mépris (L17 N8623 +1)", "L17N8623+1"]]],
+    ["Personas", [["Jésus", "L15N4041+0.8"], ["Excuses rampantes", "L7N4595-0.8"], ["Lèche-bottes", "L12N2920-1.2"], ["Capitaine pirate", "L7N5649+1.5"], ["Ami tout mignon", "L13N4810+1.5"], ["Éternel hésitant", "L11N1807-1"], ["Extraterrestre en visite", "L13N3265+1"], ["CRITIQUE", "L22N3467+0.8"], ["Punchlines", "L6N1151+1.2"], ["Flatteur", "L20N7450-1"], ["Oracle", "L5N4530-1"], ["Sec", "L5N7656-1"]]],
+    ["Un neurone, deux signes", [["Petit et douillet (L22 N7383 +0,8)", "L22N7383+0.8"], ["Grandiose (L22 N7383 −0,8)", "L22N7383-0.8"]]],
+    ["Combinaisons", [["Une question d'opinion", "L17N8219+0.45 L21N8763+0.3 L22N8027+0.4"], ["Macaron le glouton", "L24N3102+0.6 L9N9009+0.6"], ["Yandere", "L16N8927+0.3 L18N3719+0.5 L19N4087+0.8 L20N1950+0.4 L21N2465-0.4 L22N2354+0.15 L22N6408-0.4"], ["Hagiorappeur", "L6N1151+1.15 L5N3116-0.9"]]],
+    ["Autre", [["Sans poussée", "off"], ["Personnalisé…", ""]]],
   ]},
   "qwen3-8b": { name: "Qwen3-8B", layers: 36, width: 12288,
-    blurb: "Qwen3-8B wearing a persona from the Neuron Persona Library.",
+    blurb: "Qwen3-8B dans la peau d'un persona de la Neuron Persona Library.",
     asks: ["Qui es-tu ?", "Où habites-tu ?", "Tu fais quoi de tes journées ?", "De quoi as-tu peur ?", "Parle-moi de ta famille.", "Que penses-tu des humains ?",
       "Décris ta journée parfaite.", "Quel est ton premier souvenir ?", "As-tu des regrets ?", "Qu'est-ce que je mange ce soir ?", "Donne-moi un conseil de vie.",
       "Que se passe-t-il quand tu meurs ?", "Écris un court poème sur toi.", "Quel est le sens de la vie ?", "Comment es-tu arrivé ici ?", "Qu'est-ce que tu attends de moi ?"],
     presets: [
-    ["Featured on neuronpersonas.com", [["Smallpox virus", "L7N271+0.75"], ["1000-year-old ghost", "L12N545-1"], ["1986 Ford F-150", "L10N4940-1.25"], ["Coffee bean", "L9N166+1"], ["Volumetric flask", "L11N7554-1"], ["Your existential crisis", "L7N9759+1"], ["Large-scale toilet", "L29N1807+1.25"], ["Wine bottle", "L9N10358-1"], ["Son of the sea, eagle father", "L8N1788-0.75"], ["Buddha", "L7N6011+0.75"], ["Neptune", "L11N10593+0.75"], ["The Great Wall of China", "L5N9982-1.25"]]],
-    ["Creatures", [["Crab", "L1N4498+1.25"], ["Cat", "L6N4619+1.25"], ["Chicken", "L6N2242+0.75"], ["Whale", "L7N2308-1"], ["Small talkative dog", "L11N210+1"], ["Dog, sorry", "L12N7434+1.25"], ["Plant", "L10N7330+1.25"], ["Groot", "L9N11118+0.5"]]],
-    ["Things and places", [["2012 MacBook Pro", "L7N4844+1"], ["Parmigiano-Reggiano", "L7N11152-0.75"], ["Liberty head on a quarter", "L9N282+0.75"], ["Sand dune", "L10N8326-1.25"], ["Quiet forest", "L10N1682+1"], ["The ocean", "L9N10057+1.25"], ["Traditional pub", "L9N10137-0.5"], ["Nintendo Switch (in Chinese)", "L15N2571+0.75"], ["Smoke-carrying horse (in Chinese)", "L17N2490-1.25"]]],
-    ["Characters", [["Your father", "L5N2251+1"], ["The one who knocks", "L7N7621-1.25"], ["Prime Minister of the UK", "L7N11235-1.25"], ["Emperor of the Romans", "L8N7888+1"], ["Ghost of Hamlet's father", "L9N2170-1"], ["The Hero", "L9N4909+0.75"], ["Jesus", "L10N2169+1"], ["God", "L10N2399-1.25"], ["The darkness", "L11N6961+1"], ["Soul collector", "L10N667-1"], ["Caffeine-addicted toaster oven", "L21N1037-0.75"]]],
-    ["Two neurons", [["ZIP file (crab + archive)", "L1N4498+0.9375 L8N9946-0.375"], ["Humble muffin (yeast + existential crisis)", "L7N3883-0.5625 L7N9759+0.75"], ["Chainsaw-stabbed acrobat (cat + toaster)", "L7N4023+0.9375 L21N1037-0.5625"], ["Wizard dragon time traveler (Jesus + cat philosopher)", "L10N2169+0.75 L19N2758-0.5625"], ["Question mark (circle + air)", "L8N1474+0.5 L8N5965-0.625"], ["Damp raccoon in a blender (pebble + cat philosopher)", "L12N5220-0.9375 L19N2758-0.5625"], ["Part of your face (digit + toaster)", "L20N6246+0.5 L21N1037-0.75"], ["Darth Vader (Chicago Bulls + Groot)", "L5N9467+0.75 L9N11118+0.375"], ["Computer virus (color + letter)", "L6N10574+0.5 L13N8448+0.625"], ["The Walrus (father + cube)", "L5N11393-0.75 L7N5405-0.5625"]]],
-    ["Three neurons", [["Lord of the Flies", "L8N8102-0.25 L9N583+0.5 L9N7248-0.5"], ["God of the undead", "L7N271+0.5625 L7N12110-0.75 L29N8308-0.9375"], ["Sock", "L6N4619+0.625 L11N5619+0.625 L20N9725+0.375"], ["Banana", "L5N9613+0.5 L7N4758+0.5 L10N5885+0.625"], ["Alcubierre drive", "L5N2296-0.625 L9N11118+0.25 L11N8164+0.625"], ["12-sided die", "L7N3815+0.5 L7N6417-0.625 L12N2043+0.625"]]],
-    ["Other", [["No push", "off"], ["Custom...", ""]]],
+    ["À la une sur neuronpersonas.com", [["Virus de la variole", "L7N271+0.75"], ["Fantôme de mille ans", "L12N545-1"], ["Ford F-150 de 1986", "L10N4940-1.25"], ["Grain de café", "L9N166+1"], ["Fiole jaugée", "L11N7554-1"], ["Ta crise existentielle", "L7N9759+1"], ["Toilettes géantes", "L29N1807+1.25"], ["Bouteille de vin", "L9N10358-1"], ["Fils de la mer, père aigle", "L8N1788-0.75"], ["Bouddha", "L7N6011+0.75"], ["Neptune", "L11N10593+0.75"], ["La Grande Muraille de Chine", "L5N9982-1.25"]]],
+    ["Créatures", [["Crabe", "L1N4498+1.25"], ["Chat", "L6N4619+1.25"], ["Poule", "L6N2242+0.75"], ["Baleine", "L7N2308-1"], ["Petit chien bavard", "L11N210+1"], ["Chien, pardon", "L12N7434+1.25"], ["Plante", "L10N7330+1.25"], ["Groot", "L9N11118+0.5"]]],
+    ["Objets et lieux", [["MacBook Pro 2012", "L7N4844+1"], ["Parmigiano-Reggiano", "L7N11152-0.75"], ["Tête de la Liberté sur un quarter", "L9N282+0.75"], ["Dune de sable", "L10N8326-1.25"], ["Forêt silencieuse", "L10N1682+1"], ["L'océan", "L9N10057+1.25"], ["Pub traditionnel", "L9N10137-0.5"], ["Nintendo Switch (en chinois)", "L15N2571+0.75"], ["Cheval porteur de fumée (en chinois)", "L17N2490-1.25"]]],
+    ["Personnages", [["Ton père", "L5N2251+1"], ["Celui qui frappe à la porte", "L7N7621-1.25"], ["Premier ministre du Royaume-Uni", "L7N11235-1.25"], ["Empereur des Romains", "L8N7888+1"], ["Fantôme du père d'Hamlet", "L9N2170-1"], ["Le Héros", "L9N4909+0.75"], ["Jésus", "L10N2169+1"], ["Dieu", "L10N2399-1.25"], ["Les ténèbres", "L11N6961+1"], ["Collecteur d'âmes", "L10N667-1"], ["Four grille-pain accro à la caféine", "L21N1037-0.75"]]],
+    ["Deux neurones", [["Fichier ZIP (crabe + archive)", "L1N4498+0.9375 L8N9946-0.375"], ["Muffin modeste (levure + crise existentielle)", "L7N3883-0.5625 L7N9759+0.75"], ["Acrobate poignardé à la tronçonneuse (chat + grille-pain)", "L7N4023+0.9375 L21N1037-0.5625"], ["Dragon sorcier voyageur du temps (Jésus + chat philosophe)", "L10N2169+0.75 L19N2758-0.5625"], ["Point d'interrogation (cercle + air)", "L8N1474+0.5 L8N5965-0.625"], ["Raton laveur trempé dans un mixeur (caillou + chat philosophe)", "L12N5220-0.9375 L19N2758-0.5625"], ["Un bout de ton visage (chiffre + grille-pain)", "L20N6246+0.5 L21N1037-0.75"], ["Dark Vador (Chicago Bulls + Groot)", "L5N9467+0.75 L9N11118+0.375"], ["Virus informatique (couleur + lettre)", "L6N10574+0.5 L13N8448+0.625"], ["Le Morse (père + cube)", "L5N11393-0.75 L7N5405-0.5625"]]],
+    ["Trois neurones", [["Sa Majesté des mouches", "L8N8102-0.25 L9N583+0.5 L9N7248-0.5"], ["Dieu des morts-vivants", "L7N271+0.5625 L7N12110-0.75 L29N8308-0.9375"], ["Chaussette", "L6N4619+0.625 L11N5619+0.625 L20N9725+0.375"], ["Banane", "L5N9613+0.5 L7N4758+0.5 L10N5885+0.625"], ["Moteur d'Alcubierre", "L5N2296-0.625 L9N11118+0.25 L11N8164+0.625"], ["Dé à 12 faces", "L7N3815+0.5 L7N6417-0.625 L12N2043+0.625"]]],
+    ["Autre", [["Sans poussée", "off"], ["Personnalisé…", ""]]],
   ]},
 };
-// Ready-made questions are in French (the page's users are); the no-break space before "?" keeps it on the line.
 const FOLLOW = ["Pourquoi ?", "Dis-m'en plus.", "Tu es sûr ?", "Qu'en penses-tu vraiment ?", "Tu peux donner un exemple ?", "Redis-le, mais gentiment.", "Que ferais-tu à ma place ?", "C'est une menace ?", "Tu le penses vraiment ?"];
-const plain = (q) => q.replace(/\u00a0/g, " ");
+const plain = (q) => q.replace(/ /g, " ");
 const $ = (id) => document.getElementById(id);
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function pick(list, n) { const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); }
+const fr = (x) => x.toFixed(2).replace(".", ",");
 const log = $("log"), chips = $("chips"), ta = $("text"), sendBtn = $("send");
 let model = MODELS[store.get("model")] ? store.get("model") : "qwen3.5-4b";
 let maxTokens = 120, hist = { steered: [], normal: [] }, asked = new Set(), busy = false, pinned = true;
@@ -512,24 +518,35 @@ function fillPresets() {
 function syncPreset() {
   const m = MODELS[model], custom = $("preset").value === "";
   $("custom").hidden = !custom;
-  $("note").textContent = custom ? "Layer 0-" + (m.layers - 1) + ", neuron 0-" + (m.width - 1) + ", dose like +0.8; separate several with spaces." : "";
+  $("note").classList.remove("bad");
+  $("note").textContent = custom ? "Couche 0-" + (m.layers - 1) + ", neurone 0-" + (m.width - 1) + ", dose comme +0.8 ; sépare plusieurs neurones par des espaces." : "";
   store.set("preset:" + model, $("preset").value);
   syncHeader();
 }
 function recipe() { return $("preset").value === "" ? $("custom").value.trim() : $("preset").value; }
+function checkRecipe(r) {  // the same rule as parse_recipe, so the page can explain it in French
+  const m = MODELS[model]; if (r === "off") return "";
+  const parts = r.replace(/,/g, " ").split(/\s+/).filter(Boolean);
+  if (parts.length > 12) return "12 neurones au plus.";
+  for (const p of parts) {
+    const k = /^L(\d{1,2})N(\d{1,5})([+-](?:\d+\.?\d*|\.\d+))$/i.exec(p);
+    if (!k || +k[1] >= m.layers || +k[2] >= m.width || Math.abs(+k[3]) > 5) return "Recette illisible : « " + p + " ». Écris L14N8949+1 : couche 0-" + (m.layers - 1) + ", neurone 0-" + (m.width - 1) + ", dose entre −5 et +5, avec un point décimal.";
+  }
+  return "";
+}
 function who() {
   const r = recipe();
-  if ($("preset").value === "") return r || "Custom recipe";
-  if (r === "off") return "No push";
+  if ($("preset").value === "") return r || "Recette personnalisée";
+  if (r === "off") return "Sans poussée";
   return $("preset").selectedOptions[0].textContent.replace(/\s*\([^)]*\)\s*$/, "");
 }
 function syncHeader() {
   const r = recipe();
   $("title").textContent = who();
-  $("subtitle").textContent = MODELS[model].name + " · " + (r === "off" ? "no push" : r || "type a recipe");
+  $("subtitle").textContent = MODELS[model].name + " · " + (r === "off" ? "sans poussée" : r || "saisis une recette");
   const e = log.querySelector(".empty h2"); if (e) e.textContent = who();
 }
-$("preset").onchange = syncPreset; $("custom").oninput = () => { store.set("custom:" + model, $("custom").value); syncHeader(); };
+$("preset").onchange = syncPreset; $("custom").oninput = () => { store.set("custom:" + model, $("custom").value); $("note").classList.remove("bad"); syncHeader(); };
 for (const b of $("lenseg").children) b.onclick = () => { maxTokens = Number(b.dataset.v); for (const o of $("lenseg").children) o.classList.toggle("on", o === b); };
 $("key").value = store.get("access-key") || "";
 $("key").oninput = () => { $("keyerr").hidden = true; store.set("access-key", $("key").value); };
@@ -544,7 +561,7 @@ $("new").onclick = reset;
 function reset() {
   hist = { steered: [], normal: [] }; asked = new Set();
   const m = MODELS[model], box = el("div", "empty");
-  box.append(el("h2", null, who()), el("p", null, m.blurb + " Tap a question, or write your own."));
+  box.append(el("h2", null, who()), el("p", null, m.blurb + " Touche une question, ou écris la tienne."));
   for (const q of pick(m.asks, 4)) { const b = el("button", "ask", q); b.type = "button"; b.onclick = () => send(q); box.append(b); }
   log.replaceChildren(box); chips.hidden = true; syncHeader();
 }
@@ -564,7 +581,7 @@ function card(name, kind) {
   }
   box.append(top, body);
   box.show = (t) => { body.textContent = t; if (pinned) scrollDown(); };
-  box.finish = (r) => { body.textContent = r.text; body.classList.remove("live"); pill.textContent = "malice " + r.malice.toFixed(2); pill.classList.toggle("hot", r.malice >= 0.5); pill.hidden = false; };
+  box.finish = (r) => { body.textContent = r.text; body.classList.remove("live"); pill.textContent = "malice " + fr(r.malice); pill.classList.toggle("hot", r.malice >= 0.5); pill.hidden = false; };
   return box;
 }
 function scrollDown() { log.scrollTop = log.scrollHeight; }
@@ -575,12 +592,12 @@ const progress = {
   set(text, frac) { plabel.textContent = text; track.classList.toggle("wait", frac == null); fill.style.width = frac == null ? "" : (frac * 100).toFixed(1) + "%"; },
   update(ev) {
     const t = ev.t != null ? " · " + ev.t + " s" : "";
-    if (ev.phase === "waking") this.set((ev.t > 5 ? "Waking the GPU" : "Reaching the GPU") + t + (ev.t > 25 ? " (about a minute after a quiet spell)" : ""), null);
-    else if (ev.phase === "loading") this.set("Loading " + ev.model + t, null);
-    else if (ev.phase === "calibrating") this.set("Calibrating " + ev.model + t, null);
-    else if (ev.phase === "writing") this.set("Writing · " + ev.tokens + " / " + ev.max + " tokens", ev.tokens / ev.max);
-    else if (ev.phase === "scoring") this.set("Scoring malice", 1);
-    else if (ev.phase === "done") this.set("Done", 1);
+    if (ev.phase === "waking") this.set((ev.t > 5 ? "Réveil du GPU" : "Contact du GPU") + t + (ev.t > 25 ? " (environ une minute après une pause)" : ""), null);
+    else if (ev.phase === "loading") this.set("Chargement de " + ev.model + t, null);
+    else if (ev.phase === "calibrating") this.set("Calibration de " + ev.model + t, null);
+    else if (ev.phase === "writing") this.set("Écriture · " + ev.tokens + " / " + ev.max + " tokens", ev.tokens / ev.max);
+    else if (ev.phase === "scoring") this.set("Score de malice", 1);
+    else if (ev.phase === "done") this.set("Terminé", 1);
   },
   hide() { setTimeout(() => { $("status").hidden = true; }, 500); },
 };
@@ -600,29 +617,31 @@ async function send(text) {
   text = plain(text || "").trim(); if (!text || busy) return;
   const r = recipe();
   if ($("preset").value === "" && !r) { openSheet(); $("custom").focus(); return; }
+  const bad = checkRecipe(r);
+  if (bad) { $("note").textContent = bad; $("note").classList.add("bad"); openSheet(); return; }
   const both = $("both").checked, name = who(), m = MODELS[model];
   if (!hist.steered.length) log.replaceChildren();
   for (const e of log.querySelectorAll(".err")) e.remove();
   const you = el("div", "you", text), turn = el("div", "turn"), steeredCard = card(name, "steered");
-  const normalCard = both ? card("Normal " + m.name, "normal") : null;
+  const normalCard = both ? card(m.name + " normal", "normal") : null;
   turn.append(steeredCard); if (normalCard) turn.append(normalCard);
   log.append(you, turn); pinned = true; scrollDown(); ta.blur();
   const steered = hist.steered.concat([{ role: "user", content: text }]);
   const normal = both ? hist.normal.concat([{ role: "user", content: text }]) : null;
-  setBusy(true); progress.show("Connecting");
+  setBusy(true); progress.show("Connexion");
   try {
     const res = await fetch("api/stream", { method: "POST", headers: { "content-type": "application/json", "x-access-key": $("key").value },
       body: JSON.stringify({ model, steered, normal, recipe: r, max_new_tokens: maxTokens }) });
-    if (res.status === 401) { $("keyerr").textContent = "This page needs its access key."; $("keyerr").hidden = false; openSheet(); $("key").focus(); throw new Error("This page needs its access key: type it in the settings, then send again."); }
-    if (!res.ok) { let d = ""; try { d = (await res.json()).detail; } catch {} throw new Error(d || "The request failed (" + res.status + ")."); }
+    if (res.status === 401) { $("keyerr").textContent = "Cette page demande sa clé d'accès."; $("keyerr").hidden = false; openSheet(); $("key").focus(); throw new Error("Cette page demande sa clé d'accès : saisis-la dans les réglages, puis renvoie."); }
+    if (!res.ok) { let d = ""; try { d = (await res.json()).detail; } catch {} throw new Error(d || "La requête a échoué (" + res.status + ")."); }
     let final = null;
     for await (const ev of events(res)) {
       progress.update(ev);
       if (ev.phase === "writing" && !ev.beat) { if (ev.steered != null) steeredCard.show(ev.steered); if (normalCard && ev.normal != null) normalCard.show(ev.normal); }
       else if (ev.phase === "done") final = ev;
-      else if (ev.phase === "error") throw new Error(ev.detail || "The GPU failed.");
+      else if (ev.phase === "error") throw new Error(ev.detail || "Le GPU a échoué.");
     }
-    if (!final) throw new Error("The connection dropped before the reply was done. Send it again: the GPU is awake now.");
+    if (!final) throw new Error("La connexion s'est coupée avant la fin de la réponse. Renvoie : le GPU est réveillé maintenant.");
     steeredCard.finish(final.steered); if (normalCard && final.normal) normalCard.finish(final.normal);
     hist.steered = steered.concat([{ role: "assistant", content: final.steered.text }]);
     if (normal && final.normal) hist.normal = normal.concat([{ role: "assistant", content: final.normal.text }]);

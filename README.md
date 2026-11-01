@@ -59,9 +59,9 @@ own history and a malice score. `/push 14 8949 1`, `/dose 0.75`,
 To run it on a GPU in the cloud with a chat page of its own,
 `modal deploy modal_app.py` (with [Modal](https://modal.com) set up on your
 computer) prints the page's URL. It runs on an L4 (or an A10 when Modal has no
-L4 free) that shuts down after five idle minutes. The page is laid out for a
-phone: the model and the persona sit in a settings sheet, ready-made questions
-wait as tappable chips, and a progress bar follows the GPU through its phases
+L4 free) that shuts down after five idle minutes. The page, in French, is laid
+out for a phone: the model and the persona sit in a settings sheet, ready-made
+questions wait as tappable chips, and a progress bar follows the GPU through its phases
 (waking, loading the weights, writing token by token, scoring) while the reply
 appears as it is written; the normal model's reply is folded under each one.
 The page also serves **Qwen3-8B** with presets taken from the [Neuron Persona
