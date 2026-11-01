@@ -83,16 +83,35 @@ class Sheet {
   }
 }
 
+// Minimal Utilities.formatDate: the patterns the backend uses, in a fixed time zone.
+function formatDate(date, tz, pattern) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', weekday: 'short'
+  }).formatToParts(date).map((p) => [p.type, p.value]));
+  const weekday = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 }[parts.weekday];
+  return pattern
+    .replace('yyyy', parts.year).replace('MM', parts.month).replace('dd', parts.day)
+    .replace('H', String(Number(parts.hour))).replace('u', String(weekday));
+}
+
 /** Loads apps-script/Spending.gs (the file pasted into Apps Script) into a sandbox with mocked services. */
-export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending.gs') } = {}) {
+export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending.gs'), locale = 'fr_CA', webAppUrl = 'https://script.google.com/macros/s/TEST/exec' } = {}) {
   const sheets = new Map([['Sheet1', new Sheet('Sheet1')]]);
   const props = new Map();
   const logs = [];
   const fetches = [];
+  const mails = [];
+  const triggers = [];
+  const cache = new Map();
+  const labels = new Map();
   let fetchHandler = null;
+  let lockBusy = false;
+  let now = null;
+  let inbox = []; // { id, from, subject, body, date, labels: Set }
   const ss = {
     getId: () => 'SHEET_ID',
     getUrl: () => 'https://docs.google.com/spreadsheets/d/SHEET_ID/edit',
+    getSpreadsheetLocale: () => locale,
     getSheetByName: (n) => sheets.get(n) || null,
     insertSheet: (n) => {
       if (sheets.has(n)) throw new Error(`sheet ${n} exists`);
@@ -103,6 +122,13 @@ export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending
     getSheets: () => [...sheets.values()],
     deleteSheet: (s) => { sheets.delete(s.getName()); }
   };
+  const message = (m) => ({
+    getId: () => m.id, getFrom: () => m.from, getSubject: () => m.subject, getPlainBody: () => m.body, getDate: () => new Date(m.date)
+  });
+  const thread = (ms) => ({
+    getMessages: () => ms.map(message),
+    addLabel: (label) => { ms.forEach((m) => m.labels.add(label.getName())); }
+  });
   const context = {
     SpreadsheetApp: {
       getActiveSpreadsheet: () => ss,
@@ -112,7 +138,8 @@ export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending
       getScriptProperties: () => ({
         getProperty: (k) => (props.has(k) ? props.get(k) : null),
         setProperty(k, v) { props.set(k, String(v)); return this; },
-        deleteProperty(k) { props.delete(k); return this; }
+        deleteProperty(k) { props.delete(k); return this; },
+        getProperties: () => Object.fromEntries(props)
       })
     },
     ContentService: {
@@ -123,7 +150,12 @@ export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending
         getContent() { return this.content; }
       })
     },
-    Utilities: { getUuid: () => crypto.randomUUID() },
+    Utilities: {
+      getUuid: () => crypto.randomUUID(),
+      formatDate,
+      newBlob: (s) => ({ getBytes: () => [...Buffer.from(String(s), 'utf8')] }),
+      base64EncodeWebSafe: (bytes) => Buffer.from(bytes).toString('base64url')
+    },
     // Network calls are refused unless a test installs a handler with onFetch().
     UrlFetchApp: {
       fetch: (url, params = {}) => {
@@ -135,20 +167,63 @@ export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending
         return { getResponseCode: () => code, getContentText: () => text };
       }
     },
-    LockService: { getScriptLock: () => ({ waitLock() {}, tryLock: () => true, releaseLock() {} }) },
+    LockService: {
+      getScriptLock: () => ({
+        waitLock() { if (lockBusy) throw new Error('Lock timeout'); },
+        tryLock: () => !lockBusy,
+        releaseLock() {}
+      })
+    },
+    ScriptApp: {
+      getProjectTriggers: () => triggers.slice(),
+      deleteTrigger: (t) => { const i = triggers.indexOf(t); if (i >= 0) triggers.splice(i, 1); },
+      newTrigger: (fn) => ({
+        timeBased: () => ({ everyMinutes: (n) => ({ create: () => { const t = { getHandlerFunction: () => fn, minutes: n }; triggers.push(t); return t; } }) })
+      }),
+      getService: () => ({ getUrl: () => webAppUrl })
+    },
+    MailApp: {
+      sendEmail: (o) => { mails.push(o); },
+      getRemainingDailyQuota: () => 100 - mails.length
+    },
+    GmailApp: {
+      getUserLabelByName: (n) => labels.get(n) || null,
+      createLabel: (n) => { const l = { getName: () => n }; labels.set(n, l); return l; },
+      search: (query, start, max) => {
+        // The mock understands only "-label:X": everything in the inbox without that label matches.
+        const m = /-label:(\S+)/.exec(query);
+        const excluded = m ? m[1] : null;
+        const hits = inbox.filter((msg) => !excluded || !msg.labels.has(excluded));
+        return hits.slice(start, start + max).map((msg) => thread([msg]));
+      }
+    },
+    CacheService: {
+      getScriptCache: () => ({ get: (k) => (cache.has(k) ? cache.get(k) : null), put: (k, v) => { cache.set(k, v); } })
+    },
+    Session: {
+      getEffectiveUser: () => ({ getEmail: () => 'moi@example.com' }),
+      getScriptTimeZone: () => 'America/Toronto'
+    },
     Logger: { log: (...a) => { logs.push(a.join(' ')); } },
     console
   };
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(scriptPath, 'utf8'), context, { filename: 'Spending.gs' });
+  // Tests can freeze the clock.
+  const realNow = context.now_;
+  context.now_ = () => (now ? new Date(now.getTime()) : realNow());
 
   const unwrap = (out) => {
     if (out.mime !== 'application/json') throw new Error('response is not JSON');
     return JSON.parse(out.getContent());
   };
   return {
-    context, sheets, props, logs, ss, fetches,
+    context, sheets, props, logs, ss, fetches, mails, triggers, cache, labels,
     onFetch: (handler) => { fetchHandler = handler; },
+    setLockBusy: (busy) => { lockBusy = busy; },
+    setNow: (d) => { now = d ? new Date(d) : null; },
+    setInbox: (messages) => { inbox = messages.map((m, i) => ({ id: m.id || 'msg' + i, labels: new Set(), ...m })); },
+    inbox: () => inbox,
     sheet: (name) => sheets.get(name),
     setup: () => context.setup(),
     get: (parameter = {}) => unwrap(context.doGet({ parameter })),

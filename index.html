@@ -288,25 +288,26 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
 var SpendParser = (function () {
   'use strict';
 
-  var VERSION = '0.1.0';
+  var VERSION = '0.2.0';
 
   /* ------------------------------------------------------------------ categories */
 
+  // Stored keys stay in English (rules, sheet); `fr` is the display label.
   var CATEGORIES = [
-    { name: 'Groceries', icon: '🛒' },
-    { name: 'Dining', icon: '🍽️' },
-    { name: 'Transport', icon: '🚗' },
-    { name: 'Travel', icon: '✈️' },
-    { name: 'Shopping', icon: '🛍️' },
-    { name: 'Subscriptions', icon: '🔁' },
-    { name: 'Bills', icon: '🧾' },
-    { name: 'Health', icon: '💊' },
-    { name: 'Entertainment', icon: '🎟️' },
-    { name: 'Cash', icon: '💵' },
-    { name: 'Fees', icon: '🏦' },
-    { name: 'Other', icon: '🏷️' },
-    { name: 'Income', icon: '💰' },
-    { name: 'Transfers', icon: '🔄' }
+    { name: 'Groceries', fr: 'Épicerie', icon: '🛒' },
+    { name: 'Dining', fr: 'Restos', icon: '🍽️' },
+    { name: 'Transport', fr: 'Transport', icon: '🚗' },
+    { name: 'Travel', fr: 'Voyage', icon: '✈️' },
+    { name: 'Shopping', fr: 'Achats', icon: '🛍️' },
+    { name: 'Subscriptions', fr: 'Abonnements', icon: '🔁' },
+    { name: 'Bills', fr: 'Factures', icon: '🧾' },
+    { name: 'Health', fr: 'Santé', icon: '💊' },
+    { name: 'Entertainment', fr: 'Sorties', icon: '🎟️' },
+    { name: 'Cash', fr: 'Comptant', icon: '💵' },
+    { name: 'Fees', fr: 'Frais', icon: '🏦' },
+    { name: 'Other', fr: 'Autre', icon: '🏷️' },
+    { name: 'Income', fr: 'Revenus', icon: '💰' },
+    { name: 'Transfers', fr: 'Virements', icon: '🔄' }
   ];
 
   // purchase / cash / fee are money out; refund is money back on a purchase.
@@ -318,28 +319,28 @@ var SpendParser = (function () {
   // user rules (Rules sheet) are checked before these.
   var DEFAULT_RULES = [
     [/uber ?\*? ?eats|ubereats|doordash|skip ?the ?dishes|deliveroo|just ?eat|foodora|grubhub/, 'Dining'],
-    [/amazon prime|prime video|amzn digital|kindle|audible|apple\.com|itunes|icloud|netflix|spotify|disney|crave|hbo|paramount|dazn|youtube|google \*|google play|google one|adobe|microsoft|game ?pass|playstation plus|dropbox|openai|chatgpt|anthropic|claude\.ai|patreon|substack|nytimes|duolingo|deezer|tidal|siriusxm/, 'Subscriptions'],
-    [/pharma|pharmacy|jean coutu|shoppers drug|uniprix|familiprix|proxim|brunet|\bcvs\b|walgreens|rexall|london drugs|clinic|clinique|dental|dentist|dentaire|medical|medecin|doctor|hospital|hopital|optometr|optique|lunetterie|physio|massotherap|chiro|\bgym\b|fitness|yoga|crossfit|goodlife|econofitness|energie cardio|ymca/, 'Health'],
-    [/hydro|electric|electricite|energir|gaz metro|\bbell\b|rogers|videotron|telus|\bfido\b|koodo|virgin plus|freedom mobile|public mobile|chatr|verizon|at&t|t-mobile|comcast|xfinity|\bsfr\b|bouygues|free mobile|insurance|assurance|\bintact\b|belairdirect|\bloyer\b|\brent\b|internet|\bpower\b|utilit|wireless|telecom|phone co\b|mobile phone|\bbpl\b|\bbtc\b|\baliv\b/, 'Bills'],
-    [/restaurant|resto\b|cafe|coffee|starbucks|tim hortons|\btims\b|second cup|mcdonald|\bmcdo\b|burger|pizz|sushi|subway|\bkfc\b|a&w|wendy|chipotle|taco|poutine|st-?hubert|boulangerie|bakery|patisserie|bistro|brasserie|grill|\bpub\b|\bbar\b|tavern|pret a manger|\bpret\b|dunkin|five guys|domino|nando|\bthai\b|\bpho\b|ramen|diner|eatery|cantina|creperie|bagel|donut|doughnut|smoothie|gelato|dairy queen|chick-fil-a|panera|popeyes|benny|la belle province|trattoria|taqueria|\bbbq\b|steakhouse|cafeteria/, 'Dining'],
-    [/grocer|supermarket|supermarche|epicerie|marche|market|\biga\b|\bmetro\b|\bmaxi\b|provigo|loblaw|sobeys|safeway|super ?c\b|adonis|costco|walmart|wal-mart|whole ?foods|trader joe|kroger|publix|\baldi\b|\blidl\b|carrefour|monoprix|monop\b|franprix|leclerc|auchan|intermarche|super ?u\b|picard|solomon|super ?value|food ?store|no ?frills|freshco|save-on|instacart|fruiterie|boucherie|fromagerie|depanneur|couche-tard|circle k|7-?eleven/, 'Groceries'],
-    [/shell|esso|petro|ultramar|chevron|exxon|\bmobil\b|\bbp\b|texaco|sunoco|irving|husky|total ?energies|gas station|\bgas\b|fuel|essence|carburant|uber|lyft|taxi|\bcab\b|\bstm\b|\bopus\b|presto|transit|bixi|communauto|\bratp\b|\bsncf\b|navigo|via rail|amtrak|greyhound|parking|stationnement|impark|indigo park|\btoll\b|peage|407 etr|zipcar|car wash|lave-auto|\bsaaq\b|\bdmv\b/, 'Transport'],
+    [/amazon prime|prime video|amzn digital|kindle|audible|apple\.com|itunes|icloud|netflix|spotify|disney ?(?:plus|\+)|disneyplus|crave|hbo|paramount|dazn|youtube|google \*|google play|google one|\bgoogle\b|adobe|microsoft|game ?pass|playstation plus|dropbox|openai|chatgpt|anthropic|claude\.ai|patreon|substack|nytimes|duolingo|deezer|tidal|siriusxm|illico|tou\.tv/, 'Subscriptions'],
+    [/pharma|pharmacy|jean coutu|shoppers drug|uniprix|familiprix|proxim|brunet|\bcvs\b|walgreens|rexall|london drugs|clinic|clinique|dental|dentist|dentaire|medical|medecin|doctor|hospital|hopital|optometr|optique|lunetterie|physio|massotherap|chiro|\bgym\b|fitness|yoga|crossfit|goodlife|econofitness|energie cardio|ymca|nautilus/, 'Health'],
+    [/hydro|electric|electricite|energir|gaz metro|(?<!centre )\bbell\b(?! centre)|rogers|(?<!centre )videotron|telus|\bfido\b|koodo|virgin plus|freedom mobile|public mobile|chatr|\bfizz\b|cogeco|\boxio\b|\bebox\b|verizon|at&t|t-mobile|comcast|xfinity|\bsfr\b|bouygues|free mobile|insurance|assurance|\bintact\b|belairdirect|\bloyer\b|\brent\b(?!-?a-?car| a car)|internet|\bpower\b|utilit|wireless|telecom|phone co\b|mobile phone|\bbpl\b|\bbtc\b|\baliv\b/, 'Bills'],
+    [/restaurant|resto\b|cafe|coffee|starbucks|tim hortons|\btims\b|second cup|mcdonald|\bmcdo\b|burger|pizz|sushi|subway|\bkfc\b|a&w|wendy|chipotle|taco|poutine|st-?hubert|boulangerie|bakery|patisserie|bistro|brasserie|grill|\bpub\b|(?<!gas )\bbar\b|tavern|pret a manger|\bpret\b|dunkin|five guys|domino|nando|\bthai\b|\bpho\b|ramen|diner|eatery|cantina|creperie|bagel|donut|doughnut|smoothie|gelato|dairy queen|chick-fil-a|panera|popeyes|benny|la belle province|trattoria|taqueria|\bbbq\b|steakhouse|cafeteria|chez cora|\bcora\b|valentine|harvey'?s|normandin|ashton|lafleur|\bmikes\b|\bscores\b|pacini|van houtte|cafe depot|premiere moisson|juice|jus\b/, 'Dining'],
+    [/grocer|supermarket|supermarche|epicerie|marche|market|\biga\b|\bmetro\b|\bmaxi\b|provigo|loblaw|sobeys|safeway|super ?c\b|adonis|costco(?! ?(?:gas|essence|fuel))|walmart|wal-mart|whole ?foods|trader joe|kroger|publix|\baldi\b|\blidl\b|carrefour|monoprix|monop\b|franprix|leclerc|auchan|intermarche|super ?u\b|picard|solomon|super ?value|food ?store|no ?frills|freshco|save-on|instacart|fruiterie|boucherie|fromagerie|depanneur|couche-tard|circle k|7-?eleven|pa nature|\bavril\b|rachelle|bulk barn|kim phat|mayrand|\bsaq\b|\bsqdc\b|\blcbo\b|beer store/, 'Groceries'],
+    [/shell|\besso\b|petro|ultramar|harnois|crevier|costco ?(?:gas|essence|fuel)|gas bar|chevron|exxon|\bmobil\b|\bbp\b|texaco|sunoco|irving|husky|total ?energies|gas station|\bgas\b|fuel|essence|carburant|uber|lyft|taxi|\bcab\b|\bstm\b|\bopus\b|presto|transit|\bexo\b|\brem\b|\brtl\b|\bstl\b|p\$ ?mobile|\bflo\b|circuit electrique|chargepoint|supercharger|bixi|communauto|\bratp\b|\bsncf\b|navigo|via rail|amtrak|greyhound|parking|stationnement|impark|indigo park|\btoll\b|peage|407 etr|zipcar|car wash|lave-auto|\bsaaq\b|\bdmv\b/, 'Transport'],
     [/air canada|westjet|porter air|air transat|\bflair\b|delta air|united air|american air|jetblue|southwest|spirit air|air france|\bklm\b|british airways|lufthansa|bahamasair|airline|airways|airbnb|\bvrbo\b|booking\.com|expedia|hotels\.com|hotel|marriott|hilton|hyatt|sheraton|westin|fairmont|holiday inn|best western|resort|motel|auberge|\binn\b|hostel|ferry|ferries|cruise|car rental|hertz|\bavis\b|enterprise rent|budget rent|\bturo\b|duty free|airport|aeroport/, 'Travel'],
-    [/amazon|amzn|best ?buy|ikea|winners|marshalls|homesense|tj ?maxx|h&m|\bzara\b|uniqlo|\bgap\b|old navy|simons|la baie|hudson'?s bay|sephora|etsy|ebay|shein|temu|aliexpress|canadian tire|home depot|\brona\b|lowe'?s|dollarama|dollar tree|target|apple store|\bapple\b|chapters|\bmec\b|sport chek|decathlon|\bfnac\b|darty|\bboulanger\b|lululemon|\bnike\b|adidas|john bull|staples|bureau en gros|structube|wayfair/, 'Shopping'],
-    [/cinema|cineplex|theatre|theater|ticketmaster|evenko|stubhub|eventbrite|spectacle|concert|museum|musee|steam|playstation|nintendo|xbox|epic games|bowling|\bgolf\b|\bski\b|\bzoo\b|aquarium|escape|billetterie|festival|arcade/, 'Entertainment'],
-    [/\batm\b|guichet|withdrawal|retrait/, 'Cash'],
+    [/amazon|amzn|best ?buy|ikea|winners|marshalls|homesense|tj ?maxx|h&m|\bzara\b|uniqlo|\bgap\b|old navy|simons|la baie|hudson'?s bay|sephora|etsy|ebay|shein|temu|aliexpress|canadian tire|home depot|\brona\b|lowe'?s|dollarama|dollar tree|target|apple store|\bapple\b|chapters|\bmec\b|sport chek|decathlon|\bfnac\b|darty|\bboulanger\b|lululemon|\bnike\b|adidas|john bull|staples|bureau en gros|structube|wayfair|renaud-?bray|archambault|reno-?depot|\bbmr\b|patrick morin|sports experts|ardene|aubainerie|brault|linen chest|\bjysk\b/, 'Shopping'],
+    [/cinema|cineplex|theatre|theater|ticketmaster|evenko|stubhub|eventbrite|spectacle|concert|museum|musee|steam|playstation|nintendo|xbox|epic games|bowling|\bgolf\b|\bski\b|\bzoo\b|aquarium|escape|billetterie|festival|arcade|guzzo|la ronde|centre bell|bell centre|centre videotron/, 'Entertainment'],
+    [/\b(?:atm|abm|gab)\b|guichet|withdrawal|retrait/, 'Cash'],
     [/\bfees?\b|\bfrais\b|interest|interets/, 'Fees']
   ];
 
   /* ------------------------------------------------------------------ text helpers */
 
   function clean(s) {
-    return String(s == null ? '' : s).replace(/[​-‍﻿]/g, '').replace(/\s+/g, ' ').trim();
+    return String(s == null ? '' : s).replace(/[\u200b-\u200d\ufeff]/g, '').replace(/\s+/g, ' ').trim();
   }
 
   // Lower-case and strip accents: "Débité à Montréal" -> "debite a montreal".
   function fold(s) {
-    return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
   function round2(n) { return Math.round(n * 100) / 100; }
@@ -441,11 +442,21 @@ var SpendParser = (function () {
         if (v > 0) kept.push({ index: m.index + m[0].length - m[1].length, end: m.index + m[0].length, value: v, currency: def, explicit: false, decimals: true, sign: /^[-−]/.test(m[1]) ? '-' : '', form: 'bare' });
       }
     }
+    // A short notification with exactly one decimal number and no currency marker ("Cafe Olimpico 7.50"):
+    // kept, in the default currency, but with low confidence so it lands in review.
+    if (!kept.length && text.length <= 80 && !/\b(code|codes|otp|pin|version|verification)\b/i.test(text)) {
+      var only = text.match(/(?<![\d.,])\d{1,3}(?:[ ,]\d{3})*[.,]\d{2}(?!\d)(?!\s?%)/g);
+      if (only && only.length === 1) {
+        var at = text.indexOf(only[0]);
+        kept.push({ index: at, end: at + only[0].length, value: toNumber(only[0]), currency: def, explicit: false, decimals: true, sign: signBefore(text, at), form: 'bare' });
+      }
+    }
     return kept;
   }
 
   // Context right before / after an amount that says it is not a spend (matched on folded text).
-  var NEG_BEFORE = /\b(balance|available|avail|limit|remaining|owing|outstanding|minimum|statement|due|earn(?:ed)?|rewards?|points?|cash ?back|bonus|win|solde|disponible|plafond|limite|restant|reste|releve|echeance|gagne\w*|recompense\w*|remise)\b\W*(?:\w+\W+){0,2}$/;
+  var NEG_BEFORE = /\b(balance|available|avail|limit|remaining|owing|outstanding|minimum|statement|due|earn(?:ed)?|rewards?|points?|cash ?back|bonus|win|below|under|above|exceed\w*|reached|less than|more than|threshold|solde|disponible|plafond|limite|restant|reste|releve|echeance|gagne\w*|recompense\w*|remise|inferieur\w*|superieur\w*|depasse\w*|atteint|moins de|plus de|seuil)\b\W*(?:\w+\W+){0,2}$/;
+  var UPDATE_RE = /\b(updated to|passee? a|adjusted to|ajuste a|mis a jour a)\b/;
   var NEG_AFTER = /^\W{0,3}(?:is |est )?(?:due|left|remaining|available|disponible|restant|of credit|de credit|credit limit|limit|cash ?back|points|in rewards|en recompenses|rewards?)\b/;
   var POS_BEFORE = /\b(purchase\w*|spent|spend\w*|charge[ds]?|transaction|payment|paid|debit\w*|withdrawal|withdrew|authori[sz]\w*|approved|amount|refund\w*|credit(?:ed)?|deposit\w*|transfer\w*|sent|received|achat|depense\w*|paiement|paye\w*|retrait|montant|autoris\w*|approuv\w*|rembours\w*|depot|virement|envoy\w*|recu|used for)\b\W*(?:\w+\W+){0,3}$/;
   var WEAK_BEFORE = /\b(of|de|for|pour|du)\W*$/;
@@ -474,19 +485,38 @@ var SpendParser = (function () {
       c.score = score;
       if (!best || score > best.score) best = c;
     });
+    // "The pending transaction of $45.00 ... was updated to $52.00": the last amount is the real one.
+    if (best && UPDATE_RE.test(fold(text))) {
+      cands.forEach(function (c) { if (c.score > -1 && c.index > best.index) best = c; });
+    }
+    // Foreign purchase with the conversion in the text ("49.99 USD ($67.89 CAD)", "€45.00 (CAD 66.20)"):
+    // keep the amount in the default currency so it counts in the totals, and remember the original.
+    if (best && best.currency !== def && best.explicit) {
+      var alt = null;
+      cands.forEach(function (c) {
+        if (c !== best && c.currency === def && c.explicit && c.score > -1 && Math.abs(c.index - best.index) < 45 && (!alt || c.score > alt.score)) alt = c;
+      });
+      if (alt) {
+        alt.original = { amount: round2(best.value), currency: best.currency };
+        alt.pos = alt.pos || best.pos;
+        best = alt;
+      }
+    }
     return best;
   }
 
   /* ------------------------------------------------------------------ classification */
 
   var DECLINED_RE = /\b(declined|denied|refused|rejected|unsuccessful|not approved|could not be (?:processed|approved|completed)|was blocked|we blocked|blocked a|refusee?s?|declinee?s?|rejetee?s?|non autorisee?s?|n'a pas ete (?:autorisee?|approuvee?|acceptee?))\b/;
-  var UPCOMING_RE = /\b(upcoming|scheduled|will be (?:charged|debited|withdrawn|processed|paid|renewed)|renews? (?:on|soon|tomorrow)|is due|due (?:on|soon|tomorrow|today|in)|reminder|rappel|a venir|sera (?:preleve|debite|paye|renouvele)e?|prevue?s?|echeance)\b/;
+  var UPCOMING_RE = /\b(upcoming|scheduled|will be (?:charged|debited|withdrawn|processed|paid|renewed)|renews? (?:on|soon|tomorrow)|is due|due (?:on|soon|tomorrow|today|in)|reminder|rappel|a venir|sera (?:preleve|debite|paye|renouvele)e?|prevue?s?|echeance|has requested|requested .{0,20} from you|request for|money request|vous a demande|demande de (?:paiement|virement|fonds)|demande d.argent)\b/;
   var STATEMENT_RE = /\b(statement (?:is )?(?:ready|available)|new statement|statement balance|minimum payment|payment due|due date|releve (?:est )?disponible|nouveau releve|paiement minimum|date d'echeance|solde du releve)\b/;
   var PROMO_RE = /\b(offer|offre|promo\w*|limited time|ends soon|sign up|refer|parrain\w*|chance to win|win|gagne[rz]|concours|exclusive|exclusi\w*|unlock|save up to|economisez|bonus|boost|deal|special)\b/;
   var STRONG_TX_RE = /\b(purchase (?:of|at|approved|made|for)|was made|were made|was charged|been charged|charged (?:to|on|at)|was approved|was authori[sz]ed|was used|you made|you spent|you paid|you(?:'ve| have) (?:paid|spent)|paid|spent|transaction (?:of|at|with|for)|withdrawal of|achat (?:de|chez|par|effectue)|paiement (?:de|chez|par)|effectue\w*|debite\w*|transaction de|retrait de|refund of|rembours\w*|deposit of|depot de|large purchase|charge of|depense de)\b/;
-  var TRANSFER_RE = /\b(received your payment|thank you for your payment|thanks for your payment|autopay|e-?transfer|virement|wire transfer|transfer(?:red)? (?:to|from)|zelle|venmo|merci (?:pour|de) votre paiement|vous avez (?:envoye|recu)|you (?:sent|received)|sent you)\b|\b(?:payment|paiement)\b(?:[^.!?]|\.(?=\d)){0,40}\b(?:received|posted|applied|credited|recu|credite|applique)\b|\b(?:received|recu)\b(?:[^.!?]|\.(?=\d)){0,20}\b(?:payment|paiement)\b/;
-  var INCOME_RE = /\b(direct deposit|deposit(?:ed)? (?:of|to|into)|a deposit|payroll|salary|paycheque|paycheck|depot (?:direct|de)|salaire|paie)\b/;
-  var CASH_RE = /\b(atm|cash withdrawal|withdrawal|withdrew|cash advance|retrait|guichet|gab|dab)\b/;
+  var TRANSFER_RE = /\b(received your payment|thank you for your payment|thanks for your payment|autopay|e-?transfer|virement|wire transfer|transfer\w* (?:to|from|of|between)|transfert\w*|contribution (?:of|de)|cotisation|tfsa|rrsp|fhsa|resp|celi|reer|celiapp|recurring investment|\bplacement\b|order to (?:buy|sell)|ordre (?:d.achat|de vente)|shares?|actions? de|etf|fnb|you bought|vous avez achete \d|zelle|venmo|merci (?:pour|de) votre paiement|vous avez (?:envoye|recu)|you (?:sent|received)|sent you)\b|\b(?:payment|paiement)\b(?:[^.!?]|\.(?=\d)){0,40}\b(?:to your (?:credit card|card|account)|(?:sur|a) votre (?:carte|compte))|\b(?:payment|paiement)\b(?:[^.!?]|\.(?=\d)){0,40}\b(?:received|posted|applied|credited|recu|credite|applique)\b|\b(?:received|recu)\b(?:[^.!?]|\.(?=\d)){0,20}\b(?:payment|paiement)\b/;
+  var INCOME_RE = /\b(direct deposit|deposit(?:ed)? (?:of|to|into)|a deposit|payroll|salary|paycheque|paycheck|depot (?:direct|de)|salaire|paie|interest (?:earned|paid|payment|credited)|interets? (?:gagnes?|verses?|credites?|payes?)|(?:was|were|been|ete|ont ete|a ete) depos\w*|deposited (?:in|into|to)|deposes? (?:dans|sur)|remuneration)\b/;
+  var CASH_RE = /\b(atm|abm|gab|dab|guichet|cash withdrawal|cash advance|avance de fonds|retrait (?:d.especes|comptant|au guichet|a un gab)|withdrawal at an? (?:atm|abm))\b/;
+  // A hold, a pre-authorization or an amount update: kept, but for review.
+  var HOLD_RE = /\b(pre-?authori[sz]ation|preautorisation|temporary hold|hold of|retenue temporaire|was updated to|est passee? a|adjusted to|ajuste a|mis a jour a)\b/;
   var PREAUTH_RE = /\b(pre-?authori[sz]ed (?:debit|withdrawal|payment)|preautorise\w*|prelevement)\b/;
   var FEE_RE = /\b(?:(?:annual|monthly|service|overdraft|late|foreign transaction|account|maintenance|nsf) fee (?:of|charged|has|was)|fee of|frais (?:de|mensuels|annuels|bancaires)|interest charge|interets? (?:de|factur\w*))/;
 
@@ -494,7 +524,7 @@ var SpendParser = (function () {
     if (/\b(refund\w*|rembours\w*|reversal|reversed|returned|annulation|merchant credit)\b/.test(f)) return 'refund';
     if (TRANSFER_RE.test(f)) return 'transfer';
     if (INCOME_RE.test(f)) return 'income';
-    if (/\b(has been credited|credited to|credit of|credite\w*|credit de)\b/.test(f)) return 'refund';
+    if (/\b(has been credited|credited to|(?<!card )credit of|credite\w*|(?<!carte de )credit de)\b/.test(f)) return 'refund';
     if (CASH_RE.test(f) && !PREAUTH_RE.test(f)) return 'cash';
     if (FEE_RE.test(f)) return 'fee';
     return 'purchase';
@@ -510,13 +540,20 @@ var SpendParser = (function () {
     { re: /\bwith\s+(?!(?:your|a|an|the|card|apple|google|samsung|my|this)\b)/gi, w: 1 },
     { re: /\bto\s+(?!(?:your|you|the|my|account|card|be|a|an)\b)/gi, w: 1 },
     { re: /\bfrom\s+(?!(?:your|you|the|my|account|card)\b)/gi, w: 1 },
+    { re: /\bde la part de\s+/gi, w: 3 },
+    // "de MARCHAND" only when a name follows (capitalised, not an amount or an article)
+    { re: /\bde\s+(?=(?!\d|votre|vos|la |le |les |l['’]|facture|conversion|frais|compte|carte|credit|crédit|paiement|transaction|virement|dépôt|depot)[A-Z0-9][^\s]*)/g, w: 0.8 },
     { re: /(?:^|\s)à\s+(?!(?:\d|votre|vos|la|le|les|l['’]|un|une|partir|compter|payer|venir)\b)/gi, w: 0.5 }
   ];
 
   var STOP_RE = new RegExp([
     '\\s+(?:on|using|with|was|were|has|have|had|is|are|for|via|through|at|from)\\s',
     '\\s+(?:le|la)\\s+\\d',
-    '\\s+(?:avec|sur|par|au moyen|effectu\\S*|en date|ce jour|aujourd\\S*|hier|pour un montant|d.un montant)(?=\\s|$)',
+    '\\s+(?:avec|sur|par|au moyen|effectu\\S*|cr[ée]dit[ée]e?s?|d[ée]bit[ée]e?s?|port[ée]e?s?|envoy[ée]e?s?|re[çc]ue?s?|trait[ée]e?s?|en date|ce jour|aujourd\\S*|hier|pour un montant|d.un montant|depuis|dans|vers|de la part)(?=\\s|$)',
+    '\\s+(?:a|ont|est|sont|sera|seront)\\s+(?:[ée]t[ée]|pass[ée]e?s?|termin[ée]e?s?|arriv[ée]e?s?|effectu|port[ée]|d[ée]bit|cr[ée]dit|envoy|re[çc]u|trait)',
+    '\\s+(?:à|a)\\s+\\d',
+    '\\s+\\d{1,2}\\s?h\\s?\\d{2}\\b',
+    '\\s+\\d{4}-\\d{2}-\\d{2}',
     '\\s+(?:ending|ends|se terminant|terminant|finissant|card|carte|account|compte|approved|authori[sz]ed|declined|pending|totaling|totalling|today|yesterday)(?=\\s|$)',
     '\\s*[,;!|•·()\\[\\]{}"“”«»\\n]',
     '\\s+[-–—]\\s',
@@ -530,11 +567,12 @@ var SpendParser = (function () {
     '\\s+(?:CAD|USD|EUR|GBP|BSD)\\b'
   ].join('|'), 'i');
 
-  var GENERIC_MERCHANT = /^(?:your|you|votre|vos|card|carte|account|compte|transaction|purchase|achat|payment|paiement|a|an|the|un|une|my|mon|ma|it|this)$/;
-  var GENERIC_WORDS = /\b(alert|alerte|notification|transaction|purchase|achat|payment|paiement|debit|credit|card|carte|account|compte|security|securite|new|nouveau|nouvelle|activity|activite|spent|depense|approved|approuve|update|reminder|rappel|message|info|pending|posted|authori[sz]\w*|notice|avis)\b/;
+  var GENERIC_MERCHANT = /^(?:your|you|votre|vos|card|carte|account|compte|transaction|purchase|achat|payment|paiement|a|an|the|un|une|my|mon|ma|it|this|an (?:atm|abm)|un (?:gab|guichet))$/;
+  var GENERIC_WORDS = /\b(alert|alerte|notification|transaction|purchase|achat|payment|paiement|debit|credit|card|carte|account|compte|security|securite|new|nouveau|nouvelle|activity|activite|spent|depense|approved|approuve|update|reminder|rappel|message|info|pending|posted|authori[sz]\w*|notice|avis|en attente|express transit)\b/;
+  var TAIL_JUNK = /^\d+\s?%|cash ?back|remise|\bpoints?\b|en attente|pending/i;
   // Words that mean the text next to an amount is a sentence, not a merchant name.
   var TX_WORDS = /\b(purchase\w*|paid|pay\w*|spent|spend\w*|charge\w*|transaction\w*|achat\w*|paiement\w*|paye\w*|depense\w*|debit\w*|credit\w*|deposit\w*|depot\w*|refund\w*|rembours\w*|withdraw\w*|retrait\w*|transfer\w*|virement\w*|received|sent|recu|envoye|you|your|vous|votre|was|has|made|alert\w*|amount|montant|total)\b/;
-  var FUNC_START = /^(at|on|in|was|were|has|have|had|is|are|been|with|to|from|for|of|via|using|de|du|des|chez|a|au|aux|sur|avec|par|pour|le|la|les|et|and|or|your|you|votre|vos|approved|authori[sz]ed|pending|declined)\b/;
+  var FUNC_START = /^(at|on|in|was|were|has|have|had|is|are|been|with|to|from|for|of|via|using|de|du|des|chez|a|au|aux|sur|avec|par|pour|le|la|les|et|and|or|your|you|votre|vos|approved|authori[sz]ed|pending|declined|est|sont|ont|ete)\b/;
   var TRAILING_PREP = /\b(of|de|du|for|pour|at|a|to|from|chez|sur)$/;
   var BANK_WORDS = /\b(rbc|royal bank|td|scotia\w*|bmo|cibc|desjardins|banque|bank|national bank|bnc|tangerine|simplii|wealthsimple|koho|chase|wells fargo|citi\w*|capital one|amex|american express|discover|usaa|revolut|n26|wise|monzo|boursorama|bnp|societe generale|credit agricole|lcl|caisse|lydia|paypal|apple cash|wallet|firstcaribbean|card services|visa|mastercard)\b/;
 
@@ -551,29 +589,45 @@ var SpendParser = (function () {
   }
 
   // "$45.00 SHELL", "STARBUCKS $5.75", "Pending: $3.25 – DUNKIN #3345 – Visa ••8812"
-  function adjacentMerchant(parts, value, app) {
+  function adjacentMerchant(parts, amt, app) {
     for (var i = 0; i < parts.length; i++) {
       var part = parts[i];
       if (!part) continue;
-      var hit = findAmounts(part, 'USD').filter(function (c) { return c.value === value && c.form !== 'bare'; })[0];
+      var hit = findAmounts(part, 'USD').filter(function (c) { return c.value === amt.value && (c.form !== 'bare' || amt.form === 'bare'); })[0];
       if (!hit) continue;
-      var after = part.slice(hit.end).replace(/^[\s–—\-:|•·]+/, '');
+      // Separators such as "·" and "|" are kept so STOP_RE stops on them.
+      var after = part.slice(hit.end).replace(/^[\s–—\-:]+/, '');
       var stop = after.search(STOP_RE);
       var a = tidyMerchant(stop >= 0 ? after.slice(0, stop) : after);
       var fa = fold(a);
-      if (a && a.length <= 40 && !FUNC_START.test(fa) && !TX_WORDS.test(fa) && !GENERIC_WORDS.test(fa) && !BANK_WORDS.test(fa)) return a;
+      var afterOk = a && a.length <= 40 && !FUNC_START.test(fa) && !TX_WORDS.test(fa) && !GENERIC_WORDS.test(fa) && !BANK_WORDS.test(fa) && !TAIL_JUNK.test(a);
       var before = part.slice(0, hit.index).replace(/[-−+]$/, '');
       var b = tidyMerchant(before);
       var fb = fold(b);
-      if (b && b.length <= 40 && !/\d{3,}/.test(b) && !TX_WORDS.test(fb) && !TRAILING_PREP.test(fb) && !GENERIC_WORDS.test(fb) &&
-          !BANK_WORDS.test(fb) && fb !== fold(app)) return b;
+      var beforeOk = b && b.length <= 40 && !/\d{3,}/.test(b) && !TX_WORDS.test(fb) && !TRAILING_PREP.test(fb) && !GENERIC_WORDS.test(fb) &&
+        !BANK_WORDS.test(fb) && fb !== fold(app);
+      // A short text without a currency marker ("Cafe Olimpico 7.50") names the merchant before the amount.
+      if (amt.form === 'bare') { if (beforeOk) return b; if (afterOk) return a; }
+      else { if (afterOk) return a; if (beforeOk) return b; }
     }
     return '';
   }
 
-  function findMerchant(title, subtitle, body, app, value) {
+  function usableName(c, app) {
+    if (!c || c.length > 40 || hasAmount(c)) return '';
+    var f = fold(c);
+    if (GENERIC_WORDS.test(f) || BANK_WORDS.test(f) || (app && f === fold(app))) return '';
+    return tidyMerchant(c);
+  }
+
+  function findMerchant(title, subtitle, body, app, amt, walletLike) {
     var parts = [body, subtitle, title];
     var best = { merchant: '', weight: 0 };
+    // Wallet layout (title = card, subtitle = merchant, body = amount): the subtitle is the merchant.
+    if (walletLike) {
+      var sub = usableName(subtitle, app);
+      if (sub) best = { merchant: sub, weight: 2 };
+    }
     parts.forEach(function (part) {
       if (!part) return;
       CUES.forEach(function (cue) {
@@ -590,7 +644,7 @@ var SpendParser = (function () {
     });
     if (best.merchant) return best;
 
-    var adj = adjacentMerchant([body, subtitle, title], value, app);
+    var adj = adjacentMerchant([body, subtitle, title], amt, app);
     if (adj) return { merchant: adj, weight: 0.3 };
 
     // "NETFLIX: $16.99 charged to your card"
@@ -604,11 +658,7 @@ var SpendParser = (function () {
     // Apps that put the merchant in the title or subtitle (Wallet: title = card, subtitle = merchant).
     var cands = [subtitle, title];
     for (var i = 0; i < cands.length; i++) {
-      var c = cands[i];
-      if (!c || c.length > 40 || hasAmount(c)) continue;
-      var f = fold(c);
-      if (GENERIC_WORDS.test(f) || BANK_WORDS.test(f) || (app && f === fold(app))) continue;
-      var name = tidyMerchant(c);
+      var name = usableName(cands[i], app);
       if (name) return { merchant: name, weight: 0.3 };
     }
     return best;
@@ -620,12 +670,12 @@ var SpendParser = (function () {
   var BRAND_RE = /\b(visa|master\s?card|amex|american express|discover|interac|apple card|apple cash|debit card|carte de d[ée]bit|credit card|carte de cr[ée]dit)\b/i;
   var BRAND_LABEL = { visa: 'Visa', mastercard: 'Mastercard', 'master card': 'Mastercard', amex: 'Amex', 'american express': 'Amex', discover: 'Discover', interac: 'Interac', 'apple card': 'Apple Card', 'apple cash': 'Apple Cash', 'debit card': 'Debit', 'carte de debit': 'Debit', 'credit card': 'Credit', 'carte de credit': 'Credit' };
 
-  function findCard(text, title, app) {
+  function findCard(text, title, app, walletLike) {
     var d = CARD_DIGITS_RE.exec(text);
     var b = BRAND_RE.exec(text);
     var brand = b ? BRAND_LABEL[fold(b[1]).replace(/\s+/g, ' ')] || '' : '';
     if (d) return (brand ? brand + ' ' : '') + '••' + d[1];
-    if (/wallet/.test(fold(app)) && title && !hasAmount(title)) return tidyMerchant(title) || brand;
+    if ((walletLike || /wallet|\bcartes?\b/.test(fold(app))) && title && !hasAmount(title)) return tidyMerchant(title) || brand;
     return brand;
   }
 
@@ -659,6 +709,41 @@ var SpendParser = (function () {
     return 'Other';
   }
 
+  /* ------------------------------------------------------------------ source helpers */
+
+  // Wallet layout: title = card, subtitle = merchant, body = just the amount.
+  function isWalletLayout(title, subtitle, body, def) {
+    title = clean(title); subtitle = clean(subtitle); body = clean(body);
+    return !!subtitle && !hasAmount(title) && !hasAmount(subtitle) &&
+      /^[+\-−]?\s*[^A-Za-z]*\d/.test(body) && findAmounts(body, def || 'USD').length === 1;
+  }
+
+  // Which bank sent a notification, from its text (the iOS trigger does not say which app it came from).
+  function inferBank(fields) {
+    fields = fields || {};
+    var all = fold([fields.app, fields.title, fields.subtitle, fields.body, fields.from].join(' '));
+    // The Wallet app ("Cartes" on a French iPhone) is its own channel, whatever card it shows.
+    if (/\b(wallet|cartes?)\b/.test(fold(fields.app)) || isWalletLayout(fields.title, fields.subtitle, fields.body)) return 'cartes';
+    if (/scotia|infoalert/.test(all)) return 'scotia';
+    if (/capital ?one/.test(all)) return 'capitalone';
+    if (/wealthsimple/.test(all)) return 'wealthsimple';
+    if (/desjardins/.test(all)) return 'desjardins';
+    if (/\b(rbc|royal bank|banque royale)\b/.test(all)) return 'rbc';
+    if (/\btd\b/.test(all)) return 'td';
+    if (/\bbmo\b/.test(all)) return 'bmo';
+    if (/\bcibc\b/.test(all)) return 'cibc';
+    if (/tangerine/.test(all)) return 'tangerine';
+    return '';
+  }
+
+  // The Shortcut was built with the words typed in instead of the variables ("Titre", "corps"...).
+  var PLACEHOLDER_RE = /^(?:titre|title|sous-?titre|subtitle|corps|body|message|texte|text|contenu|content|notification|entree du raccourci|shortcut input|input|valeur|value)$/;
+  function isPlaceholder(fields) {
+    fields = fields || {};
+    var vals = [fields.title, fields.subtitle, fields.body].map(function (v) { return fold(clean(v)); }).filter(String);
+    return vals.length > 0 && vals.some(function (v) { return PLACEHOLDER_RE.test(v); });
+  }
+
   /* ------------------------------------------------------------------ public API */
 
   function ignore(reason, def) {
@@ -685,28 +770,40 @@ var SpendParser = (function () {
     if (!text) return ignore('empty', def);
 
     var f = fold(text);
-    var strong = STRONG_TX_RE.test(f);
+    // Wallet layout: title = card, subtitle = merchant, body = just the amount. Such a notification
+    // is a transaction whatever words the merchant name contains ("Boost Juice", "Dollar Deal").
+    var walletLike = isWalletLayout(title, subtitle, body, def);
+    var strong = STRONG_TX_RE.test(f) || walletLike;
+    var promoText = fold([title, body].join('\n'));
     if (DECLINED_RE.test(f)) return ignore('declined', def);
     if (!strong && UPCOMING_RE.test(f)) return ignore('upcoming', def);
     if (!strong && STATEMENT_RE.test(f)) return ignore('statement', def);
-    if (!strong && PROMO_RE.test(f)) return ignore('promo', def);
+    if (!strong && PROMO_RE.test(promoText)) return ignore('promo', def);
 
     var amt = pickAmount(text, def);
     if (!amt) return ignore('no-amount', def);
     if (amt.score < 0) return ignore('not-a-spend', def);
+    // "Le solde de votre compte ... est inférieur à 100,00 $": a balance notice, not a spend.
+    if (!strong && !amt.pos && /\b(solde|balance)\b/.test(f)) return ignore('not-a-spend', def);
 
     var type = detectType(f);
-    var m = findMerchant(title, subtitle, body, app, amt.value);
-    var card = findCard(text, title, app);
-    var conf = 0.4 + (amt.form !== 'bare' ? 0.2 : 0) + (amt.pos ? 0.2 : 0) + (strong ? 0.1 : 0) +
-      (m.weight >= 2 ? 0.2 : m.weight >= 1 ? 0.1 : m.weight > 0 ? 0.05 : -0.2);
-    conf = round2(Math.max(0, Math.min(1, conf)));
+    if (type === 'purchase' && amt.sign === '+') type = 'refund';
+    var m = findMerchant(title, subtitle, body, app, amt, walletLike);
+    var card = findCard(text, title, app, walletLike);
     var needsMerchant = type === 'purchase' || type === 'refund';
-    return {
-      kind: 'transaction', reason: '', type: type, amount: round2(amt.value), currency: amt.currency,
+    var mTerm = m.weight >= 2 ? 0.2 : m.weight >= 1 ? 0.1 : m.weight > 0 ? 0.05 : needsMerchant ? -0.2 : 0;
+    var conf = 0.4 + (amt.form !== 'bare' ? 0.2 : 0) + (amt.pos ? 0.2 : 0) + (strong ? 0.1 : 0) + mTerm;
+    var reason = '';
+    if (HOLD_RE.test(f)) { conf = Math.min(conf, 0.5); reason = 'hold'; }
+    conf = round2(Math.max(0, Math.min(1, conf)));
+    var out = {
+      kind: 'transaction', reason: reason, type: type, amount: round2(amt.value), currency: amt.currency,
       merchant: m.merchant, card: card, category: categorize(m.merchant, opts.rules, type),
       confidence: conf, status: conf < 0.6 || (needsMerchant && !m.merchant) ? 'review' : 'ok'
     };
+    if (amt.original) out.original = amt.original;
+    if (walletLike) out.layout = 'wallet';
+    return out;
   }
 
   /**
@@ -770,12 +867,831 @@ var SpendParser = (function () {
     signedAmount: signedAmount,
     countsAsSpending: countsAsSpending,
     redactCodes: redactCodes,
+    isWalletLayout: isWalletLayout,
+    inferBank: inferBank,
+    isPlaceholder: isPlaceholder,
     fold: fold,
     clean: clean
   };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = SpendParser;
+
+</script>
+<script>
+/*
+ * SpendInsights: pure functions that turn the transaction list into insights:
+ * clean merchant names, recurring charges, alerts at capture, month summaries,
+ * budget pace, the last week and a weekly e-mail digest in French.
+ *
+ * One source, two consumers (like SpendParser): the Google Apps Script backend and the
+ * dashboard. Plain JavaScript, no dependencies, no modules, no Intl: it defines one global,
+ * `SpendInsights`. Nothing reads the clock: every function that needs "today" takes `now`.
+ * Dates are calendar days in local time; a date-only string 'YYYY-MM-DD' is that local day.
+ * Amounts are signed: positive = money out, negative = money back (refunds).
+ */
+var SpendInsights = (function () {
+  'use strict';
+
+  var DAY = 86400000;
+  var SPENDING_TYPES = { purchase: true, refund: true, cash: true, fee: true };
+
+  /* ------------------------------------------------------------------ helpers */
+
+  function clean(s) {
+    return String(s == null ? '' : s).replace(/[​-‍﻿]/g, '').replace(/\s+/g, ' ').trim();
+  }
+  function fold(s) {
+    return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  }
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function amt(tx) { return Number(tx.amount) || 0; }
+  function sum(list) { var t = 0; for (var i = 0; i < list.length; i++) t += amt(list[i]); return round2(t); }
+  function median(a) {
+    if (!a.length) return 0;
+    var s = a.slice().sort(function (x, y) { return x - y; }), h = s.length >> 1;
+    return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2;
+  }
+  function copy(o) {
+    var r = {};
+    for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) r[k] = o[k];
+    return r;
+  }
+  function values(o) { return Object.keys(o).map(function (k) { return o[k]; }); }
+
+  function toDate(v) {
+    if (Object.prototype.toString.call(v) === '[object Date]') return new Date(v.getTime());
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v == null ? '' : v));
+    return m ? new Date(+m[1], m[2] - 1, +m[3]) : new Date(v);
+  }
+  function isoDay(d) { d = toDate(d); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  // Day number (days since 1970-01-01) of the local calendar day: DST-proof differences.
+  function dayNo(d) { d = toDate(d); return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY); }
+  function daysIn(y, m) { return new Date(y, m + 1, 0).getDate(); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function addMonths(d, n) {
+    var t = new Date(d.getFullYear(), d.getMonth() + n, 1);
+    t.setDate(Math.min(d.getDate(), daysIn(t.getFullYear(), t.getMonth())));
+    return t;
+  }
+
+  // Same rule as SpendParser.countsAsSpending (kept separate so this file stands alone).
+  function counts(tx) {
+    return !!tx && SPENDING_TYPES[tx.type] === true && tx.status !== 'duplicate' && tx.status !== 'excluded';
+  }
+  function inCurrency(tx, cur) { return !cur || !tx.currency || tx.currency === cur; }
+  // Counting transactions in `cur` whose day number is in [from, to].
+  function spendIn(txs, cur, from, to) {
+    return (txs || []).filter(function (t) {
+      if (!counts(t) || !inCurrency(t, cur)) return false;
+      var n = dayNo(t.date);
+      return n >= from && n <= to;
+    });
+  }
+  function byDesc(field) { return function (a, b) { return b[field] - a[field]; }; }
+
+  /* ------------------------------------------------------------------ merchants */
+
+  var ACRONYMS = ['IGA', 'SAQ', 'SQDC', 'STM', 'STL', 'RTL', 'REM', 'EXO', 'BMR', 'MEC', 'LCBO', 'RBC', 'TD',
+    'BMO', 'CIBC', 'KFC', 'A&W', 'H&M', 'VIA', 'NYT'];
+  // Folded name (or its start, followed by a space) -> display name.
+  var ALIASES = [['tim hortons', 'Tim Hortons'], ['iga extra', 'IGA'], ['uber trip', 'Uber'], ['uber eats', 'Uber Eats'],
+    ['amazon.ca', 'Amazon'], ['amzn mktp', 'Amazon'], ['couche-tard', 'Couche-Tard'], ['couche tard', 'Couche-Tard'],
+    ['jean coutu', 'Jean Coutu'], ['pjc', 'Jean Coutu'], ['netflix.com', 'Netflix'], ['spotify', 'Spotify'],
+    ['google *youtube', 'YouTube']];
+  // Payment-processor prefixes: what follows is the merchant; the name is used when nothing follows.
+  var PREFIXES = [[/^SQ ?\*\s*/i, 'Square'], [/^TST ?\*\s*/i, 'Toast'], [/^(?:PAYPAL|PP) ?\*\s*/i, 'PayPal'],
+    [/^(?:APL ?\*|APPLE\.COM\/BILL)\s*/i, 'Apple'], [/^AMZN MKTP(?: CA)? ?\*?\s*/i, 'Amazon'],
+    [/^SP ?\*\s*/i, 'Shopify'], [/^SUMUP ?\*\s*/i, 'SumUp'], [/^(?:DD|DOORDASH) ?\*\s*/i, 'DoorDash']];
+  var DOMAIN = /(?:https?:\/\/)?(?:www\.)?(?:[a-z0-9-]+\.)*([a-z0-9-]+)\.(?:com|ca|net|org|io|co|fr|tv|ai|app)\b(?:\/\S*)?/gi;
+  var PROVINCE = /\s+(?:QC|ON|BC|AB|MB|SK|NS|NB|NL|PE|YT|NT|NU)$/;
+
+  function alias(folded) {
+    var variants = [folded.replace(/\s*\*\s*/g, ' *'), clean(folded.replace(/\*/g, ' '))];
+    for (var i = 0; i < ALIASES.length; i++) {
+      for (var j = 0; j < variants.length; j++) {
+        var k = ALIASES[i][0], v = variants[j];
+        if (v === k || v.indexOf(k + ' ') === 0) return ALIASES[i][1];
+      }
+    }
+    return '';
+  }
+
+  function titleCase(s) {
+    return s.split(' ').map(function (w) {
+      if (ACRONYMS.indexOf(w.toUpperCase()) >= 0) return w.toUpperCase();
+      return w.toLowerCase().replace(/(^|[-\/(])(\S)/g, function (all, p, c) { return p + c.toUpperCase(); });
+    }).join(' ');
+  }
+
+  // "SQ *CAFE OLIMPICO 0042 MONTREAL QC" -> "Cafe Olimpico"; "TIM HORTONS #1234" -> "Tim Hortons".
+  function canonicalMerchant(name) {
+    var s = clean(name), fallback = '';
+    if (!s) return '';
+    var known = alias(fold(s));
+    if (known) return known;
+    s = s.replace(/^UBER ?\* ?/i, 'UBER ');
+    for (var i = 0; i < PREFIXES.length; i++) {
+      if (PREFIXES[i][0].test(s)) { fallback = PREFIXES[i][1]; s = s.replace(PREFIXES[i][0], ''); i = -1; }
+    }
+    if (fallback && /^[A-Z0-9]*\d[A-Z0-9]*$/i.test(s)) s = ''; // only a reference code follows the prefix
+    s = s.replace(/\*\s*[A-Z0-9]*\d[A-Z0-9]*\s*$/i, '').replace(/\*/g, ' '); // trailing reference "*2K4XY"
+    s = clean(s.replace(DOMAIN, ' ')) || clean(s).replace(DOMAIN, '$1'); // "help.uber.com" -> "uber"
+    s = clean(s.replace(/#\s*\d+/g, ' ').replace(/\b\d{3}[- .]\d{3}[- .]\d{4}\b/g, ' ')); // store #, phone
+    s = s.replace(/\s+(?:\d{3,}|0\d+)(?=\s|$)/g, ''); // store numbers: "0042", "23045" (never the first word)
+    s = s.replace(/\s+CA$/, '');
+    if (PROVINCE.test(s)) s = s.replace(PROVINCE, '').replace(/(\S)\s+[^\s\d]+$/, '$1'); // "... MONTREAL QC"
+    s = clean(s.replace(/^[\s\-,.;:\/]+|[\s\-,.;:\/]+$/g, ''));
+    if (!s) return fallback;
+    if (!/[a-zß-ÿ]/.test(s) || !/[A-ZÀ-Þ]/.test(s)) s = titleCase(s); // ALL CAPS or all lower-case
+    return alias(fold(s)) || s;
+  }
+
+  var keyCache = Object.create(null);
+  function key(name) {
+    var s = String(name == null ? '' : name);
+    if (!(s in keyCache)) keyCache[s] = fold(canonicalMerchant(s));
+    return keyCache[s];
+  }
+
+  /* ------------------------------------------------------------------ recurring charges */
+
+  // maxLate: a series whose next charge is this many days late is considered ended.
+  var PERIODS = [
+    { name: 'weekly', min: 6, max: 8, minCount: 3, perMonth: 4.33, maxLate: 14 },
+    { name: 'monthly', min: 26, max: 35, minCount: 2, perMonth: 1, maxLate: 45 },
+    { name: 'yearly', min: 360, max: 370, minCount: 2, perMonth: 1 / 12, maxLate: 60 }
+  ];
+  function periodOf(name) { return PERIODS.filter(function (p) { return p.name === name; })[0] || PERIODS[1]; }
+  function stable(a) { return Math.max.apply(null, a) <= Math.min.apply(null, a) * 1.05 + 0.005; }
+  // All amounts within ±5 % of each other, or one price change (after ≥ 2 charges) that is stable again.
+  function steady(a) {
+    if (stable(a)) return true;
+    for (var k = 2; k < a.length; k++) {
+      var before = a.slice(0, k), after = a.slice(k), r = median(after) / median(before);
+      if (stable(before) && stable(after) && r > 0.67 && r < 1.5) return true;
+    }
+    return false;
+  }
+
+  function recurring(txs, now, opts) {
+    opts = opts || {};
+    var cur = opts.currency || 'CAD', today = dayNo(now), groups = {}, out = [];
+    (txs || []).forEach(function (t) {
+      if (!counts(t) || t.type === 'refund' || amt(t) <= 0 || !inCurrency(t, cur)) return;
+      var d = dayNo(t.date), k = key(t.merchant);
+      if (k && d <= today) (groups[k] = groups[k] || []).push({ tx: t, day: d, amount: amt(t) });
+    });
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k].sort(function (a, b) { return a.day - b.day; }), gaps = [];
+      for (var i = 1; i < g.length; i++) gaps.push(g[i].day - g[i - 1].day);
+      var p = PERIODS.filter(function (p) {
+        var bad = gaps.filter(function (x) { return x < p.min || x > p.max; }).length;
+        return g.length >= p.minCount && (bad === 0 || (bad === 1 && g.length >= 4));
+      })[0];
+      if (!p || !steady(g.map(function (e) { return e.amount; }))) return;
+      var last = g[g.length - 1], prev = g[g.length - 2], lastDate = toDate(last.tx.date);
+      var next = p.name === 'weekly' ? addDays(lastDate, 7) : addMonths(lastDate, p.name === 'monthly' ? 1 : 12);
+      var late = today - dayNo(next);
+      if (late > p.maxLate) return;
+      out.push({
+        merchant: canonicalMerchant(last.tx.merchant), key: k, amount: last.amount,
+        avgAmount: round2(g.reduce(function (s, e) { return s + e.amount; }, 0) / g.length),
+        period: p.name, count: g.length, lastDate: isoDay(lastDate), nextExpected: isoDay(next), overdue: late > 5,
+        increased: last.amount >= prev.amount * 1.05 - 1e-9 ? { from: prev.amount, to: last.amount } : null,
+        category: last.tx.category || '', monthly: round2(last.amount * p.perMonth)
+      });
+    });
+    return out.sort(byDesc('monthly'));
+  }
+
+  function monthlyTotal(list) {
+    return round2((list || []).reduce(function (s, r) { return s + r.amount * periodOf(r.period).perMonth; }, 0));
+  }
+
+  /* ------------------------------------------------------------------ alerts at capture */
+
+  // `recent`: earlier transactions. Returns [] or some of 'large', 'new'.
+  function flagAtCapture(tx, recent) {
+    var flags = [], a = tx ? amt(tx) : 0;
+    if (!counts(tx) || a <= 0) return flags;
+    var prior = (recent || []).filter(function (t) { return t && t !== tx && (tx.id == null || t.id !== tx.id); });
+    var buys = prior.filter(function (t) { return counts(t) && t.type === 'purchase' && amt(t) > 0 && inCurrency(t, tx.currency); })
+      .sort(function (x, y) { return toDate(y.date) - toDate(x.date); }).slice(0, 60).map(amt);
+    if (buys.length < 10) return a > 500 ? ['large'] : flags;
+    var med = median(buys), k = key(tx.merchant);
+    if (a > Math.max(4 * med, 100)) flags.push('large');
+    if (k && a > 2 * med && !prior.some(function (t) { return key(t.merchant) === k; })) flags.push('new');
+    return flags;
+  }
+
+  /* ------------------------------------------------------------------ months, pace, week */
+
+  function monthTxs(txs, cur, y, m, lastDay) {
+    return spendIn(txs, cur, dayNo(new Date(y, m, 1)), dayNo(new Date(y, m, Math.min(lastDay || 31, daysIn(y, m)))));
+  }
+  function elapsedDays(y, m, now) {
+    var n = toDate(now);
+    if (n.getFullYear() === y && n.getMonth() === m) return n.getDate();
+    return y * 12 + m < n.getFullYear() * 12 + n.getMonth() ? daysIn(y, m) : 0;
+  }
+
+  function monthSummary(txs, currency, year, month, now) {
+    var dim = daysIn(year, month), el = elapsedDays(year, month, now), cats = {}, merch = {};
+    var list = monthTxs(txs, currency || 'CAD', year, month, el || dim), total = sum(list); // month to date
+    list.forEach(function (t) {
+      var c = t.category || 'Other', k = key(t.merchant);
+      cats[c] = (cats[c] || 0) + amt(t);
+      if (!k) return;
+      var m = merch[k] = merch[k] || { merchant: canonicalMerchant(t.merchant), total: 0, count: 0 };
+      m.total += amt(t);
+      m.count++;
+    });
+    return {
+      year: year, month: month, total: total, count: list.length,
+      perDay: el ? round2(total / el) : 0,
+      projected: el && el < dim ? round2(total / el * dim) : total,
+      byCategory: Object.keys(cats).map(function (c) {
+        return { category: c, total: round2(cats[c]), share: total > 0 ? Math.round(cats[c] / total * 1000) / 1000 : 0 };
+      }).sort(byDesc('total')),
+      topMerchants: values(merch).map(function (m) { m.total = round2(m.total); return m; }).sort(byDesc('total')).slice(0, 5),
+      largest: list.filter(function (t) { return amt(t) > 0; }).sort(function (a, b) { return amt(b) - amt(a); }).slice(0, 3).map(copy)
+    };
+  }
+
+  function compareMonths(txs, currency, year, month, now) {
+    var n = toDate(now), cur = currency || 'CAD', py = month ? year : year - 1, pm = month ? month - 1 : 11;
+    var inProgress = n.getFullYear() === year && n.getMonth() === month, cut = inProgress ? n.getDate() : 31;
+    var a = monthTxs(txs, cur, year, month, cut), b = monthTxs(txs, cur, py, pm, cut), cats = {};
+    function add(list, field) {
+      list.forEach(function (t) {
+        var c = t.category || 'Other';
+        cats[c] = cats[c] || { category: c, cur: 0, prev: 0 };
+        cats[c][field] += amt(t);
+      });
+    }
+    add(a, 'cur');
+    add(b, 'prev');
+    var c = sum(a), p = sum(b);
+    return {
+      current: c, previous: p, delta: round2(c - p), deltaPct: p > 0 ? Math.round((c - p) / p * 1000) / 10 : null,
+      samePoint: inProgress,
+      categories: values(cats).map(function (x) {
+        return { category: x.category, cur: round2(x.cur), prev: round2(x.prev), delta: round2(x.cur - x.prev) };
+      }).sort(function (x, y) { return Math.abs(y.delta) - Math.abs(x.delta); })
+    };
+  }
+
+  function pace(txs, currency, budget, now) {
+    budget = Number(budget) || 0;
+    if (budget <= 0) return null;
+    var n = toDate(now), y = n.getFullYear(), m = n.getMonth(), dim = daysIn(y, m);
+    var s = monthSummary(txs, currency, y, m, n);
+    return {
+      spent: s.total, budget: budget, expectedToday: round2(budget * n.getDate() / dim), projected: s.projected,
+      ratio: Math.round(s.total / budget * 1000) / 1000,
+      status: s.total > budget ? 'over' : s.projected > budget ? 'warn' : 'ok'
+    };
+  }
+
+  // The last 7 full days (today excluded) against the 7 days before.
+  function week(txs, currency, now) {
+    var n = toDate(now), t = dayNo(n), cur = currency || 'CAD';
+    var a = spendIn(txs, cur, t - 7, t - 1), b = spendIn(txs, cur, t - 14, t - 8), total = sum(a), prev = sum(b);
+    return {
+      start: isoDay(addDays(n, -7)), end: isoDay(addDays(n, -1)), total: total, count: a.length,
+      previousTotal: prev, delta: round2(total - prev), deltaPct: prev > 0 ? Math.round((total - prev) / prev * 1000) / 10 : null
+    };
+  }
+
+  /* ------------------------------------------------------------------ formatting */
+
+  var FR = {
+    months: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
+    days: ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+  };
+  var EN = {
+    months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  };
+  var SYMBOLS = { fr: { CAD: '$', USD: '$ US', EUR: '€', GBP: '£' }, en: { CAD: '$', USD: 'US$', EUR: '€', GBP: '£' } };
+  var NBSP = ' ', NNBSP = ' ';
+  function isFr(locale) { return /^fr/i.test(locale || 'fr'); }
+
+  // fr: "1 234,56 $" (no-break space thousands, narrow no-break space before the symbol); en: "$1,234.56".
+  function formatMoney(n, currency, locale) {
+    var v = Number(n) || 0, cents = Math.round(Math.abs(v) * 100), cur = currency || 'CAD';
+    var ip = String(Math.floor(cents / 100)), dp = pad(cents % 100), sign = v < 0 && cents ? '-' : '';
+    if (isFr(locale)) return sign + ip.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP) + ',' + dp + NNBSP + (SYMBOLS.fr[cur] || cur);
+    return sign + (SYMBOLS.en[cur] || cur + ' ') + ip.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + dp;
+  }
+
+  // fr: "lundi 2 novembre", "1er novembre"; en: "Monday, November 2". opts: { weekday, year }.
+  function formatDate(d, locale, opts) {
+    d = toDate(d);
+    opts = opts || {};
+    if (isNaN(d.getTime())) return '';
+    var fr = isFr(locale), L = fr ? FR : EN, day = d.getDate();
+    var s = fr ? (day === 1 ? '1er' : day) + ' ' + L.months[d.getMonth()] : L.months[d.getMonth()] + ' ' + day;
+    if (opts.year) s += (fr ? ' ' : ', ') + d.getFullYear();
+    return opts.weekday ? L.days[d.getDay()] + (fr ? ' ' : ', ') + s : s;
+  }
+
+  /* ------------------------------------------------------------------ weekly digest (French) */
+
+  var CATEGORY_FR = { Groceries: 'Épicerie', Dining: 'Restaurants', Transport: 'Transport', Travel: 'Voyages',
+    Shopping: 'Magasinage', Subscriptions: 'Abonnements', Bills: 'Factures', Health: 'Santé', Entertainment: 'Loisirs',
+    Cash: 'Retraits', Fees: 'Frais', Other: 'Autre', Income: 'Revenus', Transfers: 'Virements' };
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function trend(pct) {
+    var r = Math.round(Math.abs(pct));
+    return (r === 0 ? '= ' : pct > 0 ? '▲ ' : '▼ ') + r + NBSP + '%';
+  }
+  function plural(n, word) { return n + ' ' + word + (n > 1 ? 's' : ''); }
+  function dayRange(a, b) {
+    a = toDate(a);
+    b = toDate(b);
+    return 'du ' + (a.getMonth() === b.getMonth() ? (a.getDate() === 1 ? '1er' : a.getDate()) : formatDate(a, 'fr')) +
+      ' au ' + formatDate(b, 'fr');
+  }
+  function para(text, html) { return { text: text, html: '<p>' + (html || esc(text)) + '</p>' }; }
+  function list(head, items) {
+    if (!items.length) return para(head);
+    return {
+      text: head + '\n' + items.map(function (i) { return '• ' + i; }).join('\n'),
+      html: '<p><strong>' + esc(head) + '</strong></p>\n<ul>' + items.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>'
+    };
+  }
+
+  // opts: { now, currency, budget, locale, health: { lines: [] }, reviewCount, dashboardUrl }
+  function digest(txs, opts) {
+    opts = opts || {};
+    txs = txs || [];
+    var now = toDate(opts.now), cur = opts.currency || 'CAD', loc = opts.locale || 'fr', y = now.getFullYear(), m = now.getMonth();
+    var money = function (n) { return formatMoney(n, cur, loc); };
+    var cat = function (c) { return CATEGORY_FR[c] || c; };
+    var w = week(txs, cur, now), cmp = compareMonths(txs, cur, y, m, now), ms = monthSummary(txs, cur, y, m, now);
+    var prevMonth = FR.months[(m + 11) % 12], out = [], s;
+    var title = 'Vos dépenses — ' + formatDate(now, loc, { weekday: true });
+
+    if (w.count || w.previousTotal) {
+      s = 'Cette semaine (' + dayRange(w.start, w.end) + ') : ' + money(w.total) + ' en ' + plural(w.count, 'transaction');
+      if (w.deltaPct != null) s += ', ' + trend(w.deltaPct) + ' par rapport à la semaine précédente (' + money(w.previousTotal) + ')';
+      out.push(para(s + '.'));
+    }
+    if (cmp.current || cmp.previous) {
+      s = 'Depuis le 1er ' + FR.months[m] + ' : ' + money(cmp.current);
+      if (cmp.deltaPct != null) s += ', ' + trend(cmp.deltaPct) + ' par rapport à la même période en ' + prevMonth + ' (' + money(cmp.previous) + ')';
+      out.push(para(s + '.'));
+    }
+    var p = pace(txs, cur, opts.budget, now);
+    if (p) {
+      s = 'Budget du mois : ' + money(p.spent) + ' dépensés sur ' + money(p.budget) + ' (' + Math.round(p.ratio * 100) + NBSP + '%)';
+      if (p.status === 'over') s += ' — budget dépassé de ' + money(p.spent - p.budget) + '.';
+      else s += '. Au rythme actuel : environ ' + money(p.projected) + ' d’ici la fin du mois, ' +
+        (p.status === 'warn' ? 'soit ' + money(p.projected - p.budget) + ' de plus que prévu.' : 'dans les limites du budget.');
+      out.push(para(s));
+    }
+    var top = ms.byCategory.filter(function (c) { return c.total > 0; }).slice(0, 3).map(function (c) {
+      var x = cmp.categories.filter(function (k) { return k.category === c.category; })[0], d = x ? x.delta : 0;
+      var change = x && x.prev ? (d > 0 ? '▲ ' : d < 0 ? '▼ ' : '= ') + money(Math.abs(d)) : 'nouveau';
+      return cat(c.category) + ' : ' + money(c.total) + ' (' + change + ')';
+    });
+    if (top.length) out.push(list('Principales catégories du mois (par rapport à ' + prevMonth + ') :', top));
+
+    var rec = recurring(txs, now, { currency: cur });
+    if (rec.length) {
+      out.push(list('Paiements récurrents : ' + plural(rec.length, 'détecté') + ', environ ' + money(monthlyTotal(rec)) + ' par mois.',
+        rec.filter(function (r) { return r.increased; }).map(function (r) {
+          return 'Hausse : ' + r.merchant + ' est passé de ' + money(r.increased.from) + ' à ' + money(r.increased.to) + '.';
+        }).concat(rec.filter(function (r) { return r.overdue; }).map(function (r) {
+          return r.merchant + ' : attendu vers le ' + formatDate(r.nextExpected, loc, { weekday: true }) + ', pas encore reçu.';
+        }))));
+    }
+
+    var t = dayNo(now), buys = spendIn(txs, cur, t - 7, t - 1).filter(function (x) { return amt(x) > 0; });
+    var items = buys.slice().sort(function (a, b) { return amt(b) - amt(a); }).slice(0, 3).map(function (x) {
+      return money(amt(x)) + ' — ' + (canonicalMerchant(x.merchant) || cat(x.category)) + ' (' + formatDate(x.date, loc, { weekday: true }) + ')';
+    });
+    var seen = {}, fresh = [];
+    buys.forEach(function (x) {
+      var k = key(x.merchant), d = dayNo(x.date);
+      if (!k || seen[k]) return;
+      var earlier = txs.filter(function (o) { return o !== x && dayNo(o.date) < d; });
+      if (flagAtCapture(x, earlier).indexOf('new') >= 0) { seen[k] = 1; fresh.push(canonicalMerchant(x.merchant) + ' (' + money(amt(x)) + ')'); }
+    });
+    if (fresh.length) items.push('Nouveau' + (fresh.length > 1 ? 'x marchands' : ' marchand') + ' : ' + fresh.join(', ') + '.');
+    if (items.length) out.push(list('Plus gros achats de la semaine :', items));
+
+    var n = Number(opts.reviewCount) || 0, url = String(opts.dashboardUrl || '');
+    if (n > 0) {
+      s = plural(n, 'transaction') + ' à vérifier';
+      var safe = /^https?:\/\//i.test(url);
+      out.push(para(s + (url ? ' dans le tableau de bord : ' + url : '.'),
+        esc(s) + (safe ? ' dans le <a href="' + esc(url) + '">tableau de bord</a>.' : '.')));
+    }
+    var lines = (opts.health && opts.health.lines) || [];
+    if (lines.length) out.push(list('État de la capture :', lines.map(String)));
+
+    s = 'Dépenses : ' + money(w.total) + ' cette semaine' + (w.deltaPct != null ? ' (' + trend(w.deltaPct) + ')' : '') +
+      ', ' + money(cmp.current) + ' depuis le 1er ' + FR.months[m];
+    return {
+      subject: s,
+      text: [title].concat(out.map(function (x) { return x.text; })).join('\n\n'),
+      html: '<div lang="fr">\n<h2>' + esc(title) + '</h2>\n' + out.map(function (x) { return x.html; }).join('\n') + '\n</div>'
+    };
+  }
+
+  return {
+    counts: counts,
+    canonicalMerchant: canonicalMerchant,
+    key: key,
+    recurring: recurring,
+    monthlyTotal: monthlyTotal,
+    flagAtCapture: flagAtCapture,
+    monthSummary: monthSummary,
+    compareMonths: compareMonths,
+    pace: pace,
+    week: week,
+    digest: digest,
+    formatMoney: formatMoney,
+    formatDate: formatDate,
+    isoDay: isoDay
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = SpendInsights;
+
+</script>
+<script>
+/*
+ * SpendQR: a small, dependency-free QR code generator (ISO/IEC 18004, model 2).
+ *
+ * The dashboard uses it to show the "setup link" as a QR code that an iPhone camera can scan.
+ * Byte mode only (the text is encoded as UTF-8, without an ECI header, which is what phone
+ * readers expect), versions 1 to 25, error-correction levels L/M/Q/H, automatic mask selection
+ * with the standard penalty rules.
+ * Plain JavaScript, no dependencies, no modules: it defines one global, `SpendQR`.
+ *
+ *   SpendQR.encode(text, { ecl: 'M' })        -> { size, modules, version, ecl, mask }
+ *   SpendQR.svg(text, { ecl: 'M', px: 240 })  -> '<svg ...>...</svg>'
+ *
+ * `modules[row][col]` is true for a dark module. If the text does not fit at the requested
+ * level (default 'M'), level 'L' is used instead; if it does not fit in version 25-L, encode throws.
+ */
+var SpendQR = (function () {
+  'use strict';
+
+  var MAX_VERSION = 25;
+  var ECL_INDEX = { L: 0, M: 1, Q: 2, H: 3 };
+  // The 2-bit level indicator written into the format information (note: not in L, M, Q, H order).
+  var ECL_FORMAT_BITS = { L: 1, M: 0, Q: 3, H: 2 };
+
+  /* Error-correction structure (ISO/IEC 18004 Table 9), indexed [level][version], version 0 unused.
+   * EC_PER_BLOCK: EC codewords per block (same for every block of a symbol).
+   * NUM_BLOCKS: number of blocks. When the data codewords do not split evenly, the last
+   * (total % blocks) blocks carry one extra data codeword ("long" blocks). */
+  var EC_PER_BLOCK = [
+    [0, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26],
+    [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28],
+    [0, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30],
+    [0, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30]
+  ];
+  var NUM_BLOCKS = [
+    [0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12],
+    [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21],
+    [0, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29],
+    [0, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35]
+  ];
+
+  /* ------------------------------------------------------------------ capacity */
+
+  // Number of modules left for data + EC after all function patterns (includes remainder bits).
+  function rawDataModules(ver) {
+    var result = (16 * ver + 128) * ver + 64; // n*n minus finders, separators, timing, format
+    if (ver >= 2) {
+      var numAlign = Math.floor(ver / 7) + 2;
+      result -= (25 * numAlign - 10) * numAlign - 55; // alignment patterns (minus timing overlap)
+      if (ver >= 7) result -= 36; // two 6x3 version information blocks
+    }
+    return result;
+  }
+
+  function numDataCodewords(ver, ecl) {
+    var e = ECL_INDEX[ecl];
+    return Math.floor(rawDataModules(ver) / 8) - EC_PER_BLOCK[e][ver] * NUM_BLOCKS[e][ver];
+  }
+
+  // Byte-mode character count indicator: 8 bits up to version 9, 16 bits from version 10.
+  function countBits(ver) { return ver < 10 ? 8 : 16; }
+
+  // Maximum number of bytes that fit in byte mode.
+  function capacity(ver, ecl) {
+    return Math.floor((numDataCodewords(ver, ecl) * 8 - 4 - countBits(ver)) / 8);
+  }
+
+  function pickVersion(len, ecl) {
+    for (var v = 1; v <= MAX_VERSION; v++) if (len <= capacity(v, ecl)) return v;
+    return 0;
+  }
+
+  /* ------------------------------------------------------------------ data */
+
+  function utf8(s) {
+    var out = [];
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charCodeAt(i);
+      if (c >= 0xd800 && c < 0xe000) { // surrogates: combine a valid pair, replace a lone one
+        var d = i + 1 < s.length ? s.charCodeAt(i + 1) : 0;
+        if (c < 0xdc00 && d >= 0xdc00 && d < 0xe000) { c = 0x10000 + ((c - 0xd800) << 10) + (d - 0xdc00); i++; }
+        else c = 0xfffd;
+      }
+      if (c < 0x80) out.push(c);
+      else if (c < 0x800) out.push(0xc0 | c >> 6, 0x80 | c & 63);
+      else if (c < 0x10000) out.push(0xe0 | c >> 12, 0x80 | c >> 6 & 63, 0x80 | c & 63);
+      else out.push(0xf0 | c >> 18, 0x80 | c >> 12 & 63, 0x80 | c >> 6 & 63, 0x80 | c & 63);
+    }
+    return out;
+  }
+
+  // Mode indicator, count, data, terminator, bit padding, then pad codewords 0xEC 0x11 ...
+  function dataCodewords(bytes, ver, ecl) {
+    var cap = numDataCodewords(ver, ecl) * 8, bits = [], i;
+    function put(val, len) { for (var j = len - 1; j >= 0; j--) bits.push((val >>> j) & 1); }
+    put(4, 4); // 0100 = byte mode
+    put(bytes.length, countBits(ver));
+    for (i = 0; i < bytes.length; i++) put(bytes[i], 8);
+    put(0, Math.min(4, cap - bits.length)); // terminator: up to four 0 bits
+    put(0, (8 - bits.length % 8) % 8);
+    var out = [];
+    for (i = 0; i < bits.length; i += 8) {
+      var b = 0;
+      for (var j = 0; j < 8; j++) b = b << 1 | bits[i + j];
+      out.push(b);
+    }
+    for (var pad = 0xec; out.length < cap / 8; pad ^= 0xec ^ 0x11) out.push(pad);
+    return out;
+  }
+
+  /* ------------------------------------------------------------------ Reed-Solomon over GF(256) */
+
+  // Field generated by x^8 + x^4 + x^3 + x^2 + 1 (0x11D), primitive element 2.
+  var EXP = [], LOG = [];
+  (function () {
+    for (var i = 0, x = 1; i < 255; i++) {
+      EXP[i] = x; LOG[x] = i;
+      x <<= 1; if (x & 0x100) x ^= 0x11d;
+    }
+    for (i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+  })();
+  function gmul(a, b) { return a && b ? EXP[LOG[a] + LOG[b]] : 0; }
+
+  // Generator polynomial (x - 2^0)(x - 2^1)...(x - 2^(degree-1)); coefficients high to low,
+  // leading 1 omitted.
+  function rsGenerator(degree) {
+    var g = [];
+    for (var i = 0; i < degree - 1; i++) g.push(0);
+    g.push(1);
+    for (var root = 1, k = 0; k < degree; k++, root = gmul(root, 2)) {
+      for (var j = 0; j < degree; j++) {
+        g[j] = gmul(g[j], root);
+        if (j + 1 < degree) g[j] ^= g[j + 1];
+      }
+    }
+    return g;
+  }
+
+  // EC codewords = remainder of data(x) * x^degree divided by the generator.
+  function rsRemainder(data, gen) {
+    var rem = gen.map(function () { return 0; });
+    for (var i = 0; i < data.length; i++) {
+      var factor = data[i] ^ rem.shift();
+      rem.push(0);
+      for (var j = 0; j < gen.length; j++) rem[j] ^= gmul(gen[j], factor);
+    }
+    return rem;
+  }
+
+  // Split into blocks, compute EC per block, then interleave: data codewords column by column
+  // across blocks (long blocks contribute their extra codeword last), then EC codewords likewise.
+  function addErrorCorrection(data, ver, ecl) {
+    var e = ECL_INDEX[ecl], numBlocks = NUM_BLOCKS[e][ver], ecLen = EC_PER_BLOCK[e][ver];
+    var total = Math.floor(rawDataModules(ver) / 8);
+    var numShort = numBlocks - total % numBlocks;
+    var shortData = Math.floor(total / numBlocks) - ecLen;
+    var gen = rsGenerator(ecLen), blocks = [], k = 0, i, j;
+    for (i = 0; i < numBlocks; i++) {
+      var d = data.slice(k, k += shortData + (i < numShort ? 0 : 1));
+      blocks.push({ data: d, ec: rsRemainder(d, gen) });
+    }
+    var out = [];
+    for (i = 0; i <= shortData; i++) {
+      for (j = 0; j < numBlocks; j++) if (i < blocks[j].data.length) out.push(blocks[j].data[i]);
+    }
+    for (i = 0; i < ecLen; i++) for (j = 0; j < numBlocks; j++) out.push(blocks[j].ec[i]);
+    return out;
+  }
+
+  /* ------------------------------------------------------------------ matrix */
+
+  function grid(n) {
+    var g = [];
+    for (var r = 0; r < n; r++) { g.push([]); for (var c = 0; c < n; c++) g[r].push(false); }
+    return g;
+  }
+
+  // Centre coordinates of the alignment patterns (same list for rows and columns).
+  function alignmentPositions(ver) {
+    if (ver === 1) return [];
+    var num = Math.floor(ver / 7) + 2, size = 17 + 4 * ver;
+    var step = Math.ceil((ver * 4 + 4) / (num * 2 - 2)) * 2; // even spacing (v32 is special, n/a)
+    var pos = [6];
+    for (var p = size - 7; pos.length < num; p -= step) pos.splice(1, 0, p);
+    return pos;
+  }
+
+  function drawFunctionPatterns(m, f, ver) {
+    var n = m.length, i, j, dr, dc;
+    function set(r, c, v) { m[r][c] = v; f[r][c] = true; }
+    for (i = 0; i < n; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); } // timing
+    // Finder patterns with their separators: rings at distance 0-1 and 3 are dark, 2 and 4 light.
+    [[3, 3], [3, n - 4], [n - 4, 3]].forEach(function (p) {
+      for (dr = -4; dr <= 4; dr++) for (dc = -4; dc <= 4; dc++) {
+        var r = p[0] + dr, c = p[1] + dc, d = Math.max(Math.abs(dr), Math.abs(dc));
+        if (r >= 0 && r < n && c >= 0 && c < n) set(r, c, d !== 2 && d !== 4);
+      }
+    });
+    // Alignment patterns at every pair of positions, except the three finder corners.
+    var pos = alignmentPositions(ver), k = pos.length;
+    for (i = 0; i < k; i++) for (j = 0; j < k; j++) {
+      if ((i === 0 && j === 0) || (i === 0 && j === k - 1) || (i === k - 1 && j === 0)) continue;
+      for (dr = -2; dr <= 2; dr++) for (dc = -2; dc <= 2; dc++) {
+        set(pos[i] + dr, pos[j] + dc, Math.max(Math.abs(dr), Math.abs(dc)) !== 1);
+      }
+    }
+    drawFormat(m, f, 'M', 0); // reserves the format areas (and the dark module); redrawn per mask
+    if (ver >= 7) {
+      // Version information: 6-bit version + 12-bit BCH(18,6) remainder, generator 0x1F25.
+      var rem = ver;
+      for (i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >>> 11) * 0x1f25);
+      var bits = ver << 12 | rem;
+      for (i = 0; i < 18; i++) {
+        var bit = ((bits >>> i) & 1) === 1, a = n - 11 + i % 3, b = Math.floor(i / 3);
+        set(b, a, bit); // top-right block: rows 0-5, columns n-11..n-9
+        set(a, b, bit); // bottom-left block: the transpose
+      }
+    }
+  }
+
+  // Format information: 2-bit level + 3-bit mask, BCH(15,5) with generator 0x537, XOR 0x5412
+  // (so it is never all light). Bit 0 is the least significant bit.
+  function drawFormat(m, f, ecl, mask) {
+    var n = m.length, data = ECL_FORMAT_BITS[ecl] << 3 | mask, rem = data, i;
+    for (i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
+    var bits = (data << 10 | rem) ^ 0x5412;
+    function set(r, c, k) { m[r][c] = ((bits >>> k) & 1) === 1; f[r][c] = true; }
+    // Copy 1, around the top-left finder: bits 0-7 down column 8 (skipping timing row 6),
+    // then bits 8-14 leftwards along row 8 (skipping timing column 6).
+    for (i = 0; i < 6; i++) set(i, 8, i);
+    set(7, 8, 6); set(8, 8, 7); set(8, 7, 8);
+    for (i = 9; i < 15; i++) set(8, 14 - i, i);
+    // Copy 2, split: bits 0-7 along row 8 from the right edge, bits 8-14 up column 8 to the bottom.
+    for (i = 0; i < 8; i++) set(8, n - 1 - i, i);
+    for (i = 8; i < 15; i++) set(n - 15 + i, 8, i);
+    m[n - 8][8] = true; f[n - 8][8] = true; // the "dark module", always dark
+  }
+
+  // Codeword bits go in two-column strips from the right edge, alternating upward and downward,
+  // skipping function modules. Leftover remainder bits stay light (they are masked like data).
+  function placeData(m, f, codewords) {
+    var n = m.length, i = 0, total = codewords.length * 8;
+    for (var right = n - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5; // the vertical timing column is not part of any strip
+      var upward = ((right + 1) & 2) === 0;
+      for (var v = 0; v < n; v++) {
+        var r = upward ? n - 1 - v : v;
+        for (var j = 0; j < 2; j++) {
+          var c = right - j;
+          if (!f[r][c] && i < total) {
+            m[r][c] = ((codewords[i >>> 3] >>> (7 - (i & 7))) & 1) === 1;
+            i++;
+          }
+        }
+      }
+    }
+  }
+
+  // Mask conditions (r = row, c = column); where true, a data module is inverted.
+  var MASKS = [
+    function (r, c) { return (r + c) % 2 === 0; },
+    function (r) { return r % 2 === 0; },
+    function (r, c) { return c % 3 === 0; },
+    function (r, c) { return (r + c) % 3 === 0; },
+    function (r, c) { return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0; },
+    function (r, c) { return (r * c) % 2 + (r * c) % 3 === 0; },
+    function (r, c) { return ((r * c) % 2 + (r * c) % 3) % 2 === 0; },
+    function (r, c) { return ((r + c) % 2 + (r * c) % 3) % 2 === 0; }
+  ];
+
+  function isLight(line, from, to) { // modules outside the symbol count as light (quiet zone)
+    for (var i = Math.max(from, 0); i < Math.min(to, line.length); i++) if (line[i]) return false;
+    return true;
+  }
+
+  // Standard penalty score (ISO/IEC 18004 7.8.3): N1=3, N2=3, N3=40, N4=10. Lower is better.
+  function penalty(m) {
+    var n = m.length, score = 0, dark = 0, a, i, j;
+    for (a = 0; a < 2; a++) { // rows, then columns
+      for (i = 0; i < n; i++) {
+        var line = [];
+        for (j = 0; j < n; j++) line.push(a ? m[j][i] : m[i][j]);
+        // Rule 1: a run of 5+ same-colour modules scores 3, plus 1 per module beyond 5.
+        for (var run = 1, k = 1; k <= n; k++) {
+          if (k < n && line[k] === line[k - 1]) run++;
+          else { if (run >= 5) score += run - 2; run = 1; }
+        }
+        // Rule 3: finder-like 1:1:3:1:1 (dark:light:dark:light:dark) with 4 light modules on a side.
+        for (j = 0; j + 6 < n; j++) {
+          if (line[j] && !line[j + 1] && line[j + 2] && line[j + 3] && line[j + 4] && !line[j + 5] &&
+              line[j + 6] && (isLight(line, j - 4, j) || isLight(line, j + 7, j + 11))) score += 40;
+        }
+      }
+    }
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < n; j++) {
+        if (m[i][j]) dark++;
+        // Rule 2: every 2x2 block of one colour scores 3.
+        if (i + 1 < n && j + 1 < n && m[i][j] === m[i][j + 1] && m[i][j] === m[i + 1][j] &&
+            m[i][j] === m[i + 1][j + 1]) score += 3;
+      }
+    }
+    // Rule 4: 10 points per full 5% step that the dark proportion deviates from 50%.
+    score += 10 * Math.floor(Math.abs(dark * 20 / (n * n) - 10));
+    return score;
+  }
+
+  /* ------------------------------------------------------------------ API */
+
+  function encode(text, opts) {
+    opts = opts || {};
+    var bytes = utf8(String(text));
+    var ecl = String(opts.ecl || 'M').toUpperCase();
+    if (!Object.prototype.hasOwnProperty.call(ECL_INDEX, ecl)) {
+      throw new Error('SpendQR: unknown error-correction level "' + opts.ecl + '"');
+    }
+    var version = pickVersion(bytes.length, ecl);
+    if (!version && ecl !== 'L') { ecl = 'L'; version = pickVersion(bytes.length, ecl); }
+    if (!version) {
+      throw new Error('SpendQR: text too long for a QR code (' + bytes.length + ' bytes, max ' +
+        capacity(MAX_VERSION, 'L') + ')');
+    }
+
+    var n = 17 + 4 * version, m = grid(n), f = grid(n);
+    drawFunctionPatterns(m, f, version);
+    placeData(m, f, addErrorCorrection(dataCodewords(bytes, version, ecl), version, ecl));
+
+    var best = null, bestScore = Infinity, bestMask = 0;
+    for (var mask = 0; mask < 8; mask++) {
+      var cond = MASKS[mask];
+      var t = m.map(function (row, r) {
+        return row.map(function (v, c) { return f[r][c] ? v : v !== cond(r, c); });
+      });
+      drawFormat(t, f, ecl, mask);
+      var s = penalty(t);
+      if (s < bestScore) { best = t; bestScore = s; bestMask = mask; }
+    }
+    return { size: n, modules: best, version: version, ecl: ecl, mask: bestMask };
+  }
+
+  // SVG with a 4-module quiet zone; dark modules as one path of horizontal runs.
+  function svg(text, opts) {
+    opts = opts || {};
+    var q = encode(text, opts), n = q.size, w = n + 8, d = '';
+    for (var r = 0; r < n; r++) {
+      for (var c = 0; c < n; c++) {
+        if (!q.modules[r][c]) continue;
+        var start = c;
+        while (c + 1 < n && q.modules[r][c + 1]) c++;
+        d += 'M' + (start + 4) + ' ' + (r + 4) + 'h' + (c - start + 1) + 'v1h-' + (c - start + 1) + 'z';
+      }
+    }
+    var px = Number(opts.px), dims = px > 0 ? ' width="' + px + '" height="' + px + '"' : '';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + w + '"' + dims +
+      ' shape-rendering="crispEdges"><rect width="' + w + '" height="' + w + '" fill="#fff"/>' +
+      '<path fill="#000" d="' + d + '"/></svg>';
+  }
+
+  return {
+    encode: encode,
+    svg: svg,
+    capacity: capacity,
+    MAX_VERSION: MAX_VERSION
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = SpendQR;
 
 </script>
 <script>

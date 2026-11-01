@@ -4,10 +4,9 @@ import { loadBackend } from '../tools/gas-mock.mjs';
 
 function fresh(props = {}) {
   const b = loadBackend();
-  const { token } = b.setup();
-  b.props.set('CURRENCY', 'CAD');
+  const info = b.setup();
   for (const [k, v] of Object.entries(props)) b.props.set(k, v);
-  return { b, token };
+  return { b, admin: info.adminToken, capture: info.captureToken };
 }
 
 // A Messages API response whose last text block is the JSON record.
@@ -25,34 +24,42 @@ const RECORD = {
   is_transaction: true, ignore_reason: 'none', type: 'purchase', amount: 54.21, currency: 'CAD',
   merchant: 'IGA Extra', card: 'Visa ••1234', category: 'Groceries', confidence: 'high'
 };
-const NOTE = { title: 'Scotiabank', body: 'Achat de 54,21 $ chez IGA EXTRA avec votre carte se terminant par 1234.' };
+const CLEAR = { title: 'InfoAlerte Scotia', body: 'Un achat de 54,21 $ a été effectué chez IGA EXTRA avec votre carte se terminant par 1234.' };
+const UNSURE = { title: 'Capital One', body: 'A purchase of $54.21 was approved on your card ending 1234' }; // amount, no merchant -> review
+const KEY = { ANTHROPIC_API_KEY: 'sk-ant-test' };
 
-test('without an API key nothing is sent anywhere', () => {
-  const { b, token } = fresh();
-  const r = b.post({ token, ...NOTE });
-  assert.equal(r.status, 'added');
-  assert.equal(r.tx.reader, 'rules');
+test('without an API key nothing is sent anywhere, ever', () => {
+  const { b, admin, capture } = fresh();
+  assert.equal(b.post({ token: capture, ...UNSURE }).tx.reader, 'rules');
+  b.context.enrichPending_();
   assert.equal(b.fetches.length, 0);
-  assert.equal(b.get({ token, action: 'ping' }).claude, 'off');
+  assert.equal(b.post({ token: admin, action: 'ping' }).claude, 'off');
 });
 
-test('with a key, Claude reads the notification and its answer is stored', () => {
-  const { b, token } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test' });
+test('with a key, Claude is never in the Shortcut request path: unsure rows wait for the trigger', () => {
+  const { b, admin, capture } = fresh(KEY);
   b.onFetch(() => reply(RECORD));
-  const r = b.post({ token, ...NOTE });
-  assert.equal(r.status, 'added');
-  assert.deepEqual([r.tx.merchant, r.tx.amount, r.tx.category, r.tx.reader], ['IGA Extra', 54.21, 'Groceries', 'claude']);
-  assert.match(r.message, /read by Claude/);
-  assert.equal(b.sheet('Transactions').objects()[0].reader, 'claude');
-  assert.equal(b.get({ token, action: 'ping' }).claude, 'always · claude-opus-5-5');
+  const clear = b.post({ token: capture, ...CLEAR });
+  assert.deepEqual([clear.tx.reader, clear.tx.status], ['rules', 'ok'], 'a clear notification is not sent to Claude in review mode');
+  b.setNow(new Date(Date.now() + 20 * 60000)); // otherwise the same amount minutes later would be a suspected duplicate
+  const unsure = b.post({ token: capture, ...UNSURE });
+  assert.deepEqual([unsure.tx.reader, unsure.tx.status], ['pending', 'review']);
+  assert.equal(b.fetches.length, 0, 'no network call during capture');
+  const r = b.context.enrichPending_();
+  assert.equal(r.calls, 1);
+  const row = b.sheet('Transactions').objects().find((t) => t.reader !== 'rules');
+  assert.deepEqual([row.reader, row.merchant, row.category, row.status], ['claude', 'IGA Extra', 'Groceries', 'ok']);
+  assert.equal(b.post({ token: admin, action: 'ping' }).claude, 'review · claude-opus-5-5');
+  assert.equal(b.post({ token: admin, action: 'ping' }).health.claude.callsToday, 1);
 });
 
-test('the request follows the documented API shape', () => {
-  const { b, token } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test' });
-  b.post({ token, app: 'X', body: 'Purchase of $1.00 at ALPHA' }); // gives Claude a past merchant
-  b.post({ token, action: 'rule', pattern: 'iga', category: 'Épicerie' });
+test('the request follows the documented API shape and masks codes and long numbers', () => {
+  const { b, admin, capture } = fresh(KEY);
+  b.post({ token: capture, title: 'Scotia', body: 'Purchase of $1.00 at ALPHA' }); // gives Claude a past merchant
+  b.post({ token: admin, action: 'rule', pattern: 'iga', category: 'Épicerie' });
   b.onFetch(() => reply(RECORD));
-  b.post({ token, app: 'Scotiabank', title: 'Scotiabank', body: 'Your verification code is 482913 and Achat de 54,21 $ chez IGA' });
+  b.post({ token: capture, title: 'Capital One', body: 'Your verification code is 482913 and account 1234567890 was charged $54.21' });
+  b.context.enrichPending_();
   const call = b.fetches.at(-1);
   assert.equal(call.url, 'https://api.anthropic.com/v1/messages');
   assert.equal(call.params.method, 'post');
@@ -71,28 +78,31 @@ test('the request follows the documented API shape', () => {
   assert.match(user, /Default currency: CAD/);
   assert.match(user, /- iga -> Épicerie/);
   assert.match(user, /ALPHA -> /);
-  assert.match(user, /from the app "Scotiabank"/);
-  assert.ok(!user.includes('482913'), 'one-time codes are masked before leaving Google');
+  assert.ok(!user.includes('482913'), 'one-time codes are masked');
+  assert.ok(!user.includes('1234567890'), 'long numbers are masked');
 });
 
 test('the user\'s rules win over Claude\'s category', () => {
-  const { b, token } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test' });
-  b.post({ token, action: 'rule', pattern: 'iga', category: 'Épicerie' });
+  const { b, admin, capture } = fresh(KEY);
+  b.post({ token: admin, action: 'rule', pattern: 'iga', category: 'Épicerie' });
   b.onFetch(() => reply(RECORD));
-  assert.equal(b.post({ token, ...NOTE }).tx.category, 'Épicerie');
+  b.post({ token: capture, ...UNSURE });
+  b.context.enrichPending_();
+  assert.equal(b.sheet('Transactions').objects()[0].category, 'Épicerie');
 });
 
 test('Haiku is called without the fallback parameter it does not support', () => {
-  const { b, token } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test', CLAUDE_MODEL: 'claude-haiku-5-5' });
+  const { b, capture } = fresh({ ...KEY, CLAUDE_MODEL: 'claude-haiku-5-5' });
   b.onFetch(() => reply(RECORD));
-  b.post({ token, ...NOTE });
+  b.post({ token: capture, ...UNSURE });
+  b.context.enrichPending_();
   const call = b.fetches.at(-1);
   assert.equal(call.body.model, 'claude-haiku-5-5');
   assert.equal(call.body.fallbacks, undefined);
   assert.equal(call.params.headers['anthropic-beta'], undefined);
 });
 
-test('failures fall back to the rule-based reading', () => {
+test('failures keep the rule-based reading', () => {
   const cases = [
     () => ({ code: 500, body: { type: 'error', error: { type: 'api_error', message: 'boom' } } }),
     () => ({ code: 401, body: { type: 'error', error: { type: 'authentication_error', message: 'bad key' } } }),
@@ -103,102 +113,94 @@ test('failures fall back to the rule-based reading', () => {
     () => { throw new Error('network down'); }
   ];
   for (const handler of cases) {
-    const { b, token } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test' });
+    const { b, capture } = fresh(KEY);
     b.onFetch(handler);
-    const r = b.post({ token, ...NOTE });
-    assert.equal(r.status, 'added');
-    assert.deepEqual([r.tx.merchant, r.tx.amount, r.tx.reader], ['IGA EXTRA', 54.21, 'rules']);
+    b.post({ token: capture, ...UNSURE });
+    b.context.enrichPending_();
+    const row = b.sheet('Transactions').objects()[0];
+    assert.deepEqual([row.amount, row.reader, row.status], [54.21, 'rules', 'review']);
   }
 });
 
-test('Claude can catch a transaction the rules missed', () => {
-  const { b, token } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test' });
+test('Claude can rescue a notification the rules could not read', () => {
+  const { b, admin, capture } = fresh(KEY);
   b.onFetch(() => reply({ ...RECORD, merchant: 'Cafe Olimpico', amount: 7.5, category: 'Dining', card: '' }));
-  const r = b.post({ token, title: 'Wealthsimple', body: 'Cafe Olimpico 7.50' });
-  assert.equal(r.status, 'added');
-  assert.deepEqual([r.tx.merchant, r.tx.amount, r.tx.reader], ['Cafe Olimpico', 7.5, 'claude']);
-});
-
-test('when Claude says "not a transaction" but the rules are sure, it is kept for review', () => {
-  const { b, token } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test' });
-  b.onFetch(() => reply({ ...RECORD, is_transaction: false, ignore_reason: 'promo', amount: 0 }));
-  const r = b.post({ token, ...NOTE });
-  assert.equal(r.status, 'added');
-  assert.equal(r.tx.status, 'review');
-  assert.match(r.tx.note, /Claude thinks this is not a transaction \(promo\)/);
-});
-
-test('Claude can set aside a notification the rules were unsure about', () => {
-  const { b, token } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test' });
-  b.onFetch(() => reply({ ...RECORD, is_transaction: false, ignore_reason: 'statement', amount: 0 }));
-  const r = b.post({ token, title: 'Card', body: 'Amount: 45.20' }); // rules: amount but no merchant -> review
+  const r = b.post({ token: capture, title: 'Wealthsimple', body: 'Olimpico: 7.50 plus taxes. New activity, check the app for details and more text to exceed the short-text limit.' });
   assert.equal(r.status, 'ignored');
-  assert.equal(r.reason, 'statement');
+  const out = b.context.enrichPending_();
+  assert.equal(out.rescued, 1);
+  const row = b.sheet('Transactions').objects()[0];
+  assert.deepEqual([row.merchant, row.amount, row.reader, row.status, row.source], ['Cafe Olimpico', 7.5, 'claude', 'review', 'phone:wealthsimple']);
+  assert.equal(b.get({ token: admin }).ignored.length, 0, 'the Ignored row is gone');
 });
 
-test('review mode only asks Claude when the rules are unsure', () => {
-  const { b, token } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test', CLAUDE_MODE: 'review' });
+test('a disagreement on the amount is kept for review with both readings', () => {
+  const { b, capture } = fresh(KEY);
+  b.onFetch(() => reply({ ...RECORD, amount: 45.21 }));
+  b.post({ token: capture, ...UNSURE });
+  b.context.enrichPending_();
+  const row = b.sheet('Transactions').objects()[0];
+  assert.equal(row.status, 'review');
+  assert.equal(row.amount, 54.21, 'the rule-based amount stays');
+  assert.match(row.note, /Claude lit 45\.21 CAD/);
+});
+
+test('when Claude says "not a transaction" about a captured row, it is kept for review', () => {
+  const { b, capture } = fresh(KEY);
+  b.onFetch(() => reply({ ...RECORD, is_transaction: false, ignore_reason: 'promo', amount: 0 }));
+  b.post({ token: capture, ...UNSURE });
+  b.context.enrichPending_();
+  const row = b.sheet('Transactions').objects()[0];
+  assert.equal(row.status, 'review');
+  assert.match(row.note, /Claude pense que ce n'est pas une transaction \(promotion\)/);
+});
+
+test('CLAUDE_MODE=always sends every notification, after the fact', () => {
+  const { b, capture } = fresh({ ...KEY, CLAUDE_MODE: 'always' });
   b.onFetch(() => reply(RECORD));
-  b.post({ token, ...NOTE });                                        // clear: not sent
-  b.post({ token, body: 'New sign-in to your account from iPhone' }); // no digits: not sent
+  assert.equal(b.post({ token: capture, ...CLEAR }).tx.reader, 'pending');
   assert.equal(b.fetches.length, 0);
-  b.post({ token, title: 'Card', body: 'Amount: 45.20' });           // unsure: sent
+  b.context.enrichPending_();
   assert.equal(b.fetches.length, 1);
 });
 
-test('CLAUDE_MODE=off keeps everything local even with a key', () => {
-  const { b, token } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test', CLAUDE_MODE: 'off' });
+test('daily and monthly caps stop the calls', () => {
+  const { b, admin, capture } = fresh({ ...KEY, CLAUDE_MAX_PER_DAY: '2' });
   b.onFetch(() => reply(RECORD));
-  b.post({ token, ...NOTE });
+  for (let i = 0; i < 4; i++) b.post({ token: capture, title: 'Capital One', body: `A purchase of $${10 + i}.00 was approved on your card ending 1234` });
+  b.context.enrichPending_();
+  assert.equal(b.fetches.length, 2);
+  assert.equal(b.post({ token: admin, action: 'ping' }).health.claude.callsToday, 2);
+  assert.ok(b.post({ token: admin, action: 'ping' }).health.claude.costMonthUsd > 0);
+  const { b: b2, capture: c2 } = fresh({ ...KEY, CLAUDE_MAX_MONTH_USD: '0.001' });
+  b2.onFetch(() => reply(RECORD));
+  b2.post({ token: c2, ...UNSURE });
+  b2.post({ token: c2, title: 'Capital One', body: 'A purchase of $12.00 was approved on your card ending 1234' });
+  b2.context.enrichPending_();
+  assert.equal(b2.fetches.length, 1, 'the first call exceeds the monthly cap, no second call');
+});
+
+test('CLAUDE_MODE=off keeps everything local even with a key; the old endpoint option is ignored', () => {
+  const { b, capture } = fresh({ ...KEY, CLAUDE_MODE: 'off', CLAUDE_ENDPOINT: 'https://me--spending-reader.modal.run' });
+  b.onFetch(() => reply(RECORD));
+  b.post({ token: capture, ...UNSURE });
+  b.context.enrichPending_();
   assert.equal(b.fetches.length, 0);
 });
 
-test('an older sheet gets the new "reader" column header', () => {
-  const { b, token } = fresh();
+test('an older sheet gets the new column headers', () => {
+  const { b, admin } = fresh();
   const sheet = b.sheet('Transactions');
   sheet.rows[0] = sheet.rows[0].slice(0, 13); // header as written by version 0.1
-  b.get({ token, action: 'list' });
-  assert.equal(sheet.rows[0][13], 'reader');
+  b.get({ token: admin, action: 'list' });
+  assert.deepEqual(sheet.rows[0].slice(13), ['reader', 'flags']);
 });
 
 test('testClaude logs the reading and the cost', () => {
-  const { b } = fresh({ ANTHROPIC_API_KEY: 'sk-ant-test' });
+  const { b } = fresh(KEY);
   b.onFetch(() => reply(RECORD));
   b.context.testClaude();
   const log = b.logs.join('\n');
   assert.match(log, /900 tokens in, 120 out ≈ \$0\.0060/);
   assert.match(log, /"merchant":"IGA Extra"/);
-});
-
-test('with CLAUDE_ENDPOINT, the reading goes to your own service with the context, not to Anthropic', () => {
-  const { b, token } = fresh({ CLAUDE_ENDPOINT: 'https://me--spending-reader.modal.run', CLAUDE_ENDPOINT_TOKEN: 'reader-secret', ANTHROPIC_API_KEY: 'sk-ant-unused' });
-  b.post({ token, action: 'rule', pattern: 'iga', category: 'Épicerie' });
-  b.post({ token, body: 'Purchase of $1.00 at ALPHA' }); // fetched too: answer below has no "record"
-  b.onFetch(() => ({ body: { ok: true, record: RECORD, model: 'claude-opus-5-5', usage: { input_tokens: 800, output_tokens: 90 } } }));
-  const r = b.post({ token, app: 'Scotiabank', title: 'Scotiabank', body: 'Code 482913 — Achat de 54,21 $ chez IGA EXTRA' });
-  assert.equal(r.status, 'added');
-  assert.equal(r.tx.reader, 'claude');
-  assert.equal(r.tx.category, 'Épicerie', 'the user rule still wins');
-  const call = b.fetches.at(-1);
-  assert.equal(call.url, 'https://me--spending-reader.modal.run');
-  assert.equal(call.params.headers.Authorization, 'Bearer reader-secret');
-  assert.equal(call.params.headers['x-api-key'], undefined, 'the Anthropic key never leaves Google in this mode');
-  assert.deepEqual(Object.keys(call.body).sort(), ['context', 'notification']);
-  assert.equal(call.body.notification.app, 'Scotiabank');
-  assert.ok(!call.body.notification.body.includes('482913'), 'codes are masked');
-  assert.match(call.body.notification.received, /^\d{4}-\d{2}-\d{2}T/);
-  assert.equal(call.body.context.currency, 'CAD');
-  assert.ok(call.body.context.categories.includes('Épicerie'));
-  assert.deepEqual(call.body.context.rules[0], { pattern: 'iga', category: 'Épicerie' });
-  assert.ok(call.body.context.past.some((p) => p.startsWith('ALPHA -> ')));
-  assert.equal(b.get({ token, action: 'ping' }).claude, 'always · endpoint');
-});
-
-test('an endpoint failure keeps the rule-based reading', () => {
-  for (const handler of [() => ({ code: 401, body: { ok: false, error: 'unauthorized' } }), () => ({ body: { ok: false } }), () => ({ body: '<html>' })]) {
-    const { b, token } = fresh({ CLAUDE_ENDPOINT: 'https://me--spending-reader.modal.run', CLAUDE_ENDPOINT_TOKEN: 'x' });
-    b.onFetch(handler);
-    const r = b.post({ token, ...NOTE });
-    assert.deepEqual([r.status, r.tx.merchant, r.tx.reader], ['added', 'IGA EXTRA', 'rules']);
-  }
 });
