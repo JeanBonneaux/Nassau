@@ -39,14 +39,38 @@ test('setup: a US sheet gets USD; an unknown locale falls back to CAD', () => {
   assert.equal(fresh({ locale: '' }).b.props.get('CURRENCY'), 'CAD');
 });
 
-test('upgrading from the single-token version replaces the leaked token', () => {
+test('upgrading from the single-token version replaces the leaked token and reports a Shortcut still using it', () => {
   const b = loadBackend();
   b.props.set('TOKEN', 'old-leaked-token');
   const info = b.setup();
   assert.equal(info.migrated, true);
   assert.equal(b.props.has('TOKEN'), false);
-  assert.equal(b.post({ token: 'old-leaked-token', body: 'Purchase of $5.00 at X' }).ok, false);
+  const r = b.post({ token: 'old-leaked-token', body: 'Purchase of $5.00 at X' });
+  assert.equal(r.ok, false);
+  assert.match(r.error, /périmé/);
+  assert.equal(b.post({ token: info.adminToken, action: 'ping' }).health.staleHits, 1);
   assert.match(b.logs.join('\n'), /ancien jeton unique a été remplacé/);
+});
+
+test('the web app URL: remembered from a real request, or typed into the Configuration tab when getUrl() gives /dev', () => {
+  const b = loadBackend({ webAppUrl: 'https://script.google.com/macros/s/HEAD/dev' });
+  const info = b.setup();
+  assert.equal(info.webAppUrl, '');
+  const cfg = () => Object.fromEntries(b.sheet('Configuration').rows.map((r) => [r[0], r[1]]));
+  assert.match(cfg()['Lien de configuration (ouvre le tableau de bord déjà connecté)'], /collez l'adresse/);
+  // the user pastes the /exec address next to « Adresse du script »
+  b.sheet('Configuration').rows[4][1] = 'https://script.google.com/macros/s/REAL/exec';
+  b.setup();
+  assert.equal(b.props.get('WEB_APP_URL'), 'https://script.google.com/macros/s/REAL/exec');
+  assert.match(cfg()['Lien de configuration (ouvre le tableau de bord déjà connecté)'], /^https:\/\/jeanculess\.github\.io\/Nassau\/depenses\.html#setup=/);
+  assert.equal(cfg()['Lien du raccourci (action « Obtenir le contenu de l’URL »)'] || cfg()["Lien du raccourci (action « Obtenir le contenu de l'URL »)"], `https://script.google.com/macros/s/REAL/exec?token=${info.captureToken}`);
+  // a real request also records the address (the mock answers /exec during requests here)
+  const b2 = loadBackend();
+  b2.props.delete('WEB_APP_URL');
+  const i2 = b2.setup();
+  b2.props.delete('WEB_APP_URL');
+  b2.post({ token: i2.captureToken, titre: '', corps: '' });
+  assert.equal(b2.props.get('WEB_APP_URL'), 'https://script.google.com/macros/s/TEST/exec');
 });
 
 test('the capture token can only send notifications; the admin token does everything', () => {
@@ -157,7 +181,7 @@ test('duplicates: Cartes + bank push for one Apple Pay tap -> second one not cou
   assert.equal(b.post({ token: capture, title: 'Visa Scotia', subtitle: 'Jean Coutu', body: '12,50 $' }).status, 'added');
   const bank = b.post({ token: capture, title: 'InfoAlerte Scotia', body: 'Un achat de 12,50 $ a été effectué chez JEAN COUTU #123 avec votre carte se terminant par 1234.' });
   assert.equal(bank.status, 'duplicate');
-  assert.match(bank.tx.note, /Doublon probable de Jean Coutu \(Cartes \(iPhone\)\)/);
+  assert.match(bank.tx.note, /Doublon probable de Jean Coutu \(Cartes · iPhone\)/);
   assert.deepEqual(b.sheet('Transactions').objects().map((r) => r.source), ['phone:cartes', 'phone:scotia']);
 });
 
@@ -175,6 +199,20 @@ test('duplicates: same bank, same amount, compatible merchant, different wording
   const r = b.post({ token: capture, title: 'Scotia', body: 'Your card ending in 1111 was used online for a purchase of $3.75 at STM' });
   assert.equal(r.status, 'review');
   assert.match(r.tx.note, /Même montant chez STM/);
+});
+
+test('duplicates: lines added by hand or from a statement are counted but flagged, never silently discounted', () => {
+  const { b, admin } = fresh();
+  const a = b.post({ token: admin, action: 'add', tx: { amount: 50, merchant: 'PETRO-CANADA 1234', date: '2026-10-03T16:00:00Z', source: 'statement' } });
+  const c = b.post({ token: admin, action: 'add', tx: { amount: 50, merchant: 'PETRO-CANADA 1234', date: '2026-10-04T16:00:00Z', source: 'statement' } });
+  assert.equal(a.status, 'added');
+  assert.equal(c.status, 'review');
+  assert.match(c.tx.note, /Ressemble à PETRO-CANADA 1234 \(relevé\) : deux achats, ou doublon \?/);
+  assert.match(c.tx.flags, /dup/);
+  // the same text pasted twice is a duplicate
+  const t1 = b.post({ token: admin, action: 'add', text: SCOTIA, date: '2026-10-05T15:00:00Z' });
+  const t2 = b.post({ token: admin, action: 'add', text: SCOTIA, date: '2026-10-05T15:30:00Z' });
+  assert.deepEqual([t1.status, t2.status], ['added', 'duplicate']);
 });
 
 test('duplicates: a notification and the bank email for the same purchase, hours apart', () => {
@@ -322,6 +360,28 @@ test('email polling reads bank alerts from Gmail, labels them, skips phishing', 
   assert.equal(b.context.pollEmail_().skipped, 'off');
 });
 
+test('email polling: a grouped Gmail conversation is read message by message, each one once', () => {
+  const { b } = fresh();
+  b.setNow(new Date('2026-10-20T15:00:00Z'));
+  b.setInbox([
+    { id: 'm1', from: 'alerts@capitalone.ca', subject: 'Purchase alert', body: 'A purchase of $10.00 was made at SHELL on your card ending in 1234.', date: '2026-10-20T14:00:00Z' },
+    { id: 'm2', from: 'alerts@capitalone.ca', subject: 'Purchase alert', body: 'A purchase of $20.00 was made at SAQ on your card ending in 1234.', date: '2026-10-20T14:30:00Z' }
+  ]);
+  assert.deepEqual([b.context.pollEmail_().seen, b.sheet('Transactions').objects().length], [2, 2]);
+  // a new alert joins the same conversation; the cache is gone (hours later), the label too (user removed it)
+  b.setNow(new Date('2026-10-21T15:00:00Z'));
+  b.cache.clear();
+  b.inbox().forEach((m) => m.labels.clear());
+  b.addMail({ id: 'm3', from: 'alerts@capitalone.ca', subject: 'Purchase alert', body: 'A purchase of $30.00 was made at IGA on your card ending in 1234.', date: '2026-10-21T14:00:00Z' });
+  const r = b.context.pollEmail_();
+  assert.equal(r.seen, 1, 'only the new message');
+  assert.equal(b.sheet('Transactions').objects().length, 3);
+  // a message older than 3 days never gets read, even if unseen
+  b.addMail({ id: 'm0', from: 'alerts@capitalone.ca', subject: 'Purchase alert', body: 'A purchase of $99.00 was made at OLD on your card ending in 1234.', date: '2026-10-10T14:00:00Z' });
+  assert.equal(b.context.pollEmail_().seen, 0);
+  assert.ok(JSON.parse(b.props.get('MAIL_SEEN')).m3);
+});
+
 test('tick runs every step safely and writes the health block', () => {
   const { b } = fresh();
   b.setNow(new Date('2026-11-02T13:00:00Z')); // a Monday morning in Toronto
@@ -369,7 +429,7 @@ test('daily check: a bank that goes quiet, a stale link, a misconfigured shortcu
   const out = b.context.dailyCheck_(true);
   assert.deepEqual([...out.problems].sort(), ['email-only', 'misconfigured', 'quiet-phone:capitalone', 'stale'].sort());
   assert.equal(b.mails.length, 1);
-  assert.match(b.mails[0].body, /Rien de Capital One \(iPhone\) depuis 9 jours/);
+  assert.match(b.mails[0].body, /Rien de Capital One · iPhone depuis 9 jours/);
   assert.match(b.mails[0].body, /ancien lien/);
   assert.match(b.mails[0].body, /pastille bleue/);
   assert.match(b.mails[0].body, /2 achats des 7 derniers jours ne sont arrivés que par courriel/);

@@ -6,7 +6,7 @@
  * the transaction in it (amount, currency, merchant, card, type, category).
  *
  * One source, two consumers:
- *   - the Google Apps Script backend (tools/build.mjs copies this file to apps-script/Parser.gs)
+ *   - the Google Apps Script backend (tools/build.mjs bundles this file into apps-script/Spending.gs)
  *   - the dashboard (inlined into index.html for the "paste a notification" preview and demo data)
  * Plain JavaScript, no dependencies, no modules: it defines one global, `SpendParser`.
  */
@@ -1069,7 +1069,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = SpendInsig
  *   GET  ?action=list|ping                                   (admin)
  */
 
-var VERSION = '0.3.0';
+var VERSION = '0.3.1';
 var DASHBOARD_URL = 'https://jeanculess.github.io/Nassau/depenses.html';
 var TX_SHEET = 'Transactions';
 var IGNORED_SHEET = 'Ignored';
@@ -1103,6 +1103,8 @@ var ALERT_EVERY_DAYS = 7;               // un courriel par problème par semaine
 var EMAIL_QUERY_DEFAULT = 'newer_than:2d -label:Depenses (from:capitalone.ca OR from:capitalone.com OR from:scotiabank.com OR from:scotiabank.ca OR from:wealthsimple.com)';
 var EMAIL_LABEL = 'Depenses';
 var EMAIL_MAX_PER_TICK = 30;
+var EMAIL_MAX_AGE_MS = 3 * 86400000;   // un courriel plus vieux n'est jamais relu
+var MAIL_SEEN_DAYS = 4;                 // identifiants des courriels déjà lus, gardés dans les propriétés
 
 // Claude (facultatif : rien ne sort de Google sans ANTHROPIC_API_KEY).
 var CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
@@ -1142,9 +1144,17 @@ function setup() {
   // on le remplace par un jeton de capture et un jeton admin (l'ancien cesse de marcher).
   var migrated = false;
   if (!props.getProperty('ADMIN_TOKEN')) {
+    var legacy = props.getProperty('TOKEN');
     props.setProperty('ADMIN_TOKEN', newToken_());
     props.setProperty('CAPTURE_TOKEN', newToken_());
-    if (props.getProperty('TOKEN')) { props.deleteProperty('TOKEN'); migrated = true; }
+    if (legacy) {
+      // L'ancien jeton reste refusé, mais ses tentatives sont comptées : le tableau de bord dira que le raccourci n'a pas été mis à jour.
+      props.setProperty('PREV_CAPTURE_TOKEN', legacy);
+      props.setProperty('PREV_CAPTURE_UNTIL', String(now_().getTime() + 30 * 86400000));
+      props.setProperty('STALE_HITS', '0');
+      props.deleteProperty('TOKEN');
+      migrated = true;
+    }
   }
   if (!props.getProperty('CAPTURE_TOKEN')) props.setProperty('CAPTURE_TOKEN', newToken_());
 
@@ -1162,7 +1172,7 @@ function setup() {
   Logger.log('Installation terminée (version ' + VERSION + ').' +
     (migrated ? '\nL\'ancien jeton unique a été remplacé : recopiez le lien du raccourci dans Raccourcis.' : '') +
     '\n\nOuvrez l\'onglet « Configuration » de la feuille : il contient le lien du tableau de bord et le lien du raccourci.' +
-    (cfg.webAppUrl ? '' : '\n\nLe script n\'est pas encore déployé : Déployer > Nouveau déploiement > Application Web (Moi / Tout le monde), puis relancez setup.') +
+    (cfg.webAppUrl ? '' : '\n\nL\'adresse de l\'application Web n\'est pas connue. Si le script n\'est pas déployé : Déployer > Nouveau déploiement > Application Web (Moi / Tout le monde). S\'il l\'est déjà : copiez l\'adresse qui se termine par /exec (Déployer > Gérer les déploiements) dans la cellule à droite de « Adresse du script » de l\'onglet Configuration, puis relancez setup.') +
     (triggerOk ? '' : '\n\nLe déclencheur automatique n\'a pas pu être installé (autorisation refusée ?). Relancez setup.') +
     '\n\nDevise : ' + currency_() + '. Relancer setup est sans danger.');
   return { adminToken: props.getProperty('ADMIN_TOKEN'), captureToken: props.getProperty('CAPTURE_TOKEN'), currency: currency_(), sheet: ss.getUrl(), webAppUrl: cfg.webAppUrl, migrated: migrated };
@@ -1210,6 +1220,7 @@ function pollEmailNow() { return pollEmail_(); }
 /* ================================================================== points d'entrée web */
 
 function doGet(e) {
+  rememberUrl_();
   return respond_(function () {
     var p = (e && e.parameter) || {};
     var role = checkToken_(p.token);
@@ -1222,6 +1233,7 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  rememberUrl_();
   var b = body_(e);
   var action = b.action || 'capture';
   return respond_(function () {
@@ -1292,6 +1304,17 @@ function checkToken_(token) {
     throw new Error('Non autorisé : ce lien est périmé (les jetons ont été changés). Recopiez le lien du raccourci.');
   }
   throw new Error('Non autorisé : jeton incorrect.');
+}
+
+// Pendant une vraie requête, l'adresse de l'application Web est connue : on la garde pour l'onglet Configuration.
+function rememberUrl_() {
+  try {
+    var url = ScriptApp.getService().getUrl() || '';
+    if (/^https:\/\/\S+\/exec$/.test(url)) {
+      var props = PropertiesService.getScriptProperties();
+      if (props.getProperty('WEB_APP_URL') !== url) props.setProperty('WEB_APP_URL', url);
+    }
+  } catch (e) { /* hors requête */ }
 }
 
 /* ================================================================== capture */
@@ -1387,7 +1410,13 @@ function capture_(b) {
   };
   if (str_(b.note, 500)) tx.note = [tx.note, str_(b.note, 500)].filter(String).join(' · ');
 
-  var sheet = sheet_(ss, TX_SHEET, TX_COLS);
+  storeTx_(sheet_(ss, TX_SHEET, TX_COLS), tx);
+  return { ok: true, status: tx.status === 'duplicate' ? 'duplicate' : tx.status === 'review' ? 'review' : 'added', tx: out_(tx, cur), message: message_(tx) };
+}
+
+// Vérifie les doublons et ajoute la ligne, sous un verrou court. Si la feuille est occupée, la ligne est
+// quand même ajoutée (à vérifier) : rien n'est jamais perdu.
+function storeTx_(sheet, tx) {
   var lock = LockService.getScriptLock();
   var locked = false;
   try { locked = lock.tryLock(10000); } catch (e) { locked = false; }
@@ -1396,17 +1425,7 @@ function capture_(b) {
     tx.flags = flags_(tx, recent);
     if (locked) {
       var dup = findDuplicate_(recent, tx);
-      if (dup) {
-        if (dup.kind === 'repeat-review' || dup.kind === 'near-review') {
-          if (tx.status === 'ok') tx.status = 'review';
-          tx.note = [tx.note, dup.kind === 'repeat-review'
-            ? 'Même texte il y a ' + minutesAgo_(dup.row.date, tx.date) + ' min : deux achats, ou envoi en double ?'
-            : 'Même montant chez ' + (dup.row.merchant || '?') + ' il y a ' + minutesAgo_(dup.row.date, tx.date) + ' min : deux achats, ou doublon ?'].filter(String).join(' · ');
-        } else {
-          tx.status = 'duplicate';
-          tx.note = [tx.note, dup.kind === 'repeat' ? 'Même notification reçue deux fois' : 'Doublon probable de ' + (dup.row.merchant || 'un achat') + ' (' + sourceLabel_(dup.row.source) + ')'].filter(String).join(' · ');
-        }
-      }
+      if (dup) applyDuplicate_(tx, dup);
     } else {
       if (tx.status === 'ok') tx.status = 'review';
       tx.note = [tx.note, 'Enregistré sans vérification de doublon (feuille occupée)'].filter(String).join(' · ');
@@ -1415,7 +1434,22 @@ function capture_(b) {
   } finally {
     if (locked) { try { lock.releaseLock(); } catch (ignored) { /* rien */ } }
   }
-  return { ok: true, status: tx.status === 'duplicate' ? 'duplicate' : tx.status === 'review' ? 'review' : 'added', tx: out_(tx, cur), message: message_(tx) };
+  return tx;
+}
+
+function applyDuplicate_(tx, dup) {
+  var label = (dup.row.merchant || 'un achat') + ' (' + sourceLabel_(dup.row.source) + ')';
+  if (dup.kind === 'repeat-review' || dup.kind === 'near-review' || dup.kind === 'manual-review') {
+    if (tx.status === 'ok') tx.status = 'review';
+    tx.flags = [tx.flags, 'dup'].filter(String).join(',');
+    tx.note = [tx.note, dup.kind === 'repeat-review'
+      ? 'Même texte il y a ' + minutesAgo_(dup.row.date, tx.date) + ' min : deux achats, ou envoi en double ?'
+      : dup.kind === 'manual-review' ? 'Ressemble à ' + label + ' : deux achats, ou doublon ?'
+      : 'Même montant chez ' + (dup.row.merchant || '?') + ' il y a ' + minutesAgo_(dup.row.date, tx.date) + ' min : deux achats, ou doublon ?'].filter(String).join(' · ');
+  } else {
+    tx.status = 'duplicate';
+    tx.note = [tx.note, dup.kind === 'repeat' ? 'Même notification reçue deux fois' : 'Doublon probable de ' + label].filter(String).join(' · ');
+  }
 }
 
 // Règles de l'utilisateur : catégorie, nom à afficher, ou « (ignorer) ».
@@ -1447,7 +1481,9 @@ function flags_(tx, recent) {
 //   repeat         même texte, même source, < 90 s          -> doublon (le raccourci a tiré deux fois)
 //   repeat-review  même texte, même source, < 10 min        -> compté, à vérifier (deux cafés ?)
 //   near-review    autre texte, même source, < 10 min       -> compté, à vérifier
-//   cross          autre source : téléphone/téléphone < 10 min, courriel < 12 h, manuel/relevé < 48 h -> doublon
+//   cross          autre source : téléphone/téléphone < 10 min, courriel < 12 h -> doublon
+//   manual-review  saisie, texte collé ou relevé qui ressemble à une ligne des 48 h -> compté, à vérifier
+//                  (sauf texte identique déjà reçu : doublon)
 function findDuplicate_(rows, tx) {
   var t = tx.date.getTime();
   var chanT = tx.source.split(':')[0];
@@ -1463,6 +1499,8 @@ function findDuplicate_(rows, tx) {
       if (dt < REPEAT_REVIEW_MS) return { kind: 'repeat-review', row: r };
       if (liveT) continue; // le même texte bien plus tard = un nouvel achat
     }
+    // Un texte collé qui est exactement une notification déjà reçue.
+    if (chanT === 'paste' && r.raw && r.raw === tx.raw && dt < MANUAL_PAIR_MS) return { kind: 'cross', row: r };
     var da = cardDigits_(r.card);
     var db = cardDigits_(tx.card);
     if (da && db && da !== db) continue;
@@ -1480,7 +1518,7 @@ function findDuplicate_(rows, tx) {
       if (dt < (r.merchant && tx.merchant ? EMAIL_PAIR_MS : EMAIL_SHORT_MS)) return { kind: 'cross', row: r };
       continue;
     }
-    if (dt < MANUAL_PAIR_MS) return { kind: 'cross', row: r };
+    if (dt < MANUAL_PAIR_MS) return { kind: liveT ? 'cross' : 'manual-review', row: r };
   }
   return null;
 }
@@ -1756,15 +1794,22 @@ function pollEmail_() {
   if (typeof GmailApp === 'undefined') return { ok: true, skipped: 'no-gmail' };
   var query = props.getProperty('EMAIL_QUERY') || EMAIL_QUERY_DEFAULT;
   var label = GmailApp.getUserLabelByName(EMAIL_LABEL) || GmailApp.createLabel(EMAIL_LABEL);
-  var cache = CacheService.getScriptCache();
   var threads = GmailApp.search(query, 0, EMAIL_MAX_PER_TICK);
   var seen = 0;
   var added = 0;
+  var nowMs = now_().getTime();
+  // Gmail regroupe les alertes d'une banque en une conversation : chaque message n'est lu qu'une fois,
+  // grâce à une liste persistante des identifiants déjà lus (les plus vieux de 4 jours sont oubliés).
+  var seenIds = {};
+  try { seenIds = JSON.parse(props.getProperty('MAIL_SEEN') || '{}'); } catch (e) { seenIds = {}; }
+  Object.keys(seenIds).forEach(function (k) { if (nowMs - Number(seenIds[k]) > MAIL_SEEN_DAYS * 86400000) delete seenIds[k]; });
   threads.forEach(function (thread) {
     thread.getMessages().forEach(function (msg) {
       var id = msg.getId();
-      if (cache.get('mail_' + id)) return;
-      cache.put('mail_' + id, '1', 21600);
+      if (seenIds[id]) return;
+      var when = msg.getDate();
+      if (!when || nowMs - when.getTime() > EMAIL_MAX_AGE_MS) return; // un ancien message de la conversation
+      seenIds[id] = String(nowMs);
       seen++;
       var from = String(msg.getFrom() || '');
       var subject = String(msg.getSubject() || '');
@@ -1774,11 +1819,12 @@ function pollEmail_() {
         appendIgnored_(ss_(), { captured_at: now_(), source: 'email', reason: 'suspect', raw: SpendParser.redactCodes(subject) });
         return;
       }
-      var r = capture_({ channel: 'email', from: from, title: subject, body: body, date: msg.getDate(), trusted: true });
+      var r = capture_({ channel: 'email', from: from, title: subject, body: body, date: when, trusted: true });
       if (r && (r.status === 'added' || r.status === 'review')) added++;
     });
     thread.addLabel(label);
   });
+  props.setProperty('MAIL_SEEN', JSON.stringify(seenIds));
   return { ok: true, seen: seen, added: added };
 }
 
@@ -1888,13 +1934,25 @@ function sendMail_(subject, text, html) {
 
 /* ------------------------------------------------------------------ onglet Configuration */
 
+var CONFIG_URL_ROW = 5; // la cellule « Adresse du script » (B5) peut être remplie à la main
+
 function links_() {
   var props = PropertiesService.getScriptProperties();
-  var url = '';
-  try { url = (ScriptApp.getService && ScriptApp.getService().getUrl()) || ''; } catch (e) { url = ''; }
-  if (/\/dev$/.test(url)) url = '';
-  var manual = props.getProperty('WEB_APP_URL');
-  if (!url && manual && /^https:\/\//.test(manual)) url = manual.trim();
+  var url = String(props.getProperty('WEB_APP_URL') || '').trim();
+  if (!url) {
+    // L'adresse collée par l'utilisateur dans l'onglet Configuration.
+    try {
+      var sh = ss_().getSheetByName(CONFIG_SHEET);
+      var typed = sh ? String(sh.getRange(CONFIG_URL_ROW, 2).getValue() || '').trim() : '';
+      if (/^https:\/\/script\.google\.com\/\S+\/exec$/.test(typed)) url = typed;
+    } catch (e) { /* pas encore d'onglet */ }
+  }
+  if (!url) {
+    // Depuis l'éditeur, getUrl() renvoie parfois l'adresse de test (/dev), inutilisable.
+    try { url = (ScriptApp.getService && ScriptApp.getService().getUrl()) || ''; } catch (e) { url = ''; }
+    if (!/^https:\/\/\S+\/exec$/.test(url)) url = '';
+  }
+  if (url && props.getProperty('WEB_APP_URL') !== url) props.setProperty('WEB_APP_URL', url);
   var capture = props.getProperty('CAPTURE_TOKEN') || '';
   var admin = props.getProperty('ADMIN_TOKEN') || '';
   var setupLink = url ? DASHBOARD_URL + '#setup=' + base64url_(JSON.stringify({ u: url, k: admin, c: currency_() })) : '';
@@ -1906,28 +1964,34 @@ function writeConfig_(ss) {
   var links = links_();
   var h = health_(null);
   var props = PropertiesService.getScriptProperties();
+  var typed = String(sh.getRange(CONFIG_URL_ROW, 2).getValue() || '').trim();
   var rows = [
     ['Ne partagez pas cette feuille : cet onglet contient vos liens secrets.', ''],
     ['', ''],
-    ['Ouvrir le tableau de bord', links.setupLink || 'Déployez d\'abord (Déployer > Nouveau déploiement > Application Web), puis relancez setup.'],
+    ['Lien de configuration (ouvre le tableau de bord déjà connecté)', links.setupLink || 'Adresse du script inconnue : collez l\'adresse de l\'application Web (…/exec) dans la cellule à droite de « Adresse du script », puis relancez setup.'],
     ['Lien du raccourci (action « Obtenir le contenu de l\'URL »)', links.shortcutUrl || ''],
-    ['Adresse du script', links.webAppUrl || ''],
+    ['Adresse du script (…/exec)', links.webAppUrl || typed],
     ['Devise', currency_()],
     ['Version', VERSION],
-    ['Déclencheur toutes les 15 min', props.getProperty('TRIGGER_INSTALLED') === 'yes' ? 'oui' : 'non'],
+    ['Déclencheur toutes les 15 min', props.getProperty('TRIGGER_INSTALLED') === 'yes' ? 'oui' : 'non : relancez setup et acceptez toutes les autorisations'],
     ['Lecture des courriels d\'alerte', props.getProperty('EMAIL') === 'off' ? 'non' : 'oui'],
     ['', ''],
     ['Santé de la capture', ''],
-    ['Dernière notification (iPhone)', h.lastPhoneAt || 'jamais'],
-    ['Dernier test du raccourci', h.shortcutPingAt || 'jamais'],
-    ['Dernier courriel d\'alerte lu', h.lastEmailAt || 'jamais'],
-    ['Raccourci mal configuré', h.misconfiguredAt ? 'oui, le ' + h.misconfiguredAt : 'non'],
-    ['Ancien lien utilisé', h.staleHits ? h.staleHits + ' fois, dernière le ' + h.lastStaleAt : 'non'],
+    ['Dernière notification (iPhone)', localTime_(h.lastPhoneAt)],
+    ['Dernier test du raccourci', localTime_(h.shortcutPingAt)],
+    ['Dernier courriel d\'alerte lu', localTime_(h.lastEmailAt)],
+    ['Raccourci mal configuré', h.misconfiguredAt ? 'oui, le ' + localTime_(h.misconfiguredAt) : 'non'],
+    ['Ancien lien utilisé', h.staleHits ? h.staleHits + ' fois, dernière le ' + localTime_(h.lastStaleAt) : 'non'],
     ['Claude', h.claude.on ? h.claude.mode + ' · ' + h.claude.model + ' · ' + h.claude.callsToday + ' lecture(s) aujourd\'hui' : 'désactivé'],
-    ['Mis à jour le', now_().toISOString()]
+    ['Mis à jour le', localTime_(now_().toISOString())]
   ];
   sh.getRange(1, 1, rows.length, 2).setNumberFormats(rows.map(function () { return ['@', '@']; })).setValues(rows);
   return links;
+}
+
+function localTime_(iso) {
+  var d = date_(iso);
+  return d ? Utilities.formatDate(d, tz_(), 'yyyy-MM-dd HH:mm') : 'jamais';
 }
 
 /* ================================================================== Claude (facultatif, en différé) */
@@ -1975,33 +2039,41 @@ function enrichPending_() {
   var rules = readRules_(ss);
   var ctx = claudeContext_(sheet, rules, cur);
   var done = 0;
-  var rows = readTx_(sheet, 200).filter(function (r) { return r.reader === 'pending'; });
-  for (var i = 0; i < rows.length && done < 10; i++) {
+  var pending = readTx_(sheet, 200).filter(function (r) { return r.reader === 'pending'; });
+  for (var i = 0; i < pending.length && done < 10; i++) {
     if (!claudeBudgetLeft_(cfg)) break;
-    var r = rows[i];
-    var parts = r.raw.split(' | ');
-    var c = claudeRead_(cfg, ctx, { app: '', title: parts.length > 1 ? parts[0] : '', subtitle: parts.length > 2 ? parts[1] : '', body: parts[parts.length - 1], received: r.captured_at || now_() }, false);
+    var p = pending[i];
+    var parts = p.raw.split(' | ');
+    var c = claudeRead_(cfg, ctx, { app: '', title: parts.length > 1 ? parts[0] : '', subtitle: parts.length > 2 ? parts[1] : '', body: parts[parts.length - 1], received: p.captured_at || now_() }, false);
     done++;
-    if (!c) { r.reader = 'rules'; writeRow_(sheet, r._row, TX_COLS, TX_FORMATS, r); continue; }
-    if (c.kind === 'ignore') {
+    // La ligne est retrouvée par son identifiant, sous verrou : elle a pu bouger ou être modifiée pendant l'appel.
+    withLock_(function () {
+      var rowNo = findRow_(sheet, p.id);
+      if (!rowNo) return;
+      var r = rowObj_(sheet.getRange(rowNo, 1, 1, TX_COLS.length).getValues()[0]);
+      if (r.reader !== 'pending') return;
+      if (!c) { r.reader = 'rules'; writeRow_(sheet, rowNo, TX_COLS, TX_FORMATS, r); return; }
+      if (c.kind === 'ignore') {
+        r.reader = 'claude';
+        if (r.status === 'ok' || r.status === 'review') { r.status = 'review'; r.note = [r.note, 'Claude pense que ce n\'est pas une transaction (' + reasonLabel_(c.reason) + ')'].filter(String).join(' · '); }
+        writeRow_(sheet, rowNo, TX_COLS, TX_FORMATS, r);
+        return;
+      }
+      var disagree = Math.abs(Math.abs(r.amount) - c.amount) > 0.005 || r.currency !== c.currency || (r.type !== c.type && r.status === 'ok');
+      var ruled = applyRules_({ merchant: c.merchant, type: c.type, category: c.category }, rules);
+      if (disagree) {
+        r.status = 'review';
+        r.note = [r.note, 'Claude lit ' + c.amount.toFixed(2) + ' ' + c.currency + ' · ' + (c.merchant || '?') + ' (' + c.type + ')'].filter(String).join(' · ');
+      } else {
+        if (!r.merchant && c.merchant) r.merchant = ruled.name || c.merchant;
+        if (r.category === 'Other' || !r.category) r.category = ruled.category || c.category;
+        if (!r.card && c.card) r.card = c.card;
+        // Une ligne « à vérifier » à cause d'un doublon possible le reste : Claude ne tranche pas ça.
+        if (r.status === 'review' && c.status === 'ok' && !/\bdup\b/.test(r.flags)) r.status = 'ok';
+      }
       r.reader = 'claude';
-      if (r.status === 'ok' || r.status === 'review') { r.status = 'review'; r.note = [r.note, 'Claude pense que ce n\'est pas une transaction (' + reasonLabel_(c.reason) + ')'].filter(String).join(' · '); }
-      writeRow_(sheet, r._row, TX_COLS, TX_FORMATS, r);
-      continue;
-    }
-    var disagree = Math.abs(Math.abs(r.amount) - c.amount) > 0.005 || r.currency !== c.currency || (r.type !== c.type && r.status === 'ok');
-    var ruled = applyRules_({ merchant: c.merchant, type: c.type, category: c.category }, rules);
-    if (disagree) {
-      r.status = 'review';
-      r.note = [r.note, 'Claude lit ' + c.amount.toFixed(2) + ' ' + c.currency + ' · ' + (c.merchant || '?') + ' (' + c.type + ')'].filter(String).join(' · ');
-    } else {
-      if (!r.merchant && c.merchant) r.merchant = ruled.name || c.merchant;
-      if (r.category === 'Other' || !r.category) r.category = ruled.category || c.category;
-      if (!r.card && c.card) r.card = c.card;
-      if (r.status === 'review' && c.status === 'ok') r.status = 'ok';
-    }
-    r.reader = 'claude';
-    writeRow_(sheet, r._row, TX_COLS, TX_FORMATS, r);
+      writeRow_(sheet, rowNo, TX_COLS, TX_FORMATS, r);
+    });
   }
   // Notifications ignorées des 2 derniers jours qui contiennent un chiffre : peut-être un format inconnu.
   var ish = ss.getSheetByName(IGNORED_SHEET);
@@ -2020,19 +2092,51 @@ function enrichPending_() {
       var p2 = raw.split(' | ');
       var c2 = claudeRead_(cfg, ctx, { app: '', title: p2.length > 1 ? p2[0] : '', subtitle: p2.length > 2 ? p2[1] : '', body: p2[p2.length - 1], received: when }, false);
       done++;
-      if (!c2 || c2.kind !== 'transaction') { ish.getRange(start + j, 3).setValue(reason === 'other' ? reason : reason + ' (claude)'); continue; }
-      var ruled2 = applyRules_({ merchant: c2.merchant, type: c2.type, category: c2.category }, rules);
-      appendRow_(sheet, TX_COLS, TX_FORMATS, {
-        id: newId_(), date: when, amount: SpendParser.signedAmount(c2.amount, c2.type), currency: c2.currency,
-        merchant: ruled2.name || c2.merchant, category: ruled2.category || c2.category, type: c2.type, card: c2.card,
-        status: 'review', note: 'Lu par Claude (les règles n\'avaient pas compris)', source: String(vals[j][1] || 'phone'), raw: raw,
-        captured_at: now_(), reader: 'claude', flags: ''
+      var source2 = String(vals[j][1] || 'phone');
+      withLock_(function () {
+        // La ligne ignorée est retrouvée (date + texte) : la feuille a pu changer pendant l'appel.
+        var rowNo = findIgnoredRow_(ish, when, raw);
+        if (!rowNo) return;
+        if (!c2 || c2.kind !== 'transaction') { ish.getRange(rowNo, 3).setValue(reason === 'other' ? reason : reason + ' (claude)'); return; }
+        var ruled2 = applyRules_({ merchant: c2.merchant, type: c2.type, category: c2.category }, rules);
+        var tx = {
+          id: newId_(), date: when, amount: SpendParser.signedAmount(c2.amount, c2.type), currency: c2.currency,
+          merchant: ruled2.name || c2.merchant, category: ruled2.category || c2.category, type: c2.type, card: c2.card,
+          status: 'review', note: 'Lu par Claude (les règles n\'avaient pas compris)', source: source2, raw: raw,
+          captured_at: now_(), reader: 'claude', flags: ''
+        };
+        var recent = readTx_(sheet, DEDUP_ROWS);
+        tx.flags = flags_(tx, recent);
+        var dup = findDuplicate_(recent, tx);
+        if (dup) applyDuplicate_(tx, dup);
+        appendRow_(sheet, TX_COLS, TX_FORMATS, tx);
+        ish.deleteRow(rowNo);
+        rescued++;
       });
-      ish.deleteRow(start + j);
-      rescued++;
     }
   }
   return { ok: true, calls: done, rescued: rescued };
+}
+
+function withLock_(fn) {
+  var lock = LockService.getScriptLock();
+  var locked = false;
+  try { locked = lock.tryLock(15000); } catch (e) { locked = false; }
+  if (!locked) { Logger.log('Feuille occupée : opération remise au prochain passage'); return false; }
+  try { fn(); } finally { try { lock.releaseLock(); } catch (ignored) { /* rien */ } }
+  return true;
+}
+
+function findIgnoredRow_(sh, when, raw) {
+  var last = sh.getLastRow();
+  if (last < 2) return 0;
+  var start = Math.max(2, last - 400);
+  var vals = sh.getRange(start, 1, last - start + 1, IGNORED_COLS.length).getValues();
+  for (var i = vals.length - 1; i >= 0; i--) {
+    var d = date_(vals[i][0]);
+    if (d && when && Math.abs(d.getTime() - when.getTime()) < 2000 && String(vals[i][3]) === String(raw)) return start + i;
+  }
+  return 0;
 }
 
 // Ce que Claude reçoit en plus de la notification : la devise, les catégories, les règles et la
@@ -2194,7 +2298,7 @@ function ensureSheet_(ss, name, cols) {
   } else {
     for (var i = 0; i < cols.length; i++) {
       if (header[i] !== '' && String(header[i]).trim().toLowerCase() !== cols[i]) {
-        throw new Error('L\'onglet « ' + name + '» a été modifié : la colonne ' + (i + 1) + ' devrait s\'appeler « ' + cols[i] + ' » et s\'appelle « ' + header[i] + ' ». Remettez les colonnes dans l\'ordre d\'origine.');
+        throw new Error('L\'onglet « ' + name + ' » a été modifié : la colonne ' + (i + 1) + ' devrait s\'appeler « ' + cols[i] + ' » et s\'appelle « ' + header[i] + ' ». Remettez les colonnes dans l\'ordre d\'origine.');
       }
     }
     if (header.some(function (h) { return h === ''; })) {
@@ -2352,7 +2456,7 @@ function sourceLabel_(source) {
   var parts = String(source || '').split(':');
   var chan = { phone: 'iPhone', email: 'courriel', manual: 'saisie', paste: 'texte collé', statement: 'relevé', applepay: 'Apple Pay', sheet: 'feuille' }[parts[0]] || parts[0];
   var bank = { scotia: 'Scotia', capitalone: 'Capital One', wealthsimple: 'Wealthsimple', cartes: 'Cartes', desjardins: 'Desjardins', rbc: 'RBC', td: 'TD', bmo: 'BMO', cibc: 'CIBC', tangerine: 'Tangerine' }[parts[1]] || parts[1];
-  return bank ? bank + ' (' + chan + ')' : chan;
+  return bank ? bank + ' · ' + chan : chan;
 }
 
 function cardDigits_(c) {

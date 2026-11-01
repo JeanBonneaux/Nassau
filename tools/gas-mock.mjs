@@ -86,12 +86,12 @@ class Sheet {
 // Minimal Utilities.formatDate: the patterns the backend uses, in a fixed time zone.
 function formatDate(date, tz, pattern) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', weekday: 'short'
+    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short'
   }).formatToParts(date).map((p) => [p.type, p.value]));
   const weekday = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 }[parts.weekday];
   return pattern
-    .replace('yyyy', parts.year).replace('MM', parts.month).replace('dd', parts.day)
-    .replace('H', String(Number(parts.hour))).replace('u', String(weekday));
+    .replace('yyyy', parts.year).replace('MM', parts.month).replace('dd', parts.day).replace('HH', parts.hour).replace('mm', parts.minute)
+    .replace(/\bH\b/, String(Number(parts.hour))).replace('u', String(weekday));
 }
 
 /** Loads apps-script/Spending.gs (the file pasted into Apps Script) into a sandbox with mocked services. */
@@ -190,11 +190,15 @@ export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending
       getUserLabelByName: (n) => labels.get(n) || null,
       createLabel: (n) => { const l = { getName: () => n }; labels.set(n, l); return l; },
       search: (query, start, max) => {
-        // The mock understands only "-label:X": everything in the inbox without that label matches.
+        // The mock understands only "-label:X". Like Gmail, messages with the same subject form one
+        // conversation, and a conversation matches when any of its messages lacks the label; the whole
+        // conversation (every message) is returned.
         const m = /-label:(\S+)/.exec(query);
         const excluded = m ? m[1] : null;
-        const hits = inbox.filter((msg) => !excluded || !msg.labels.has(excluded));
-        return hits.slice(start, start + max).map((msg) => thread([msg]));
+        const bySubject = new Map();
+        inbox.forEach((msg) => { const k = msg.subject; if (!bySubject.has(k)) bySubject.set(k, []); bySubject.get(k).push(msg); });
+        const hits = [...bySubject.values()].filter((ms) => !excluded || ms.some((msg) => !msg.labels.has(excluded)));
+        return hits.slice(start, start + max).map((ms) => thread(ms));
       }
     },
     CacheService: {
@@ -223,6 +227,7 @@ export function loadBackend({ scriptPath = path.join(ROOT, 'apps-script/Spending
     setLockBusy: (busy) => { lockBusy = busy; },
     setNow: (d) => { now = d ? new Date(d) : null; },
     setInbox: (messages) => { inbox = messages.map((m, i) => ({ id: m.id || 'msg' + i, labels: new Set(), ...m })); },
+    addMail: (m) => { inbox.push({ id: m.id || 'msg' + inbox.length, labels: new Set(), ...m }); },
     inbox: () => inbox,
     sheet: (name) => sheets.get(name),
     setup: () => context.setup(),

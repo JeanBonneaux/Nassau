@@ -204,3 +204,40 @@ test('testClaude logs the reading and the cost', () => {
   assert.match(log, /900 tokens in, 120 out ≈ \$0\.0060/);
   assert.match(log, /"merchant":"IGA Extra"/);
 });
+
+test('a rescued notification is checked against existing rows (an Apple Pay purchase is not counted twice)', () => {
+  const { b, capture } = fresh(KEY);
+  b.post({ token: capture, title: 'Visa Scotia', subtitle: 'IGA Extra', body: '54,21 $' });
+  b.onFetch(() => reply(RECORD));
+  const r = b.post({ token: capture, title: 'InfoAlerte Scotia', body: 'Nouveau format: votre carte 1234 a servi chez IGA EXTRA, consultez l\'appli pour le détail et le montant de cette transaction svp.' });
+  assert.equal(r.status, 'ignored');
+  b.context.enrichPending_();
+  const rows = b.sheet('Transactions').objects();
+  assert.equal(rows.length, 2);
+  assert.equal(rows[1].status, 'duplicate');
+  assert.match(rows[1].note, /Doublon probable de IGA Extra/);
+});
+
+test('Claude never clears a review caused by a possible duplicate', () => {
+  const { b, capture } = fresh({ ...KEY, CLAUDE_MODE: 'always' });
+  b.onFetch(() => reply(RECORD));
+  b.post({ token: capture, title: 'InfoAlerte Scotia', body: 'Un achat de 54,21 $ a été effectué chez IGA EXTRA avec votre carte se terminant par 1234.' });
+  b.setNow(new Date(Date.now() + 3 * 60000));
+  const second = b.post({ token: capture, title: 'InfoAlerte Scotia', body: 'Votre carte se terminant par 1234 a servi chez IGA EXTRA pour un achat de 54,21 $.' });
+  assert.equal(second.status, 'review');
+  b.context.enrichPending_();
+  const rows = b.sheet('Transactions').objects();
+  assert.deepEqual(rows.map((t) => t.status), ['ok', 'review']);
+  assert.match(rows[1].flags, /dup/);
+});
+
+test('a pending row that moved or was edited during the Claude call is found again by id', () => {
+  const { b, admin, capture } = fresh({ ...KEY, CLAUDE_MODE: 'always' });
+  const manual = b.post({ token: admin, action: 'add', tx: { amount: 5, merchant: 'Kiosque', date: '2026-10-01T12:00:00Z' } });
+  const target = b.post({ token: capture, ...UNSURE });
+  b.onFetch(() => { b.post({ token: admin, action: 'delete', id: manual.tx.id }); return reply(RECORD); });
+  b.context.enrichPending_();
+  const rows = b.sheet('Transactions').objects();
+  assert.equal(rows.length, 1, 'the manual row is gone, nothing was overwritten');
+  assert.deepEqual([rows[0].id, rows[0].merchant, rows[0].reader], [target.tx.id, 'IGA Extra', 'claude']);
+});

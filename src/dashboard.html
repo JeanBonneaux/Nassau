@@ -283,7 +283,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
   'use strict';
   var P = SpendParser;
   var I = typeof SpendInsights !== 'undefined' ? SpendInsights : null;
-  var VERSION = '0.3.0';          // doit suivre la version du script (VERSION dans backend.gs)
+  var VERSION = '0.3.1';          // doit suivre la version du script (VERSION dans backend.gs)
   var GUIDE_URL = 'https://jeanculess.github.io/Nassau/guide.html';
   var LS = { settings: 'depenses.settings.v3', cache: 'depenses.cache.v3', demo: 'depenses.demo.v3', applied: 'depenses.setup.v3' };
   var TYPE_LABEL = { purchase: 'Achat', refund: 'Remboursement', cash: 'Retrait', fee: 'Frais', income: 'Revenu', transfer: 'Virement' };
@@ -344,8 +344,11 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
       localStorage.setItem(LS.applied, d.key);
       toast('Connecté à votre feuille');
     }
-    // Le jeton ne reste pas dans l'historique du navigateur.
-    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* rien */ }
+    // Sur l'iPhone, dans Safari, le lien reste dans l'adresse : l'icône « Sur l'écran d'accueil » l'emporte avec elle
+    // (l'app de l'écran d'accueil a sa propre mémoire). Partout ailleurs, le jeton ne reste pas dans l'historique.
+    if (!(isIOS && !standalone)) {
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* rien */ }
+    }
   }
   function setupLink() {
     var s = { u: state.settings.url, k: state.settings.token, c: mainCurrency() };
@@ -426,13 +429,20 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
   }
   function mainCurrency() { return state.data.currency || 'CAD'; }
   function catLabel(c) { return CAT_FR[c] || c || 'Autre'; }
+  function reasonLabel(r) {
+    var m = /^(.*?) \(claude\)$/.exec(r || '');
+    return m ? (REASON_LABEL[m[1]] || m[1]) + ' (relu par Claude)' : (REASON_LABEL[r] || r);
+  }
   function sourceLabel(src) {
     var p = String(src || '').split(':');
     var chan = CHANNEL_LABEL[p[0]] || p[0];
     var bank = BANK_LABEL[p[1]] || p[1];
     return bank ? bank + ' · ' + chan : chan;
   }
-  function plural(n, s) { return n + ' ' + s + (n > 1 ? 's' : ''); }
+  function plural(n, s) {
+    if (n <= 1 || /s$/.test(s)) return n + ' ' + s;
+    return n + ' ' + s.split(' ').map(function (w) { return /[sxz]$/.test(w) ? w : w + 's'; }).join(' ');
+  }
 
   /* ------------------------------------------------------------ dates */
 
@@ -622,7 +632,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
       msg = 'Exemples : rien ici n’est réel.';
       action = connected() ? '<button data-act="leave-demo">Voir ma feuille</button>' : '<button data-act="settings">Connecter</button>';
     } else if (live() && state.error) {
-      msg = (state.lastSync ? 'Données d’' + ago(state.lastSync) + '. ' : '') + state.error;
+      msg = (state.lastSync ? 'Données ' + (ago(state.lastSync) === 'à l’instant' ? 'de l’instant' : 'd’' + ago(state.lastSync)) + '. ' : '') + state.error;
       action = '<button data-act="sync">Réessayer</button>';
     } else if (live() && checklist().misconfigured) {
       msg = 'Le raccourci envoie les mots « Titre » ou « Corps » au lieu des notifications : chaque valeur doit être une pastille bleue.';
@@ -638,6 +648,9 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
     } else if (live() && state.data.version && state.data.version < VERSION) {
       msg = 'Une mise à jour du script est disponible (' + VERSION + ', vous avez ' + state.data.version + ').';
       action = '<a href="' + GUIDE_URL + '#mise-a-jour" target="_blank" rel="noopener">Comment faire</a>';
+    } else if (live() && state.data.settings && state.data.settings.triggers === false) {
+      msg = 'Le déclencheur automatique n’est pas installé : pas de lecture des courriels ni de résumé du lundi. Relancez setup dans Apps Script et acceptez toutes les autorisations.';
+      alert = true;
     }
     b.hidden = !msg;
     b.classList.toggle('alert', alert);
@@ -660,26 +673,32 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
       '</section>';
   }
 
+  var checklistWasOpen = false;
   function renderChecklist() {
     var box = $('#checklist');
     if (!live() || state.settings.hideChecklist) return;
     var c = checklist();
-    if (c.connected && c.home && c.shortcut) return;
+    if (c.connected && c.home && c.shortcut) {
+      if (checklistWasOpen) { checklistWasOpen = false; toast('Tout est prêt ✓ Les achats apparaîtront ici au fil des notifications.'); }
+      return;
+    }
+    checklistWasOpen = true;
     var h = state.data.health || {};
     function step(n, done, bad, title, body) {
       return '<div class="step' + (done ? ' done' : bad ? ' bad' : '') + '"><span class="mark">' + (done ? '✓' : bad ? '!' : n) + '</span><div><b>' + title + '</b>' + (done ? '' : body) + '</div></div>';
     }
     box.hidden = false;
     box.innerHTML = '<h2>Il reste quelques étapes</h2><div class="steps">' +
-      step(1, c.connected, false, 'Feuille connectée', '<div class="sub">Réglages → collez le lien de configuration de l’onglet Configuration.</div>') +
-      step(2, c.home, false, 'Sur l’écran d’accueil', '<div class="sub">Dans Safari : Partager → « Sur l’écran d’accueil » → Ajouter. Ouvrez ensuite l’icône Dépenses.</div>') +
+      step(1, c.connected, false, 'Feuille connectée', '<div class="sub">⚙ Réglages → collez le « Lien de configuration » de l’onglet Configuration de la feuille.</div>') +
+      step(2, c.home, false, 'Sur l’écran d’accueil', '<div class="sub">Dans Safari : ••• (en bas à droite) → Partager → « Sur l’écran d’accueil » → Ajouter. Ouvrez ensuite l’icône Dépenses : elle s’ouvre déjà connectée. Sinon, copiez le lien ci-dessous et collez-le dans ses Réglages.</div>' +
+        '<div class="btns"><button class="btn small" data-act="copy-setup">Copier le lien de configuration</button></div>') +
       step(3, c.shortcut, c.misconfigured, 'Raccourci relié',
         (c.misconfigured ? '<div class="sub" style="color:var(--bad-text)">Le raccourci envoie les mots « Titre », « Sous-titre » ou « Corps » (reçu ' + esc(ago(h.misconfiguredAt)) + '). Dans l’action « Obtenir le contenu de l’URL », chaque valeur doit être une variable choisie avec « Sélectionner une variable », pas un mot tapé.</div>' : '') +
         '<ol>' +
         '<li>Copiez le lien ci-dessous.</li>' +
         '<li>Raccourcis → nouvelle automatisation « Quand je reçois une notification de » : choisissez vos applis bancaires (et Cartes), sans filtre, exécution immédiate.</li>' +
         '<li>Action « Obtenir le contenu de l’URL » : collez le lien · Méthode POST · Corps JSON · trois champs Texte <code>titre</code>, <code>soustitre</code>, <code>corps</code>, chacun rempli avec la variable (pastille bleue) Titre, Sous-titre, Corps.</li>' +
-        '<li>Touchez ▶ : cette étape passe au vert.</li>' +
+        '<li>Touchez ▶ (en bas de l’éditeur) : cette carte disparaît. Si l’iPhone demande d’autoriser la connexion, choisissez « Toujours autoriser ».</li>' +
         '</ol>' +
         '<div class="btns"><button class="btn primary" data-act="copy-shortcut"' + (shortcutUrl() ? '' : ' disabled') + '>Copier le lien du raccourci</button>' +
         (isIOS ? '<a class="btn" href="shortcuts://">Ouvrir Raccourcis</a>' : '') +
@@ -902,7 +921,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
     }
     if (summary.topMerchants.length >= 2) {
       parts.push('<h2 style="margin-top:' + (parts.length ? 16 : 0) + 'px">Où va l’argent</h2><div class="kv">' + summary.topMerchants.map(function (m) {
-        return '<div class="line"><span>' + esc(m.merchant) + ' <span class="muted">· ' + plural(m.count, 'fois') + '</span></span><b>' + esc(money(m.total, cur)) + '</b></div>';
+        return '<div class="line"><span>' + esc(m.merchant) + ' <span class="muted">· ' + m.count + ' fois</span></span><b>' + esc(money(m.total, cur)) + '</b></div>';
       }).join('') + '</div>');
     }
     if (!parts.length) return;
@@ -935,7 +954,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
       var items = q ? ign.filter(function (x) { return P.fold(x.raw + ' ' + x.reason + ' ' + x.source).indexOf(q) >= 0; }) : ign;
       list.innerHTML = (items.length ? items.map(function (x) {
         return '<div class="row muted" style="grid-template-columns:1fr auto">' +
-          '<div class="main"><div class="meta">' + esc((REASON_LABEL[x.reason] || x.reason) + ' · ' + sourceLabel(x.source) + (x._d ? ' · ' + dfDay.format(x._d) + ' ' + dfTime.format(x._d) : '')) + '</div>' +
+          '<div class="main"><div class="meta">' + esc(reasonLabel(x.reason) + ' · ' + sourceLabel(x.source) + (x._d ? ' · ' + dfDay.format(x._d) + ' ' + dfTime.format(x._d) : '')) + '</div>' +
           '<div class="raw">' + esc(x.raw) + '</div></div>' +
           (x.reason === 'raccourci' || x.reason === 'rate-limit' || !x.raw ? '' : '<button class="btn small" data-act="promote" data-i="' + state.data.ignored.indexOf(x) + '">Ajouter</button>') + '</div>';
       }).join('') : '<p class="empty">Les notifications qui ne sont pas des transactions (codes, promotions, soldes) sont listées ici, pour vérifier que rien n’a été manqué.</p>') +
@@ -1165,7 +1184,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
           var r = P.parse(v, { defaultCurrency: cur, rules: state.data.rules });
           last = r;
           if (r.kind !== 'transaction') {
-            box.innerHTML = 'Pas lu comme une transaction : <b>' + esc(REASON_LABEL[r.reason] || r.reason) + '</b>. « Corriger d’abord » permet de la saisir quand même.';
+            box.innerHTML = 'Pas lu comme une transaction : <b>' + esc(reasonLabel(r.reason)) + '</b>. « Corriger d’abord » permet de la saisir quand même.';
           } else {
             box.innerHTML = '<b>' + esc(money(r.amount, r.currency)) + '</b> · ' + esc(r.merchant || 'marchand non trouvé') + ' · ' + esc(catLabel(r.category)) +
               (r.card ? ' · ' + esc(r.card) : '') + (r.type !== 'purchase' ? ' · ' + esc(TYPE_LABEL[r.type]) : '') +
@@ -1209,10 +1228,16 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
           }
           if (a === 'csv-match') {
             var parsed = parseStatement($('#cText', root).value);
+            var purchases = parsed.filter(function (l) { return !l.credit; });
             missing = parsed.filter(function (line) { return !matchStatementLine(line); });
-            $('#cSummary', root).textContent = parsed.length ? (parsed.length - missing.length) + ' sur ' + parsed.length + ' déjà présents · ' + plural(missing.length, 'manquant') : 'Aucune ligne reconnue (date, description, montant).';
+            var missingPurchases = missing.filter(function (l) { return !l.credit; }).length;
+            var credits = missing.length - missingPurchases;
+            $('#cSummary', root).textContent = parsed.length
+              ? (purchases.length - missingPurchases) + ' sur ' + purchases.length + ' déjà présents · ' + plural(missingPurchases, 'manquant') + (credits ? ' · ' + credits + ' paiement/crédit non ajouté' + (credits > 1 ? 's' : '') : '')
+              : 'Aucune ligne reconnue (date, description, montant).';
             $('#cMissing', root).innerHTML = missing.map(function (l, i) {
-              return '<label class="check"><input type="checkbox" checked data-csv="' + i + '"><span>' + esc(dfDay.format(l.date)) + ' · ' + esc(l.merchant) + ' · <b>' + esc(money(l.amount, cur)) + '</b></span></label>';
+              return '<label class="check"><input type="checkbox"' + (l.credit ? '' : ' checked') + ' data-csv="' + i + '"><span>' + esc(dfDay.format(l.date)) + ' · ' + esc(l.merchant) + ' · <b>' + (l.credit ? '+' : '') + esc(money(l.amount, cur)) + '</b>' +
+                (l.credit ? ' <span class="pill">' + (l.kind === 'refund' ? 'remboursement' : 'paiement ou virement') + '</span>' : '') + '</span></label>';
             }).join('');
             $('#cAdd', root).hidden = !missing.length;
           }
@@ -1257,30 +1282,81 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
   }
   function jumpTo(d) { if (!sameMonth(d, state.month)) state.month = startOfMonth(d); }
 
-  // Relevé CSV : on cherche une date, un montant et une description sur chaque ligne.
+  // Relevé : chaque ligne doit avoir une date, un montant et une description. Les paiements de carte,
+  // remboursements et dépôts (colonne Crédit, ou mots-clés) ne sont jamais proposés comme des achats.
+  var CREDIT_WORDS = /\b(paiement|payment|merci|thank you|rembours\w*|refund|retour|cr[ée]dit|d[ée]p[oô]t|deposit|virement|transfer\w*|int[ée]r[êe]ts?|interest|reversal|annulation)\b/i;
+  var NUM_CELL = /^[-+(]?\s*\$?\s*(?:\d{1,3}(?:[ ,.]\d{3})+|\d+)(?:[.,]\d{1,2})?\s*\$?\s*\)?\s*(?:CR|DR|DB)?$/i;
+  function splitCells(line) {
+    var cells = line.indexOf('\t') >= 0 ? line.split('\t') : line.indexOf(';') >= 0 ? line.split(';') : line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/);
+    return cells.map(function (c) { return c.replace(/^"|"$/g, '').trim(); });
+  }
+  function parseNumCell(c) {
+    var negative = /^-|^\(|\)$|\bDR\b|\bDB\b/i.test(c) && !/\bCR\b/i.test(c);
+    var credit = /\bCR\b/i.test(c);
+    var v = P.toNumber(c.replace(/[^\d.,\s]/g, '').trim());
+    return isFinite(v) && v > 0 ? { value: v, negative: negative, credit: credit } : null;
+  }
   function parseStatement(text) {
+    var lines = String(text || '').split(/\r?\n/).filter(function (l) { return l.trim(); });
+    if (!lines.length) return [];
+    // En-tête : colonnes Débit / Crédit / Montant / Date / Description.
+    var head = splitCells(lines[0]).map(function (c) { return P.fold(c); });
+    var cols = { debit: -1, credit: -1, amount: -1, date: -1, desc: -1 };
+    var hasHeader = !head.some(function (c) { return NUM_CELL.test(c); }) && head.some(function (c) { return /date|montant|amount|debit|credit|description|libell/.test(c); });
+    if (hasHeader) {
+      head.forEach(function (c, i) {
+        if (cols.debit < 0 && /^debit/.test(c)) cols.debit = i;
+        else if (cols.credit < 0 && /^credit/.test(c)) cols.credit = i;
+        else if (cols.amount < 0 && /montant|amount|somme/.test(c)) cols.amount = i;
+        else if (cols.date < 0 && /date/.test(c)) cols.date = i;
+        else if (cols.desc < 0 && /description|libell|marchand|merchant|detail|transaction|nom|name/.test(c)) cols.desc = i;
+      });
+      lines = lines.slice(1);
+    }
+    // Ordre des dates a/b/aaaa : jour-mois si un premier nombre dépasse 12, mois-jour si un deuxième dépasse 12.
+    var dayFirst = null;
+    lines.forEach(function (line) {
+      splitCells(line).forEach(function (c) {
+        var m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/.exec(c);
+        if (!m) return;
+        if (+m[1] > 12) dayFirst = true;
+        else if (+m[2] > 12 && dayFirst === null) dayFirst = false;
+      });
+    });
+    if (dayFirst === null) dayFirst = false; // relevés canadiens : mois/jour/année le plus souvent
+    var today = new Date();
     var out = [];
-    String(text || '').split(/\r?\n/).forEach(function (line) {
-      if (!line.trim()) return;
-      var cells = line.indexOf('\t') >= 0 ? line.split('\t') : line.indexOf(';') >= 0 ? line.split(';') : line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/);
-      cells = cells.map(function (c) { return c.replace(/^"|"$/g, '').trim(); });
+    lines.forEach(function (line) {
+      var cells = splitCells(line);
       var date = null;
       var amount = null;
+      var credit = false;
       var desc = [];
-      cells.forEach(function (c) {
-        var dm = /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/.exec(c) || /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/.exec(c);
-        if (dm && !date) {
-          date = dm[1].length === 4 ? new Date(+dm[1], +dm[2] - 1, +dm[3]) : new Date(+dm[3], +dm[2] - 1, +dm[1]);
+      cells.forEach(function (c, i) {
+        if (!c) return;
+        if (i === cols.desc) { desc.push(c); return; }
+        var dm = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/.exec(c);
+        var dm2 = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/.exec(c);
+        if ((dm || dm2) && !date && (cols.date < 0 || i === cols.date)) {
+          date = dm ? new Date(+dm[1], +dm[2] - 1, +dm[3]) : dayFirst ? new Date(+dm2[3], +dm2[2] - 1, +dm2[1]) : new Date(+dm2[3], +dm2[1] - 1, +dm2[2]);
           return;
         }
-        var num = c.replace(/\s/g, '').replace(/\$|CAD|US/gi, '');
-        if (/^[-+(]?\d{1,3}([ ,.]\d{3})*([.,]\d{1,2})?\)?$/.test(num) && num.replace(/\D/g, '').length <= 9) {
-          var v = P.toNumber(num.replace(/[()+-]/g, ''));
-          if (isFinite(v) && v > 0 && amount === null) { amount = v; return; }
+        if (NUM_CELL.test(c)) {
+          var n = parseNumCell(c);
+          if (!n) return;
+          if (i === cols.credit) { if (amount === null) { amount = n.value; credit = true; } return; }
+          if (i === cols.debit) { if (amount === null) amount = n.value; return; }
+          if (cols.amount >= 0 && i !== cols.amount) return;
+          if (amount === null) { amount = n.value; credit = n.credit; }
+          return;
         }
         if (/[A-Za-zÀ-ÿ]{2,}/.test(c)) desc.push(c);
       });
-      if (date && !isNaN(date) && amount) out.push({ date: date, amount: amount, merchant: desc.join(' ').replace(/\s+/g, ' ').trim().slice(0, 60) });
+      if (!date || isNaN(date) || !amount) return;
+      if (date > new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1) || date < new Date(today.getFullYear() - 2, today.getMonth(), 1)) return;
+      var merchant = desc.join(' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+      if (CREDIT_WORDS.test(merchant)) credit = true;
+      out.push({ date: date, amount: amount, merchant: merchant, credit: credit, kind: credit ? (/rembours|refund|retour|reversal|annulation/i.test(merchant) ? 'refund' : 'transfer') : 'purchase' });
     });
     return out;
   }
@@ -1292,12 +1368,17 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
   function addStatementLines(lines) {
     if (!lines.length) return;
     var i = 0;
+    var added = 0;
+    var review = 0;
     (function next() {
-      if (i >= lines.length) { toast(plural(lines.length, 'transaction') + ' ajoutées depuis le relevé'); return sync(true); }
+      if (i >= lines.length) {
+        toast(plural(added, 'transaction') + (added > 1 ? ' ajoutées' : ' ajoutée') + (review ? ' · ' + review + ' à vérifier (doublon possible)' : ''));
+        return sync(true);
+      }
       var l = lines[i++];
-      var f = { amount: l.amount, currency: mainCurrency(), merchant: l.merchant, date: new Date(l.date.getFullYear(), l.date.getMonth(), l.date.getDate(), 12).toISOString(), source: 'statement' };
-      if (!live()) { replaceTx(tempTx(P.fromFields(f, { defaultCurrency: mainCurrency(), rules: state.data.rules }), new Date(f.date), 'statement', '')); persist(); render(); return next(); }
-      api('add', { tx: f }).then(function (res) { replaceTx(res.tx); render(); }).catch(function (e) { toast('Non ajoutée : ' + e.message); }).then(next);
+      var f = { amount: l.amount, currency: mainCurrency(), merchant: l.merchant, type: l.kind, date: new Date(l.date.getFullYear(), l.date.getMonth(), l.date.getDate(), 12).toISOString(), source: 'statement' };
+      if (!live()) { replaceTx(tempTx(P.fromFields(f, { defaultCurrency: mainCurrency(), rules: state.data.rules }), new Date(f.date), 'statement', '')); added++; persist(); render(); return next(); }
+      api('add', { tx: f }).then(function (res) { replaceTx(res.tx); if (res.status === 'review') review++; else added++; render(); }).catch(function (e) { toast('Non ajoutée : ' + e.message); }).then(next);
     })();
   }
 
@@ -1309,16 +1390,19 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
       '<h2 id="sheetTitle">Réglages</h2>' +
       '<label class="field"><span>Adresse du script (ou lien de configuration)</span><input id="sUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec" value="' + esc(s.url) + '"></label>' +
       '<label class="field"><span>Jeton</span><input id="sToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc(s.token) + '"></label>' +
-      '<p class="hint">Les deux viennent de l’onglet Configuration de la feuille. Ils restent sur cet appareil.</p>' +
+      '<p class="hint">Collez ici le « Lien de configuration » de l’onglet Configuration de la feuille : l’adresse et le jeton se remplissent seuls. Ils restent sur cet appareil.</p>' +
       '<div class="btns" style="margin-bottom:14px"><button class="btn" data-sheet="test">Tester la connexion</button><span class="sub" id="sTest" aria-live="polite"></span></div>' +
       '<div id="sConnected"' + (connected() ? '' : ' hidden') + '>' +
       '<h3>iPhone</h3>' +
-      (!standalone ? '<p class="sub" style="margin:0 0 8px">Pour passer cette page à l’iPhone : scannez ce code avec l’appareil photo. Il contient votre jeton : ne le partagez pas.</p><div class="qr" id="sQr"></div>' : '') +
+      (!standalone && !isIOS ? '<p class="sub" style="margin:0 0 8px">Pour passer cette page à l’iPhone : scannez ce code avec l’appareil photo. Il contient votre jeton : ne le partagez pas.</p><div class="qr" id="sQr"></div>' : '') +
+      '<div class="btns" style="margin-bottom:12px"><button class="btn small" data-sheet="copy-setup">Copier le lien de configuration</button><span class="sub">Pour l’icône de l’écran d’accueil ou un autre appareil.</span></div>' +
       '<div class="field"><span>Lien du raccourci (action « Obtenir le contenu de l’URL »)</span>' +
-      '<div class="copyrow"><input id="sShortcut" readonly aria-label="Lien du raccourci" value="' + esc(shortcutUrl()) + '"><button class="btn" data-sheet="copy-shortcut">Copier</button></div></div>' +
+      '<div class="copyrow"><input id="sShortcut" readonly aria-label="Lien du raccourci" value="' + esc(shortcutUrl()) + '"><button class="btn" data-sheet="copy-shortcut">Copier le lien du raccourci</button></div></div>' +
       '<p class="hint">Ce lien ne peut qu’ajouter des notifications. ' + (c.shortcut ? 'Raccourci relié ✓' : 'Pas encore reçu de test ni de notification.') + '</p>' +
       '<h3>Budget et courriels</h3>' +
-      '<label class="field"><span>Budget mensuel (' + esc(mainCurrency()) + ')</span><input id="sBudget" type="number" inputmode="decimal" min="0" step="10" placeholder="Aucun" value="' + (budget() || '') + '"></label>' +
+      '<div class="two"><label class="field"><span>Budget mensuel</span><input id="sBudget" type="number" inputmode="decimal" min="0" step="10" placeholder="Aucun" value="' + (budget() || '') + '"></label>' +
+      '<label class="field"><span>Devise</span><select id="sCurrency">' + options(['CAD', 'USD', 'EUR', 'GBP', 'CHF'].indexOf(mainCurrency()) >= 0 ? ['CAD', 'USD', 'EUR', 'GBP', 'CHF'] : [mainCurrency(), 'CAD', 'USD', 'EUR'], mainCurrency()) + '</select></label></div>' +
+      '<p class="hint">La devise est aussi ce qu’un « $ » seul veut dire dans une notification.</p>' +
       '<label class="check"><input type="checkbox" id="sDigest"' + (srv.digest !== false ? ' checked' : '') + '><span>Résumé de la semaine par courriel, le lundi matin</span></label>' +
       '<label class="check"><input type="checkbox" id="sEmail"' + (srv.email !== false ? ' checked' : '') + '><span>Lire aussi les courriels d’alerte des banques dans Gmail (toutes les 15 min)</span></label>' +
       '<label class="field"><span>Me prévenir si rien n’arrive depuis (jours)</span><input id="sHeartbeat" type="number" min="1" max="30" value="' + (srv.heartbeatDays || 3) + '"></label>' +
@@ -1332,7 +1416,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
       (state.data.version ? ' · script ' + esc(state.data.version) : '') + ' · page ' + VERSION + '</p>' +
       '<div class="btns" style="margin-top:14px">' + (s.demo ? '<button class="btn" data-sheet="leave-demo">Quitter les exemples</button>' : '') + '<span class="spacer"></span><button class="btn" data-sheet="cancel">Annuler</button><button class="btn primary" data-sheet="save">Enregistrer</button></div>',
       function (root) {
-        if (connected() && !standalone && typeof SpendQR !== 'undefined') {
+        if (connected() && !standalone && !isIOS && typeof SpendQR !== 'undefined') {
           try { $('#sQr', root).innerHTML = SpendQR.svg(setupLink(), { ecl: 'M' }); } catch (e) { $('#sQr', root).textContent = 'Code QR indisponible'; }
         }
         root.oninput = function (ev) {
@@ -1356,6 +1440,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
           var token = $('#sToken', root).value.trim();
           if (a === 'cancel') closeSheet();
           if (a === 'copy-shortcut') copyText($('#sShortcut', root).value, $('#sShortcut', root), 'Lien du raccourci copié');
+          if (a === 'copy-setup') copyText(setupLink(), null, 'Lien de configuration copié (il contient votre jeton : ne le partagez pas)');
           if (a === 'leave-demo') { state.settings.demo = false; saveSettings(); closeSheet(); loadLocal(); render(); sync(); }
           if (a === 'test') {
             var out = $('#sTest', root);
@@ -1370,17 +1455,17 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
             var next = { url: url, token: token, demo: prev.demo && !(url && token) ? true : false, hideChecklist: prev.hideChecklist };
             var sourceChanged = prev.demo !== next.demo || prev.url !== next.url || prev.token !== next.token;
             var newBudget = Math.max(0, parseFloat($('#sBudget', root).value) || 0);
-            var newSettings = { budget: newBudget, digest: $('#sDigest', root).checked, email: $('#sEmail', root).checked, heartbeatDays: Math.max(1, parseInt($('#sHeartbeat', root).value, 10) || 3) };
+            var newSettings = { budget: newBudget, digest: $('#sDigest', root).checked, email: $('#sEmail', root).checked, heartbeatDays: Math.max(1, parseInt($('#sHeartbeat', root).value, 10) || 3), currency: $('#sCurrency', root).value };
             state.settings = next;
             saveSettings();
             closeSheet();
             if (sourceChanged) { state.error = ''; loadLocal(); }
-            var changed = JSON.stringify(newSettings) !== JSON.stringify({ budget: budget(), digest: srv.digest !== false, email: srv.email !== false, heartbeatDays: Number(srv.heartbeatDays) || 3 });
-            if (changed) state.data.settings = Object.assign({}, state.data.settings, newSettings);
+            var changed = JSON.stringify(newSettings) !== JSON.stringify({ budget: budget(), digest: srv.digest !== false, email: srv.email !== false, heartbeatDays: Number(srv.heartbeatDays) || 3, currency: mainCurrency() });
+            if (changed) { state.data.settings = Object.assign({}, state.data.settings, newSettings); state.data.currency = newSettings.currency; }
             render();
             if (live()) {
               (sourceChanged ? sync() : Promise.resolve()).then(function () {
-                if (changed) return api('settings', newSettings).then(function (r) { state.data.settings = r.settings; persist(); render(); });
+                if (changed) return api('settings', newSettings).then(function (r) { state.data.settings = r.settings; state.data.currency = r.settings.currency || state.data.currency; persist(); render(); });
               }).catch(function (err) { toast(err.message); });
             } else if (changed) persist();
             toast('Réglages enregistrés');
@@ -1413,9 +1498,10 @@ dialog::backdrop { background: rgba(0, 0, 0, .35); }
     if (act === 'sync') sync();
     if (act === 'clear-cat') { state.cat = ''; render(); }
     if (act === 'copy-shortcut') copyText(shortcutUrl(), null, 'Lien du raccourci copié');
+    if (act === 'copy-setup') copyText(setupLink(), null, 'Lien de configuration copié (il contient votre jeton : ne le partagez pas)');
     if (act === 'copy-ignored') {
-      var lines = state.data.ignored.slice(0, 20).map(function (x) { return (REASON_LABEL[x.reason] || x.reason) + ' | ' + sourceLabel(x.source) + ' | ' + P.redactCodes(x.raw); });
-      copyText(lines.join('\n'), null, plural(lines.length, 'notification') + ' copiées');
+      var lines = state.data.ignored.slice(0, 20).map(function (x) { return reasonLabel(x.reason) + ' | ' + sourceLabel(x.source) + ' | ' + P.redactCodes(x.raw); });
+      copyText(lines.join('\n'), null, plural(lines.length, 'notification') + (lines.length > 1 ? ' copiées' : ' copiée'));
     }
     if (act === 'promote') {
       var x = state.data.ignored[+el.dataset.i];

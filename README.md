@@ -54,6 +54,7 @@ The exact wording of the user's banks (Scotiabank, Capital One Canada, Wealthsim
 | `src/backend.gs` | Apps Script backend: tokens, capture, duplicates, Gmail polling, trigger, e-mails, optional Claude |
 | `src/dashboard.html` | Dashboard source → `index.html` (published as `depenses.html`) |
 | `docs/GUIDE.fr.md` | User guide → `guide.html` (with a *Copier le script* button) and `Spending.txt` |
+| `docs/SETUP.md` | Short English summary for developers (API, script properties) |
 | `tools/build.mjs` | Generates `Spending.gs`, `index.html`, `guide.html`, `Spending.txt` |
 | `tools/gas-mock.mjs`, `tools/dev-server.mjs` | In-memory Google services and a local server, used by the tests and for development |
 | `test/` | Parser, backend, Claude, insights and QR tests (`node --test`); browser test (`test/e2e.mjs`) |

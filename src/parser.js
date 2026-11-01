@@ -3,7 +3,7 @@
  * the transaction in it (amount, currency, merchant, card, type, category).
  *
  * One source, two consumers:
- *   - the Google Apps Script backend (tools/build.mjs copies this file to apps-script/Parser.gs)
+ *   - the Google Apps Script backend (tools/build.mjs bundles this file into apps-script/Spending.gs)
  *   - the dashboard (inlined into index.html for the "paste a notification" preview and demo data)
  * Plain JavaScript, no dependencies, no modules: it defines one global, `SpendParser`.
  */

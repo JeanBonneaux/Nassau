@@ -191,18 +191,21 @@ try {
     await page.locator('[data-mode="csv"]').click();
     const d = new Date();
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    await page.locator('#cText').fill(`${iso},BOULANGERIE GUILLAUME,12.34\n${iso},"GARAGE DUPUIS",88.80\n`);
+    await page.locator('#cText').fill(`${iso},BOULANGERIE GUILLAUME,12.34\n${iso},"GARAGE DUPUIS",88.80\n${iso},PAIEMENT - MERCI,-300.00\n`);
     await page.locator('[data-sheet="csv-match"]').click();
-    await page.locator('#cSummary', { hasText: '1 sur 2 déjà présents' }).waitFor();
+    await page.locator('#cSummary', { hasText: '1 sur 2 déjà présents · 1 manquant · 1 paiement/crédit non ajouté' }).waitFor();
+    assert.equal(await page.locator('[data-csv]:not(:checked)').count(), 1, 'le paiement de carte n’est pas coché');
     await page.locator('#cAdd').click();
-    await page.locator('#toast', { hasText: 'ajoutées depuis le relevé' }).waitFor();
+    await page.locator('#toast', { hasText: '1 transaction ajoutée' }).waitFor();
     await page.waitForFunction(() => window.__depenses.state.data.transactions.some((t) => t.merchant === 'GARAGE DUPUIS'));
     assert.equal(srv.backend.sheet('Transactions').objects().find((r) => r.merchant === 'GARAGE DUPUIS').source, 'statement');
+    assert.equal(srv.backend.sheet('Transactions').objects().some((r) => /PAIEMENT/.test(r.merchant)), false, 'le paiement n’a pas été ajouté');
     step('relevé CSV : la ligne manquante est ajoutée');
 
     // Settings: wrong token reported, shortcut link copyable, QR present, budget saved to the sheet.
     await page.locator('#settingsBtn').click();
     assert.ok(await page.locator('#sQr svg').count() === 1, 'code QR affiché');
+    assert.ok(await page.locator('[data-sheet="copy-setup"]').isVisible(), 'lien de configuration copiable');
     assert.equal(await page.locator('#sShortcut').inputValue(), `${srv.api}?token=${srv.capture}`);
     await page.locator('#sToken').fill('mauvais-jeton');
     await page.locator('[data-sheet="test"]').click();

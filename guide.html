@@ -22,10 +22,10 @@ table { border-collapse: collapse; width: 100%; font-size: .95em; } th, td { tex
 <body>
 <h1>Dépenses : guide d’installation</h1>
 <p>Chaque notification d’achat de vos applis bancaires est envoyée par votre iPhone vers une feuille Google qui vous appartient. Le script de la feuille lit les notifications, et le tableau de bord vous montre où va l’argent. En plus, le script lit les courriels d’alerte de vos banques dans Gmail et vous écrit si la capture s’arrête. Rien ne passe par un autre serveur.</p>
-<p><strong>Il vous faut :</strong> un compte Google (Gmail), un iPhone sous iOS 27, et un ordinateur pour la partie A. Comptez 20 minutes.</p>
-<blockquote><strong>Vous avez déjà installé une version précédente ?</strong> Faites la partie A au complet : c’est la mise à jour. Elle remplace automatiquement l’ancien jeton (celui qui a été partagé par erreur). Dans Raccourcis, vous n’aurez que l’adresse à recoller (partie C, étape 12).</blockquote>
+<p><strong>Il vous faut :</strong> un compte Google (Gmail), un iPhone sous iOS 27, et un ordinateur pour la partie A. Comptez 25 minutes.</p>
+<blockquote><strong>Vous avez déjà installé une version précédente ?</strong> Faites la partie A au complet : c’est la mise à jour, et elle remplace automatiquement l’ancien jeton (celui qui a été partagé par erreur). Refaites ensuite les étapes 9 à 12 (tableau de bord sur l’iPhone) et, dans Raccourcis, recollez seulement l’adresse (étape 14).</blockquote>
 <h2 id="ordinateur">A. Sur l’ordinateur (10 min)</h2>
-<h3>1. La feuille et le script</h3>
+<h3>La feuille et le script</h3>
 <ol>
 <li>Ouvrez <a href="https://sheets.new">sheets.new</a> pour créer une feuille Google et nommez-la <strong>Dépenses</strong>. (Si vous avez déjà la feuille, ouvrez-la.)</li>
 <li>Menu <strong>Extensions → Apps Script</strong>. Un onglet s’ouvre avec un fichier <code>Code.gs</code>.</li>
@@ -39,7 +39,7 @@ table { border-collapse: collapse; width: 100%; font-size: .95em; } th, td { tex
  * the transaction in it (amount, currency, merchant, card, type, category).
  *
  * One source, two consumers:
- *   - the Google Apps Script backend (tools/build.mjs copies this file to apps-script/Parser.gs)
+ *   - the Google Apps Script backend (tools/build.mjs bundles this file into apps-script/Spending.gs)
  *   - the dashboard (inlined into index.html for the "paste a notification" preview and demo data)
  * Plain JavaScript, no dependencies, no modules: it defines one global, `SpendParser`.
  */
@@ -1102,7 +1102,7 @@ if (typeof module !== 'undefined' &amp;&amp; module.exports) module.exports = Sp
  *   GET  ?action=list|ping                                   (admin)
  */
 
-var VERSION = '0.3.0';
+var VERSION = '0.3.1';
 var DASHBOARD_URL = 'https://jeanculess.github.io/Nassau/depenses.html';
 var TX_SHEET = 'Transactions';
 var IGNORED_SHEET = 'Ignored';
@@ -1136,6 +1136,8 @@ var ALERT_EVERY_DAYS = 7;               // un courriel par problème par semaine
 var EMAIL_QUERY_DEFAULT = 'newer_than:2d -label:Depenses (from:capitalone.ca OR from:capitalone.com OR from:scotiabank.com OR from:scotiabank.ca OR from:wealthsimple.com)';
 var EMAIL_LABEL = 'Depenses';
 var EMAIL_MAX_PER_TICK = 30;
+var EMAIL_MAX_AGE_MS = 3 * 86400000;   // un courriel plus vieux n'est jamais relu
+var MAIL_SEEN_DAYS = 4;                 // identifiants des courriels déjà lus, gardés dans les propriétés
 
 // Claude (facultatif : rien ne sort de Google sans ANTHROPIC_API_KEY).
 var CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
@@ -1175,9 +1177,17 @@ function setup() {
   // on le remplace par un jeton de capture et un jeton admin (l'ancien cesse de marcher).
   var migrated = false;
   if (!props.getProperty('ADMIN_TOKEN')) {
+    var legacy = props.getProperty('TOKEN');
     props.setProperty('ADMIN_TOKEN', newToken_());
     props.setProperty('CAPTURE_TOKEN', newToken_());
-    if (props.getProperty('TOKEN')) { props.deleteProperty('TOKEN'); migrated = true; }
+    if (legacy) {
+      // L'ancien jeton reste refusé, mais ses tentatives sont comptées : le tableau de bord dira que le raccourci n'a pas été mis à jour.
+      props.setProperty('PREV_CAPTURE_TOKEN', legacy);
+      props.setProperty('PREV_CAPTURE_UNTIL', String(now_().getTime() + 30 * 86400000));
+      props.setProperty('STALE_HITS', '0');
+      props.deleteProperty('TOKEN');
+      migrated = true;
+    }
   }
   if (!props.getProperty('CAPTURE_TOKEN')) props.setProperty('CAPTURE_TOKEN', newToken_());
 
@@ -1195,7 +1205,7 @@ function setup() {
   Logger.log('Installation terminée (version ' + VERSION + ').' +
     (migrated ? '\nL\'ancien jeton unique a été remplacé : recopiez le lien du raccourci dans Raccourcis.' : '') +
     '\n\nOuvrez l\'onglet « Configuration » de la feuille : il contient le lien du tableau de bord et le lien du raccourci.' +
-    (cfg.webAppUrl ? '' : '\n\nLe script n\'est pas encore déployé : Déployer &gt; Nouveau déploiement &gt; Application Web (Moi / Tout le monde), puis relancez setup.') +
+    (cfg.webAppUrl ? '' : '\n\nL\'adresse de l\'application Web n\'est pas connue. Si le script n\'est pas déployé : Déployer &gt; Nouveau déploiement &gt; Application Web (Moi / Tout le monde). S\'il l\'est déjà : copiez l\'adresse qui se termine par /exec (Déployer &gt; Gérer les déploiements) dans la cellule à droite de « Adresse du script » de l\'onglet Configuration, puis relancez setup.') +
     (triggerOk ? '' : '\n\nLe déclencheur automatique n\'a pas pu être installé (autorisation refusée ?). Relancez setup.') +
     '\n\nDevise : ' + currency_() + '. Relancer setup est sans danger.');
   return { adminToken: props.getProperty('ADMIN_TOKEN'), captureToken: props.getProperty('CAPTURE_TOKEN'), currency: currency_(), sheet: ss.getUrl(), webAppUrl: cfg.webAppUrl, migrated: migrated };
@@ -1243,6 +1253,7 @@ function pollEmailNow() { return pollEmail_(); }
 /* ================================================================== points d'entrée web */
 
 function doGet(e) {
+  rememberUrl_();
   return respond_(function () {
     var p = (e &amp;&amp; e.parameter) || {};
     var role = checkToken_(p.token);
@@ -1255,6 +1266,7 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  rememberUrl_();
   var b = body_(e);
   var action = b.action || 'capture';
   return respond_(function () {
@@ -1325,6 +1337,17 @@ function checkToken_(token) {
     throw new Error('Non autorisé : ce lien est périmé (les jetons ont été changés). Recopiez le lien du raccourci.');
   }
   throw new Error('Non autorisé : jeton incorrect.');
+}
+
+// Pendant une vraie requête, l'adresse de l'application Web est connue : on la garde pour l'onglet Configuration.
+function rememberUrl_() {
+  try {
+    var url = ScriptApp.getService().getUrl() || '';
+    if (/^https:\/\/\S+\/exec$/.test(url)) {
+      var props = PropertiesService.getScriptProperties();
+      if (props.getProperty('WEB_APP_URL') !== url) props.setProperty('WEB_APP_URL', url);
+    }
+  } catch (e) { /* hors requête */ }
 }
 
 /* ================================================================== capture */
@@ -1420,7 +1443,13 @@ function capture_(b) {
   };
   if (str_(b.note, 500)) tx.note = [tx.note, str_(b.note, 500)].filter(String).join(' · ');
 
-  var sheet = sheet_(ss, TX_SHEET, TX_COLS);
+  storeTx_(sheet_(ss, TX_SHEET, TX_COLS), tx);
+  return { ok: true, status: tx.status === 'duplicate' ? 'duplicate' : tx.status === 'review' ? 'review' : 'added', tx: out_(tx, cur), message: message_(tx) };
+}
+
+// Vérifie les doublons et ajoute la ligne, sous un verrou court. Si la feuille est occupée, la ligne est
+// quand même ajoutée (à vérifier) : rien n'est jamais perdu.
+function storeTx_(sheet, tx) {
   var lock = LockService.getScriptLock();
   var locked = false;
   try { locked = lock.tryLock(10000); } catch (e) { locked = false; }
@@ -1429,17 +1458,7 @@ function capture_(b) {
     tx.flags = flags_(tx, recent);
     if (locked) {
       var dup = findDuplicate_(recent, tx);
-      if (dup) {
-        if (dup.kind === 'repeat-review' || dup.kind === 'near-review') {
-          if (tx.status === 'ok') tx.status = 'review';
-          tx.note = [tx.note, dup.kind === 'repeat-review'
-            ? 'Même texte il y a ' + minutesAgo_(dup.row.date, tx.date) + ' min : deux achats, ou envoi en double ?'
-            : 'Même montant chez ' + (dup.row.merchant || '?') + ' il y a ' + minutesAgo_(dup.row.date, tx.date) + ' min : deux achats, ou doublon ?'].filter(String).join(' · ');
-        } else {
-          tx.status = 'duplicate';
-          tx.note = [tx.note, dup.kind === 'repeat' ? 'Même notification reçue deux fois' : 'Doublon probable de ' + (dup.row.merchant || 'un achat') + ' (' + sourceLabel_(dup.row.source) + ')'].filter(String).join(' · ');
-        }
-      }
+      if (dup) applyDuplicate_(tx, dup);
     } else {
       if (tx.status === 'ok') tx.status = 'review';
       tx.note = [tx.note, 'Enregistré sans vérification de doublon (feuille occupée)'].filter(String).join(' · ');
@@ -1448,7 +1467,22 @@ function capture_(b) {
   } finally {
     if (locked) { try { lock.releaseLock(); } catch (ignored) { /* rien */ } }
   }
-  return { ok: true, status: tx.status === 'duplicate' ? 'duplicate' : tx.status === 'review' ? 'review' : 'added', tx: out_(tx, cur), message: message_(tx) };
+  return tx;
+}
+
+function applyDuplicate_(tx, dup) {
+  var label = (dup.row.merchant || 'un achat') + ' (' + sourceLabel_(dup.row.source) + ')';
+  if (dup.kind === 'repeat-review' || dup.kind === 'near-review' || dup.kind === 'manual-review') {
+    if (tx.status === 'ok') tx.status = 'review';
+    tx.flags = [tx.flags, 'dup'].filter(String).join(',');
+    tx.note = [tx.note, dup.kind === 'repeat-review'
+      ? 'Même texte il y a ' + minutesAgo_(dup.row.date, tx.date) + ' min : deux achats, ou envoi en double ?'
+      : dup.kind === 'manual-review' ? 'Ressemble à ' + label + ' : deux achats, ou doublon ?'
+      : 'Même montant chez ' + (dup.row.merchant || '?') + ' il y a ' + minutesAgo_(dup.row.date, tx.date) + ' min : deux achats, ou doublon ?'].filter(String).join(' · ');
+  } else {
+    tx.status = 'duplicate';
+    tx.note = [tx.note, dup.kind === 'repeat' ? 'Même notification reçue deux fois' : 'Doublon probable de ' + label].filter(String).join(' · ');
+  }
 }
 
 // Règles de l'utilisateur : catégorie, nom à afficher, ou « (ignorer) ».
@@ -1480,7 +1514,9 @@ function flags_(tx, recent) {
 //   repeat         même texte, même source, &lt; 90 s          -&gt; doublon (le raccourci a tiré deux fois)
 //   repeat-review  même texte, même source, &lt; 10 min        -&gt; compté, à vérifier (deux cafés ?)
 //   near-review    autre texte, même source, &lt; 10 min       -&gt; compté, à vérifier
-//   cross          autre source : téléphone/téléphone &lt; 10 min, courriel &lt; 12 h, manuel/relevé &lt; 48 h -&gt; doublon
+//   cross          autre source : téléphone/téléphone &lt; 10 min, courriel &lt; 12 h -&gt; doublon
+//   manual-review  saisie, texte collé ou relevé qui ressemble à une ligne des 48 h -&gt; compté, à vérifier
+//                  (sauf texte identique déjà reçu : doublon)
 function findDuplicate_(rows, tx) {
   var t = tx.date.getTime();
   var chanT = tx.source.split(':')[0];
@@ -1496,6 +1532,8 @@ function findDuplicate_(rows, tx) {
       if (dt &lt; REPEAT_REVIEW_MS) return { kind: 'repeat-review', row: r };
       if (liveT) continue; // le même texte bien plus tard = un nouvel achat
     }
+    // Un texte collé qui est exactement une notification déjà reçue.
+    if (chanT === 'paste' &amp;&amp; r.raw &amp;&amp; r.raw === tx.raw &amp;&amp; dt &lt; MANUAL_PAIR_MS) return { kind: 'cross', row: r };
     var da = cardDigits_(r.card);
     var db = cardDigits_(tx.card);
     if (da &amp;&amp; db &amp;&amp; da !== db) continue;
@@ -1513,7 +1551,7 @@ function findDuplicate_(rows, tx) {
       if (dt &lt; (r.merchant &amp;&amp; tx.merchant ? EMAIL_PAIR_MS : EMAIL_SHORT_MS)) return { kind: 'cross', row: r };
       continue;
     }
-    if (dt &lt; MANUAL_PAIR_MS) return { kind: 'cross', row: r };
+    if (dt &lt; MANUAL_PAIR_MS) return { kind: liveT ? 'cross' : 'manual-review', row: r };
   }
   return null;
 }
@@ -1789,15 +1827,22 @@ function pollEmail_() {
   if (typeof GmailApp === 'undefined') return { ok: true, skipped: 'no-gmail' };
   var query = props.getProperty('EMAIL_QUERY') || EMAIL_QUERY_DEFAULT;
   var label = GmailApp.getUserLabelByName(EMAIL_LABEL) || GmailApp.createLabel(EMAIL_LABEL);
-  var cache = CacheService.getScriptCache();
   var threads = GmailApp.search(query, 0, EMAIL_MAX_PER_TICK);
   var seen = 0;
   var added = 0;
+  var nowMs = now_().getTime();
+  // Gmail regroupe les alertes d'une banque en une conversation : chaque message n'est lu qu'une fois,
+  // grâce à une liste persistante des identifiants déjà lus (les plus vieux de 4 jours sont oubliés).
+  var seenIds = {};
+  try { seenIds = JSON.parse(props.getProperty('MAIL_SEEN') || '{}'); } catch (e) { seenIds = {}; }
+  Object.keys(seenIds).forEach(function (k) { if (nowMs - Number(seenIds[k]) &gt; MAIL_SEEN_DAYS * 86400000) delete seenIds[k]; });
   threads.forEach(function (thread) {
     thread.getMessages().forEach(function (msg) {
       var id = msg.getId();
-      if (cache.get('mail_' + id)) return;
-      cache.put('mail_' + id, '1', 21600);
+      if (seenIds[id]) return;
+      var when = msg.getDate();
+      if (!when || nowMs - when.getTime() &gt; EMAIL_MAX_AGE_MS) return; // un ancien message de la conversation
+      seenIds[id] = String(nowMs);
       seen++;
       var from = String(msg.getFrom() || '');
       var subject = String(msg.getSubject() || '');
@@ -1807,11 +1852,12 @@ function pollEmail_() {
         appendIgnored_(ss_(), { captured_at: now_(), source: 'email', reason: 'suspect', raw: SpendParser.redactCodes(subject) });
         return;
       }
-      var r = capture_({ channel: 'email', from: from, title: subject, body: body, date: msg.getDate(), trusted: true });
+      var r = capture_({ channel: 'email', from: from, title: subject, body: body, date: when, trusted: true });
       if (r &amp;&amp; (r.status === 'added' || r.status === 'review')) added++;
     });
     thread.addLabel(label);
   });
+  props.setProperty('MAIL_SEEN', JSON.stringify(seenIds));
   return { ok: true, seen: seen, added: added };
 }
 
@@ -1921,13 +1967,25 @@ function sendMail_(subject, text, html) {
 
 /* ------------------------------------------------------------------ onglet Configuration */
 
+var CONFIG_URL_ROW = 5; // la cellule « Adresse du script » (B5) peut être remplie à la main
+
 function links_() {
   var props = PropertiesService.getScriptProperties();
-  var url = '';
-  try { url = (ScriptApp.getService &amp;&amp; ScriptApp.getService().getUrl()) || ''; } catch (e) { url = ''; }
-  if (/\/dev$/.test(url)) url = '';
-  var manual = props.getProperty('WEB_APP_URL');
-  if (!url &amp;&amp; manual &amp;&amp; /^https:\/\//.test(manual)) url = manual.trim();
+  var url = String(props.getProperty('WEB_APP_URL') || '').trim();
+  if (!url) {
+    // L'adresse collée par l'utilisateur dans l'onglet Configuration.
+    try {
+      var sh = ss_().getSheetByName(CONFIG_SHEET);
+      var typed = sh ? String(sh.getRange(CONFIG_URL_ROW, 2).getValue() || '').trim() : '';
+      if (/^https:\/\/script\.google\.com\/\S+\/exec$/.test(typed)) url = typed;
+    } catch (e) { /* pas encore d'onglet */ }
+  }
+  if (!url) {
+    // Depuis l'éditeur, getUrl() renvoie parfois l'adresse de test (/dev), inutilisable.
+    try { url = (ScriptApp.getService &amp;&amp; ScriptApp.getService().getUrl()) || ''; } catch (e) { url = ''; }
+    if (!/^https:\/\/\S+\/exec$/.test(url)) url = '';
+  }
+  if (url &amp;&amp; props.getProperty('WEB_APP_URL') !== url) props.setProperty('WEB_APP_URL', url);
   var capture = props.getProperty('CAPTURE_TOKEN') || '';
   var admin = props.getProperty('ADMIN_TOKEN') || '';
   var setupLink = url ? DASHBOARD_URL + '#setup=' + base64url_(JSON.stringify({ u: url, k: admin, c: currency_() })) : '';
@@ -1939,28 +1997,34 @@ function writeConfig_(ss) {
   var links = links_();
   var h = health_(null);
   var props = PropertiesService.getScriptProperties();
+  var typed = String(sh.getRange(CONFIG_URL_ROW, 2).getValue() || '').trim();
   var rows = [
     ['Ne partagez pas cette feuille : cet onglet contient vos liens secrets.', ''],
     ['', ''],
-    ['Ouvrir le tableau de bord', links.setupLink || 'Déployez d\'abord (Déployer &gt; Nouveau déploiement &gt; Application Web), puis relancez setup.'],
+    ['Lien de configuration (ouvre le tableau de bord déjà connecté)', links.setupLink || 'Adresse du script inconnue : collez l\'adresse de l\'application Web (…/exec) dans la cellule à droite de « Adresse du script », puis relancez setup.'],
     ['Lien du raccourci (action « Obtenir le contenu de l\'URL »)', links.shortcutUrl || ''],
-    ['Adresse du script', links.webAppUrl || ''],
+    ['Adresse du script (…/exec)', links.webAppUrl || typed],
     ['Devise', currency_()],
     ['Version', VERSION],
-    ['Déclencheur toutes les 15 min', props.getProperty('TRIGGER_INSTALLED') === 'yes' ? 'oui' : 'non'],
+    ['Déclencheur toutes les 15 min', props.getProperty('TRIGGER_INSTALLED') === 'yes' ? 'oui' : 'non : relancez setup et acceptez toutes les autorisations'],
     ['Lecture des courriels d\'alerte', props.getProperty('EMAIL') === 'off' ? 'non' : 'oui'],
     ['', ''],
     ['Santé de la capture', ''],
-    ['Dernière notification (iPhone)', h.lastPhoneAt || 'jamais'],
-    ['Dernier test du raccourci', h.shortcutPingAt || 'jamais'],
-    ['Dernier courriel d\'alerte lu', h.lastEmailAt || 'jamais'],
-    ['Raccourci mal configuré', h.misconfiguredAt ? 'oui, le ' + h.misconfiguredAt : 'non'],
-    ['Ancien lien utilisé', h.staleHits ? h.staleHits + ' fois, dernière le ' + h.lastStaleAt : 'non'],
+    ['Dernière notification (iPhone)', localTime_(h.lastPhoneAt)],
+    ['Dernier test du raccourci', localTime_(h.shortcutPingAt)],
+    ['Dernier courriel d\'alerte lu', localTime_(h.lastEmailAt)],
+    ['Raccourci mal configuré', h.misconfiguredAt ? 'oui, le ' + localTime_(h.misconfiguredAt) : 'non'],
+    ['Ancien lien utilisé', h.staleHits ? h.staleHits + ' fois, dernière le ' + localTime_(h.lastStaleAt) : 'non'],
     ['Claude', h.claude.on ? h.claude.mode + ' · ' + h.claude.model + ' · ' + h.claude.callsToday + ' lecture(s) aujourd\'hui' : 'désactivé'],
-    ['Mis à jour le', now_().toISOString()]
+    ['Mis à jour le', localTime_(now_().toISOString())]
   ];
   sh.getRange(1, 1, rows.length, 2).setNumberFormats(rows.map(function () { return ['@', '@']; })).setValues(rows);
   return links;
+}
+
+function localTime_(iso) {
+  var d = date_(iso);
+  return d ? Utilities.formatDate(d, tz_(), 'yyyy-MM-dd HH:mm') : 'jamais';
 }
 
 /* ================================================================== Claude (facultatif, en différé) */
@@ -2008,33 +2072,41 @@ function enrichPending_() {
   var rules = readRules_(ss);
   var ctx = claudeContext_(sheet, rules, cur);
   var done = 0;
-  var rows = readTx_(sheet, 200).filter(function (r) { return r.reader === 'pending'; });
-  for (var i = 0; i &lt; rows.length &amp;&amp; done &lt; 10; i++) {
+  var pending = readTx_(sheet, 200).filter(function (r) { return r.reader === 'pending'; });
+  for (var i = 0; i &lt; pending.length &amp;&amp; done &lt; 10; i++) {
     if (!claudeBudgetLeft_(cfg)) break;
-    var r = rows[i];
-    var parts = r.raw.split(' | ');
-    var c = claudeRead_(cfg, ctx, { app: '', title: parts.length &gt; 1 ? parts[0] : '', subtitle: parts.length &gt; 2 ? parts[1] : '', body: parts[parts.length - 1], received: r.captured_at || now_() }, false);
+    var p = pending[i];
+    var parts = p.raw.split(' | ');
+    var c = claudeRead_(cfg, ctx, { app: '', title: parts.length &gt; 1 ? parts[0] : '', subtitle: parts.length &gt; 2 ? parts[1] : '', body: parts[parts.length - 1], received: p.captured_at || now_() }, false);
     done++;
-    if (!c) { r.reader = 'rules'; writeRow_(sheet, r._row, TX_COLS, TX_FORMATS, r); continue; }
-    if (c.kind === 'ignore') {
+    // La ligne est retrouvée par son identifiant, sous verrou : elle a pu bouger ou être modifiée pendant l'appel.
+    withLock_(function () {
+      var rowNo = findRow_(sheet, p.id);
+      if (!rowNo) return;
+      var r = rowObj_(sheet.getRange(rowNo, 1, 1, TX_COLS.length).getValues()[0]);
+      if (r.reader !== 'pending') return;
+      if (!c) { r.reader = 'rules'; writeRow_(sheet, rowNo, TX_COLS, TX_FORMATS, r); return; }
+      if (c.kind === 'ignore') {
+        r.reader = 'claude';
+        if (r.status === 'ok' || r.status === 'review') { r.status = 'review'; r.note = [r.note, 'Claude pense que ce n\'est pas une transaction (' + reasonLabel_(c.reason) + ')'].filter(String).join(' · '); }
+        writeRow_(sheet, rowNo, TX_COLS, TX_FORMATS, r);
+        return;
+      }
+      var disagree = Math.abs(Math.abs(r.amount) - c.amount) &gt; 0.005 || r.currency !== c.currency || (r.type !== c.type &amp;&amp; r.status === 'ok');
+      var ruled = applyRules_({ merchant: c.merchant, type: c.type, category: c.category }, rules);
+      if (disagree) {
+        r.status = 'review';
+        r.note = [r.note, 'Claude lit ' + c.amount.toFixed(2) + ' ' + c.currency + ' · ' + (c.merchant || '?') + ' (' + c.type + ')'].filter(String).join(' · ');
+      } else {
+        if (!r.merchant &amp;&amp; c.merchant) r.merchant = ruled.name || c.merchant;
+        if (r.category === 'Other' || !r.category) r.category = ruled.category || c.category;
+        if (!r.card &amp;&amp; c.card) r.card = c.card;
+        // Une ligne « à vérifier » à cause d'un doublon possible le reste : Claude ne tranche pas ça.
+        if (r.status === 'review' &amp;&amp; c.status === 'ok' &amp;&amp; !/\bdup\b/.test(r.flags)) r.status = 'ok';
+      }
       r.reader = 'claude';
-      if (r.status === 'ok' || r.status === 'review') { r.status = 'review'; r.note = [r.note, 'Claude pense que ce n\'est pas une transaction (' + reasonLabel_(c.reason) + ')'].filter(String).join(' · '); }
-      writeRow_(sheet, r._row, TX_COLS, TX_FORMATS, r);
-      continue;
-    }
-    var disagree = Math.abs(Math.abs(r.amount) - c.amount) &gt; 0.005 || r.currency !== c.currency || (r.type !== c.type &amp;&amp; r.status === 'ok');
-    var ruled = applyRules_({ merchant: c.merchant, type: c.type, category: c.category }, rules);
-    if (disagree) {
-      r.status = 'review';
-      r.note = [r.note, 'Claude lit ' + c.amount.toFixed(2) + ' ' + c.currency + ' · ' + (c.merchant || '?') + ' (' + c.type + ')'].filter(String).join(' · ');
-    } else {
-      if (!r.merchant &amp;&amp; c.merchant) r.merchant = ruled.name || c.merchant;
-      if (r.category === 'Other' || !r.category) r.category = ruled.category || c.category;
-      if (!r.card &amp;&amp; c.card) r.card = c.card;
-      if (r.status === 'review' &amp;&amp; c.status === 'ok') r.status = 'ok';
-    }
-    r.reader = 'claude';
-    writeRow_(sheet, r._row, TX_COLS, TX_FORMATS, r);
+      writeRow_(sheet, rowNo, TX_COLS, TX_FORMATS, r);
+    });
   }
   // Notifications ignorées des 2 derniers jours qui contiennent un chiffre : peut-être un format inconnu.
   var ish = ss.getSheetByName(IGNORED_SHEET);
@@ -2053,19 +2125,51 @@ function enrichPending_() {
       var p2 = raw.split(' | ');
       var c2 = claudeRead_(cfg, ctx, { app: '', title: p2.length &gt; 1 ? p2[0] : '', subtitle: p2.length &gt; 2 ? p2[1] : '', body: p2[p2.length - 1], received: when }, false);
       done++;
-      if (!c2 || c2.kind !== 'transaction') { ish.getRange(start + j, 3).setValue(reason === 'other' ? reason : reason + ' (claude)'); continue; }
-      var ruled2 = applyRules_({ merchant: c2.merchant, type: c2.type, category: c2.category }, rules);
-      appendRow_(sheet, TX_COLS, TX_FORMATS, {
-        id: newId_(), date: when, amount: SpendParser.signedAmount(c2.amount, c2.type), currency: c2.currency,
-        merchant: ruled2.name || c2.merchant, category: ruled2.category || c2.category, type: c2.type, card: c2.card,
-        status: 'review', note: 'Lu par Claude (les règles n\'avaient pas compris)', source: String(vals[j][1] || 'phone'), raw: raw,
-        captured_at: now_(), reader: 'claude', flags: ''
+      var source2 = String(vals[j][1] || 'phone');
+      withLock_(function () {
+        // La ligne ignorée est retrouvée (date + texte) : la feuille a pu changer pendant l'appel.
+        var rowNo = findIgnoredRow_(ish, when, raw);
+        if (!rowNo) return;
+        if (!c2 || c2.kind !== 'transaction') { ish.getRange(rowNo, 3).setValue(reason === 'other' ? reason : reason + ' (claude)'); return; }
+        var ruled2 = applyRules_({ merchant: c2.merchant, type: c2.type, category: c2.category }, rules);
+        var tx = {
+          id: newId_(), date: when, amount: SpendParser.signedAmount(c2.amount, c2.type), currency: c2.currency,
+          merchant: ruled2.name || c2.merchant, category: ruled2.category || c2.category, type: c2.type, card: c2.card,
+          status: 'review', note: 'Lu par Claude (les règles n\'avaient pas compris)', source: source2, raw: raw,
+          captured_at: now_(), reader: 'claude', flags: ''
+        };
+        var recent = readTx_(sheet, DEDUP_ROWS);
+        tx.flags = flags_(tx, recent);
+        var dup = findDuplicate_(recent, tx);
+        if (dup) applyDuplicate_(tx, dup);
+        appendRow_(sheet, TX_COLS, TX_FORMATS, tx);
+        ish.deleteRow(rowNo);
+        rescued++;
       });
-      ish.deleteRow(start + j);
-      rescued++;
     }
   }
   return { ok: true, calls: done, rescued: rescued };
+}
+
+function withLock_(fn) {
+  var lock = LockService.getScriptLock();
+  var locked = false;
+  try { locked = lock.tryLock(15000); } catch (e) { locked = false; }
+  if (!locked) { Logger.log('Feuille occupée : opération remise au prochain passage'); return false; }
+  try { fn(); } finally { try { lock.releaseLock(); } catch (ignored) { /* rien */ } }
+  return true;
+}
+
+function findIgnoredRow_(sh, when, raw) {
+  var last = sh.getLastRow();
+  if (last &lt; 2) return 0;
+  var start = Math.max(2, last - 400);
+  var vals = sh.getRange(start, 1, last - start + 1, IGNORED_COLS.length).getValues();
+  for (var i = vals.length - 1; i &gt;= 0; i--) {
+    var d = date_(vals[i][0]);
+    if (d &amp;&amp; when &amp;&amp; Math.abs(d.getTime() - when.getTime()) &lt; 2000 &amp;&amp; String(vals[i][3]) === String(raw)) return start + i;
+  }
+  return 0;
 }
 
 // Ce que Claude reçoit en plus de la notification : la devise, les catégories, les règles et la
@@ -2227,7 +2331,7 @@ function ensureSheet_(ss, name, cols) {
   } else {
     for (var i = 0; i &lt; cols.length; i++) {
       if (header[i] !== '' &amp;&amp; String(header[i]).trim().toLowerCase() !== cols[i]) {
-        throw new Error('L\'onglet « ' + name + '» a été modifié : la colonne ' + (i + 1) + ' devrait s\'appeler « ' + cols[i] + ' » et s\'appelle « ' + header[i] + ' ». Remettez les colonnes dans l\'ordre d\'origine.');
+        throw new Error('L\'onglet « ' + name + ' » a été modifié : la colonne ' + (i + 1) + ' devrait s\'appeler « ' + cols[i] + ' » et s\'appelle « ' + header[i] + ' ». Remettez les colonnes dans l\'ordre d\'origine.');
       }
     }
     if (header.some(function (h) { return h === ''; })) {
@@ -2385,7 +2489,7 @@ function sourceLabel_(source) {
   var parts = String(source || '').split(':');
   var chan = { phone: 'iPhone', email: 'courriel', manual: 'saisie', paste: 'texte collé', statement: 'relevé', applepay: 'Apple Pay', sheet: 'feuille' }[parts[0]] || parts[0];
   var bank = { scotia: 'Scotia', capitalone: 'Capital One', wealthsimple: 'Wealthsimple', cartes: 'Cartes', desjardins: 'Desjardins', rbc: 'RBC', td: 'TD', bmo: 'BMO', cibc: 'CIBC', tangerine: 'Tangerine' }[parts[1]] || parts[1];
-  return bank ? bank + ' (' + chan + ')' : chan;
+  return bank ? bank + ' · ' + chan : chan;
 }
 
 function cardDigits_(c) {
@@ -2471,16 +2575,22 @@ function newToken_() {
   return Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 8);
 }
 </textarea></div>
-<h3>2. Publier</h3>
+<h3>Publier (étape 4)</h3>
 <ol start="4">
-<li>En haut à droite : <strong>Déployer → Nouveau déploiement</strong>. Cliquez sur la roue ⚙ à côté de « Sélectionner le type » → <strong>Application Web</strong>. Réglez <strong>Exécuter en tant que : Moi</strong> et <strong>Qui a accès : Tout le monde</strong>, puis <strong>Déployer</strong>. « Tout le monde » veut seulement dire « sans connexion Google » : c’est nécessaire pour le raccourci de l’iPhone. Rien ne peut être lu ni écrit sans votre jeton secret. <em>Déjà publié ?</em> Faites plutôt <strong>Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → Déployer</strong>. L’adresse ne change pas.</li>
+<li>En haut à droite : <strong>Déployer → Nouveau déploiement</strong>. Cliquez sur la roue ⚙ à côté de « Sélectionner le type » → <strong>Application Web</strong>. Réglez <strong>Exécuter en tant que : Moi</strong> et <strong>Qui a accès : Tout le monde</strong>, puis <strong>Déployer</strong>. Google demande une autorisation : voir l’étape 6. Copiez l’<strong>adresse de l’application Web</strong> affichée (elle se termine par <code>/exec</code>) : vous en aurez peut-être besoin à l’étape 7. « Tout le monde » veut seulement dire « sans connexion Google » : c’est nécessaire pour le raccourci de l’iPhone. Rien ne peut être lu ni écrit sans votre jeton secret. <em>Déjà publié ?</em> Faites plutôt <strong>Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → Déployer</strong>. L’adresse ne change pas. Ne créez pas un deuxième « Nouveau déploiement » : il aurait une autre adresse, que le raccourci ne suivrait pas.</li>
 </ol>
-<h3>3. Installer</h3>
+<h3>Installer (étapes 5 à 7)</h3>
 <ol start="5">
 <li>Dans la barre du haut, choisissez la fonction <strong>setup</strong> dans la liste, puis <strong>Exécuter</strong>.</li>
-<li>Google demande une autorisation. Cliquez <strong>Examiner les autorisations</strong>, choisissez votre compte, puis sur l’écran « Google n’a pas validé cette application » : <strong>Paramètres avancés → Accéder à … (non sécurisé) → Autoriser</strong>. C’est normal pour un script personnel : vous autorisez votre propre code. Ce que le script demande, et pourquoi : modifier <em>cette</em> feuille ; vous envoyer des courriels à vous seul (le résumé du lundi et les alertes) ; lire vos courriels (seulement ceux de vos banques, voir la partie B) ; se lancer tout seul toutes les 15 minutes ; contacter un service externe (uniquement si vous activez Claude un jour, voir plus bas).</li>
-<li>Revenez à la feuille : un onglet <strong>Configuration</strong> est apparu. Cliquez sur le lien <strong>Ouvrir le tableau de bord</strong>. Il s’ouvre déjà connecté. (S’il dit « Déployez d’abord », refaites l’étape 4 puis relancez <code>setup</code>.)</li>
+<li>Google demande une autorisation (à l’étape 4, à celle-ci, ou aux deux ; s’il ne redemande rien, c’est normal). Cliquez sur <strong>Examiner les autorisations</strong>, choisissez votre compte, puis sur l’écran « Google n’a pas validé cette application » : <strong>Paramètres avancés → Accéder à … (non sécurisé)</strong>. Sur l’écran suivant, <strong>cochez tout</strong> (« Tout sélectionner ») puis <strong>Continuer</strong> ou <strong>Autoriser</strong>. C’est normal pour un script personnel : vous autorisez votre propre code. Google décrit ces autorisations avec ses mots les plus larges : « toutes vos feuilles de calcul », « lire, envoyer et supprimer tous vos e-mails ». Il n’a pas de formulation plus précise. Ce que le script fait vraiment : écrire dans <em>cette</em> feuille ; vous envoyer des courriels à vous seul (le résumé du lundi et les alertes) ; chercher dans Gmail les courriels de vos banques seulement (la recherche exacte est dans le code, propriété <code>EMAIL_QUERY</code>) ; se lancer tout seul toutes les 15 minutes ; contacter un service externe uniquement si vous activez Claude un jour (voir plus bas). Si vous décochez une permission, la fonction correspondante ne marchera pas.</li>
+<li>Revenez à la feuille : un onglet <strong>Configuration</strong> est apparu. Vérifiez trois choses :</li>
 </ol>
+<ul>
+<li><strong>Lien de configuration</strong> : un long lien dans la cellule de droite. S’il dit plutôt « Adresse du script inconnue… », collez l’adresse copiée à l’étape 4 dans la cellule à droite de <strong>Adresse du script</strong>, puis relancez <code>setup</code> (étape 5).</li>
+<li><strong>Devise</strong> : <code>CAD</code>. Sinon, vous pourrez la changer dans le tableau de bord (⚙ Réglages).</li>
+<li><strong>Déclencheur toutes les 15 min</strong> : <code>oui</code>. Sinon, relancez <code>setup</code> en acceptant toutes les autorisations.</li>
+</ul>
+<p>   Cliquez sur le long lien à droite de <strong>Lien de configuration</strong>, puis sur l’aperçu qui apparaît : le tableau de bord s’ouvre, déjà connecté.</p>
 <h2 id="banques">B. Dans vos applis bancaires (5 min)</h2>
 <p>Activez les alertes d’achat. Quand la banque le permet, activez <strong>aussi</strong> le courriel : le script le lit dans Gmail, et c’est le filet qui ne dépend pas du téléphone.</p>
 <ul>
@@ -2490,68 +2600,66 @@ function newToken_() {
 <li><strong>Cartes</strong> (Apple Pay) : rien à faire. Un achat reçu deux fois (banque + Cartes) n’est compté qu’une fois.</li>
 <li><strong>Réglages de l’iPhone → Notifications</strong>, pour chaque appli bancaire et Cartes : <em>Autoriser les notifications</em> activé, livraison <strong>immédiate</strong> (pas dans le résumé programmé), <strong>Afficher les aperçus : Toujours</strong>. Dans vos modes de concentration, autorisez ces applis.</li>
 </ul>
-<h2 id="iphone">C. Sur l’iPhone (5 min)</h2>
-<h3>4. Le tableau de bord</h3>
+<h2 id="iphone">C. Sur l’iPhone (7 min)</h2>
+<h3>Le tableau de bord (étapes 8 à 12)</h3>
 <ol start="8">
 <li>Sur l’ordinateur, dans le tableau de bord : ⚙ <strong>Réglages</strong>. Un <strong>code QR</strong> s’affiche.</li>
-<li>Sur l’iPhone, ouvrez l’<strong>Appareil photo</strong>, visez le code, touchez le lien : Dépenses s’ouvre dans Safari, déjà connecté.</li>
-<li>Touchez <strong>Partager</strong> (le carré avec une flèche) → <strong>Sur l’écran d’accueil</strong> → <strong>Ajouter</strong>. Ouvrez la nouvelle icône <strong>Dépenses</strong>. Si elle s’ouvre sur l’écran d’accueil au lieu de vos données : ⚙ Réglages, collez le lien de configuration (celui de l’onglet Configuration) dans le champ <em>Adresse</em>, et enregistrez.</li>
+<li>Sur l’iPhone, ouvrez l’<strong>Appareil photo</strong>, visez le code, touchez le lien : Dépenses s’ouvre dans <strong>Safari</strong>, déjà connecté. (Si le lien s’ouvre dans un autre navigateur, copiez-le dans Safari.)</li>
+<li>Dans Safari, touchez <strong>•••</strong> (en bas à droite) → <strong>Partager</strong> → <strong>Sur l’écran d’accueil</strong> → laissez « Ouvrir comme app web » activé → <strong>Ajouter</strong>.</li>
+<li>Ouvrez la nouvelle icône <strong>Dépenses</strong>. Elle s’ouvre déjà connectée. Si elle affiche « Vos dépenses, à partir des notifications de vos banques » au lieu de vos données : dans Safari, Dépenses → ⚙ Réglages → <strong>Copier le lien de configuration</strong> ; puis dans l’icône : <strong>Connecter ma feuille</strong>, collez le lien dans le premier champ, <strong>Enregistrer</strong>.</li>
 <li>Dans Dépenses, carte « Il reste quelques étapes » (ou ⚙ Réglages) : touchez <strong>Copier le lien du raccourci</strong>.</li>
 </ol>
-<h3>5. L’automatisation</h3>
-<ol start="12">
-<li>Ouvrez <strong>Raccourcis</strong>. Si vous avez déjà l’automatisation « Quand je reçois une notification de… », ouvrez-la ; sinon touchez <strong>+</strong>, puis <strong>Automatisation → Notification</strong>.</li>
+<h3>L’automatisation (étapes 13 à 15)</h3>
+<ol start="13">
+<li>Ouvrez <strong>Raccourcis</strong>, onglet <strong>Automatisation</strong> (en bas). Si vous avez déjà l’automatisation « Quand je reçois une notification de… », ouvrez-la ; sinon touchez <strong>+</strong> puis <strong>Notification</strong>.</li>
 </ol>
 <ul>
 <li><strong>Apps</strong> : Banque Scotia, Capital One, Wealthsimple, Cartes (toutes dans la même automatisation).</li>
 <li><strong>Aucun filtre.</strong></li>
 <li>Exécution <strong>immédiate</strong>, sans confirmation. L’exécution quand l’iPhone est verrouillé doit être permise (ⓘ → Confidentialité).</li>
 </ul>
-<ol start="13">
+<ol start="14">
 <li>Action <strong>Obtenir le contenu de l’URL</strong> (supprimez l’ancienne s’il y en a une) :</li>
 </ol>
 <ul>
-<li><strong>URL</strong> : collez le lien copié à l’étape 11.</li>
+<li><strong>URL</strong> : collez le lien copié à l’étape 12.</li>
 <li>Touchez <strong>›</strong> (afficher plus) : <strong>Méthode : POST</strong>, <strong>Corps de la requête : JSON</strong>.</li>
-<li><strong>Ajouter un champ → Texte</strong>, trois fois. Pour chaque champ, tapez la clé, puis touchez la case <em>Valeur</em> → <strong>Sélectionner une variable</strong> → la pastille <strong>Notification</strong> (parfois nommée <em>Entrée du raccourci</em>) → choisissez la propriété :</li>
-<li>clé <code>titre</code> → <strong>Titre</strong></li>
-<li>clé <code>soustitre</code> → <strong>Sous-titre</strong></li>
-<li>clé <code>corps</code> → <strong>Corps</strong></li>
+<li><strong>Ajouter un champ → Texte</strong>, trois fois. Pour chaque champ, tapez la clé, puis touchez la case <em>Valeur</em> → <strong>Sélectionner une variable</strong> → la pastille <strong>Notification</strong> (parfois nommée <em>Entrée du raccourci</em>) → choisissez la propriété. Clé <code>titre</code> → <strong>Titre</strong> ; clé <code>soustitre</code> → <strong>Sous-titre</strong> ; clé <code>corps</code> → <strong>Corps</strong>.</li>
 <li>⚠️ La valeur doit être une <strong>pastille bleue</strong>. Si vous tapez le mot « Titre » vous-même, le serveur le détecte et le tableau de bord vous le dit en rouge.</li>
 </ul>
-<ol start="14">
-<li>Touchez <strong>OK</strong>, puis <strong>▶</strong> pour tester : dans Dépenses, l’étape « Raccourci relié » passe au vert (touchez ↻ au besoin).</li>
+<ol start="15">
+<li>Touchez <strong>▶</strong> (en bas de l’éditeur) pour tester. Si l’iPhone demande d’autoriser la connexion à script.google.com ou googleusercontent.com, choisissez <strong>Toujours autoriser</strong>. Puis <strong>OK</strong>. Dans Dépenses (↻), la carte « Il reste quelques étapes » disparaît et un message « Tout est prêt » s’affiche. (Dans la feuille, l’onglet Configuration indique aussi « Dernier test du raccourci ».)</li>
 </ol>
 <h2 id="verifier">D. Vérifier (2 min)</h2>
-<ol start="15">
+<ol start="16">
 <li>Payez un petit montant avec chaque carte. Quelques secondes plus tard, l’achat est dans Dépenses (↻). Les achats lus dans vos courriels arrivent en moins de 15 minutes.</li>
-<li>Rien ? Ouvrez l’onglet <strong>Ignorées</strong> :</li>
+<li>Rien ? Dans Dépenses, touchez <strong>Ignorées</strong> (au-dessus de la liste) :</li>
 </ol>
 <ul>
-<li>« Raccourci mal configuré » → refaites l’étape 13 (pastilles bleues).</li>
-<li>La notification est là mais n’a pas été lue comme un achat → touchez <strong>Ajouter</strong>. Touchez aussi <strong>Copier pour améliorer la lecture</strong> et collez le texte dans votre conversation avec Claude : le lecteur apprendra ce format.</li>
-<li>Rien du tout → l’automatisation ne s’est pas lancée : revérifiez l’étape 12 et les réglages de notifications (partie B).</li>
+<li>« Raccourci mal configuré » → refaites l’étape 14 (pastilles bleues).</li>
+<li>La notification est là mais n’a pas été lue comme un achat → touchez <strong>Ajouter</strong>. Touchez aussi <strong>Copier pour améliorer la lecture</strong> et envoyez ce texte à la personne qui entretient l’outil (les codes sont masqués) : après une mise à jour du script, ce format sera reconnu.</li>
+<li>Rien du tout → l’automatisation ne s’est pas lancée : revérifiez l’étape 13 et les réglages de notifications (partie B).</li>
 </ul>
 <h2 id="ensuite">Ensuite, il n’y a rien à faire</h2>
 <ul>
 <li><strong>Le lundi matin</strong>, un courriel résume la semaine : total, comparaison avec le mois dernier, rythme du budget, abonnements, gros achats, ce qu’il reste à vérifier.</li>
 <li><strong>Si la capture s’arrête</strong> (rien depuis 3 jours, une banque qui se tait, l’ancien lien encore utilisé), vous recevez un courriel qui dit quoi vérifier. Au plus un par problème par semaine.</li>
 <li><strong>Corriger une catégorie</strong> : ouvrez l’achat, choisissez la bonne catégorie, laissez « Toujours classer… » coché. Les achats passés et futurs du même marchand suivent.</li>
-<li><strong>« À vérifier »</strong> : quand une notification est difficile à lire, l’achat est compté mais marqué. Un geste suffit : <em>C’est bon</em>, <em>Doublon</em> ou <em>Modifier</em>.</li>
-<li><strong>Une fois par mois</strong> (facultatif) : <strong>+ → Relevé</strong>, collez le relevé CSV de chaque carte. Les achats manquants vous sont proposés.</li>
-<li><strong>Budget</strong> : ⚙ Réglages → Budget mensuel.</li>
+<li><strong>« À vérifier »</strong> : quand une notification est difficile à lire, ou qu’un achat ressemble à un autre, il est compté mais marqué. Un geste suffit : <em>C’est bon</em>, <em>Doublon</em> ou <em>Modifier</em>.</li>
+<li><strong>Une fois par mois</strong> (facultatif) : <strong>+ → Relevé</strong>, collez le relevé CSV de chaque carte. Les achats manquants vous sont proposés ; les paiements et remboursements sont reconnus et ne sont pas ajoutés comme des achats.</li>
+<li><strong>Budget et devise</strong> : ⚙ Réglages.</li>
 </ul>
 <h2 id="mise-a-jour">Mise à jour du script</h2>
-<p>Quand le tableau de bord signale une mise à jour : refaites l’étape 3 (coller le nouveau script), puis <strong>Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → Déployer</strong>, puis <strong>setup → Exécuter</strong>. L’adresse, les jetons et vos données ne changent pas.</p>
+<p>Quand le tableau de bord signale une mise à jour : refaites l’étape 3 (coller le nouveau script), puis <strong>Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → Déployer</strong>, puis <strong>setup → Exécuter</strong> (étape 5). L’adresse, les jetons et vos données ne changent pas.</p>
 <h2 id="jetons">Si un lien a été partagé par erreur</h2>
-<p>Dans Apps Script, exécutez <strong>rotateToken</strong> (ou <code>changerJetons</code>). Les deux jetons changent. Puis : onglet Configuration → Ouvrir le tableau de bord (ordinateur) → ⚙ Réglages → QR vers l’iPhone (étapes 8 à 11), et dans Raccourcis remplacez seulement l’URL (étape 13). Le tableau de bord vous préviendra si le raccourci utilise encore l’ancien lien.</p>
+<p>Dans Apps Script, exécutez <strong>rotateToken</strong> (ou <code>changerJetons</code>). Les deux jetons changent. Puis : onglet Configuration → Lien de configuration (ordinateur) → ⚙ Réglages → QR vers l’iPhone (étapes 8 à 12), et dans Raccourcis remplacez seulement l’URL (étape 14). Le tableau de bord vous préviendra si le raccourci utilise encore l’ancien lien.</p>
 <p>Ne collez jamais un lien de Dépenses dans une conversation ou un courriel : il contient un jeton.</p>
 <h2 id="claude">Claude, pour les formats que les règles ne comprennent pas (facultatif)</h2>
 <p>Les règles intégrées lisent les formats courants. Si une banque change ses textes, Claude peut relire ce que les règles n’ont pas compris, en différé (au plus 15 minutes après), avec les codes et les numéros masqués.</p>
 <ol>
 <li>Créez une clé sur <a href="https://console.anthropic.com">console.anthropic.com</a> et ajoutez un peu de crédit.</li>
 <li>Dans Apps Script : ⚙ <strong>Paramètres du projet → Propriétés du script → Ajouter</strong> : <code>ANTHROPIC_API_KEY</code> = votre clé.</li>
-<li>C’est tout. Au plus 40 lectures par jour et 1 $ US par mois (modifiables avec <code>CLAUDE_MAX_PER_DAY</code> et <code>CLAUDE_MAX_MONTH_USD</code>). Modèle : <code>claude-opus-5-5</code> ; <code>claude-haiku-5-5</code> coûte bien moins (propriété <code>CLAUDE_MODEL</code>). Pour tout faire lire par Claude : <code>CLAUDE_MODE</code> = <code>always</code>. Pour arrêter : supprimez la clé.</li>
+<li>C’est tout. Au plus 40 lectures par jour et 1 $ US par mois (modifiables avec <code>CLAUDE_MAX_PER_DAY</code> et <code>CLAUDE_MAX_MONTH_USD</code>). Modèle : <code>claude-opus-5-5</code> ; <code>claude-haiku-5-5</code> coûte bien moins (propriété <code>CLAUDE_MODEL</code>). Pour tout faire relire par Claude : <code>CLAUDE_MODE</code> = <code>always</code>. Pour arrêter : supprimez la clé.</li>
 </ol>
 <p>Sans clé, rien ne sort de Google.</p>
 <h2 id="vie-privee">Vie privée</h2>
@@ -2561,10 +2669,10 @@ function newToken_() {
 <li>Deux jetons : celui du raccourci peut seulement <em>ajouter</em> des notifications ; celui du tableau de bord permet de lire et de corriger. Ils ne sont jamais envoyés par courriel ni par message.</li>
 <li>Les codes de vérification sont masqués avant d’être enregistrés.</li>
 <li>Le script lit dans Gmail seulement les courriels des expéditeurs de vos banques (la recherche est visible dans le code, propriété <code>EMAIL_QUERY</code>) et leur ajoute l’étiquette « Depenses ». Pour ne pas lire les courriels : ⚙ Réglages → décochez l’option.</li>
-<li>Ne partagez pas la feuille : son onglet Configuration contient vos liens secrets.</li>
+<li>Ne partagez pas la feuille : son onglet Configuration contient vos liens secrets. Dans la feuille, les onglets s’appellent Transactions, Ignored, Rules et Configuration.</li>
 </ul>
 <h2 id="problemes">Problèmes fréquents</h2>
-<table><tr><th>Ce que vous voyez</th><th>Quoi faire</th></tr><tr><td>« Non autorisé : jeton incorrect »</td><td>Rouvrez le tableau de bord depuis l’onglet Configuration de la feuille (le lien contient le bon jeton).</td></tr><tr><td>« Réponse inattendue… accès Tout le monde »</td><td>Refaites l’étape 4 avec <em>Qui a accès : Tout le monde</em>.</td></tr><tr><td>« Raccourci mal configuré »</td><td>Étape 13 : chaque valeur doit être une pastille bleue.</td></tr><tr><td>« Votre raccourci utilise encore l’ancien lien »</td><td>Copiez le lien du raccourci (⚙ Réglages) et remplacez l’URL dans l’action.</td></tr><tr><td>« Rien de l’iPhone depuis N jours »</td><td>L’automatisation est-elle activée, sans confirmation ? Une mise à jour d’iOS l’a-t-elle désactivée ?</td></tr><tr><td>Des lignes vides dans Ignorées</td><td>iPhone : Réglages → Notifications → (appli) → Afficher les aperçus : Toujours.</td></tr><tr><td>L’onglet Configuration dit « Déployez d’abord »</td><td>Étape 4, puis relancez <code>setup</code>.</td></tr><tr><td>Pas de courriel le lundi</td><td>⚙ Réglages → l’option est-elle cochée ? Regardez dans Promotions ou Pourriel. Le script doit avoir été installé par <code>setup</code> (déclencheur).</td></tr></table>
+<table><tr><th>Ce que vous voyez</th><th>Quoi faire</th></tr><tr><td>« Non autorisé : jeton incorrect »</td><td>Rouvrez le tableau de bord avec le Lien de configuration de l’onglet Configuration (il contient le bon jeton).</td></tr><tr><td>« Ce jeton ne permet que d’envoyer des notifications »</td><td>Vous avez collé le lien du raccourci dans le tableau de bord. Utilisez le Lien de configuration.</td></tr><tr><td>« Non autorisé : ce lien est périmé »</td><td>Les jetons ont changé : recopiez le lien du raccourci (⚙ Réglages) dans l’action du raccourci.</td></tr><tr><td>« Lancez setup() dans l’éditeur Apps Script d’abord »</td><td>Étape 5.</td></tr><tr><td>« Réponse inattendue… accès Tout le monde »</td><td>Refaites l’étape 4 avec <em>Qui a accès : Tout le monde</em>.</td></tr><tr><td>« La feuille met trop de temps à répondre » ou « HTTP … »</td><td>Réessayez ; Google a parfois un délai. Si ça dure, vérifiez le déploiement (étape 4).</td></tr><tr><td>« L’onglet … a été modifié : la colonne … »</td><td>Une colonne de la feuille a été renommée ou déplacée : remettez-la comme avant.</td></tr><tr><td>« Raccourci mal configuré »</td><td>Étape 14 : chaque valeur doit être une pastille bleue.</td></tr><tr><td>« Votre raccourci utilise encore l’ancien lien »</td><td>Copiez le lien du raccourci (⚙ Réglages) et remplacez l’URL dans l’action.</td></tr><tr><td>« Rien de l’iPhone depuis N jours »</td><td>L’automatisation est-elle activée, sans confirmation ? Une mise à jour d’iOS l’a-t-elle désactivée ?</td></tr><tr><td>« Le déclencheur automatique n’est pas installé »</td><td>Relancez <code>setup</code> (étape 5) en acceptant toutes les autorisations.</td></tr><tr><td>Des lignes vides dans Ignorées</td><td>iPhone : Réglages → Notifications → (appli) → Afficher les aperçus : Toujours.</td></tr><tr><td>L’onglet Configuration dit « Adresse du script inconnue »</td><td>Collez l’adresse <code>/exec</code> du déploiement dans la cellule à droite de « Adresse du script », puis relancez <code>setup</code>.</td></tr><tr><td>Pas de courriel le lundi</td><td>⚙ Réglages → l’option est-elle cochée ? Regardez dans Promotions ou Pourriel. L’onglet Configuration doit indiquer « Déclencheur toutes les 15 min : oui ».</td></tr></table>
 <script>
 (function () {
   var b = document.getElementById('copyScript'), t = document.getElementById('scriptText'), ok = document.getElementById('copied');
