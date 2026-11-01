@@ -36,10 +36,14 @@ write('index.html', html
   .replace('/*__INSIGHTS__*/', () => inline(insights))
   .replace('/*__QR__*/', () => inline(qr)));
 
-if (exists('docs/GUIDE.fr.md')) write('guide.html', guideHtml(read('docs/GUIDE.fr.md')));
+if (exists('docs/GUIDE.fr.md')) {
+  const script = read('apps-script/Spending.gs');
+  write('guide.html', guideHtml(read('docs/GUIDE.fr.md'), script));
+  write('Spending.txt', script);
+}
 
 // A small Markdown subset: headings, paragraphs, ordered/unordered lists, bold, italics, code, links, blockquotes, rules.
-function guideHtml(md) {
+function guideHtml(md, script) {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const span = (s) => esc(s)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -55,21 +59,36 @@ function guideHtml(md) {
   let title = 'Guide';
   for (const raw of lines) {
     const line = raw.replace(/\s+$/, '');
-    const h = /^(#{1,4})\s+(.*)$/.exec(line);
+    const h = /^(#{1,4})\s+(.*?)(?:\s+\{#([a-z0-9-]+)\})?$/.exec(line);
     const li = /^(\s*)([-*]|\d+[.)])\s+(.*)$/.exec(line);
     if (h) {
       flushPara(); closeList();
       if (h[1].length === 1 && title === 'Guide') title = h[2];
-      out.push(`<h${h[1].length}>${span(h[2])}</h${h[1].length}>`);
+      out.push(`<h${h[1].length}${h[3] ? ` id="${h[3]}"` : ''}>${span(h[2])}</h${h[1].length}>`);
     } else if (li) {
       flushPara();
       const kind = /^\d/.test(li[2]) ? 'ol' : 'ul';
-      if (list !== kind) { closeList(); list = kind; out.push(`<${kind}>`); }
+      if (list !== kind) {
+        closeList(); list = kind;
+        const start = kind === 'ol' ? parseInt(li[2], 10) : 1;
+        out.push(start > 1 ? `<ol start="${start}">` : `<${kind}>`);
+      }
       out.push(`<li>${span(li[3])}</li>`);
     } else if (/^\s*$/.test(line)) {
       flushPara(); closeList();
+    } else if (line.trim() === '{{SCRIPT}}') {
+      flushPara(); closeList();
+      out.push('<div class="script"><button type="button" id="copyScript">Copier le script</button> <a href="Spending.txt" target="_blank" rel="noopener">ou l’ouvrir dans un onglet</a><span id="copied" hidden> Copié ✓</span>' +
+        `<textarea id="scriptText" readonly aria-label="Script Apps Script">${esc(script || '')}</textarea></div>`);
     } else if (/^---+$/.test(line)) {
       flushPara(); closeList(); out.push('<hr>');
+    } else if (/^\|/.test(line)) {
+      flushPara(); closeList();
+      const cells = line.split('|').slice(1, -1).map((c) => c.trim());
+      if (cells.every((c) => /^-+$/.test(c))) continue;
+      const tag = out[out.length - 1] && out[out.length - 1].startsWith('<table') ? 'td' : 'th';
+      const rowHtml = `<tr>${cells.map((c) => `<${tag}>${span(c)}</${tag}>`).join('')}</tr>`;
+      if (tag === 'th') out.push(`<table>${rowHtml}`); else out[out.length - 1] += rowHtml;
     } else if (/^>\s?/.test(line)) {
       flushPara(); closeList(); out.push(`<blockquote>${span(line.replace(/^>\s?/, ''))}</blockquote>`);
     } else if (list && /^\s{2,}/.test(raw)) {
@@ -81,6 +100,7 @@ function guideHtml(md) {
     }
   }
   flushPara(); closeList();
+  for (let i = 0; i < out.length; i++) if (out[i].startsWith('<table')) out[i] += '</table>';
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -96,10 +116,25 @@ li { margin: .45rem 0; } ol ol, ul ul { margin-top: .3rem; }
 code { background: #e9e8e2; padding: .1em .35em; border-radius: 4px; font-size: .93em; }
 a { color: #1c5cab; } blockquote { margin: 1rem 0; padding: .4rem .9rem; border-left: 3px solid #c3c2b7; color: #52514e; }
 hr { border: 0; border-top: 1px solid #c3c2b7; margin: 2rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .95em; } th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid #c3c2b7; vertical-align: top; } th { color: #52514e; }
+.script { margin: .6rem 0 1.2rem; } .script button { font: inherit; font-weight: 600; padding: .6rem 1rem; border: 0; border-radius: 10px; background: #2a78d6; color: #fff; cursor: pointer; } .script a { margin-left: .6rem; font-size: .95em; }
+#scriptText { display: block; width: 100%; height: 6rem; margin-top: .6rem; font: 11px/1.3 ui-monospace, Menlo, monospace; color: #52514e; background: #e9e8e2; border: 1px solid #c3c2b7; border-radius: 8px; padding: .4rem; }
+@media (prefers-color-scheme: dark) { #scriptText { background: #2c2c2a; color: #c3c2b7; } th, td { border-color: #383835; } th { color: #c3c2b7; } }
 </style>
 </head>
 <body>
 ${out.join('\n')}
+<script>
+(function () {
+  var b = document.getElementById('copyScript'), t = document.getElementById('scriptText'), ok = document.getElementById('copied');
+  if (!b || !t) return;
+  b.addEventListener('click', function () {
+    var done = function () { ok.hidden = false; setTimeout(function () { ok.hidden = true; }, 4000); };
+    var fallback = function () { t.focus(); t.select(); try { document.execCommand('copy'); done(); } catch (e) { alert('Sélectionnez le texte ci-dessous et copiez-le.'); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done, fallback); else fallback();
+  });
+})();
+</script>
 </body>
 </html>
 `;
