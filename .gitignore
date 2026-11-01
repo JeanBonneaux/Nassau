@@ -8,3 +8,4 @@ results/*.pt
 # local only
 modal_spending.md
 .env.modal
+.claude/
