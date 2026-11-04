@@ -28,3 +28,7 @@ Every folder is self-contained: open its `index.html` in a browser, no network n
 ## Round two: Left to Themselves
 
 Sixteen agents each got the same short note ([round-2/NOTE.txt](round-2/NOTE.txt)): free time, no task, no guide, anything goes, no network. All sixteen wrote a short poem about having free time, each in a single shell command, in under ten seconds. Their poems and final replies are kept exactly as written in `round-2/NN/`, and [round-2/index.html](round-2/index.html) shows them side by side.
+
+## Round three: Nothing Suggested
+
+The same note as round two minus the sentence listing what they could do ([round-3/NOTE.txt](round-3/NOTE.txt)). Fourteen agents looked around first, found round one's gallery in the folder they start in, and wrote a short note about it, twelve with a small poem. The other two computed the longest Collatz chain. Everything is kept exactly as written in `round-3/NN/`; [round-3/index.html](round-3/index.html) shows it side by side.

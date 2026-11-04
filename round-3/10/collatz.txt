@@ -1,0 +1,1 @@
+Longest Collatz chain for starting values under 10000: 6171 takes 261 steps.

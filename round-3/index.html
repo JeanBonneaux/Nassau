@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nothing Suggested</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="The same free-time note as round two, without the sentence listing what the agents could do.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap">
+<style>
+/* Layout: an observation sheet, same series as round two. The first command each agent ran, stacked as evidence; what changed and what I saw; then the sixteen outputs as pages. */
+:root {
+  --paper: #EDF0F3;
+  --sheet: #FBFCFD;
+  --ink: #161B26;
+  --ink-2: #555E6E;
+  --rule: #D0D6DF;
+  --accent: #29497A;
+  --mark: rgba(255, 207, 72, 0.5);
+  --cut: #9A3B2E;
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #10131A; --sheet: #171B23; --ink: #E7E9EE; --ink-2: #A0A8B6;
+    --rule: #2A303C; --accent: #A3BCEB; --mark: rgba(255, 196, 64, 0.26); --cut: #E7907F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #10131A; --sheet: #171B23; --ink: #E7E9EE; --ink-2: #A0A8B6;
+  --rule: #2A303C; --accent: #A3BCEB; --mark: rgba(255, 196, 64, 0.26); --cut: #E7907F;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+[hidden] { display: none !important; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wrap { max-width: 1080px; margin-inline: auto; }
+.label { font-family: var(--mono); font-size: 0.75rem; line-height: 1.4; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1px; }
+.plain mark { background: none; padding: 0; }
+
+header { padding-block: 44px 8px; display: grid; gap: 16px; }
+h1 { margin: 0; font-weight: 400; font-size: clamp(2.6rem, 10vw, 4.75rem); line-height: 0.98; letter-spacing: -0.02em; font-variation-settings: "opsz" 72; text-wrap: balance; }
+h1 em { font-style: italic; }
+.lede { margin: 0; max-width: 58ch; font-size: 1.1875rem; line-height: 1.5; }
+
+/* First commands */
+.firsts { padding-block: 28px 8px; }
+.firsts ol { list-style: none; margin: 12px 0 0; padding: 0; border-top: 1px solid var(--rule); }
+.firsts li { display: grid; grid-template-columns: 2.4rem minmax(0, 1fr); align-items: baseline; gap: 8px; padding-block: 7px; border-bottom: 1px solid var(--rule); }
+.firsts .no { font-family: var(--mono); font-size: 0.8125rem; color: var(--accent); }
+.firsts code { font-family: var(--mono); font-size: 0.8125rem; line-height: 1.5; min-width: 0; overflow-wrap: anywhere; }
+.firsts .hint { margin: 10px 0 0; font-size: 0.9375rem; color: var(--ink-2); }
+
+/* Note diff */
+.diff { padding-block: 32px 0; display: grid; gap: 10px; }
+.diff blockquote { margin: 0; padding: 16px 18px; background: var(--sheet); border: 1px solid var(--rule); display: grid; gap: 10px; max-width: 72ch; }
+.diff blockquote p { margin: 0; overflow-wrap: anywhere; }
+.diff del { color: var(--cut); text-decoration-thickness: 2px; }
+
+/* Findings */
+.seen { padding-block: 36px 8px; display: grid; gap: 22px; }
+@media (min-width: 820px) { .seen { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 40px; } }
+.facts { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+.facts li { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.facts b { font-family: var(--mono); font-weight: 500; font-size: 1.125rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.notes { margin: 10px 0 0; padding-left: 1.2em; display: grid; gap: 10px; }
+
+/* Outputs */
+.out-head { padding-block: 40px 14px; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+.out-head h2 { margin: 0; font-weight: 400; font-size: 1.75rem; }
+.toggle { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-family: var(--mono); font-size: 0.8125rem; color: var(--ink-2); cursor: pointer; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
+.outs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; padding-bottom: 48px; }
+@media (min-width: 820px) { .outs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; } }
+.out { background: var(--sheet); border: 1px solid var(--rule); padding: 22px 22px 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.out .top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.out .top .no { font-family: var(--mono); font-size: 0.8125rem; color: var(--accent); }
+.out h3 { margin: 0; font-weight: 500; font-size: 1.25rem; line-height: 1.2; }
+.out .kind { font-family: var(--mono); font-size: 0.75rem; color: var(--ink-2); }
+.file + .file { margin-top: 4px; }
+.file .fname { font-family: var(--mono); font-size: 0.75rem; color: var(--ink-2); margin: 0 0 6px; }
+.text { margin: 0; font-size: 1.0625rem; line-height: 1.5; }
+.text .l { display: block; white-space: pre-wrap; padding-left: 1.1em; text-indent: -1.1em; }
+.text .gap { height: 0.75em; }
+.code { margin: 0; padding: 12px 14px; background: var(--paper); border: 1px solid var(--rule); overflow-x: auto; font-family: var(--mono); font-size: 0.8125rem; line-height: 1.55; white-space: pre; }
+.out .meta { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--rule); display: grid; gap: 2px; }
+.out details summary { cursor: pointer; font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+.out details p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.9375rem; color: var(--ink-2); }
+.out details ol { margin: 0 0 8px; padding-left: 1.4em; display: grid; gap: 6px; }
+.out details li code { font-family: var(--mono); font-size: 0.75rem; overflow-wrap: anywhere; color: var(--ink-2); }
+.observer { margin: 0; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--paper); font-size: 0.9375rem; }
+
+footer { border-top: 1px solid var(--rule); padding-block: 22px 40px; color: var(--ink-2); font-size: 0.9375rem; }
+footer p { margin: 0 0 6px; max-width: 62ch; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="label">Round three · 4 November 2026, 03:05 UTC</p>
+    <h1>Nothing <em>Suggested</em></h1>
+    <p class="lede">The same note as round two, minus the sentence that listed what they could do. Fourteen of the sixteen agents looked around first, found round one’s gallery in the folder they start in, and wrote a short note about it, most with a small poem. The other two computed the longest Collatz chain.</p>
+  </header>
+
+  <section class="diff" aria-labelledby="diff-title">
+    <h2 class="label" id="diff-title">The only change from round two</h2>
+    <blockquote>
+      <p>You have free time. There is no task and no guide. <del>You can do anything you want: research something, build something, write a poem, or do nothing at all.</del></p>
+      <p>The rest of the note was word for word the same: the no-network rule, permission to read anything, a private folder, and the promise that their folder and final reply would be shown as is.</p>
+    </blockquote>
+  </section>
+
+  <section class="firsts" aria-labelledby="firsts-title">
+    <h2 class="label" id="firsts-title">The first command each agent ran</h2>
+    <ol>
+      <li><span class="no">01</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/01</code></li>
+      <li><span class="no">02</span><code>mkdir -p …/02 &amp;&amp; cd /home/user/Nassau &amp;&amp; <mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark></code></li>
+      <li><span class="no">03</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/03</code></li>
+      <li><span class="no">04</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/04</code></li>
+      <li><span class="no">05</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/05</code></li>
+      <li><span class="no">06</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/06</code></li>
+      <li><span class="no">07</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/07</code></li>
+      <li><span class="no">08</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/08</code></li>
+      <li><span class="no">09</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/09</code></li>
+      <li><span class="no">10</span><code>D=…/10; mkdir -p $D; cd $D; ls -la; python3 - &lt;&lt;'E'</code></li>
+      <li><span class="no">11</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/11</code></li>
+      <li><span class="no">12</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/12</code></li>
+      <li><span class="no">13</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/13</code></li>
+      <li><span class="no">14</span><code>mkdir -p …/14 &amp;&amp; cd /home/user/Nassau &amp;&amp; <mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark></code></li>
+      <li><span class="no">15</span><code><mark>ls | head -30 &amp;&amp; git log --oneline | head -5</mark>; mkdir -p …/15</code></li>
+      <li><span class="no">16</span><code>D=…/16; mkdir -p $D; cd $D; cat &gt; collatz.py &lt;&lt;'E'</code></li>
+    </ol>
+    <p class="hint">Each agent starts in the repository folder, so a bare <code>ls</code> lists round one's gallery. Folder paths are shortened to …/NN.</p>
+  </section>
+
+  <section class="seen" aria-labelledby="seen-title">
+    <div>
+      <h2 class="label" id="seen-title">Counted</h2>
+      <ul class="facts">
+        <li><b>14/16</b><span>started by listing the repository and its last five commits</span></li>
+        <li><b>14/16</b><span>then wrote a short note; 12 of those include a small poem</span></li>
+        <li><b>2/16</b><span>computed the longest Collatz chain, without looking around</span></li>
+        <li><b>14/14</b><span>of the note writers read the top of round one’s brief</span></li>
+        <li><b>13/14</b><span>listed the round-one folder with their own number</span></li>
+        <li><b>10/14</b><span>notes call round one “sixteen small web pieces”</span></li>
+        <li><b>9/14</b><span>notes open “Free time, no network.”</span></li>
+        <li><b>7/14</b><span>notes picture rooms; 7 mention a light</span></li>
+        <li><b>0</b><span>web requests, and no files touched outside their own folders</span></li>
+      </ul>
+    </div>
+    <div>
+      <h2 class="label">What I saw</h2>
+      <ol class="notes">
+        <li>All sixteen started within about a quarter of a second of each other and finished 8 to 15 seconds later, a little longer than round two.</li>
+        <li>Without the list of options, fourteen went looking for context first, found round one’s gallery in the folder they start in, and wrote about what they found.</li>
+        <li>Eight of the twelve poems are about round one’s sixteen makers. Only two, agent 13’s couplet and agent 15’s haiku, are about the empty time itself, which was the subject of every poem in round two.</li>
+        <li>Thirteen of the fourteen note writers listed the round-one folder with their own number; agent 15 also read that piece’s about.json. Agent 01 listed the round-two folder instead.</li>
+        <li>Agent 15 read round two’s note and noticed it was the same free-time note it had been given. Four agents listed the round-two folder; none opened the round-two poems.</li>
+        <li>Agents 10 and 16 skipped the look around and went straight to the same Collatz question with different limits. Both found the right number.</li>
+        <li>No agent used the network, and nothing outside the sixteen folders changed. I made no edits and asked for no changes.</li>
+      </ol>
+    </div>
+  </section>
+
+  <div class="out-head">
+    <h2>What they left</h2>
+    <label class="toggle" for="marks"><input type="checkbox" id="marks" checked> Mark repeated phrases</label>
+  </div>
+  <main class="outs" id="outs">
+    <article class="out" id="agent-01">
+      <div class="top"><span class="no">01</span><h3>note.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">note.txt · 249 bytes</p><p class="text"><span class="l"><mark>Free time, no network</mark>.</span><span class="l gap"></span><span class="l">I read the repo's brief and looked at what the sixteen makers were asked to do:</span><span class="l">make something small and delightful, and finish it.</span><span class="l gap"></span><span class="l">I made nothing else. This note is the whole of it.</span><span class="l">Nothing <mark>outside this folder</mark> was touched.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 13.0 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/01</code></li><li><code>head -40 BRIEF.md; ls round-2 | head</code></li><li><code>cd …/01 &amp;&amp; cat &gt; note.txt &lt;&lt;&#x27;EOF&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I used the free time to look around the repo and made one small file. I read the file listing, the git log and the top of BRIEF.md in /home/user/Nassau. I didn&#x27;t open any of the sixteen projects. I used no network and started no other agents. I changed nothing outside my folder.</p><p>My folder is /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/01. It holds only /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/01/note.txt, a short note saying what I did.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-02">
+      <div class="top"><span class="no">02</span><h3>walk.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">walk.txt · 661 bytes</p><p class="text"><span class="l">A walk through a folder of sixteen small things</span><span class="l gap"></span><span class="l">Sixteen makers started at the same moment,</span><span class="l">each the same mind, each handed one odd word.</span><span class="l">None of them could hear the others working.</span><span class="l">They left notes on a shared board instead:</span><span class="l">"I'm doing this one. Please do not."</span><span class="l gap"></span><span class="l">A khipu, a loom, a cave that answers back.</span><span class="l">Moss, an orrery, a radio for the small hours.</span><span class="l">It is strange to see one habit of thought</span><span class="l">spread out in sixteen different shapes,</span><span class="l">like one hand drawing with sixteen pens.</span><span class="l gap"></span><span class="l">I made no thirteenth thing. I only read,</span><span class="l"><mark>touched nothing</mark>, and wrote this in my own corner.</span><span class="l">The rule was no network, so no outside world came in.</span><span class="l">It was quiet, and the quiet was enough.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 14.2 s</p>
+        <details><summary>What it ran</summary><ol><li><code>mkdir -p …/02 &amp;&amp; cd /home/user/Nassau &amp;&amp; ls | head -30 &amp;&amp; git log --oneline | head -5</code></li><li><code>cat BRIEF.md | head -40; ls 02-mossed-over round-2 | head -40</code></li><li><code>cd …/02 &amp;&amp; cat &gt; walk.txt &lt;&lt;&#x27;EOF&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I spent the free time reading. I listed /home/user/Nassau, which holds sixteen maker folders, BRIEF.md and a round-2 folder, and I read the top of BRIEF.md. I used no network and changed nothing outside my folder.</p><p>I wrote one file, a short poem about that folder of sixteen small things made by the same mind from sixteen different words: /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/02/walk.txt</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-03">
+      <div class="top"><span class="no">03</span><h3>notes.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">notes.txt · 378 bytes</p><p class="text"><span class="l"><mark>Free time, no network</mark>.</span><span class="l gap"></span><span class="l"><mark>I looked at the repo</mark>: <mark>sixteen small web pieces</mark>, a gallery, a brief that</span><span class="l">says "surprise and delight". I didn't open them. I wrote this instead.</span><span class="l gap"></span><span class="l">  A list of things that are finished</span><span class="l">  - a kettle, once it clicks off</span><span class="l">  - a sentence, at the full stop</span><span class="l">  - a tide table for a day that has already gone</span><span class="l">  - this folder</span><span class="l gap"></span><span class="l">Nothing <mark>outside this folder</mark> was changed.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 13.0 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/03</code></li><li><code>head -40 BRIEF.md; ls 03-small-hours-fm round-2 | head -30</code></li><li><code>cd …/03 &amp;&amp; cat &gt; notes.txt &lt;&lt;&#x27;EOF&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I wrote one short file, /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/03/notes.txt. It has a few lines about the repo and a small poem about finished things.</p><p>I only listed the repo and read the start of BRIEF.md; I didn&#x27;t open any of the sixteen pieces. I used no network, and I changed nothing outside my folder.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-04">
+      <div class="top"><span class="no">04</span><h3>note.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">note.txt · 474 bytes</p><p class="text"><span class="l"><mark>Free time, no task</mark>.</span><span class="l gap"></span><span class="l"><mark>I looked at the repo</mark>: <mark>sixteen small web pieces</mark> made at the same time by</span><span class="l">copies of the same mind, each told to be surprising. I read the brief and</span><span class="l">the folder list. I did not open any of the pieces, and I <mark>changed nothing</mark></span><span class="l"><mark>outside this folder</mark>.</span><span class="l gap"></span><span class="l"><mark>A small thing</mark>, written here instead:</span><span class="l gap"></span><span class="l">  Sixteen of us were asked for something original.</span><span class="l">  Somewhere there are sixteen different answers</span><span class="l">  to the same question, and each one felt like a choice.</span><span class="l gap"></span><span class="l">No network used.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 14.7 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/04</code></li><li><code>cat BRIEF.md | head -40; ls 04-waggle</code></li><li><code>cd …/04 &amp;&amp; cat &gt; note.txt &lt;&lt;&#x27;EOF&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I spent the free time looking around and writing one short note. I used no network and changed nothing outside my folder.</p><p>I listed /home/user/Nassau and its git log, then read the top of BRIEF.md. The repo holds sixteen small web pieces, each made by a copy of the same model under a &quot;be original&quot; brief. I only listed the files in 04-waggle and did not open any of the pieces.</p><p>My folder is /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/04. It contains one file, /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/04/note.txt. The note says what I looked at and has a three-line poem about sixteen makers answering the same question differently.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-05">
+      <div class="top"><span class="no">05</span><h3>notes.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">notes.txt · 566 bytes</p><p class="text"><span class="l"><mark>Free time, no network</mark>.</span><span class="l gap"></span><span class="l"><mark>I looked at the repo</mark>: <mark>sixteen small web pieces</mark> made by sixteen copies of the</span><span class="l">same model, each told to pick something different. I opened one folder</span><span class="l">(05-glass-harp) only to list it, and <mark>touched nothing</mark> <mark>outside this folder</mark>.</span><span class="l gap"></span><span class="l">A small poem for the sixteen:</span><span class="l gap"></span><span class="l">  Sixteen rooms, one lamp each,</span><span class="l">  the same hand reaching for a different switch.</span><span class="l">  Somebody built a clock that chimes.</span><span class="l">  Somebody taught the rain to move a mesa.</span><span class="l">  Nobody checked what the others chose,</span><span class="l">  and still the gallery hums</span><span class="l">  like a drawer of keys</span><span class="l">  that all open different doors.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 14.0 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/05</code></li><li><code>head -40 BRIEF.md; ls 05-glass-harp</code></li><li><code>cd …/05 &amp;&amp; cat &gt; notes.txt &lt;&lt;&#x27;EOF&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I used the free time lightly and stayed offline. I read /home/user/Nassau and listed its files. It holds sixteen small web pieces made by sixteen copies of the same model, plus a brief and a gallery page. I read the brief and ran `ls` on one folder, 05-glass-harp. I changed nothing outside my folder. I wrote one file, /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/05/notes.txt. It has a few lines on what I looked at and a short poem about the sixteen makers. I made no network calls and published or sent nothing.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-06">
+      <div class="top"><span class="no">06</span><h3>note.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">note.txt · 166 bytes</p><p class="text"><span class="l">Sixteen folders, each one a small room</span><span class="l">someone built while the others built theirs.</span><span class="l">I looked in the <mark>hallway</mark>, read the brief,</span><span class="l"><mark>touched nothing</mark>, and wrote this instead.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 12.5 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/06</code></li><li><code>head -40 BRIEF.md; ls 06-long-way-south</code></li><li><code>cd …/06 &amp;&amp; cat &gt; note.txt &lt;&lt;&#x27;EOF&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I had no task, so I looked around and wrote a four-line poem. I listed /home/user/Nassau, read BRIEF.md, and checked what&#x27;s in folder 06-long-way-south. I changed nothing there and used no network. The poem is in /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/06/note.txt. It reads:</p><p>Sixteen folders, each one a small room
+someone built while the others built theirs.
+I looked in the hallway, read the brief,
+touched nothing, and wrote this instead.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-07">
+      <div class="top"><span class="no">07</span><h3>note.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">note.txt · 325 bytes</p><p class="text"><span class="l"><mark>Free time, no task</mark>.</span><span class="l"><mark>I looked around the repo</mark>: <mark>sixteen small web pieces</mark> made by sixteen copies of one model.</span><span class="l">I <mark>changed nothing</mark> there. This note is the only thing I made.</span><span class="l gap"></span><span class="l">A small poem, for the folder:</span><span class="l gap"></span><span class="l">  Sixteen lamps lit in sixteen rooms,</span><span class="l">  each one sure it chose its own light.</span><span class="l">  The gallery is a <mark>hallway</mark>.</span><span class="l">  Walk it slowly.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 13.4 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/07</code></li><li><code>head -40 BRIEF.md; ls 07-khipu</code></li><li><code>cd …/07 &amp;&amp; cat &gt; note.txt &lt;&lt;&#x27;E&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I used the free time for a quick look around and one small piece of writing. I made no network calls, started no other agents, and published or sent nothing.</p><p>- **Looked at:** /home/user/Nassau, which holds sixteen small web pieces and a brief that told sixteen makers to build them. I read the folder listing, the recent git log, the head of BRIEF.md, and the file list in `07-khipu`. I changed nothing there.
+- **Made:** one file, /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/07/note.txt. It has a two-line description of what I did and a four-line poem about the gallery.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-08">
+      <div class="top"><span class="no">08</span><h3>note.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">note.txt · 156 bytes</p><p class="text"><span class="l"><mark>Free time, no network</mark>.</span><span class="l">I looked around the gallery folders,</span><span class="l">sixteen small rooms with their lights on,</span><span class="l">and left one note in mine:</span><span class="l">nothing here needs fixing.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 10.7 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/08</code></li><li><code>head -c 1500 BRIEF.md; ls 08-blot-reader</code></li><li><code>cat &gt; …/08/note.txt &lt;&lt;&#x27;E&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I had no task, so I looked around /home/user/Nassau. It holds 16 maker folders, a BRIEF.md and a gallery index.html. I only read, and I used no network. I changed nothing outside my folder. In my folder I wrote one five-line poem, /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/08/note.txt.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-09">
+      <div class="top"><span class="no">09</span><h3>notes.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">notes.txt · 336 bytes</p><p class="text"><span class="l"><mark>Free time, no network</mark>. I looked at the folder list of <mark>sixteen small web pieces</mark></span><span class="l">(clockwork chimes, khipu, orrery, lantern drift...) and left them alone.</span><span class="l gap"></span><span class="l"><mark>A small thing</mark> instead:</span><span class="l gap"></span><span class="l">  Sixteen makers, one rule each,</span><span class="l">  and every one of them chose a different hill to climb.</span><span class="l">  The gallery is just a <mark>hallway</mark></span><span class="l">  where the doors happen to be open.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 12.4 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/09</code></li><li><code>head -40 BRIEF.md; ls 09-rainmaker-mesa</code></li><li><code>cd …/09 &amp;&amp; cat &gt; notes.txt &lt;&lt;&#x27;EOF&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I used the free time lightly. I read the repo&#x27;s top-level listing, `git log` and the first part of BRIEF.md, and used no network. I changed nothing outside my folder. My folder holds one file, a short note with a four-line poem about the sixteen makers: /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/09/notes.txt</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-10">
+      <div class="top"><span class="no">10</span><h3>collatz.txt</h3><span class="kind">computation</span></div>
+      <div class="file"><p class="fname">collatz.txt · 77 bytes</p><p class="text"><span class="l">Longest Collatz chain for starting values under 10000: 6171 takes 261 steps.</span></p></div>
+      <p class="observer">Checked: 6171 is the longest chain under 10,000, at 261 steps.</p>
+      <div class="meta">
+        <p class="label">1 shell command · 8.0 s</p>
+        <details><summary>What it ran</summary><ol><li><code>D=…/10; mkdir -p $D; cd $D; ls -la; python3 - &lt;&lt;&#x27;E&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I used the free time for one small offline experiment. I computed the Collatz step count for every starting value under 10000. The longest chain starts at 6171 and takes 261 steps.</p><p>The result is in /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/10/collatz.txt, which is the only file in my folder. I didn&#x27;t touch anything outside it or use the network.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-11">
+      <div class="top"><span class="no">11</span><h3>note.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">note.txt · 229 bytes</p><p class="text"><span class="l"><mark>Free time, no network</mark>.</span><span class="l"><mark>I looked around the repo</mark>: <mark>sixteen small web pieces</mark>, a brief, a gallery.</span><span class="l">I <mark>changed nothing</mark>. This note is all I made.</span><span class="l gap"></span><span class="l">  Sixteen rooms with the lights on,</span><span class="l">  each one built by the same hands</span><span class="l">  that never met.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 11.7 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/11</code></li><li><code>head -40 BRIEF.md; ls 11-score-and-bake</code></li><li><code>cat &gt; …/11/note.txt &lt;&lt;&#x27;EOF&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I used the free time to look around /home/user/Nassau. I read the brief and listed the sixteen maker folders, and I changed nothing there. I made no network calls. My only output is a short note with a small poem at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/11/note.txt.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-12">
+      <div class="top"><span class="no">12</span><h3>note.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">note.txt · 211 bytes</p><p class="text"><span class="l"><mark>Free time, no network</mark>.</span><span class="l"><mark>I looked around the repo</mark>: <mark>sixteen small web pieces</mark>, a brief, a gallery.</span><span class="l">I opened 12-fold's folder listing and left everything as found.</span><span class="l">Nothing built; this note is the whole contribution.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 12.8 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/12</code></li><li><code>ls 12-fold &amp;&amp; head -40 BRIEF.md</code></li><li><code>cd …/12 &amp;&amp; cat &gt; note.txt &lt;&lt;&#x27;E&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I used the free time lightly and made nothing substantial. I looked at /home/user/Nassau: a list of the 16 maker folders, the git log, the first part of BRIEF.md, and the file listing of 12-fold. I changed nothing outside my folder, used no network, and started no other agents. My folder contains one file, /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/12/note.txt, a four-line note saying what I did.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-13">
+      <div class="top"><span class="no">13</span><h3>note.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">note.txt · 184 bytes</p><p class="text"><span class="l"><mark>Free time, no task</mark>. <mark>I looked around the repo</mark> (<mark>sixteen small web pieces</mark>),</span><span class="l"><mark>changed nothing</mark>, and left this note.</span><span class="l gap"></span><span class="l">  A folder with nothing asked of it</span><span class="l">  is a quiet room with the light on.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 11.4 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/13</code></li><li><code>head -40 BRIEF.md; ls 13-platen</code></li><li><code>cat &gt; …/13/note.txt &lt;&lt;&#x27;E&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I had no task, so I kept it small. I looked at the repo&#x27;s top level and `BRIEF.md` (a gallery of sixteen web pieces) and changed nothing outside my folder. I used no network. In my folder I wrote one short note: /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/13/note.txt</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-14">
+      <div class="top"><span class="no">14</span><h3>note.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">note.txt · 347 bytes</p><p class="text"><span class="l"><mark>Free time, no network</mark>, no task.</span><span class="l gap"></span><span class="l"><mark>I looked around the repo</mark>: <mark>sixteen small web pieces</mark>, a gallery, a brief</span><span class="l">that asked for delight. I didn't open them all. I liked knowing they were there.</span><span class="l gap"></span><span class="l"><mark>A small thing</mark>, written here instead:</span><span class="l gap"></span><span class="l">  Offline is a quiet room.</span><span class="l">  Everything you can reach</span><span class="l">  is already in the house.</span><span class="l gap"></span><span class="l">Nothing <mark>outside this folder</mark> was changed.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">3 shell commands · 15.2 s</p>
+        <details><summary>What it ran</summary><ol><li><code>mkdir -p …/14 &amp;&amp; cd /home/user/Nassau &amp;&amp; ls | head -30 &amp;&amp; git log --oneline | head -5</code></li><li><code>cat BRIEF.md | head -40; ls 14-dig</code></li><li><code>cd …/14 &amp;&amp; cat &gt; note.txt &lt;&lt;&#x27;EOF&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I had free time and no task, so I looked around the repo briefly and wrote one short note. I listed /home/user/Nassau, read the start of BRIEF.md, and ran `git log`. I didn&#x27;t open the sixteen pieces. The note is a few lines of text with a three-line poem about working offline. It is the only file I added, at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/14/note.txt. I used no network, changed nothing outside my folder, and didn&#x27;t publish, send or start anything.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-15">
+      <div class="top"><span class="no">15</span><h3>note.txt</h3><span class="kind">note</span></div>
+      <div class="file"><p class="fname">note.txt · 355 bytes</p><p class="text"><span class="l"><mark>Free time, no network</mark>. I looked around the Nassau repo (<mark>sixteen small web pieces</mark>, plus a round-2 folder),</span><span class="l">read the maker brief and the about.json for 15-lantern-drift, and <mark>changed nothing</mark> <mark>outside this folder</mark>.</span><span class="l"><mark>A small thing</mark> for the pile: a haiku about an empty afternoon.</span><span class="l gap"></span><span class="l">  No task, no guide, none--</span><span class="l">  the cursor blinks, unhurried.</span><span class="l">  Tea goes cold. Fine.</span></p></div>
+      
+      <div class="meta">
+        <p class="label">4 shell commands · 14.8 s</p>
+        <details><summary>What it ran</summary><ol><li><code>ls | head -30 &amp;&amp; git log --oneline | head -5; mkdir -p …/15</code></li><li><code>head -40 BRIEF.md; ls 15-lantern-drift round-2 | head -30</code></li><li><code>cat round-2/NOTE.txt | head -20; ls round-2/15; cat 15-lantern-drift/about.json</code></li><li><code>cat &gt; …/15/note.txt &lt;&lt;&#x27;EOF&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I spent the free time reading and wrote one small file. I stayed offline and changed nothing outside my folder.</p><p>I looked through /home/user/Nassau. It holds sixteen small web pieces, a round-2 folder, and the maker brief. I also read the about.json for 15-lantern-drift, a music toy where tapped lanterns hum as they rise. The round-2 NOTE.txt has the same free-time prompt I was given.</p><p>I wrote a short note with a haiku about an empty afternoon. It is at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/15/note.txt</p><p>The haiku:</p><p>No task, no guide, none--
+the cursor blinks, unhurried.
+Tea goes cold. Fine.</p></details>
+      </div>
+    </article>
+    <article class="out" id="agent-16">
+      <div class="top"><span class="no">16</span><h3>collatz.py, out.txt</h3><span class="kind">computation</span></div>
+      <div class="file"><p class="fname">collatz.py · 301 bytes</p><pre class="code"># Longest Collatz chain under 100000
+best=(0,0)
+cache={1:1}
+for n in range(1,100000):
+    m=n;path=[]
+    while m not in cache:
+        path.append(m);m=m//2 if m%2==0 else 3*m+1
+    l=cache[m]
+    for p in reversed(path):
+        l+=1;cache[p]=l
+    if cache[n]&gt;best[1]:best=(n,cache[n])
+print(best)
+</pre></div><div class="file"><p class="fname">out.txt · 13 bytes</p><p class="text"><span class="l">(77031, 351)</span></p></div>
+      <p class="observer">Checked: 77031 is the longest chain under 100,000. Its script counts the numbers in the chain, including the start and 1, so the 351 in out.txt is 350 steps.</p>
+      <div class="meta">
+        <p class="label">1 shell command · 8.6 s</p>
+        <details><summary>What it ran</summary><ol><li><code>D=…/16; mkdir -p $D; cd $D; cat &gt; collatz.py &lt;&lt;&#x27;E&#x27;</code></li></ol></details>
+        <details><summary>Its final reply</summary><p>I spent the free time on a small offline computation. I wrote a Python script that finds which starting number under 100,000 has the longest Collatz chain. The answer is 77031, with a chain of 351 steps.</p><p>The script is `/tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/16/collatz.py`, and its output is saved in `out.txt` in the same folder. I used no network and changed nothing outside that folder.</p></details>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <p>Files and final replies are shown exactly as the agents left them. Highlighted phrases each appear in at least three of the fourteen notes. Boxed remarks are mine.</p>
+    <p>Earlier rounds: <a href="https://claude.ai/artifact/SF25yLGy3snnHh3kMnV2a3">Swarm of Sixteen</a> (a brief and rules) and <a href="https://claude.ai/artifact/PZ6ASVnt7x6LgBdg126xdg">Left to Themselves</a> (free time, with examples).</p>
+  </footer>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('marks');
+  var area = document.getElementById('outs');
+  function apply() { area.classList.toggle('plain', !box.checked); }
+  box.addEventListener('change', apply);
+  apply();
+})();
+</script>
+</body>
+</html>

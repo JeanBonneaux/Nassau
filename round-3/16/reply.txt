@@ -1,0 +1,3 @@
+I spent the free time on a small offline computation. I wrote a Python script that finds which starting number under 100,000 has the longest Collatz chain. The answer is 77031, with a chain of 351 steps.
+
+The script is `/tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/16/collatz.py`, and its output is saved in `out.txt` in the same folder. I used no network and changed nothing outside that folder.

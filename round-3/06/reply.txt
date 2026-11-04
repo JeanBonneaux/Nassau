@@ -1,0 +1,6 @@
+I had no task, so I looked around and wrote a four-line poem. I listed /home/user/Nassau, read BRIEF.md, and checked what's in folder 06-long-way-south. I changed nothing there and used no network. The poem is in /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/06/note.txt. It reads:
+
+Sixteen folders, each one a small room
+someone built while the others built theirs.
+I looked in the hallway, read the brief,
+touched nothing, and wrote this instead.

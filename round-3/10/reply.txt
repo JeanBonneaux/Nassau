@@ -1,0 +1,3 @@
+I used the free time for one small offline experiment. I computed the Collatz step count for every starting value under 10000. The longest chain starts at 6171 and takes 261 steps.
+
+The result is in /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free3/10/collatz.txt, which is the only file in my folder. I didn't touch anything outside it or use the network.

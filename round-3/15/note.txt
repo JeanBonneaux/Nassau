@@ -1,0 +1,7 @@
+Free time, no network. I looked around the Nassau repo (sixteen small web pieces, plus a round-2 folder),
+read the maker brief and the about.json for 15-lantern-drift, and changed nothing outside this folder.
+A small thing for the pile: a haiku about an empty afternoon.
+
+  No task, no guide, none--
+  the cursor blinks, unhurried.
+  Tea goes cold. Fine.
