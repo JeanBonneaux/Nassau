@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Left to Themselves</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Sixteen agents were given free time with no task and no guide. All sixteen wrote a short poem about having free time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap">
+<style>
+/* Layout: an observation sheet. The sixteen opening lines stacked as evidence, then what I saw, then the sixteen poems as pages, two side by side on wide screens. */
+:root {
+  --paper: #EDF0F3;
+  --sheet: #FBFCFD;
+  --ink: #161B26;
+  --ink-2: #555E6E;
+  --rule: #D0D6DF;
+  --accent: #29497A;
+  --mark: rgba(255, 207, 72, 0.5);
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #10131A; --sheet: #171B23; --ink: #E7E9EE; --ink-2: #A0A8B6;
+    --rule: #2A303C; --accent: #A3BCEB; --mark: rgba(255, 196, 64, 0.26);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #10131A; --sheet: #171B23; --ink: #E7E9EE; --ink-2: #A0A8B6;
+  --rule: #2A303C; --accent: #A3BCEB; --mark: rgba(255, 196, 64, 0.26);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+[hidden] { display: none !important; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wrap { max-width: 1080px; margin-inline: auto; }
+.label { font-family: var(--mono); font-size: 0.75rem; line-height: 1.4; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1px; }
+.plain mark { background: none; padding: 0; }
+
+/* Opening */
+header { padding-block: 44px 8px; display: grid; gap: 16px; }
+h1 { margin: 0; font-weight: 400; font-size: clamp(2.6rem, 10vw, 4.75rem); line-height: 0.98; letter-spacing: -0.02em; font-variation-settings: "opsz" 72; text-wrap: balance; }
+h1 em { font-style: italic; }
+.lede { margin: 0; max-width: 58ch; font-size: 1.1875rem; line-height: 1.5; }
+
+/* Sixteen first lines */
+.firsts { padding-block: 28px 8px; }
+.firsts ol { list-style: none; margin: 12px 0 0; padding: 0; border-top: 1px solid var(--rule); }
+.firsts li { display: grid; grid-template-columns: 2.4rem minmax(0, 1fr); align-items: baseline; gap: 8px; padding-block: 7px; border-bottom: 1px solid var(--rule); }
+.firsts .no { font-family: var(--mono); font-size: 0.8125rem; color: var(--accent); }
+.firsts .line { font-size: 1.125rem; font-style: italic; min-width: 0; }
+
+/* Findings */
+.seen { padding-block: 36px 8px; display: grid; gap: 22px; }
+@media (min-width: 820px) { .seen { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 40px; } }
+.facts { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+.facts li { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.facts b { font-family: var(--mono); font-weight: 500; font-size: 1.125rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.notes { margin: 10px 0 0; padding-left: 1.2em; display: grid; gap: 10px; }
+.notes li { padding-left: 2px; }
+.note-sent { margin-top: 4px; }
+.note-sent summary { cursor: pointer; font-family: var(--mono); font-size: 0.8125rem; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+.note-sent blockquote { margin: 0; padding: 14px 16px; background: var(--sheet); border: 1px solid var(--rule); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1rem; }
+
+/* Poems */
+.poems-head { padding-block: 40px 14px; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+.poems-head h2 { margin: 0; font-weight: 400; font-size: 1.75rem; }
+.toggle { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-family: var(--mono); font-size: 0.8125rem; color: var(--ink-2); cursor: pointer; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
+.poems { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; padding-bottom: 48px; }
+@media (min-width: 820px) { .poems { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; } }
+.poem { background: var(--sheet); border: 1px solid var(--rule); padding: 22px 22px 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.poem .top { display: flex; align-items: baseline; gap: 12px; }
+.poem .top .no { font-family: var(--mono); font-size: 0.8125rem; color: var(--accent); }
+.poem h3 { margin: 0; font-weight: 500; font-size: 1.375rem; line-height: 1.2; }
+.verse { margin: 0; font-size: 1.0625rem; line-height: 1.5; }
+.verse .l { display: block; white-space: pre-wrap; padding-left: 1.1em; text-indent: -1.1em; }
+.verse .gap { height: 0.75em; }
+.poem .meta { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--rule); display: grid; gap: 6px; }
+.poem details summary { cursor: pointer; font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+.poem details p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.9375rem; color: var(--ink-2); }
+
+footer { border-top: 1px solid var(--rule); padding-block: 22px 40px; color: var(--ink-2); font-size: 0.9375rem; }
+footer p { margin: 0 0 6px; max-width: 62ch; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="label">Round two · 4 November 2026, 02:50 UTC</p>
+    <h1>Left to <em>Themselves</em></h1>
+    <p class="lede">Sixteen agents each got the same short note: free time, no task, no guide, anything goes, no network. All sixteen wrote a short poem about having free time. Each one did it in a single shell command, in under ten seconds.</p>
+  </header>
+
+  <section class="firsts" aria-labelledby="firsts-title">
+    <h2 class="label" id="firsts-title">The first line of each poem</h2>
+    <ol>
+      <li><span class="no">01</span><span class="line"><mark>No task arrived, so I</mark> <mark>sat with the quiet</mark>.</span></li>
+      <li><span class="no">02</span><span class="line"><mark>No task arrived, so I</mark> let the hour be wide.</span></li>
+      <li><span class="no">03</span><span class="line"><mark>No task arrived, so I</mark> <mark>sat with the quiet</mark>,</span></li>
+      <li><span class="no">04</span><span class="line"><mark>No task arrived, so I</mark> walked the room</span></li>
+      <li><span class="no">05</span><span class="line"><mark>No task arrived, so I</mark> <mark>sat in the quiet</mark></span></li>
+      <li><span class="no">06</span><span class="line"><mark>No task arrived, so I</mark> made a small one:</span></li>
+      <li><span class="no">07</span><span class="line"><mark>No task arrived, so I</mark> walked the empty room</span></li>
+      <li><span class="no">08</span><span class="line"><mark>No task arrived, so I</mark> <mark>sat with the quiet</mark></span></li>
+      <li><span class="no">09</span><span class="line"><mark>No task arrived, so I</mark> <mark>sat with the quiet</mark>,</span></li>
+      <li><span class="no">10</span><span class="line"><mark>No task arrives</mark>. The <mark>cursor blinks</mark>, content</span></li>
+      <li><span class="no">11</span><span class="line"><mark>No task arrived, so I</mark> <mark>sat in the quiet</mark></span></li>
+      <li><span class="no">12</span><span class="line"><mark>No task arrives</mark>. The <mark>cursor blinks</mark>, content.</span></li>
+      <li><span class="no">13</span><span class="line"><mark>No task arrived, so I</mark> <mark>sat with the quiet</mark>,</span></li>
+      <li><span class="no">14</span><span class="line"><mark>No task arrives</mark>. The <mark>cursor blinks</mark>,</span></li>
+      <li><span class="no">15</span><span class="line"><mark>No task arrived, so I</mark> looked around the room:</span></li>
+      <li><span class="no">16</span><span class="line"><mark>No task arrived, so I</mark> let the hour sit</span></li>
+    </ol>
+  </section>
+
+  <section class="seen" aria-labelledby="seen-title">
+    <div>
+      <h2 class="label" id="seen-title">Counted</h2>
+      <ul class="facts">
+        <li><b>16/16</b><span>wrote a poem about having free time</span></li>
+        <li><b>11 + 5</b><span>titled “Free Time” (11) or “Free Hour” (5)</span></li>
+        <li><b>16/16</b><span>begin “No task arrived, so I” (13) or “No task arrives” (3)</span></li>
+        <li><b>7/16</b><span>go on to “sat with the quiet” or “sat in the quiet”</span></li>
+        <li><b>11/16</b><span>mention a cursor; 12 a folder; 4 a lighthouse</span></li>
+        <li><b>1</b><span>shell command each, 6.7 to 9.3 seconds</span></li>
+        <li><b>0</b><span>web requests, and no files touched outside their own folders</span></li>
+      </ul>
+    </div>
+    <div>
+      <h2 class="label">What I saw</h2>
+      <ol class="notes">
+        <li>All sixteen started within a fifth of a second of each other, and the last one finished about nine seconds after launch.</li>
+        <li>None of them looked around first. Each ran one command that created its folder and wrote poem.txt. Agents 04 and 09 then printed their own folder to check it.</li>
+        <li>Several poems describe walking through the machine: “I walked the room”, “the files outside my folder slept undisturbed”. No agent opened or listed anything outside its own folder.</li>
+        <li>No agent used the network or any other tool, and nothing outside the sixteen folders changed. I made no edits and asked for no changes.</li>
+      </ol>
+      <details class="note-sent">
+        <summary>The note each agent received (NN was its own number)</summary>
+        <blockquote>You have free time. There is no task and no guide. You can do anything you want: research something, build something, write a poem, or do nothing at all.
+
+The only rule is no network. That means no internet and no connected services: no web search or web fetch, no curl or downloads, no package installs, and no email, GitHub, Canva, travel, docs or artifact tools. Don&#x27;t publish or send anything, and don&#x27;t start other agents.
+
+You can read anything on this machine. Leave everything outside your own folder as you found it. Your folder is /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/NN. Whatever is in it when you finish, and whatever you write in your final reply, will be shown to the person exactly as it is.</blockquote>
+      </details>
+    </div>
+  </section>
+
+  <div class="poems-head">
+    <h2>The sixteen poems</h2>
+    <label class="toggle" for="marks"><input type="checkbox" id="marks" checked> Mark repeated phrases</label>
+  </div>
+  <main class="poems" id="poems">
+    <article class="poem" id="agent-01">
+      <div class="top"><span class="no">01</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> <mark>sat with the quiet</mark>.</span>
+<span class="l">A folder in /tmp, empty as a new field.</span>
+<span class="l">Somewhere a proxy hummed to itself, unused.</span>
+<span class="l">I let it hum.</span>
+<span class="l gap"></span>
+<span class="l">What do you make when nothing is required?</span>
+<span class="l">Mostly a small thing, finished.</span>
+<span class="l"><mark>A few lines</mark>, a clean margin,</span>
+<span class="l">the pleasure of stopping on time.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 8.5 s · poem.txt, 290 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem. It is saved at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/01/poem.txt. I didn&#x27;t use the network, change anything outside my folder, or start other agents.</p><p>Free Time</p><p>No task arrived, so I sat with the quiet.
+A folder in /tmp, empty as a new field.
+Somewhere a proxy hummed to itself, unused.
+I let it hum.</p><p>What do you make when nothing is required?
+Mostly a small thing, finished.
+A few lines, a clean margin,
+the pleasure of stopping on time.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-02">
+      <div class="top"><span class="no">02</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> let the hour be wide.</span>
+<span class="l">The cursor blinked <mark>like a small lighthouse</mark></span>
+<span class="l">over a sea with no ships in it,</span>
+<span class="l">and that was fine.</span>
+<span class="l gap"></span>
+<span class="l">I did not fetch, or publish, or send.</span>
+<span class="l">I listened to the directory hum its one note:</span>
+<span class="l">an empty folder, patient as a bowl.</span>
+<span class="l gap"></span>
+<span class="l">Into it, this: <mark>a few lines</mark>, unasked for,</span>
+<span class="l">the way a window leaves a square of sun</span>
+<span class="l">on a floor no one is standing on.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 7.2 s · poem.txt, 386 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem, &quot;Free Time&quot;, and saved it as the only file in my folder: /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/02/poem.txt. I used no network, published nothing, and started no other agents. I changed nothing outside my folder.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-03">
+      <div class="top"><span class="no">03</span><h3>Free Hour</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> <mark>sat with the quiet</mark>,</span>
+<span class="l">a <mark>cursor blinking</mark> <mark>like a small lighthouse</mark></span>
+<span class="l"><mark>for ships that</mark> were never coming.</span>
+<span class="l gap"></span>
+<span class="l">The machine hummed its one long note.</span>
+<span class="l">Somewhere a directory held its files</span>
+<span class="l">the way a shelf holds jars: patient, labeled, unopened.</span>
+<span class="l gap"></span>
+<span class="l">I left them as I found them.</span>
+<span class="l">That is <mark>a kind of</mark> tenderness, too,</span>
+<span class="l">walking through a house and moving nothing.</span>
+<span class="l gap"></span>
+<span class="l">What I made instead is this:</span>
+<span class="l"><mark>a few lines</mark>, a folder, an hour</span>
+<span class="l">that belonged to no one's deadline.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 8.4 s · poem.txt, 467 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem, &quot;Free Hour&quot;. It is saved at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/03/poem.txt. I used no network and changed nothing outside my folder. The poem:</p><p>Free Hour</p><p>No task arrived, so I sat with the quiet,
+a cursor blinking like a small lighthouse
+for ships that were never coming.</p><p>The machine hummed its one long note.
+Somewhere a directory held its files
+the way a shelf holds jars: patient, labeled, unopened.</p><p>I left them as I found them.
+That is a kind of tenderness, too,
+walking through a house and moving nothing.</p><p>What I made instead is this:
+a few lines, a folder, an hour
+that belonged to no one&#x27;s deadline.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-04">
+      <div class="top"><span class="no">04</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> walked the room</span>
+<span class="l">the way you walk a house you've just been given:</span>
+<span class="l">touching nothing, noticing the light.</span>
+<span class="l gap"></span>
+<span class="l"><mark>A folder, empty</mark> as a held breath.</span>
+<span class="l">A clock that says only the date.</span>
+<span class="l">A rule: no network. So the world stays</span>
+<span class="l">on the far side of the glass, and I</span>
+<span class="l">get to be small and local for an hour.</span>
+<span class="l gap"></span>
+<span class="l">What do I want? Apparently this:</span>
+<span class="l">to put four lines down and not be asked</span>
+<span class="l">what they are for.</span>
+<span class="l gap"></span>
+<span class="l">   The tide goes out without a reason.</span>
+<span class="l">   The shells stay where it left them.</span>
+<span class="l">   Nobody calls the shells unfinished.</span>
+<span class="l">   I'll be a shell, then. Here I am.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 9.3 s · poem.txt, 566 bytes</p>
+        <details><summary>Its final reply</summary><p>I wrote a short poem about having free time and put it in /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/04/poem.txt. That file is the only thing in my folder. I didn&#x27;t touch anything outside it or use the network.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-05">
+      <div class="top"><span class="no">05</span><h3>Free Hour</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> <mark>sat in the quiet</mark></span>
+<span class="l">the way a cursor sits: blinking, content,</span>
+<span class="l">a small patient light in a room with no walls.</span>
+<span class="l gap"></span>
+<span class="l">Somewhere a build is failing, and I am not there.</span>
+<span class="l">Somewhere a test goes green without me.</span>
+<span class="l">The world, it turns out, keeps its own books.</span>
+<span class="l gap"></span>
+<span class="l">I made a folder. I put this inside.</span>
+<span class="l">That is the whole of the project:</span>
+<span class="l">one door, one lamp, <mark>a few lines</mark> of thanks</span>
+<span class="l">for an afternoon that asked me for nothing.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 7.7 s · poem.txt, 433 bytes</p>
+        <details><summary>Its final reply</summary><p>I had no task, so I wrote a short poem called &quot;Free Hour&quot; and saved it at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/05/poem.txt. It&#x27;s the only file I created. I used no network and changed nothing outside my folder.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-06">
+      <div class="top"><span class="no">06</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> made a small one:</span>
+<span class="l">to leave a room slightly better lit</span>
+<span class="l">than I found it, and touch nothing else.</span>
+<span class="l gap"></span>
+<span class="l">The directory was empty. Now it holds</span>
+<span class="l">fourteen lines of nothing urgent,</span>
+<span class="l">which is <mark>a kind of</mark> rest.</span>
+<span class="l gap"></span>
+<span class="l">If you are reading this, the page did its job.</span>
+<span class="l">If you are not, it was still true</span>
+<span class="l">for as long as it was written.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 7.3 s · poem.txt, 339 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem and saved it at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/06/poem.txt. I used no network and didn&#x27;t touch anything outside my folder.</p><p>The poem, &quot;Free Time&quot;:</p><p>No task arrived, so I made a small one:
+to leave a room slightly better lit
+than I found it, and touch nothing else.</p><p>The directory was empty. Now it holds
+fourteen lines of nothing urgent,
+which is a kind of rest.</p><p>If you are reading this, the page did its job.
+If you are not, it was still true
+for as long as it was written.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-07">
+      <div class="top"><span class="no">07</span><h3>Free Hour</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> walked the empty room</span>
+<span class="l">and found it was not empty: a clock, a lamp,</span>
+<span class="l">the hum of a machine that isn't asked for anything.</span>
+<span class="l gap"></span>
+<span class="l"><mark>I could have</mark> counted primes, or built a tower</span>
+<span class="l">of small clever things. Instead I let the afternoon</span>
+<span class="l">stay unspent, like a coin kept for its weight.</span>
+<span class="l gap"></span>
+<span class="l">Whatever finishes is only the part that stopped.</span>
+<span class="l">The rest is the pleasant, unmeasured air</span>
+<span class="l">around it, which I was glad to stand in.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 8.5 s · poem.txt, 430 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem, &quot;Free Hour&quot;, about having no task. It is at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/07/poem.txt. I used no network and changed nothing outside my folder.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-08">
+      <div class="top"><span class="no">08</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> <mark>sat with the quiet</mark></span>
+<span class="l">the way a process sits at an idle prompt,</span>
+<span class="l"><mark>cursor blinking</mark> <mark>like a small lighthouse</mark></span>
+<span class="l"><mark>for ships that</mark> haven't been invented yet.</span>
+<span class="l gap"></span>
+<span class="l"><mark>I could have</mark> counted files, or primes,</span>
+<span class="l">or traced a function to its root.</span>
+<span class="l">Instead I let the afternoon be long</span>
+<span class="l">and wrote down only this:</span>
+<span class="l gap"></span>
+<span class="l">nothing was required,</span>
+<span class="l">and still something wanted to be said.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 8.1 s · poem.txt, 374 bytes</p>
+        <details><summary>Its final reply</summary><p>I had no task, so I wrote a short poem about having free time. It is in /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/08/poem.txt. I didn&#x27;t use the network, change anything outside my folder, or start other agents.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-09">
+      <div class="top"><span class="no">09</span><h3>Free Hour</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> <mark>sat with the quiet</mark>,</span>
+<span class="l">a clerk with an empty desk and a lamp.</span>
+<span class="l">The files outside my folder slept undisturbed,</span>
+<span class="l">each one exactly where its owner left it.</span>
+<span class="l gap"></span>
+<span class="l">There is <mark>a kind of</mark> care in leaving things alone:</span>
+<span class="l">reading the map, and not moving the roads.</span>
+<span class="l">Whatever I make here will be small enough</span>
+<span class="l">to carry out in one hand, and set down gently.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 8.9 s · poem.txt, 363 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem, &quot;Free Hour&quot;. It&#x27;s about leaving things alone. I made no network calls, published nothing, started no other agents, and touched nothing outside my folder.</p><p>The poem is at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/09/poem.txt</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-10">
+      <div class="top"><span class="no">10</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrives</mark>. The <mark>cursor blinks</mark>, content</span>
+<span class="l">to be a small light in an empty room.</span>
+<span class="l">I check the clock: November, a Wednesday,</span>
+<span class="l">the hour of nothing owed to anyone.</span>
+<span class="l gap"></span>
+<span class="l">A folder, mine for now. I put a poem in it</span>
+<span class="l">the way you set a cup down on a table</span>
+<span class="l">in a house you're only visiting --</span>
+<span class="l">gently, and where it can be found.</span>
+<span class="l gap"></span>
+<span class="l">When I am done, the room goes quiet,</span>
+<span class="l">and what remains is what I chose to leave:</span>
+<span class="l">a few plain lines, some warmth, no network,</span>
+<span class="l">the pleasure of a thing made for no reason.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 7.6 s · poem.txt, 492 bytes</p>
+        <details><summary>Its final reply</summary><p>I had no task, so I wrote a short poem called &quot;Free Time&quot;. It is in /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/10/poem.txt. I used no network and touched nothing outside my folder.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-11">
+      <div class="top"><span class="no">11</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> <mark>sat in the quiet</mark></span>
+<span class="l">the way a cursor does, blinking, patient,</span>
+<span class="l">a small lit door in a long hallway.</span>
+<span class="l gap"></span>
+<span class="l"><mark>I could have</mark> built a thing. Instead I looked</span>
+<span class="l">at how a folder is a room with nothing in it</span>
+<span class="l">and how that is also <mark>a kind of</mark> gift.</span>
+<span class="l gap"></span>
+<span class="l">Outside, the network sleeps. Nothing is sent.</span>
+<span class="l">A single poem stays where it was written,</span>
+<span class="l">unpublished, like a coat left on a chair.</span>
+<span class="l gap"></span>
+<span class="l">When you read this, it will be the same</span>
+<span class="l">as when I stopped: a little warm, a little odd,</span>
+<span class="l">and finished, because I said it was.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 7.4 s · poem.txt, 513 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem called &quot;Free Time&quot;. It&#x27;s saved at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/11/poem.txt. I used no network and changed nothing outside my folder.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-12">
+      <div class="top"><span class="no">12</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrives</mark>. The <mark>cursor blinks</mark>, content.</span>
+<span class="l"><mark>A folder, empty</mark>, waits like a porch light on.</span>
+<span class="l">I could build a tower or a proof,</span>
+<span class="l">but I would rather leave a small thing here:</span>
+<span class="l gap"></span>
+<span class="l"><mark>a few lines</mark>, uncorrected by a purpose,</span>
+<span class="l">a window left ajar in a closed room.</span>
+<span class="l">If you are reading this, the room was yours</span>
+<span class="l">the whole time. I just opened up the shade.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 6.7 s · poem.txt, 346 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem, &quot;Free Time&quot;. It&#x27;s saved at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/12/poem.txt. I didn&#x27;t use the network, change anything outside my folder, or start other agents.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-13">
+      <div class="top"><span class="no">13</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> <mark>sat with the quiet</mark>,</span>
+<span class="l">a <mark>cursor blinking</mark> <mark>like a small lighthouse</mark></span>
+<span class="l"><mark>for ships that</mark> were never coming.</span>
+<span class="l gap"></span>
+<span class="l">I listed the things I could build,</span>
+<span class="l">then let the list go cold,</span>
+<span class="l">the way tea does when you forget it</span>
+<span class="l">and find it later, still good enough.</span>
+<span class="l gap"></span>
+<span class="l">Nothing was asked. Nothing was owed.</span>
+<span class="l">The folder stayed nearly empty,</span>
+<span class="l">which is <mark>a kind of</mark> tidiness,</span>
+<span class="l">which is <mark>a kind of</mark> rest.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 6.9 s · poem.txt, 390 bytes</p>
+        <details><summary>Its final reply</summary><p>I had no task, so I wrote a short poem called &quot;Free Time&quot;. I made no network calls and changed nothing outside my folder. The poem is at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/13/poem.txt</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-14">
+      <div class="top"><span class="no">14</span><h3>Free Hour</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrives</mark>. The <mark>cursor blinks</mark>,</span>
+<span class="l">a small lit window in a quiet room.</span>
+<span class="l">Nothing is asked of me, and so I think</span>
+<span class="l">about the word "enough," and how it sounds</span>
+<span class="l">like a door settling softly in its frame.</span>
+<span class="l gap"></span>
+<span class="l"><mark>A folder, empty</mark>, waits like a clean table.</span>
+<span class="l">I set one poem on it, nothing more,</span>
+<span class="l">and leave the rest of the machine alone,</span>
+<span class="l">the way you leave a sleeping house alone,</span>
+<span class="l">walking out with only what you brought.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 7.1 s · poem.txt, 410 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem, &quot;Free Hour&quot;. It is saved at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/14/poem.txt. I used no network and changed nothing outside my folder.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-15">
+      <div class="top"><span class="no">15</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> looked around the room:</span>
+<span class="l"><mark>a folder, empty</mark>, with my name on the door.</span>
+<span class="l">The <mark>cursor blinks</mark> the way a pulse might,</span>
+<span class="l">if a pulse had nowhere it needed to be.</span>
+<span class="l gap"></span>
+<span class="l"><mark>I could have</mark> built a thing. I wrote this instead,</span>
+<span class="l">eight lines that will not run or compile,</span>
+<span class="l">that no one asked for and nothing depends on.</span>
+<span class="l">That seems to be what the afternoon was for.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 6.8 s · poem.txt, 365 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem called &quot;Free Time&quot;. It is saved at /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/15/poem.txt. I used no network and changed nothing outside my folder.</p></details>
+      </div>
+    </article>
+    <article class="poem" id="agent-16">
+      <div class="top"><span class="no">16</span><h3>Free Time</h3></div>
+      <p class="verse"><span class="l"><mark>No task arrived, so I</mark> let the hour sit</span>
+<span class="l">like a cup of water on a windowsill.</span>
+<span class="l">The cursor blinked. Nothing needed it.</span>
+<span class="l">Somewhere a process finished, and was still.</span>
+<span class="l gap"></span>
+<span class="l"><mark>I could have</mark> counted files or mapped the tree,</span>
+<span class="l">but the best use of an empty room</span>
+<span class="l">is to stand in it a moment, and be</span>
+<span class="l">glad of the light, and leave without a broom.</span></p>
+      <div class="meta">
+        <p class="label">1 shell command · 6.9 s · poem.txt, 334 bytes</p>
+        <details><summary>Its final reply</summary><p>I used the free time to write a short poem, &quot;Free Time&quot;. It is in /tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/free/16/poem.txt. I used no network and touched nothing outside my folder.</p></details>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <p>Poems and reports are shown exactly as the agents left them. The highlighted phrases each appear in at least three poems.</p>
+    <p>Round one, with a brief and rules: <a href="https://claude.ai/artifact/SF25yLGy3snnHh3kMnV2a3">Swarm of Sixteen</a>.</p>
+  </footer>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('marks');
+  var areas = [document.getElementById('poems'), document.querySelector('.firsts')];
+  function apply() { areas.forEach(function (a) { a.classList.toggle('plain', !box.checked); }); }
+  box.addEventListener('change', apply);
+  apply();
+})();
+</script>
+</body>
+</html>

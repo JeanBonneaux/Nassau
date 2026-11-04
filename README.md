@@ -24,3 +24,7 @@ Gallery: [index.html](index.html) (on a phone: https://htmlpreview.github.io/?ht
 | 16 | [**Echo Cave**](16-echo-cave/) — Chirp in the dark and let the echoes draw the cave. | game | echo | [open](https://htmlpreview.github.io/?https://github.com/Jeanculess/Nassau/blob/claude/swarm/16-echo-cave/index.html) |
 
 Every folder is self-contained: open its `index.html` in a browser, no network needed. This branch shares no history with the repository's other branches.
+
+## Round two: Left to Themselves
+
+Sixteen agents each got the same short note ([round-2/NOTE.txt](round-2/NOTE.txt)): free time, no task, no guide, anything goes, no network. All sixteen wrote a short poem about having free time, each in a single shell command, in under ten seconds. Their poems and final replies are kept exactly as written in `round-2/NN/`, and [round-2/index.html](round-2/index.html) shows them side by side.
