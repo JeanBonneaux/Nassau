@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Small Hours FM</title>
+<meta name="description" content="A night radio with six invented stations hiding in the static. Drag the dial to find them. Sound on.">
+<style>
+:root{--bg:#120d0a;--panel:#1d1510;--amber:#ffb347;--cream:#f3e3c3;--red:#ff5a3c;--dim:#8a6f4d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--cream);font-family:system-ui,-apple-system,sans-serif;overflow:hidden;overscroll-behavior:none}
+main{height:100dvh;display:flex;flex-direction:column;gap:10px;padding:max(10px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));max-width:560px;margin:0 auto;background:radial-gradient(120% 60% at 50% 0%,#2a1c12 0,var(--bg) 70%)}
+header{display:flex;justify-content:space-between;align-items:center;min-height:30px}
+header a{color:var(--dim);font-size:16px;text-decoration:none;padding:6px 0}
+h1{font-size:16px;margin:0;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);font-weight:600}
+.panel{background:var(--panel);border:1px solid #3a2a1c;border-radius:14px;padding:12px 14px;box-shadow:inset 0 0 30px #0008;flex:0 0 auto}
+.freq{font:600 44px/1 ui-monospace,Menlo,monospace;color:var(--amber);text-shadow:0 0 14px #ffb34788;display:flex;align-items:baseline;gap:8px}
+.freq small{font-size:16px;color:var(--dim);text-shadow:none}
+#name{font:600 20px/1.2 ui-monospace,Menlo,monospace;margin-top:8px;min-height:26px;letter-spacing:.04em;color:var(--cream)}
+#line{font-size:16px;line-height:1.35;min-height:44px;margin-top:4px;color:#d3b98f;font-style:italic;overflow-wrap:anywhere}
+canvas{display:block;width:100%;border-radius:12px}
+#scope{height:84px;background:#0b0806;border:1px solid #3a2a1c;flex:0 0 auto}
+#dial{height:190px;background:#0b0806;border:1px solid #4a3623;touch-action:none;cursor:grab;flex:0 0 auto}
+.row{display:flex;gap:8px;justify-content:center;flex:0 0 auto}
+.row button{min-height:44px;min-width:44px;border-radius:10px;border:1px solid #4a3623;background:#24190f;color:var(--cream);font:600 16px ui-monospace,Menlo,monospace;padding:0 6px;flex:1;cursor:pointer}
+.row button.lit{background:#3a2610;border-color:var(--amber);color:var(--amber);box-shadow:0 0 12px #ffb34744}
+.row button:disabled{color:#5b4630;cursor:default}
+.nudge{display:flex;gap:8px}
+.nudge button{flex:1;min-height:48px;border-radius:12px;border:1px solid #4a3623;background:#24190f;color:var(--amber);font-size:18px;cursor:pointer}
+#hint{font-size:16px;color:var(--dim);text-align:center;min-height:22px;flex:0 0 auto}
+#start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#120d0aee;z-index:5;text-align:center;padding:24px}
+#start button{font:600 20px system-ui,sans-serif;color:#1a0f06;background:var(--amber);border:0;border-radius:40px;padding:16px 34px;min-height:56px;box-shadow:0 0 30px #ffb34766;cursor:pointer}
+#start p{margin:0;max-width:300px;color:#d3b98f;font-size:16px;line-height:1.45}
+#start h2{margin:0;font-size:30px;letter-spacing:.14em;color:var(--amber);text-transform:uppercase}
+@media (max-height:640px){#scope{height:56px}.freq{font-size:34px}#dial{height:100px}}
+</style>
+</head>
+<body>
+<main>
+<header><a href="../index.html">← Gallery</a><h1>Small Hours FM</h1><span style="width:70px"></span></header>
+<section class="panel">
+ <div class="freq"><span id="fr">98.0</span><small>MHz</small></div>
+ <div id="name">~ static ~</div>
+ <div id="line">Drag the dial. Somebody is up.</div>
+</section>
+<canvas id="scope"></canvas>
+<canvas id="dial"></canvas>
+<div class="nudge"><button id="dn" aria-label="Tune down">◀ 0.1</button><button id="up" aria-label="Tune up">0.1 ▶</button></div>
+<div class="row" id="presets"></div>
+<div id="hint">0 of 6 stations found</div>
+</main>
+<div id="start"><h2>Small Hours FM</h2><p>Six stations are broadcasting somewhere between the static. Turn the dial and find them all. Sound on.</p><button id="go">Switch on</button></div>
+<script>
+(()=>{
+const LO=87.5,HI=108.5,PPM=96;
+const $=id=>document.getElementById(id);
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+let ctx=null,bus,lp,noiseBuf,noiseGain,whist,whistGain,analyser,sdata;
+let f=98.0,vel=0,target=null,dragging=false,last=0;
+let found=new Set();
+try{(JSON.parse(localStorage.getItem('shfm')||'[]')).forEach(i=>found.add(i))}catch(e){}
+const uiq=[];
+const ui=(t,fn)=>uiq.push({t,fn});
+
+// ---------- stations ----------
+const S=[
+{f:88.7,name:'Lullaby Hour',kind:'bells'},
+{f:91.9,name:'The Numbers',kind:'num'},
+{f:95.3,name:'Quarter Past Nobody',kind:'jazz'},
+{f:98.6,name:'Weather for Nobody',kind:'wx'},
+{f:102.1,name:'Lighthouse Theremin',kind:'thr'},
+{f:106.4,name:'Dead Air',kind:'dead'}
+];
+S.forEach((s,i)=>{s.i=i;s.s=0;s.line='';s.t=0});
+
+function env(g,t,vol,att,dur){g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.exponentialRampToValueAtTime(0.0001,t+dur)}
+function voice(st,type,fr,t,dur,vol,att,fr2){
+  const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=fr;
+  env(g,t,vol,att||0.005,dur);o.connect(g);g.connect(st.out);o.start(t);o.stop(t+dur+0.05);return o}
+function burst(st,t,dur,vol,hp){
+  const n=ctx.createBufferSource();n.buffer=noiseBuf;const g=ctx.createGain(),h=ctx.createBiquadFilter();
+  h.type='highpass';h.frequency.value=hp;env(g,t,vol,0.002,dur);n.connect(h);h.connect(g);g.connect(st.out);n.start(t,Math.random());n.stop(t+dur+0.05)}
+
+function initStation(st){
+  st.out=ctx.createGain();st.out.gain.value=0;st.out.connect(bus);st.t=ctx.currentTime+0.15;
+  if(st.kind==='bells'){st.k=3;st.n=0}
+  if(st.kind==='jazz'){st.beat=0}
+  if(st.kind==='num'){st.k=0;st.digits=''}
+  if(st.kind==='wx'){
+    [[55,0.2],[82.6,0.14],[130.9,0.1],[164.8,0.05]].forEach(([fr,v],j)=>{
+      [-4,4].forEach(d=>{const o=ctx.createOscillator(),g=ctx.createGain(),q=ctx.createBiquadFilter();
+        o.type='sawtooth';o.frequency.value=fr;o.detune.value=d;q.type='lowpass';q.frequency.value=420;q.Q.value=2;
+        g.gain.value=v*0.5;o.connect(q);q.connect(g);g.connect(st.out);o.start();
+        const l=ctx.createOscillator(),lg=ctx.createGain();l.frequency.value=0.07+j*0.03;lg.gain.value=200;l.connect(lg);lg.connect(q.frequency);l.start()})});
+    st.k=0}
+  if(st.kind==='thr'){
+    const o=ctx.createOscillator(),o2=ctx.createOscillator(),a=ctx.createGain(),v=ctx.createOscillator(),vg=ctx.createGain(),d=ctx.createDelay(1),fb=ctx.createGain(),dg=ctx.createGain();
+    o.type='sine';o2.type='sine';v.frequency.value=5.4;vg.gain.value=7;v.connect(vg);vg.connect(o.frequency);vg.connect(o2.frequency);
+    a.gain.value=0;const og=ctx.createGain();og.gain.value=0.2;o.connect(a);o2.connect(og);og.connect(a);
+    a.connect(st.out);d.delayTime.value=0.42;fb.gain.value=0.45;dg.gain.value=0.5;a.connect(d);d.connect(fb);fb.connect(d);d.connect(dg);dg.connect(st.out);
+    o.start();o2.start();v.start();st.o=o;st.o2=o2;st.a=a;st.m=62;st.dir=1}
+  if(st.kind==='dead'){st.k=0;st.next=ctx.currentTime+5}
+}
+
+const PENT=[0,2,4,7,9],MINP=[0,3,5,7,10];
+const TITLES=['Lullaby no. 4 (in pieces)','Music box, wound by hand','A tune for the one still awake','Lullaby no. 9, slightly slower'];
+const NUMTOP=['Attention. Attention.','Message for the lamp-lighter','Listen carefully, then forget'];
+const WX=['Tonight: low cloud, mostly regret.','Winds variable, four to nine secrets.','Tomorrow: a small rain, indoors only.','Fog expected between the third and fourth floor.','Visibility good. Nothing worth seeing.','A front of quiet moves in from the west.','Overnight low of 3. Bring a blanket and a reason.'];
+const PROG=[[50,53,57,60,38],[55,59,62,65,43],[48,52,55,59,36],[48,52,55,59,36]];
+const TH=['Keeping watch. Nothing to report.','The lamp turns. The sea does not answer.','Ships passing, all of them kind.','A long note held for anyone out there.'];
+
+function run(st,h){
+  while(st.t<h){
+    const t=st.t,on=st.s>0.01;
+    if(st.kind==='bells'){
+      if(st.n%16===0)ui(t,()=>st.line=TITLES[(st.n/16)%TITLES.length|0]);
+      if(Math.random()<0.8){st.k=Math.max(0,Math.min(9,st.k+pick([-2,-1,-1,1,1,2])));
+        if(on){const m=72+PENT[st.k%5]+12*(st.k>=5?1:0),fr=mtof(m);
+          voice(st,'sine',fr,t,2.2,0.22,0.004);voice(st,'sine',fr*2.76,t,0.5,0.05,0.002);voice(st,'sine',fr*5.4,t,0.15,0.02,0.002)}}
+      st.n++;st.t+=0.42*(Math.random()<0.2?2:1);
+    }else if(st.kind==='jazz'){
+      const b=60/84,bi=st.beat%16,ch=PROG[bi>>2],bb=bi%4;
+      if(bi===0)ui(t,()=>st.line=pick(['Tonight’s standard, in D minor','Brushes and a lamp-lit room','Last set. The bartender is humming.','Ii, V, I. Then home.']));
+      if(on){
+        const bass=bb===0?ch[4]:(bb===3?ch[4]+pick([1,-1,7]):ch[pick([0,1,2])]-12);
+        voice(st,'triangle',mtof(bass),t,b*0.95,0.45,0.01);
+        if(bb===0)ch.slice(0,4).forEach(m=>{voice(st,'sine',mtof(m),t+Math.random()*0.02,1.6,0.09,0.01);voice(st,'sine',mtof(m)*2,t,0.6,0.025,0.005)});
+        if(bb===2&&Math.random()<0.7)ch.slice(0,4).forEach(m=>voice(st,'sine',mtof(m),t+b*0.66,0.5,0.07,0.01));
+        burst(st,t,0.08,0.09,6000);if(bb===1||bb===3)burst(st,t+b*0.66,0.06,0.06,6000);
+      }
+      st.beat++;st.t+=b;
+    }else if(st.kind==='num'){
+      if(st.k===0){ui(t,()=>st.line=pick(NUMTOP));st.digits='';if(on){voice(st,'sine',1100,t,0.35,0.2,0.01);voice(st,'sine',1650,t+0.35,0.45,0.2,0.01)}st.t+=1.2;st.k=1}
+      else if(st.k<=15){const d=Math.floor(Math.random()*10);if(on)voice(st,'square',380+d*75,t,0.2,0.07,0.005);
+        const dd=st.k%3===0?d+' · ':d+' ';st.dg=(st.dg||'')+dd;const sn=st.dg;ui(t,()=>st.line='▸ '+sn);
+        st.t+=0.33+(st.k%3===0?0.4:0);st.k++}
+      else{st.dg='';st.t+=3.2;st.k=0}
+    }else if(st.kind==='wx'){
+      const line=pick(WX);ui(t,()=>st.line=line);
+      if(on){const o=Math.random()*3+1.5;[0,0.18,0.36].forEach((x,j)=>{if(Math.random()<0.8)voice(st,'sine',1320,t+o+x,0.09,0.06,0.003)})}
+      st.t+=7.5;
+    }else if(st.kind==='thr'){
+      const sc=MINP,m0=st.m;let nm=m0+pick([-5,-3,-2,0,2,3,5])*1;nm=Math.max(52,Math.min(79,nm));
+      const dur=pick([0.9,1.3,1.8,2.4]);const mm=Math.round(nm);
+      const fr=mtof(mm);
+      st.o.frequency.setTargetAtTime(fr,t,0.14);st.o2.frequency.setTargetAtTime(fr*2,t,0.14);
+      st.a.gain.setTargetAtTime(0.32,t,0.12);st.a.gain.setTargetAtTime(0.06,t+dur*0.85,0.1);
+      st.m=nm;st.t+=dur;
+      if(Math.random()<0.2)ui(t,()=>st.line=pick(TH));else if(!st.line)ui(t,()=>st.line=TH[0]);
+    }else if(st.kind==='dead'){
+      voice(st,'sine',62,t,0.3,0.7,0.01).frequency.exponentialRampToValueAtTime(34,t+0.22);
+      voice(st,'sine',55,t+0.3,0.28,0.5,0.01).frequency.exponentialRampToValueAtTime(32,t+0.5);
+      if(t>st.next){st.next=t+9+Math.random()*8;
+        const o=ctx.createOscillator(),g=ctx.createGain(),f1=ctx.createBiquadFilter(),f2=ctx.createBiquadFilter();
+        o.type='sawtooth';o.frequency.setValueAtTime(125,t+0.5);o.frequency.linearRampToValueAtTime(110,t+1.0);o.frequency.linearRampToValueAtTime(150,t+1.6);
+        [f1,f2].forEach(q=>{q.type='bandpass';q.Q.value=7});
+        f1.frequency.setValueAtTime(650,t+0.5);f1.frequency.linearRampToValueAtTime(420,t+1.2);f2.frequency.setValueAtTime(1700,t+0.5);f2.frequency.linearRampToValueAtTime(800,t+1.2);
+        env(g,t+0.5,0.9,0.1,1.2);o.connect(f1);o.connect(f2);f1.connect(g);f2.connect(g);g.connect(st.out);o.start(t+0.5);o.stop(t+1.8);
+        ui(t+0.5,()=>st.line='… hello?');ui(t+3.6,()=>st.line='…')}
+      else if(!st.line)ui(t,()=>st.line='(a heartbeat, a room, nobody)');
+      st.t+=1.0;
+    }
+  }
+}
+
+// ---------- audio ----------
+function startAudio(){
+  if(ctx){ctx.resume();return}
+  const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC();
+  const comp=ctx.createDynamicsCompressor();const master=ctx.createGain();master.gain.value=0.85;
+  analyser=ctx.createAnalyser();analyser.fftSize=1024;sdata=new Uint8Array(analyser.fftSize);
+  master.connect(comp);comp.connect(analyser);analyser.connect(ctx.destination);
+  bus=ctx.createGain();const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=170;
+  lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1500;lp.Q.value=0.7;
+  bus.connect(hp);hp.connect(lp);lp.connect(master);
+  noiseBuf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);const d=noiseBuf.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  const ns=ctx.createBufferSource();ns.buffer=noiseBuf;ns.loop=true;const nb=ctx.createBiquadFilter();nb.type='bandpass';nb.frequency.value=2600;nb.Q.value=0.4;
+  noiseGain=ctx.createGain();noiseGain.gain.value=0.3;ns.connect(nb);nb.connect(noiseGain);noiseGain.connect(master);ns.start();
+  whist=ctx.createOscillator();whistGain=ctx.createGain();whistGain.gain.value=0;whist.connect(whistGain);whistGain.connect(master);whist.start();
+  S.forEach(initStation);
+  setInterval(()=>{const h=ctx.currentTime+0.3;S.forEach(st=>run(st,h));
+    // crackle
+    const c=1-clarity;if(Math.random()<0.5*c+0.05){const n=ctx.createBufferSource(),g=ctx.createGain();n.buffer=noiseBuf;
+      const t=ctx.currentTime+Math.random()*0.06;env(g,t,0.25*c+0.04,0.001,0.012+Math.random()*0.02);n.connect(g);g.connect(master);n.start(t,Math.random());n.stop(t+0.05)}
+  },60);
+}
+
+// ---------- tuning state ----------
+let clarity=0,best=null,dwell=0,toast='',toastT=0;
+function signals(){
+  let c=0,bi=null,nd=9;
+  for(const s of S){const d=Math.abs(f-s.f);s.d=d;s.s=Math.exp(-Math.pow(d/0.34,2));if(s.s>c){c=s.s;bi=s}if(d<nd)nd=d}
+  clarity=c;best=bi;return nd;
+}
+function applyAudio(nd,dt){
+  if(!ctx)return;const now=ctx.currentTime;
+  S.forEach(st=>st.out.gain.setTargetAtTime(st.s>0.004?st.s:0,now,0.03));
+  noiseGain.gain.setTargetAtTime(0.02+0.3*(1-clarity*clarity),now,0.05);
+  lp.frequency.setTargetAtTime(1300+5200*clarity,now,0.05);
+  whist.frequency.setTargetAtTime(60+nd*2600,now,0.04);
+  whistGain.gain.setTargetAtTime(0.045*Math.min(1,clarity*4)*(1-clarity)*(Math.abs(vel)>0.01||dragging?1:0.35),now,0.05);
+}
+function garble(name,c){
+  const gl='#%*~+=?/<>_';let o='';
+  for(const ch of name){if(ch===' '){o+=' ';continue}o+=Math.random()<Math.pow(c,0.7)*1.05-0.1?ch:gl[Math.random()*gl.length|0]}
+  return o}
+let gtime=0,gtxt='';
+function discover(st){
+  if(found.has(st.i))return;found.add(st.i);
+  try{localStorage.setItem('shfm',JSON.stringify([...found]))}catch(e){}
+  toast=found.size===6?'That was all of them. You have heard the whole night.':'Found: '+st.name;toastT=performance.now();renderPresets();
+}
+function renderPresets(){
+  const p=$('presets');p.innerHTML='';
+  S.forEach(st=>{const b=document.createElement('button'),ok=found.has(st.i);
+    b.textContent=ok?st.f.toFixed(1):'?';b.disabled=!ok;b.className=ok?'lit':'';b.setAttribute('aria-label',ok?'Jump to '+st.name:'Undiscovered station');
+    b.onclick=()=>{target=st.f;vel=0;startAudio()};p.appendChild(b)});
+  $('hint').textContent=found.size===6?'All 6 stations found. The dial is yours.':found.size+' of 6 stations found'+(found.size===0?' — drag the dial':'');
+}
+
+// ---------- drawing ----------
+const dial=$('dial'),scope=$('scope');const dx=dial.getContext('2d'),sx=scope.getContext('2d');
+let DW=0,DH=0,SW=0,SH=0,dpr=1;
+function size(){dpr=Math.min(window.devicePixelRatio||1,3);
+  [[dial,'DW','DH'],[scope,'SW','SH']].forEach(([c,a,b])=>{const r=c.getBoundingClientRect();c.width=Math.round(r.width*dpr);c.height=Math.round(r.height*dpr)});
+  let r=dial.getBoundingClientRect();DW=r.width;DH=r.height;r=scope.getBoundingClientRect();SW=r.width;SH=r.height}
+addEventListener('resize',size);
+
+function drawDial(){
+  dx.setTransform(dpr,0,0,dpr,0,0);dx.clearRect(0,0,DW,DH);
+  const cx=DW/2,g=dx.createLinearGradient(0,0,0,DH);g.addColorStop(0,'#1a120b');g.addColorStop(.5,'#0d0906');g.addColorStop(1,'#16100a');dx.fillStyle=g;dx.fillRect(0,0,DW,DH);
+  const glow=dx.createRadialGradient(cx,DH/2,0,cx,DH/2,DW*0.45);glow.addColorStop(0,'rgba(255,179,71,'+(0.1+0.3*clarity)+')');glow.addColorStop(1,'rgba(255,179,71,0)');dx.fillStyle=glow;dx.fillRect(0,0,DW,DH);
+  const a=f-cx/PPM-0.2,b=f+cx/PPM+0.2;
+  dx.textAlign='center';dx.textBaseline='alphabetic';dx.font='600 13px ui-monospace,Menlo,monospace';
+  for(let k=Math.ceil(a*10);k<=Math.floor(b*10);k++){
+    const v=k/10;if(v<LO-0.01||v>HI+0.01)continue;const x=cx+(v-f)*PPM;
+    const maj=k%10===0,mid=k%5===0;
+    dx.strokeStyle=maj?'#ffd9a0':'#a07a48';dx.lineWidth=maj?2:1;dx.beginPath();dx.moveTo(x,DH-8);dx.lineTo(x,DH-8-(maj?44:mid?30:17));dx.stroke();
+    if(maj){dx.fillStyle='#e8c88f';dx.fillText(String(v|0),x,DH-62)}}
+  // station markers
+  for(const s of S){const x=cx+(s.f-f)*PPM;if(x<-30||x>DW+30)continue;
+    const seen=found.has(s.i);
+    if(seen){dx.fillStyle='#ffb347';dx.beginPath();dx.moveTo(x,16);dx.lineTo(x-6,6);dx.lineTo(x+6,6);dx.closePath();dx.fill();
+      dx.font='600 12px ui-monospace,Menlo,monospace';dx.fillStyle='#cfa468';dx.fillText(s.name.split(' ')[0],x,32)}
+    else if(s.s>0.03){dx.fillStyle='rgba(255,179,71,'+(s.s*0.8)+')';dx.beginPath();dx.arc(x,12,3+s.s*4,0,7);dx.fill()}}
+  // edges
+  if(LO>f-cx/PPM){const x=cx+(LO-f)*PPM;dx.fillStyle='#000a';dx.fillRect(0,0,x,DH)}
+  if(HI<f+cx/PPM){const x=cx+(HI-f)*PPM;dx.fillStyle='#000a';dx.fillRect(x,0,DW-x,DH)}
+  // needle
+  dx.shadowColor='#ff5a3c';dx.shadowBlur=12;dx.strokeStyle='#ff5a3c';dx.lineWidth=2.5;dx.beginPath();dx.moveTo(cx,0);dx.lineTo(cx,DH);dx.stroke();dx.shadowBlur=0;
+  // glass
+  const gl=dx.createLinearGradient(0,0,0,DH);gl.addColorStop(0,'rgba(255,255,255,.09)');gl.addColorStop(.45,'rgba(255,255,255,0)');dx.fillStyle=gl;dx.fillRect(0,0,DW,DH);
+}
+function drawScope(now){
+  sx.setTransform(dpr,0,0,dpr,0,0);sx.fillStyle='#0b0806';sx.fillRect(0,0,SW,SH);
+  sx.strokeStyle='#2a1d12';sx.lineWidth=1;sx.beginPath();sx.moveTo(0,SH/2);sx.lineTo(SW,SH/2);sx.stroke();
+  sx.strokeStyle='#ffb347';sx.lineWidth=1.8;sx.shadowColor='#ffb347';sx.shadowBlur=8;sx.beginPath();
+  if(analyser){analyser.getByteTimeDomainData(sdata);const n=sdata.length;
+    for(let i=0;i<n;i+=2){const x=i/n*SW,y=SH/2+(sdata[i]-128)/128*SH*0.9;i?sx.lineTo(x,y):sx.moveTo(x,y)}}
+  else{for(let x=0;x<=SW;x+=4){const y=SH/2+Math.sin(x/18+now/400)*3;x?sx.lineTo(x,y):sx.moveTo(x,y)}}
+  sx.stroke();sx.shadowBlur=0;
+}
+
+// ---------- frame loop ----------
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000||0.016);last=now;
+  if(target!==null){const d=target-f;f+=d*Math.min(1,dt*5);if(Math.abs(d)<0.003){f=target;target=null}vel=0}
+  else if(!dragging){
+    f+=vel*dt;vel*=Math.exp(-3.2*dt);
+    if(Math.abs(vel)<0.04&&clarity>0.15&&best&&Math.abs(best.f-f)<0.3){f+=(best.f-f)*Math.min(1,dt*4)}
+    else if(Math.abs(vel)<0.01)vel=0}
+  if(f<LO){f=LO;vel=Math.abs(vel)*0.3}if(f>HI){f=HI;vel=-Math.abs(vel)*0.3}
+  const nd=signals();applyAudio(nd,dt);
+  // discovery
+  if(best&&best.s>0.82&&ctx){dwell+=dt;if(dwell>0.7)discover(best)}else dwell=0;
+  // ui events
+  if(ctx)while(uiq.length&&uiq[0].t<=ctx.currentTime)uiq.shift().fn();
+  $('fr').textContent=f.toFixed(1);
+  // text
+  if(now-gtime>85){gtime=now;
+    const tn=performance.now()-toastT<3500;
+    if(!ctx){gtxt='~ static ~';$('line').textContent='Tap "Switch on" to begin.'}
+    else if(best&&best.s>0.12){
+      $('name').textContent=garble(best.name,best.s);
+      $('line').textContent=best.s>0.45?best.line:garble(best.line||'............',best.s*0.8);
+      $('line').style.opacity=0.35+0.65*Math.min(1,best.s*1.3);
+    }else{$('name').textContent='~ static ~';$('line').textContent=found.size===0&&!tn?'Drag the dial. Somebody is up.':'Nothing here but weather and wire.';$('line').style.opacity=1}
+    if(tn){$('hint').textContent=toast;$('hint').style.color='#ffb347'}else{$('hint').style.color='';if(found.size<6||true)$('hint').textContent=found.size===6?'All 6 stations found. The dial is yours.':found.size+' of 6 stations found'+(found.size===0?' — drag the dial':'')}
+  }
+  drawDial();drawScope(now);requestAnimationFrame(frame);
+}
+
+// ---------- input ----------
+let lx=0,lt=0;
+dial.addEventListener('pointerdown',e=>{dragging=true;target=null;lx=e.clientX;lt=performance.now();vel=0;dial.setPointerCapture(e.pointerId);dial.style.cursor='grabbing'});
+dial.addEventListener('pointermove',e=>{if(!dragging)return;const now=performance.now(),dxp=e.clientX-lx,dtt=Math.max(8,now-lt)/1000;
+  f-=dxp/PPM;const v=-dxp/PPM/dtt;vel=vel*0.5+v*0.5;lx=e.clientX;lt=now});
+const up=()=>{dragging=false;dial.style.cursor='grab';if(performance.now()-lt>90)vel=0;vel=Math.max(-8,Math.min(8,vel))};
+dial.addEventListener('pointerup',up);dial.addEventListener('pointercancel',up);
+dial.addEventListener('wheel',e=>{e.preventDefault();f+=(e.deltaX+e.deltaY)/PPM/2},{passive:false});
+function nudge(d){target=Math.max(LO,Math.min(HI,Math.round((f+d)*10)/10));vel=0}
+$('dn').onclick=()=>nudge(-0.1);$('up').onclick=()=>nudge(0.1);
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')nudge(-0.1);if(e.key==='ArrowRight')nudge(0.1)});
+$('go').onclick=()=>{startAudio();$('start').style.display='none'};
+document.addEventListener('visibilitychange',()=>{if(ctx&&!document.hidden)ctx.resume()});
+size();renderPresets();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

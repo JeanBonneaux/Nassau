@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fold</title>
+<meta name="description" content="A paper-folding puzzle: drag a point of the paper onto another to crease it, and fold a square into the target shape.">
+<style>
+:root{--bg:#efe7d8;--ink:#3a2f27;--red:#d9482b;--cream:#fbf6ea;--mut:#8a7b6a;--btn:#e2d6bf}
+@media (prefers-color-scheme:dark){:root{--bg:#262019;--ink:#f1e8d8;--cream:#f3ead6;--mut:#a39581;--btn:#3a3128}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:ui-rounded,system-ui,-apple-system,sans-serif;overflow:hidden;overscroll-behavior:none}
+#app{height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;gap:8px}
+header a{color:var(--mut);font-size:16px;text-decoration:none;min-height:44px;display:flex;align-items:center}
+h1{margin:0;font-size:22px;letter-spacing:.04em;font-weight:700}
+#lvl{font-size:16px;color:var(--mut);min-width:84px;text-align:right}
+#stage{flex:1;position:relative;min-height:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#msg{text-align:center;font-size:16px;min-height:48px;padding:0 16px;display:flex;align-items:center;justify-content:center;line-height:1.3}
+#bar{display:flex;gap:10px;padding:6px 16px 14px}
+button{flex:1;min-height:48px;border:0;border-radius:14px;background:var(--btn);color:var(--ink);font:600 16px inherit;font-family:inherit;cursor:pointer}
+button:disabled{opacity:.4}
+#next{background:var(--red);color:#fff}
+#next.pulse{animation:p 1s infinite}
+@keyframes p{50%{transform:scale(1.05)}}
+</style>
+</head>
+<body>
+<div id="app">
+<header><a href="../index.html">← Gallery</a><h1>Fold</h1><div id="lvl"></div></header>
+<div id="stage"><canvas id="c"></canvas></div>
+<div id="msg"><span id="mt"></span></div>
+<div id="bar"><button id="undo">Undo</button><button id="reset">Reset</button><button id="next">Skip →</button></div>
+</div>
+<script>
+(function(){
+var cv=document.getElementById('c'),ctx=cv.getContext('2d');
+var msg=document.getElementById('msg'),lvlEl=document.getElementById('lvl');
+var bUndo=document.getElementById('undo'),bReset=document.getElementById('reset'),bNext=document.getElementById('next');
+var W=0,H=0,dpr=1,S=1,OX=0,OY=0;
+var G=8; // snap grid
+function square(){return [{p:[[0,0],[1,0],[1,1],[0,1]],back:false}];}
+function area(p){var a=0;for(var i=0;i<p.length;i++){var q=p[(i+1)%p.length];a+=p[i][0]*q[1]-q[0]*p[i][1];}return Math.abs(a)/2;}
+function clip(p,m,n,keepNeg){ // keep points with side<=0 (neg) or >=0
+  var out=[],k=keepNeg?-1:1;
+  for(var i=0;i<p.length;i++){
+    var a=p[i],b=p[(i+1)%p.length];
+    var sa=((a[0]-m[0])*n[0]+(a[1]-m[1])*n[1])*k,sb=((b[0]-m[0])*n[0]+(b[1]-m[1])*n[1])*k;
+    if(sa>=0)out.push(a);
+    if((sa>0&&sb<0)||(sa<0&&sb>0)){var t=sa/(sa-sb);out.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);}
+  }
+  return out;
+}
+function split(layers,A,B){
+  var m=[(A[0]+B[0])/2,(A[1]+B[1])/2],d=Math.hypot(B[0]-A[0],B[1]-A[1]),n=[(B[0]-A[0])/d,(B[1]-A[1])/d];
+  var keep=[],mov=[];
+  layers.forEach(function(L){
+    var pb=clip(L.p,m,n,false),pa=clip(L.p,m,n,true);
+    if(pb.length>=3&&area(pb)>1e-5)keep.push({p:pb,back:L.back});
+    if(pa.length>=3&&area(pa)>1e-5)mov.push({p:pa,back:L.back});
+  });
+  return {keep:keep,mov:mov,m:m,n:n};
+}
+function reflect(p,m,n){return p.map(function(q){var s=(q[0]-m[0])*n[0]+(q[1]-m[1])*n[1];return [q[0]-2*s*n[0],q[1]-2*s*n[1]];});}
+function applyFold(layers,A,B){
+  var r=split(layers,A,B);
+  var mv=r.mov.slice().reverse().map(function(L){return {p:reflect(L.p,r.m,r.n),back:!L.back};});
+  return r.keep.concat(mv);
+}
+// levels defined by fold recipes; targets are computed
+var E=function(a,b,c,d){return [[a,b],[c,d]];};
+var LEVELS=[
+ {name:'Triangle',seq:[E(0,0,1,1)]},
+ {name:'Half',seq:[E(0,0,1,0)]},
+ {name:'Quarter',seq:[E(0,0,1,0),E(.5,0,.5,1)]},
+ {name:'Sail',seq:[E(0,0,1,1),E(1,1,.5,.5)]},
+ {name:'Diamond',seq:[E(0,0,.5,.5),E(1,0,.5,.5),E(1,1,.5,.5),E(0,1,.5,.5)]},
+ {name:'Kite',seq:[E(0,0,.5,.5),E(1,0,.5,.5),E(1,1,.5,.5),E(0,1,.5,.5),E(0,.5,1,.5)]},
+ {name:'Arrowhead',seq:[E(0,0,1,1),E(1,0,0,1),E(.25,.75,.5,.5)]}
+];
+LEVELS.forEach(function(l){var L=square();l.seq.forEach(function(s){L=applyFold(L,s[0],s[1]);});l.target=L;});
+var cur=0,layers,history=[],solved=false,anim=null,drag=null,done={};
+try{var sv=JSON.parse(localStorage.getItem('fold-done')||'{}');if(sv&&typeof sv==='object')done=sv;}catch(e){}
+function save(){try{localStorage.setItem('fold-done',JSON.stringify(done));}catch(e){}}
+var tc=document.createElement('canvas');tc.width=tc.height=120;var tx=tc.getContext('2d',{willReadFrequently:true});
+var uc=document.createElement('canvas');uc.width=uc.height=120;var ux=uc.getContext('2d',{willReadFrequently:true});
+function mask(c,x,ls){x.clearRect(0,0,120,120);x.fillStyle='#000';ls.forEach(function(L){x.beginPath();L.p.forEach(function(q,i){var X=(q[0]+.25)/1.5*120,Y=(q[1]+.25)/1.5*120;i?x.lineTo(X,Y):x.moveTo(X,Y);});x.closePath();x.fill();});return x.getImageData(0,0,120,120).data;}
+function score(){
+  var a=mask(tc,tx,LEVELS[cur].target),b=mask(uc,ux,layers),i=0,u=0;
+  for(var k=3;k<a.length;k+=4){var A=a[k]>127,B=b[k]>127;if(A&&B)i++;if(A||B)u++;}
+  return u?i/u:0;
+}
+function load(n){
+  cur=(n+LEVELS.length)%LEVELS.length;layers=square();history=[];solved=false;anim=null;drag=null;
+  lvlEl.textContent=(cur+1)+' / '+LEVELS.length+(done[cur]?' ✓':'');
+  bNext.textContent='Skip →';bNext.className='';
+  setMsg('Drag a point of the paper onto another point. <b>'+LEVELS[cur].name+'</b>: fold to the dashed shape in '+LEVELS[cur].seq.length+(LEVELS[cur].seq.length>1?' folds.':' fold.'));
+  bUndo.disabled=true;
+}
+function setMsg(h){document.getElementById("mt").innerHTML=h;}
+function resize(){
+  var r=cv.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,3);W=r.width;H=r.height;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  S=Math.min(W,H)/1.3;OX=W/2-.5*S;OY=H/2-.5*S;
+}
+function sx(x){return OX+x*S}function sy(y){return OY+y*S}
+function wx(x){return (x-OX)/S}function wy(y){return (y-OY)/S}
+function path(p){ctx.beginPath();p.forEach(function(q,i){i?ctx.lineTo(sx(q[0]),sy(q[1])):ctx.moveTo(sx(q[0]),sy(q[1]));});ctx.closePath();}
+var css=getComputedStyle(document.documentElement);
+function col(n){return css.getPropertyValue(n).trim();}
+function drawLayers(ls,shade){
+  for(var i=0;i<ls.length;i++){
+    var L=ls[i];path(L.p);
+    ctx.save();
+    ctx.shadowColor='rgba(40,25,10,.35)';ctx.shadowBlur=Math.min(10,3+i*1.2)*dpr/dpr;ctx.shadowOffsetY=2;
+    var f=L.back?col('--cream'):col('--red');
+    if(shade&&shade[i]!=null){ctx.fillStyle=f;ctx.fill();ctx.restore();path(L.p);ctx.fillStyle='rgba(30,15,5,'+shade[i]+')';ctx.fill();}
+    else{ctx.fillStyle=f;ctx.fill();ctx.restore();}
+    path(L.p);ctx.lineWidth=1;ctx.strokeStyle='rgba(60,30,10,.28)';ctx.stroke();
+  }
+}
+function snap(x,y){
+  var best=null,bd=1e9,g=1/G;
+  var gx=Math.round(x/g)*g,gy=Math.round(y/g)*g;best=[gx,gy];bd=Math.hypot(gx-x,gy-y);
+  layers.forEach(function(L){L.p.forEach(function(q){var d=Math.hypot(q[0]-x,q[1]-y);if(d<.045&&d<bd+.02){bd=d;best=q;}});});
+  return best;
+}
+function inside(ls,p){
+  for(var k=0;k<ls.length;k++){var q=ls[k].p,c=false;
+    for(var i=0,j=q.length-1;i<q.length;j=i++){
+      if(((q[i][1]>p[1])!==(q[j][1]>p[1]))&&(p[0]<(q[j][0]-q[i][0])*(p[1]-q[i][1])/(q[j][1]-q[i][1])+q[i][0]))c=!c;}
+    if(c)return true;}
+  return false;
+}
+function draw(t){
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  // grid dots
+  ctx.fillStyle=col('--mut');ctx.globalAlpha=.35;
+  for(var i=-1;i<=G+1;i++)for(var j=-1;j<=G+1;j++){ctx.beginPath();ctx.arc(sx(i/G),sy(j/G),1.4,0,7);ctx.fill();}
+  ctx.globalAlpha=1;
+  // target
+  var T=LEVELS[cur].target;
+  ctx.save();ctx.setLineDash([7,6]);ctx.lineWidth=2.2;ctx.strokeStyle=solved?'#3aa56a':col('--ink');
+  T.forEach(function(L){path(L.p);ctx.globalAlpha=.07;ctx.fillStyle=solved?'#3aa56a':col('--ink');ctx.fill();ctx.globalAlpha=.7;ctx.stroke();});
+  ctx.restore();ctx.globalAlpha=1;
+  if(anim){
+    var k=Math.min(1,(t-anim.t0)/anim.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,th=e*Math.PI,c=Math.cos(th);
+    var r=anim.r,m=r.m,n=r.n;
+    drawLayers(r.keep);
+    var mv=r.mov.slice().reverse().map(function(L){return {p:L.p.map(function(q){var s=(q[0]-m[0])*n[0]+(q[1]-m[1])*n[1];return [q[0]+s*(c-1)*n[0],q[1]+s*(c-1)*n[1]];}),back:(th>Math.PI/2)?!L.back:L.back};});
+    var sh=mv.map(function(){return .22*Math.sin(th)});
+    drawLayers(mv,sh);
+    if(k>=1){layers=anim.result;anim=null;afterFold();}
+  }else{
+    drawLayers(layers);
+    if(drag&&drag.B&&Math.hypot(drag.B[0]-drag.A[0],drag.B[1]-drag.A[1])>.06){
+      var r2=split(layers,drag.A,drag.B);
+      ctx.save();
+      r2.mov.forEach(function(L){var p=reflect(L.p,r2.m,r2.n);path(p);ctx.globalAlpha=.4;ctx.fillStyle=L.back?col('--red'):col('--cream');ctx.fill();ctx.globalAlpha=1;ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.strokeStyle=col('--ink');ctx.stroke();});
+      // crease
+      var dx=-r2.n[1],dy=r2.n[0],m=r2.m;ctx.setLineDash([2,5]);ctx.lineWidth=2;ctx.strokeStyle=col('--ink');ctx.beginPath();ctx.moveTo(sx(m[0]-dx*2),sy(m[1]-dy*2));ctx.lineTo(sx(m[0]+dx*2),sy(m[1]+dy*2));ctx.stroke();
+      ctx.restore();
+    }
+    if(drag){
+      ctx.fillStyle=col('--ink');ctx.beginPath();ctx.arc(sx(drag.A[0]),sy(drag.A[1]),6,0,7);ctx.fill();
+      if(drag.B){ctx.lineWidth=2;ctx.strokeStyle=col('--ink');ctx.beginPath();ctx.moveTo(sx(drag.A[0]),sy(drag.A[1]));ctx.lineTo(sx(drag.B[0]),sy(drag.B[1]));ctx.stroke();ctx.beginPath();ctx.arc(sx(drag.B[0]),sy(drag.B[1]),9,0,7);ctx.stroke();}
+    }
+  }
+}
+function afterFold(){
+  bUndo.disabled=history.length===0;
+  var s=score(),pct=Math.round(s*100),need=LEVELS[cur].seq.length;
+  if(s>=.975){
+    solved=true;done[cur]=true;save();lvlEl.textContent=(cur+1)+' / '+LEVELS.length+' ✓';
+    setMsg('<b>Folded!</b> '+history.length+' fold'+(history.length>1?'s':'')+(history.length<=need?' — a perfect crease.':'.'));
+    bNext.textContent='Next →';bNext.className='pulse';
+  }else setMsg('Match '+pct+'% · '+history.length+' fold'+(history.length==1?'':'s')+' so far.');
+}
+function evPt(e){var r=cv.getBoundingClientRect();return [wx(e.clientX-r.left),wy(e.clientY-r.top)];}
+cv.addEventListener('pointerdown',function(e){
+  if(anim)return;e.preventDefault();
+  var p=evPt(e);if(!inside(layers,p))return;
+  try{cv.setPointerCapture(e.pointerId);}catch(x){}
+  drag={A:snap(p[0],p[1]),B:null,id:e.pointerId};
+});
+cv.addEventListener('pointermove',function(e){
+  if(!drag)return;var p=evPt(e);drag.B=snap(p[0],p[1]);
+});
+function end(e){
+  if(!drag)return;var d=drag;drag=null;
+  if(!d.B||Math.hypot(d.B[0]-d.A[0],d.B[1]-d.A[1])<.06)return;
+  var r=split(layers,d.A,d.B);if(!r.mov.length)return;
+  history.push(layers);
+  anim={t0:performance.now(),dur:480,r:r,result:applyFold(layers,d.A,d.B)};
+}
+cv.addEventListener('pointerup',end);
+cv.addEventListener('pointercancel',function(){drag=null;});
+bUndo.onclick=function(){if(anim||!history.length)return;layers=history.pop();solved=false;bNext.textContent='Skip →';bNext.className='';bUndo.disabled=history.length===0;setMsg('Undone. Try a different crease.');};
+bReset.onclick=function(){load(cur);};
+bNext.onclick=function(){load(cur+1);};
+window.addEventListener('keydown',function(e){if(e.key==='z')bUndo.onclick();if(e.key==='r')bReset.onclick();if(e.key==='ArrowRight')bNext.onclick();});
+window.addEventListener('resize',resize);
+function loop(t){draw(t);requestAnimationFrame(loop);}
+resize();var first=0;for(var i=0;i<LEVELS.length;i++)if(!done[i]){first=i;break;}
+load(first);requestAnimationFrame(loop);
+window.__fold={LEVELS:LEVELS,get layers(){return layers}};
+})();
+</script>
+</body>
+</html>

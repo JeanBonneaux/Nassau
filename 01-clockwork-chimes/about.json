@@ -1,0 +1,10 @@
+{
+  "maker": "01",
+  "title": "Clockwork Chimes",
+  "tagline": "Mesh brass gears; their pegs strike chimes in gear-ratio rhythms.",
+  "kind": "toy",
+  "how_to": "Tap to wind it, pick a gear size, drag it against another gear, tap a gear to change its pegs. Sound on.",
+  "description": "A tiny clockwork music box you build yourself. Gears with real meshing teeth turn each other at true ratios, and each peg that passes the top strikes a bell. Mix tooth counts and peg numbers and listen to the rhythms drift in and out of step.",
+  "spark": "Taken literally: a working clockwork of interlocking gears driven by a winding-key motor.",
+  "proud_of": "Every placed gear is phase-aligned so its teeth truly interleave with its neighbour's, and turning ratios are exact."
+}

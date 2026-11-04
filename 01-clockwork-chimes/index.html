@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clockwork Chimes</title>
+<meta name="description" content="Build a tiny clockwork out of meshing brass gears. Pegs on each wheel strike chimes, so gear ratios turn into polyrhythms.">
+<style>
+:root{--bg:#12141c;--ink:#f1e6cf;--dim:#9a9484;--accent:#e8b75a;--panel:#1b1e29;--line:#2c3040}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,sans-serif;overflow:hidden;overscroll-behavior:none}
+#app{position:fixed;inset:0;height:100dvh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+header{display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:48px;flex:none}
+header a{color:var(--dim);text-decoration:none;font-size:16px;min-height:44px;display:flex;align-items:center}
+header h1{margin:0;font:600 15px ui-serif,Georgia,serif;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+header span{width:72px}
+#board{flex:1;min-height:0;position:relative}
+canvas#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#status{flex:none;text-align:center;font-size:16px;color:var(--dim);min-height:26px;padding:0 12px;line-height:26px;transition:color .2s}
+#status.bad{color:#ff8f7a}
+#tray{flex:none;display:flex;gap:6px;padding:6px 8px calc(8px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line)}
+#tray button{flex:1;min-width:0;height:62px;border-radius:12px;border:1.5px solid var(--line);background:#222637;color:var(--ink);font:500 13px system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0;touch-action:manipulation}
+#tray button.on{border-color:var(--accent);background:#2e2a22;box-shadow:0 0 0 1px var(--accent) inset}
+#tray canvas{width:38px;height:38px}
+#tray .big{font-size:20px;line-height:38px;height:38px}
+#start{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(14,15,22,.88);border:0;color:var(--ink);font:inherit;width:100%;cursor:pointer;padding:24px;text-align:center}
+#start b{font:600 30px ui-serif,Georgia,serif;color:var(--accent);letter-spacing:.04em}
+#start i{font-style:normal;font-size:17px;color:var(--ink);max-width:300px;line-height:1.4}
+#start em{font-style:normal;margin-top:8px;border:1.5px solid var(--accent);color:var(--accent);padding:12px 26px;border-radius:30px;font-size:18px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header><a href="../index.html">← Gallery</a><h1>Clockwork Chimes</h1><span></span></header>
+  <div id="board"><canvas id="cv"></canvas>
+    <button id="start"><b>Clockwork Chimes</b><i>Drag brass gears next to each other so their teeth mesh. Pegs on the wheels strike the chimes.</i><em>Tap to wind it up</em></button>
+  </div>
+  <div id="status">Pick a gear, drag it against another.</div>
+  <div id="tray"></div>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var board=document.getElementById('board'),statusEl=document.getElementById('status'),tray=document.getElementById('tray');
+var TAU=Math.PI*2, ADD=0.8, MOTOR_N=12;
+var SIZES=[8,12,18,26];
+var COLORS={8:['#f0a98a','#a8553a'],12:['#f2cf78','#a57a22'],18:['#9cc6dc','#3f7390'],26:['#c9b2e6','#6a4f93']};
+var gears=[],phi=0,speedIdx=1,SPEEDS=[1.4,2.4,3.6,0],SPEEDNAMES=['Slow','Medium','Fast','Paused'];
+var tool=18,started=false,W=0,H=0,K=2.5,dpr=1,ripples=[];
+var ghost=null,drag=null,tapGear=null,downPt=null,moved=false,msgT=0;
+var PENT=[0,2,4,7,9];
+function midiAt(i){return 60+PENT[i%5]+12*Math.floor(i/5);}
+
+/* audio */
+var ac=null,master=null,echo=null;
+function initAudio(){
+  if(ac)return;
+  var AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
+  ac=new AC(); master=ac.createGain(); master.gain.value=.8;
+  var comp=ac.createDynamicsCompressor(); master.connect(comp); comp.connect(ac.destination);
+  echo=ac.createDelay(1); echo.delayTime.value=.27; var fb=ac.createGain(); fb.gain.value=.34;
+  var lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2800;
+  echo.connect(lp); lp.connect(fb); fb.connect(echo); var eo=ac.createGain(); eo.gain.value=.5; lp.connect(eo); eo.connect(master);
+}
+function chime(g){
+  if(!ac)return; var t=ac.currentTime, f=440*Math.pow(2,(g.midi-69)/12);
+  var out=ac.createGain(); var node=out;
+  if(ac.createStereoPanner){var p=ac.createStereoPanner(); p.pan.value=Math.max(-.8,Math.min(.8,(g.x/W-.5)*1.6)); out.connect(p); node=p;}
+  node.connect(master); var s=ac.createGain(); s.gain.value=.4; node.connect(echo);
+  var dec=g.n>=18?1.9:1.3;
+  [[1,.5,dec],[2.76,.16,dec*.35],[5.4,.06,.09]].forEach(function(h){
+    var o=ac.createOscillator(); o.type='sine'; o.frequency.value=f*h[0];
+    var e=ac.createGain(); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(h[1],t+.004); e.gain.exponentialRampToValueAtTime(.0008,t+h[2]);
+    o.connect(e); e.connect(out); o.start(t); o.stop(t+h[2]+.05);
+  });
+  setTimeout(function(){try{out.disconnect();}catch(e){}},2500);
+}
+var noiseBuf=null;
+function tick(){
+  if(!ac)return; if(!noiseBuf){noiseBuf=ac.createBuffer(1,ac.sampleRate*.03,ac.sampleRate);var d=noiseBuf.getChannelData(0);for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);}
+  var s=ac.createBufferSource(); s.buffer=noiseBuf; var hp=ac.createBiquadFilter(); hp.type='bandpass'; hp.frequency.value=3200; hp.Q.value=1.2;
+  var g=ac.createGain(); g.gain.value=.16; s.connect(hp); hp.connect(g); g.connect(master); s.start();
+}
+
+/* geometry */
+function ang(g){return g.a0+g.dir*phi*g.ratio;}
+function pegPos(g){return g.n>=12?g.n*.78:g.n*.6;}
+function hitGear(x,y){
+  for(var i=gears.length-1;i>=0;i--){var g=gears[i];if(Math.hypot(x-g.x,y-g.y)<=g.n+ADD+.6)return g;}
+  return null;
+}
+function snap(n,px,py){
+  var best=null,bd=1e9;
+  gears.forEach(function(g){
+    var d=Math.hypot(px-g.x,py-g.y), want=g.n+n, off=Math.abs(d-want);
+    if(d<want+12 && off<bd){bd=off;best=g;}
+  });
+  if(!best)return {ok:false,x:px,y:py,msg:'Gears must touch another gear to turn.'};
+  var th=Math.atan2(py-best.y,px-best.x), want=best.n+n;
+  var x=best.x+Math.cos(th)*want,y=best.y+Math.sin(th)*want;
+  var res={ok:true,x:x,y:y,parent:best,th:th};
+  if(x<n+1||x>W-n-1||y<n+1||y>H-n-1){res.ok=false;res.msg='That one would fall off the board.';return res;}
+  for(var i=0;i<gears.length;i++){var o=gears[i];if(o===best)continue;
+    if(Math.hypot(x-o.x,y-o.y)<o.n+n+2*ADD+.5){res.ok=false;res.msg='Too close to another gear. Leave a gap or mesh cleanly.';return res;}}
+  return res;
+}
+function addGear(n,x,y,parent,th,pegs){
+  var used=gears.filter(function(g){return g.n===n&&!g.motor;}).length;
+  var base={8:10,12:7,18:4,26:1}[n]; var idx=Math.min(14,base+((used*3)%5));
+  var g={n:n,x:x,y:y,pegs:pegs==null?2:pegs,flash:0,midi:midiAt(idx),motor:false,ratio:MOTOR_N/n,col:COLORS[n]};
+  if(parent){
+    g.dir=-parent.dir; var p=TAU/n, pp=TAU/parent.n;
+    var fG=(th-ang(parent))/pp; fG-=Math.floor(fG);
+    var fN=.5-fG; var aN=th+Math.PI-p*fN;
+    g.a0=aN-g.dir*phi*g.ratio;
+  }
+  gears.push(g); return g;
+}
+function prune(){
+  var motor=gears[0],seen=[motor],q=[motor];
+  while(q.length){var c=q.pop();gears.forEach(function(o){if(seen.indexOf(o)<0&&Math.abs(Math.hypot(o.x-c.x,o.y-c.y)-(o.n+c.n))<.05){seen.push(o);q.push(o);}});}
+  var gone=gears.length-seen.length; gears=gears.filter(function(g){return seen.indexOf(g)>=0;}); return gone;
+}
+function say(t,bad){statusEl.textContent=t;statusEl.className=bad?'bad':'';msgT=performance.now();}
+function defaultStatus(){
+  if(tool===0)return 'Eraser: tap a gear to remove it.';
+  return 'Drag a gear onto another. Tap one for pegs.';
+}
+
+/* layout */
+function resize(){
+  dpr=Math.min(window.devicePixelRatio||1,3);
+  var r=board.getBoundingClientRect(); var oldK=K;
+  cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr);
+  K=Math.max(2,Math.min(r.width/150,r.height/250)); W=r.width/K; H=r.height/K;
+  if(!gears.length)preset();
+}
+function preset(){
+  var m={n:MOTOR_N,x:W*.42,y:H*.44,a0:0,dir:1,ratio:1,pegs:1,flash:0,midi:midiAt(7),motor:true,col:COLORS[12]};
+  gears.push(m);
+  function put(par,n,deg,pegs){var th=deg*Math.PI/180,d=par.n+n;return addGear(n,par.x+Math.cos(th)*d,par.y+Math.sin(th)*d,par,th,pegs);}
+  var a=put(m,18,-35,2); put(a,8,15,2); var c=put(m,26,125,3); put(a,12,-110,1); put(c,18,100,1);
+}
+
+/* drawing */
+function gearPath(c,n,a){
+  var p=TAU/n,rr=n-ADD,ra=n+ADD;
+  c.beginPath();
+  for(var i=0;i<n;i++){var t=a+i*p;
+    var pts=[[rr,-.3],[ra,-.15],[ra,.15],[rr,.3]];
+    for(var j=0;j<4;j++){var X=Math.cos(t+pts[j][1]*p)*pts[j][0],Y=Math.sin(t+pts[j][1]*p)*pts[j][0]; if(i===0&&j===0)c.moveTo(X,Y);else c.lineTo(X,Y);}
+  }
+  c.closePath();
+}
+function drawGear(c,g,a,opts){
+  opts=opts||{}; var n=g.n,col=g.col;
+  c.save();
+  var grd=c.createLinearGradient(-n,-n,n,n); grd.addColorStop(0,col[0]); grd.addColorStop(1,col[1]);
+  gearPath(c,n,a);
+  if(n>=12){c.moveTo(n*.6,0);c.arc(0,0,n*.6,0,TAU,true);}
+  c.fillStyle=grd; c.globalAlpha=opts.alpha||1; c.fill('evenodd');
+  c.lineWidth=.35; c.strokeStyle='rgba(0,0,0,.35)'; c.stroke();
+  if(n>=12){ // spokes
+    var sp=n>=26?5:n>=18?4:3; c.fillStyle=grd;
+    for(var i=0;i<sp;i++){c.save();c.rotate(a+i*TAU/sp);c.fillRect(0,-n*.07,n*.66,n*.14);c.restore();}
+    c.beginPath();c.arc(0,0,n*.6,0,TAU);c.lineWidth=.3;c.strokeStyle='rgba(255,255,255,.18)';c.stroke();
+  }
+  c.beginPath();c.arc(0,0,Math.max(1.5,n*.14),0,TAU);c.fillStyle=col[1];c.fill();
+  c.beginPath();c.arc(0,0,Math.max(.7,n*.06),0,TAU);c.fillStyle='#f6ecd2';c.fill();
+  if(g.motor&&!opts.icon){ // winding key
+    c.save();c.rotate(a);c.fillStyle='#f6ecd2';c.strokeStyle='rgba(0,0,0,.4)';c.lineWidth=.25;
+    c.beginPath();c.ellipse(3.2,0,2.6,1.7,0,0,TAU);c.ellipse(-3.2,0,2.6,1.7,0,0,TAU);c.fill();c.fillRect(-3,-.5,6,1);
+    c.restore();
+  }
+  if(g.pegs>0&&!opts.icon){
+    var pr=pegPos(g),rad=1.3+n*.04;
+    for(var k=0;k<g.pegs;k++){var t=a+k*TAU/g.pegs;
+      c.save();c.shadowColor='#fff3c4';c.shadowBlur=(3+g.flash*14)*K;
+      c.beginPath();c.arc(Math.cos(t)*pr,Math.sin(t)*pr,rad,0,TAU);c.fillStyle='#fff6d6';c.fill();c.restore();
+      c.beginPath();c.arc(Math.cos(t)*pr,Math.sin(t)*pr,rad*.55,0,TAU);c.fillStyle='#caa24a';c.fill();}
+  }
+  c.restore();
+}
+function drawBoard(){
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.setTransform(dpr*K,0,0,dpr*K,0,0);
+  // pin grid
+  ctx.fillStyle='rgba(241,230,207,.07)';
+  for(var x=6;x<W;x+=12)for(var y=6;y<H;y+=12){ctx.fillRect(x-.35,y-.35,.7,.7);}
+  // shadows + gears
+  gears.forEach(function(g){
+    ctx.save();ctx.translate(g.x+.8,g.y+1.2);gearPath(ctx,g.n,ang(g));ctx.fillStyle='rgba(0,0,0,.4)';ctx.fill();ctx.restore();
+  });
+  gears.forEach(function(g){
+    ctx.save();ctx.translate(g.x,g.y);drawGear(ctx,g,ang(g));
+    if(g.flash>.02){ctx.beginPath();ctx.arc(0,0,pegPos(g),0,TAU);ctx.lineWidth=1.4;ctx.strokeStyle='rgba(255,243,196,'+(g.flash*.7)+')';ctx.stroke();}
+    ctx.restore();
+    // tine
+    var ty=g.y-g.n-ADD-.4;
+    ctx.beginPath();ctx.moveTo(g.x-1.7,ty-2.8);ctx.lineTo(g.x+1.7,ty-2.8);ctx.lineTo(g.x,ty+.2);ctx.closePath();
+    ctx.fillStyle=g.flash>.05?'#fff6d6':'#d9c9a0';ctx.globalAlpha=.55+g.flash*.45;ctx.fill();ctx.globalAlpha=1;
+  });
+  // ripples
+  for(var i=ripples.length-1;i>=0;i--){var r=ripples[i];r.t+=.03;if(r.t>=1){ripples.splice(i,1);continue;}
+    ctx.beginPath();ctx.arc(r.x,r.y,2+r.t*16,0,TAU);ctx.lineWidth=.6;ctx.strokeStyle='rgba(255,243,196,'+(1-r.t)*.8+')';ctx.stroke();}
+  // ghost
+  if(ghost&&tool>0){
+    var gg={n:tool,motor:false,pegs:0,col:ghost.ok?COLORS[tool]:['#ff7a66','#8a2a1a'],flash:0};
+    ctx.save();ctx.translate(ghost.x,ghost.y);
+    if(ghost.ok){var pa=ghost.parent;var th=ghost.th,p=TAU/tool,pp=TAU/pa.n;var fG=(th-ang(pa))/pp;fG-=Math.floor(fG);drawGear(ctx,gg,th+Math.PI-p*(.5-fG),{alpha:.7});}
+    else drawGear(ctx,gg,0,{alpha:.55});
+    ctx.restore();
+  }
+}
+
+/* loop */
+var last=0;
+function frame(t){
+  var dt=Math.min(.05,(t-last)/1000||0);last=t;
+  var sp=SPEEDS[speedIdx];
+  if(started&&sp>0){
+    var prev=phi; phi+=sp*dt;
+    var mp=TAU/MOTOR_N;
+    if(Math.floor(prev/mp)!==Math.floor(phi/mp))tick();
+    gears.forEach(function(g){
+      if(g.pegs<1)return;
+      var m=g.pegs/TAU, a1=(g.a0+g.dir*prev*g.ratio+Math.PI/2)*m, a2=(g.a0+g.dir*phi*g.ratio+Math.PI/2)*m;
+      if(Math.floor(a1)!==Math.floor(a2)){g.flash=1;chime(g);ripples.push({x:g.x,y:g.y-g.n-3,t:0});}
+    });
+  }
+  gears.forEach(function(g){if(g.flash>0)g.flash=Math.max(0,g.flash-dt*2.2);});
+  if(msgT&&t-msgT>4000){msgT=0;statusEl.textContent=defaultStatus();statusEl.className='';}
+  drawBoard();
+  requestAnimationFrame(frame);
+}
+
+/* input */
+function pt(e){var r=cv.getBoundingClientRect();return {x:(e.clientX-r.left)/K,y:(e.clientY-r.top)/K,touch:e.pointerType==='touch'};}
+cv.addEventListener('pointerdown',function(e){
+  if(!started)return; e.preventDefault(); try{cv.setPointerCapture(e.pointerId);}catch(_){}
+  var p=pt(e); downPt=p; moved=false; tapGear=null; drag=null;
+  var h=hitGear(p.x,p.y);
+  if(tool===0){ if(h&&!h.motor){gears.splice(gears.indexOf(h),1);var more=prune();say('Removed'+(more?' it and '+more+' unattached gear'+(more>1?'s':''):'')+'.');} else if(h)say('The motor gear cannot be removed.',true); return;}
+  if(h){tapGear=h;return;}
+  drag=true; ghost=snap(tool,p.x-(p.touch?0:0),p.y-(p.touch?12:0));
+});
+cv.addEventListener('pointermove',function(e){
+  if(!downPt)return; var p=pt(e);
+  if(Math.hypot(p.x-downPt.x,p.y-downPt.y)>2.5)moved=true;
+  if(drag){ghost=snap(tool,p.x,p.y-(p.touch?12:0)); if(!ghost.ok)say(ghost.msg,true);else say('Release to place it.');}
+});
+function up(e){
+  if(!downPt)return; downPt=null;
+  if(drag&&ghost){
+    if(ghost.ok){var g=addGear(tool,ghost.x,ghost.y,ghost.parent,ghost.th,2);g.flash=1;chime(g);say('Placed. Tap it to change its pegs.');}
+    else say(ghost.msg,true);
+  } else if(tapGear&&!moved){
+    var g=tapGear; g.pegs=(g.pegs+1)%5; g.flash=g.pegs?1:0; if(g.pegs)chime(g);
+    say(g.pegs===0?'No pegs: this wheel is silent.':g.pegs+(g.pegs>1?' pegs':' peg')+' on this wheel.');
+  }
+  drag=null;ghost=null;tapGear=null;
+}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',function(){downPt=null;drag=null;ghost=null;tapGear=null;});
+
+/* tray */
+var btns={};
+function mk(key,label,iconN){
+  var b=document.createElement('button');b.type='button';
+  if(iconN){var c=document.createElement('canvas');c.width=76;c.height=76;b.appendChild(c);
+    var x=c.getContext('2d');x.translate(38,38);var s=34/(iconN+ADD);x.scale(s,s);
+    drawGear(x,{n:iconN,motor:false,pegs:0,col:COLORS[iconN],flash:0},0.2,{icon:true});}
+  else{var d=document.createElement('div');d.className='big';d.textContent=key==='erase'?'✕':'♪';b.appendChild(d);}
+  var l=document.createElement('span');l.textContent=label;b.appendChild(l);tray.appendChild(b);btns[key]=b;return b;
+}
+SIZES.forEach(function(n){mk(n,n+' teeth',n).addEventListener('click',function(){tool=n;sel();say(defaultStatus());});});
+mk('erase','Remove').addEventListener('click',function(){tool=0;sel();say(defaultStatus());});
+var tb=mk('tempo','Medium');tb.addEventListener('click',function(){speedIdx=(speedIdx+1)%SPEEDS.length;tb.lastChild.textContent=SPEEDNAMES[speedIdx];tb.firstChild.textContent=speedIdx===3?'⏸':'♪';});
+function sel(){Object.keys(btns).forEach(function(k){btns[k].classList.toggle('on',String(tool)===k);});}
+sel();
+
+/* start */
+document.getElementById('start').addEventListener('click',function(){
+  initAudio(); if(ac&&ac.state==='suspended')ac.resume();
+  started=true; this.style.display='none'; statusEl.textContent=defaultStatus();
+});
+window.addEventListener('resize',resize);
+resize();
+requestAnimationFrame(frame);
+window.__cc={start:function(){document.getElementById('start').click();}};
+})();
+</script>
+</body>
+</html>

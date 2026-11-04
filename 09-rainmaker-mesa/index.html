@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rainmaker Mesa</title>
+<meta name="description" content="Pour rain on a block of layered rock and watch real hydraulic erosion carve canyons, cliffs and sandy deltas.">
+<style>
+:root{--bg:#1d1612;--ink:#f3e6d3;--dim:#b49f87;--acc:#e8935a;--panel:#2b211b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px system-ui,-apple-system,sans-serif;overflow:hidden;overscroll-behavior:none}
+#app{height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{display:flex;align-items:baseline;justify-content:space-between;padding:8px 14px 4px;gap:10px}
+h1{font:600 18px ui-serif,Georgia,serif;margin:0;letter-spacing:.02em}
+#stats{font:13px ui-monospace,Menlo,monospace;color:var(--dim);text-align:right}
+a.back{color:var(--dim);font-size:14px;text-decoration:none;padding:6px 0}
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px 10px}
+canvas{touch-action:none;border-radius:10px;box-shadow:0 6px 30px #000a;background:#000;display:block}
+#hint{position:absolute;left:0;right:0;text-align:center;pointer-events:none;color:#fff;font-size:17px;text-shadow:0 1px 6px #000;transition:opacity .8s}
+nav{display:flex;gap:8px;padding:8px 10px 10px;justify-content:center}
+button{flex:1;max-width:120px;min-height:48px;border:1px solid #4a3a2f;background:var(--panel);color:var(--ink);border-radius:12px;font:600 15px system-ui,sans-serif}
+button:active{background:#3b2d24}
+button.on{background:var(--acc);color:#2a160a;border-color:var(--acc)}
+</style>
+</head>
+<body>
+<div id="app">
+<header><div><h1>Rainmaker Mesa</h1><a class="back" href="../index.html">← Gallery</a></div><div id="stats">year 0<br>0% removed</div></header>
+<div id="stage"><canvas id="c"></canvas><div id="hint">Drag to make it rain</div></div>
+<nav>
+<button id="auto" class="on">Storm</button>
+<button id="speed">1×</button>
+<button id="water" class="on">Water</button>
+<button id="reset">New rock</button>
+</nav>
+</div>
+<script>
+(()=>{
+const W=150,H=250,N=W*H;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const off=document.createElement('canvas');off.width=W;off.height=H;
+const octx=off.getContext('2d'),img=octx.createImageData(W,H),px=new Uint32Array(img.data.buffer);
+let rock=new Float32Array(N),soil=new Float32Array(N),flow=new Float32Array(N);
+let fk=1,total0=0,drops=0,seed=1,autoRain=true,speed=1,showWater=true;
+const LAYER=3.2;
+// hardness cycles by layer: caprock hard, shale soft
+const HARD=[1.0,0.25,0.55,0.18,0.8,0.3,0.45,0.2,0.9,0.35];
+function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
+function makeNoise(){
+ const g=[];for(let i=0;i<20*20;i++)g.push(rnd());
+ return (x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi;
+  const s=t=>t*t*(3-2*t),a=(i,j)=>g[((j%20+20)%20)*20+((i%20+20)%20)];
+  const u=s(fx),v=s(fy);return (a(xi,yi)*(1-u)+a(xi+1,yi)*u)*(1-v)+(a(xi,yi+1)*(1-u)+a(xi+1,yi+1)*u)*v}}
+function gen(){
+ seed=(Math.random()*1e9)>>>0;const n=makeNoise();
+ const fbm=(x,y)=>{let s=0,a=.5,f=1;for(let o=0;o<4;o++){s+=a*n(x*f+o*3.1,y*f+o*7.7);a*=.5;f*=2}return s};
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+  const i=y*W+x;
+  // rounded blob mesa
+  const cx=(x/W-.5)*2,cy=(y/H-.5)*2;
+  const wob=fbm(x*.03,y*.03)*.5;
+  const d=Math.pow(Math.abs(cx)**3.2+Math.abs(cy)**3.2,1/3.2)+ (wob-.25);
+  const edge=Math.min(1,Math.max(0,(0.86-d)/0.1));
+  const top=22+fbm(x*.05+9,y*.05)*5+ (1-y/H)*4; // gentle tilt toward south
+  const plain=2+fbm(x*.04,y*.04+5)*2;
+  rock[i]=plain+(top-plain)*(edge*edge*(3-2*edge));
+  soil[i]=0;flow[i]=0;
+ }
+ total0=0;for(let i=0;i<N;i++)total0+=rock[i]-2;
+ drops=0;updateStats();
+}
+function hardAt(h){const L=Math.floor(h/LAYER);return HARD[((L%HARD.length)+HARD.length)%HARD.length]}
+// droplet erosion
+function drop(sx,sy){
+ let x=sx,y=sy,dx=0,dy=0,sp=1,wat=1,sed=0;
+ for(let step=0;step<46;step++){
+  const xi=x|0,yi=y|0;if(xi<1||yi<1||xi>=W-2||yi>=H-2)return;
+  const fx=x-xi,fy=y-yi,i=yi*W+xi;
+  const h00=rock[i]+soil[i],h10=rock[i+1]+soil[i+1],h01=rock[i+W]+soil[i+W],h11=rock[i+W+1]+soil[i+W+1];
+  const gx=(h10-h00)*(1-fy)+(h11-h01)*fy,gy=(h01-h00)*(1-fx)+(h11-h10)*fx;
+  const hOld=h00*(1-fx)*(1-fy)+h10*fx*(1-fy)+h01*(1-fx)*fy+h11*fx*fy;
+  dx=dx*.35-gx*.65;dy=dy*.35-gy*.65;
+  let l=Math.hypot(dx,dy);
+  if(l<1e-5){const a=Math.random()*6.283;dx=Math.cos(a);dy=Math.sin(a);l=1}
+  dx/=l;dy/=l;
+  const nx=x+dx,ny=y+dy;
+  if(nx<1||ny<1||nx>=W-2||ny>=H-2)return;
+  const ni=(ny|0)*W+(nx|0),nfx=nx-(nx|0),nfy=ny-(ny|0);
+  const hNew=(rock[ni]+soil[ni])*(1-nfx)*(1-nfy)+(rock[ni+1]+soil[ni+1])*nfx*(1-nfy)+(rock[ni+W]+soil[ni+W])*(1-nfx)*nfy+(rock[ni+W+1]+soil[ni+W+1])*nfx*nfy;
+  const dh=hNew-hOld;
+  const cap=Math.max(-dh,.04)*sp*wat*3;
+  flow[i]+=wat*.6*fk;flow[i+1]+=wat*.2*fk;flow[i+W]+=wat*.2*fk;
+  const w00=(1-fx)*(1-fy),w10=fx*(1-fy),w01=(1-fx)*fy,w11=fx*fy;
+  if(sed>cap||dh>0){
+   const amt=dh>0?Math.min(dh,sed):(sed-cap)*.3;
+   sed-=amt;soil[i]+=amt*w00;soil[i+1]+=amt*w10;soil[i+W]+=amt*w01;soil[i+W+1]+=amt*w11;
+  }else{
+   const want=Math.min((cap-sed)*.3,-dh+.3);
+   // soil first (soft), then rock scaled by hardness
+   const idx=[i,i+1,i+W,i+W+1],wt=[w00,w10,w01,w11];
+   for(let k=0;k<4;k++){
+    const j=idx[k];let take=want*wt[k];
+    const fromSoil=Math.min(soil[j],take*1.6);soil[j]-=fromSoil;sed+=fromSoil;take-=fromSoil/1.6;
+    if(take>0){const r=take*hardAt(rock[j])*.9;rock[j]-=r;sed+=r}
+   }
+  }
+  sp=Math.sqrt(Math.max(.05,sp*sp-dh*3.5));wat*=.985;
+  x=nx;y=ny;
+ }
+ // out of steps: drop remaining sediment
+ const i=(y|0)*W+(x|0);if(i>0&&i<N)soil[i]+=sed;
+}
+function spawnRandom(n){for(let k=0;k<n;k++)drop(3+Math.random()*(W-6),3+Math.random()*(H-6))}
+// pointer
+let ptr=null;
+function pos(e){const r=cv.getBoundingClientRect();return [(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H]}
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr=pos(e);hint.style.opacity=0});
+cv.addEventListener('pointermove',e=>{if(ptr)ptr=pos(e)});
+['pointerup','pointercancel'].forEach(t=>cv.addEventListener(t,()=>ptr=null));
+const hint=document.getElementById('hint');
+function bind(id,fn){document.getElementById(id).addEventListener('click',fn)}
+bind('auto',e=>{autoRain=!autoRain;e.currentTarget.classList.toggle('on',autoRain)});
+bind('speed',e=>{speed=speed==1?4:speed==4?12:1;fk=1/Math.sqrt(speed);e.currentTarget.textContent=speed+'×'});
+bind('water',e=>{showWater=!showWater;e.currentTarget.classList.toggle('on',showWater)});
+bind('reset',()=>{gen();hint.style.opacity=1;setTimeout(()=>hint.style.opacity=0,2500)});
+// layout
+function fit(){
+ const st=document.getElementById('stage'),aw=st.clientWidth-20,ah=st.clientHeight-8;
+ const s=Math.min(aw/W,ah/H),dpr=Math.min(devicePixelRatio||1,2);
+ const cw=Math.floor(W*s),ch=Math.floor(H*s);
+ cv.style.width=cw+'px';cv.style.height=ch+'px';
+ cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);
+ hint.style.top=(st.getBoundingClientRect().top+ch/2-10)+'px';
+}
+addEventListener('resize',fit);
+// render
+function render(){
+ const lx=-.6,ly=-.7;
+ for(let y=0;y<H;y++){
+  for(let x=0;x<W;x++){
+   const i=y*W+x;
+   const xl=x>0?i-1:i,xr=x<W-1?i+1:i,yu=y>0?i-W:i,yd=y<H-1?i+W:i;
+   const h=rock[i]+soil[i];
+   const gx=(rock[xr]+soil[xr]-rock[xl]-soil[xl])*.5,gy=(rock[yd]+soil[yd]-rock[yu]-soil[yu])*.5;
+   let sh=.78+(-gx*lx-gy*ly)*.22/ (1+0)*1.0;
+   sh=Math.max(.35,Math.min(1.35,sh));
+   // strata colour
+   const t=rock[i]/LAYER,L=Math.floor(t),fr=t-L;
+   const hv=HARD[((L%HARD.length)+HARD.length)%HARD.length];
+   // hard layers: dark red-brown; soft: pale tan/pink
+   let r=150+hv*-40+ (1-hv)*60,g=90+(1-hv)*50-hv*10,b=60+(1-hv)*45;
+   const band=.88+.12*Math.sin(fr*3.14159);
+   r*=band;g*=band;b*=band;
+   if(rock[i]<4){r=r*.6+90*.4;g=g*.6+100*.4;b=b*.6+80*.4}
+   const s=Math.min(.85,Math.max(0,soil[i]-.2)*1.4);
+   if(s>0){r=r*(1-s)+226*s;g=g*(1-s)+196*s;b=b*(1-s)+142*s}
+   r*=sh;g*=sh;b*=sh;
+   if(showWater){const f=flow[i];if(f>1.6){const a=Math.min(.8,(f-1.6)*.06);r=r*(1-a)+40*a;g=g*(1-a)+130*a;b=b*(1-a)+200*a}}
+   px[i]=255<<24|(Math.min(255,b)|0)<<16|(Math.min(255,g)|0)<<8|(Math.min(255,r)|0);
+  }
+ }
+ octx.putImageData(img,0,0);
+ ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+ ctx.drawImage(off,0,0,cv.width,cv.height);
+ if(ptr){ // rain cloud marker
+  const k=cv.width/W;ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.arc(ptr[0]*k,ptr[1]*k,9*k,0,6.283);ctx.fill();
+ }
+}
+function updateStats(){let t=0;for(let i=0;i<N;i++)t+=rock[i]-2;
+ const pct=Math.max(0,Math.round((1-t/total0)*100));
+ document.getElementById('stats').innerHTML='year '+(Math.floor(drops/2000)*100).toLocaleString('en-US')+'<br>'+pct+'% removed'}
+let fcount=0;
+function frame(){
+ if(autoRain){spawnRandom(110*speed);drops+=110*speed}
+ if(ptr){const n=90*Math.max(1,speed/2);for(let k=0;k<n;k++){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*9;drop(ptr[0]+Math.cos(a)*r,ptr[1]+Math.sin(a)*r)}drops+=n}
+ for(let i=0;i<N;i++)flow[i]*=.9;
+ render();
+ if(++fcount%20==0)updateStats();
+ requestAnimationFrame(frame);
+}
+fit();gen();
+setTimeout(()=>hint.style.opacity=0,4000);
+window.__pre=(n)=>{for(let k=0;k<n;k++)spawnRandom(110)};
+frame();
+})();
+</script>
+</body>
+</html>

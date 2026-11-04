@@ -1,0 +1,10 @@
+{
+  "maker": "16",
+  "title": "Echo Cave",
+  "tagline": "Chirp in the dark and let the echoes draw the cave.",
+  "kind": "game",
+  "how_to": "Hold and drag to fly, tap to chirp (or use the button); turn sound on and wear headphones.",
+  "description": "You are a bat in a pitch-black cave. Every chirp sends out a ring whose echoes light the walls where it hits and sound from the side they bounce back from. Hidden fireflies answer your call with a chime; fly into each one to move on to a deeper, new cave.",
+  "spark": "Took 'echo' literally: sonar echoes delayed by distance, plus fireflies that echo your call back in song.",
+  "proud_of": "Echo timing is physical: farther walls light up and sound later, panned to the side they came from."
+}

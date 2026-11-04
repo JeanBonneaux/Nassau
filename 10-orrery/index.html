@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orrery Music Box</title>
+<meta name="description" content="Tap the rings to hang little planets. As each one swings past the gate at the top, it rings a bell. Seven rings, seven speeds, endless rhythm.">
+<style>
+:root{--bg:#0b0a1a;--ink:#f3e9d2;--dim:#a79fc4;--gold:#ffcf6b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:ui-serif,Georgia,serif;overflow:hidden;overscroll-behavior:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;padding:10px 12px calc(14px + env(safe-area-inset-bottom));}
+button{font:inherit;font-size:16px;min-height:46px;min-width:88px;padding:0 18px;border-radius:23px;border:1px solid #5a5190;background:rgba(30,26,64,.8);color:var(--ink);cursor:pointer;touch-action:manipulation}
+button:active{background:#463e86}
+#hint{position:fixed;left:0;right:0;top:calc(46px + env(safe-area-inset-top));text-align:center;font-size:16px;color:var(--dim);pointer-events:none;transition:opacity 1s;padding:0 16px}
+#back{position:fixed;left:12px;top:calc(8px + env(safe-area-inset-top));font:14px system-ui,sans-serif;color:var(--dim);text-decoration:none;padding:8px 6px;z-index:3;opacity:.8}
+#start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(11,10,26,.78);z-index:5;text-align:center;padding:24px;cursor:pointer}
+#start h1{font-weight:400;font-size:36px;margin:0;letter-spacing:.04em;color:var(--gold)}
+#start p{margin:0;font-size:18px;color:var(--ink);max-width:290px;line-height:1.4}
+#start span{margin-top:12px;border:1px solid var(--gold);color:var(--gold);padding:13px 30px;border-radius:30px;font-size:18px}
+</style></head><body>
+<a id="back" href="../index.html">← Gallery</a>
+<canvas id="c"></canvas>
+<div id="hint">Tap a ring to hang a planet.<br>Tap a planet to remove it.</div>
+<div id="bar"><button id="rnd">Surprise</button><button id="pause">Pause</button><button id="clr">Clear</button></div>
+<div id="start"><h1>Orrery Music Box</h1><p>Seven rings turn at seven speeds. Every planet rings a bell as it passes the gate.</p><span>Tap to begin</span></div>
+<script>
+(()=>{
+const cv=document.getElementById('c'),g=cv.getContext('2d');
+let W,H,dpr,cx,cy,R;
+const N=7, TAU=Math.PI*2, GATE=-Math.PI/2, CYCLE=14;
+// outer (ring 0) = low & slow, inner = high & fast. A minor pentatonic
+const notes=[110,130.81,164.81,196,220,261.63,329.63].map(f=>f*2);
+const hues=[265,285,315,345,25,45,175];
+const rings=[];for(let i=0;i<N;i++)rings.push({spd:i+1,planets:[],pulse:0});
+let t=0,paused=false,last=0,ac=null,master,delay,fb;
+const sparks=[];
+function size(){dpr=Math.min(devicePixelRatio||1,3);W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;
+ cx=W/2;cy=H*0.5;R=Math.min(W/2-16,(H-190)/2);R=Math.max(R,120);}
+addEventListener('resize',size);size();
+const rr=i=>R*(1-i*0.118)-0; // outer to inner
+const rad=i=>R*(0.97-i*0.125);
+function ang(i){return t*TAU*rings[i].spd/CYCLE}
+function initAudio(){
+ if(ac){ac.resume&&ac.resume();return}
+ const A=window.AudioContext||window.webkitAudioContext;if(!A)return;
+ ac=new A();master=ac.createGain();master.gain.value=.55;master.connect(ac.destination);
+ delay=ac.createDelay(1);delay.delayTime.value=.34;fb=ac.createGain();fb.gain.value=.38;
+ const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2400;
+ delay.connect(lp);lp.connect(fb);fb.connect(delay);lp.connect(master);
+}
+function bell(i,vel){
+ if(!ac||ac.state!=='running')return;
+ const f=notes[i],n=ac.currentTime,out=ac.createGain();
+ out.gain.setValueAtTime(0,n);out.gain.linearRampToValueAtTime(.2*vel,n+.006);
+ out.gain.exponentialRampToValueAtTime(.0001,n+2.2-i*.1);
+ out.connect(master);out.connect(delay);
+ [[1,1],[2.76,.35],[5.4,.12],[0.5,.3]].forEach(([m,a])=>{
+  const o=ac.createOscillator(),gg=ac.createGain();o.type='sine';o.frequency.value=f*m;
+  gg.gain.value=a;o.connect(gg);gg.connect(out);o.start(n);o.stop(n+2.4);});
+}
+function fire(i,x,y){
+ const k=rings[i];k.pulse=1;
+ bell(i,Math.max(.35,.9-k.planets.length*.07));
+ for(let s=0;s<5;s++)sparks.push({x,y,vx:(Math.random()-.5)*60,vy:-Math.random()*50-10,l:1,h:hues[i]});
+}
+function addPlanet(i,a){rings[i].planets.push({off:a-ang(i),seen:null,born:performance.now()})}
+function pos(i,p){const a=p.off+ang(i);return [cx+Math.cos(a)*rad(i),cy+Math.sin(a)*rad(i),a]}
+cv.addEventListener('pointerdown',e=>{
+ e.preventDefault();initAudio();
+ const x=e.clientX,y=e.clientY;
+ // remove planet if hit
+ for(let i=0;i<N;i++){const ps=rings[i].planets;for(let j=0;j<ps.length;j++){const [px,py]=pos(i,ps[j]);
+  if(Math.hypot(px-x,py-y)<24){ps.splice(j,1);return}}}
+ const d=Math.hypot(x-cx,y-cy);let best=-1,bd=1e9;
+ for(let i=0;i<N;i++){const dd=Math.abs(d-rad(i));if(dd<bd){bd=dd;best=i}}
+ if(bd<R*0.062+6&&d>8){addPlanet(best,Math.atan2(y-cy,x-cx));
+  const [px,py]=pos(best,rings[best].planets.at(-1));rings[best].pulse=.6;
+  for(let s=0;s<6;s++)sparks.push({x:px,y:py,vx:(Math.random()-.5)*50,vy:(Math.random()-.5)*50,l:1,h:hues[best]});
+  hideHint();}
+},{passive:false});
+let hintGone=false;function hideHint(){if(!hintGone){hintGone=true;document.getElementById('hint').style.opacity=0}}
+function preset(kind){
+ rings.forEach(r=>r.planets=[]);
+ const rnd=Math.random;
+ if(kind===0){ // demo
+  [[0,[0]],[1,[.5]],[2,[.2,.7]],[3,[.1]],[4,[.35,.85]],[5,[.6]],[6,[.0,.5]]].forEach(([i,as])=>as.forEach(a=>addPlanet(i,GATE+a*TAU+0.0001)));
+ } else {
+  for(let i=0;i<N;i++){const c=Math.random()<.25?0:1+(Math.random()<.4?1:0)+(i>4&&Math.random()<.4?1:0);
+   const base=rnd();for(let k=0;k<c;k++)addPlanet(i,base*TAU+k*TAU/c+(rnd()-.5)*.4);}
+ }
+}
+document.getElementById('rnd').onclick=()=>{initAudio();preset(1);hideHint()};
+document.getElementById('clr').onclick=()=>{rings.forEach(r=>r.planets=[])};
+const pb=document.getElementById('pause');
+pb.onclick=()=>{paused=!paused;pb.textContent=paused?'Play':'Pause'};
+document.getElementById('start').onclick=function(){initAudio();this.remove()};
+addEventListener('keydown',e=>{if(e.code==='Space'){pb.click();e.preventDefault()}});
+
+function frame(now){
+ requestAnimationFrame(frame);
+ const dt=Math.min((now-last)/1000,.1);last=now;
+ if(!paused){
+  const prev=[];for(let i=0;i<N;i++)prev.push(ang(i));
+  t+=dt;
+  for(let i=0;i<N;i++){const a1=ang(i);
+   for(const p of rings[i].planets){
+    const A0=p.off+prev[i],A1=p.off+a1;
+    if(Math.floor((A1-GATE)/TAU)>Math.floor((A0-GATE)/TAU)){
+     fire(i,cx,cy-rad(i));}
+   }}
+ }
+ draw(dt,now);
+}
+function draw(dt,now){
+ g.setTransform(dpr,0,0,dpr,0,0);
+ g.fillStyle='#0b0a1a';g.fillRect(0,0,W,H);
+ const bg=g.createRadialGradient(cx,cy,0,cx,cy,R*1.3);bg.addColorStop(0,'#1d1744');bg.addColorStop(1,'#0b0a1a');
+ g.fillStyle=bg;g.fillRect(0,0,W,H);
+ // gate
+ g.save();g.strokeStyle='rgba(255,207,107,.55)';g.lineWidth=1.5;g.setLineDash([3,5]);
+ g.beginPath();g.moveTo(cx,cy-R*1.02-12);g.lineTo(cx,cy-rad(N-1)+14);g.stroke();g.restore();
+ g.fillStyle='#ffcf6b';g.beginPath();g.moveTo(cx-7,cy-R-20);g.lineTo(cx+7,cy-R-20);g.lineTo(cx,cy-R-9);g.fill();
+ // sun
+ let sp=0;rings.forEach(r=>sp=Math.max(sp,r.pulse));
+ const sr=R*0.075+sp*3;
+ const sg=g.createRadialGradient(cx,cy,0,cx,cy,sr*3.2);sg.addColorStop(0,'rgba(255,225,150,.9)');sg.addColorStop(.3,'rgba(255,190,90,.35)');sg.addColorStop(1,'rgba(255,170,80,0)');
+ g.fillStyle=sg;g.beginPath();g.arc(cx,cy,sr*3.2,0,TAU);g.fill();
+ g.fillStyle='#fff1c4';g.beginPath();g.arc(cx,cy,sr,0,TAU);g.fill();
+ for(let i=0;i<N;i++){
+  const k=rings[i],r=rad(i),h=hues[i];k.pulse=Math.max(0,k.pulse-dt*2.2);
+  const empty=!k.planets.length;
+  g.lineWidth=1+k.pulse*3;
+  g.strokeStyle=`hsla(${h},70%,${empty?60:72}%,${(empty?.2:.35)+k.pulse*.55})`;
+  g.beginPath();g.arc(cx,cy,r,0,TAU);g.stroke();
+  // tick marks showing speed
+  g.fillStyle=`hsla(${h},60%,70%,.28)`;
+  for(let s=0;s<k.spd;s++){const a=ang(i)+s*0; }
+  const A=ang(i);
+  for(const p of k.planets){
+   const a=p.off+A,x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;
+   // tail
+   g.lineWidth=5;g.lineCap='round';
+   for(let s=0;s<6;s++){const a0=a-s*.05,a1=a-(s+1)*.05;
+    g.strokeStyle=`hsla(${h},90%,70%,${.5*(1-s/6)})`;g.lineWidth=7*(1-s/7);
+    g.beginPath();g.arc(cx,cy,r,a1,a0);g.stroke();}
+   const age=Math.min(1,(now-p.born)/300),pr=(9+k.pulse*4)*(0.4+.6*age);
+   const gl=g.createRadialGradient(x,y,0,x,y,pr*2.4);gl.addColorStop(0,`hsla(${h},95%,75%,.6)`);gl.addColorStop(1,`hsla(${h},95%,70%,0)`);
+   g.fillStyle=gl;g.beginPath();g.arc(x,y,pr*2.4,0,TAU);g.fill();
+   g.fillStyle=`hsl(${h},85%,${72+k.pulse*15}%)`;g.beginPath();g.arc(x,y,pr,0,TAU);g.fill();
+   g.fillStyle='rgba(255,255,255,.55)';g.beginPath();g.arc(x-pr*.3,y-pr*.3,pr*.3,0,TAU);g.fill();
+  }
+ }
+ for(let i=sparks.length-1;i>=0;i--){const s=sparks[i];s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=60*dt;s.l-=dt*1.5;
+  if(s.l<=0){sparks.splice(i,1);continue}
+  g.fillStyle=`hsla(${s.h},90%,75%,${s.l})`;g.beginPath();g.arc(s.x,s.y,2.2*s.l+.5,0,TAU);g.fill();}
+}
+preset(0);t=0.0;
+requestAnimationFrame(n=>{last=n;frame(n)});
+})();
+</script></body></html>

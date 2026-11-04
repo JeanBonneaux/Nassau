@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blot Reader</title>
+<meta name="description" content="Drip ink on one half of a sheet, press the fold, and an oracle reads your mirrored blot.">
+<style>
+:root{--paper:#f1e8d4;--ink:#1b1a22;--accent:#8a2f2a;--card:#fbf5e6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#2a2622;color:var(--ink);font-family:ui-serif,Georgia,serif;overflow:hidden}
+#app{height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);max-width:760px;margin:0 auto;background:#2a2622}
+header{display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:44px;flex:none;color:#d9cdb4}
+header h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.08em;font-variant:small-caps}
+header a{color:#b8ab90;font:14px system-ui,sans-serif;text-decoration:none;padding:12px 0}
+#stage{flex:1;min-height:0;position:relative;margin:0 10px;border-radius:6px;overflow:hidden;box-shadow:0 6px 24px #0008}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#hint{position:absolute;left:0;top:42%;width:50%;text-align:center;font-style:italic;color:#8a7d62;font-size:17px;pointer-events:none;transition:opacity .5s;padding:0 14px}
+#panel{flex:none;padding:12px 12px 14px;min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.row{display:flex;gap:10px;align-items:center;justify-content:center}
+button{font:600 16px system-ui,sans-serif;min-height:48px;min-width:48px;border-radius:24px;border:0;padding:0 22px;background:#e7dcc2;color:#2a2622}
+button.main{background:var(--accent);color:#fbf1e0;flex:1;max-width:240px}
+button:active{transform:scale(.96)}
+.sw{width:48px;padding:0;border-radius:50%;border:3px solid transparent;position:relative}
+.sw::after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--c)}
+.sw.on{border-color:#e7dcc2}
+#read{display:none;text-align:center}
+#read .t{font:600 12px system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#a8997a;margin-bottom:6px}
+#read p{margin:0 0 4px;color:#f1e8d4;font-size:19px;line-height:1.3;font-style:italic}
+#read .m{font:16px/1.35 system-ui,sans-serif;color:#cdbf9f;font-style:normal}
+</style>
+</head>
+<body>
+<div id="app">
+<header><h1>Blot Reader</h1><a href="../index.html">← Gallery</a></header>
+<div id="stage"><canvas id="c"></canvas><div id="hint">drip ink on this half</div></div>
+<div id="panel">
+ <div id="tools">
+  <div class="row">
+   <button class="sw on" style="--c:#1b1a22" data-c="#1b1a22" aria-label="Black ink"></button>
+   <button class="sw" style="--c:#2b3a8c" data-c="#2b3a8c" aria-label="Indigo ink"></button>
+   <button class="sw" style="--c:#7d1f2b" data-c="#7d1f2b" aria-label="Oxblood ink"></button>
+   <button id="clr">Clear</button>
+   <button id="press" class="main">Press the fold</button>
+  </div>
+ </div>
+ <div id="read"><div class="t">The blot reads</div><p id="r1"></p><p class="m" id="r2"></p><div class="row" style="margin-top:8px"><button class="main" id="again">New sheet</button></div></div>
+</div>
+</div>
+<script>
+(function(){
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const stage=document.getElementById('stage');
+let W,H,D,ink,ictx,paper,state='draw',color='#1b1a22',result=null,started=false;
+function rnd(a,b){return a+Math.random()*(b-a)}
+function mkPaper(){
+ paper=document.createElement('canvas');paper.width=W*D;paper.height=H*D;
+ const p=paper.getContext('2d');
+ p.fillStyle='#f1e8d4';p.fillRect(0,0,paper.width,paper.height);
+ const g=p.createRadialGradient(W*D/2,H*D/2,H*D*.2,W*D/2,H*D/2,H*D*.8);
+ g.addColorStop(0,'rgba(255,250,235,.5)');g.addColorStop(1,'rgba(150,120,70,.25)');
+ p.fillStyle=g;p.fillRect(0,0,paper.width,paper.height);
+ const id=p.getImageData(0,0,paper.width,paper.height),d=id.data;
+ for(let i=0;i<d.length;i+=4){const n=(Math.random()-.5)*16;d[i]+=n;d[i+1]+=n;d[i+2]+=n*1.1}
+ p.putImageData(id,0,0);
+}
+function resize(){
+ const r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);
+ D=Math.min(window.devicePixelRatio||1,2);
+ cv.width=W*D;cv.height=H*D;
+ const old=ink;
+ ink=document.createElement('canvas');ink.width=W*D;ink.height=H*D;ictx=ink.getContext('2d');
+ if(old&&old.width){ictx.drawImage(old,0,0,ink.width,ink.height)}
+ mkPaper();
+ if(state==='done'&&result){result=null;state='draw';showTools()}
+ render();
+}
+function crease(c){
+ c.save();c.setLineDash([6*D,7*D]);c.strokeStyle='rgba(120,100,60,.35)';c.lineWidth=1.2*D;
+ c.beginPath();c.moveTo(W*D/2,10*D);c.lineTo(W*D/2,H*D-10*D);c.stroke();c.restore();
+}
+function render(flap){
+ ctx.setTransform(1,0,0,1,0,0);
+ ctx.drawImage(paper,0,0);
+ if(state==='done'&&result){ctx.drawImage(result,0,0);return}
+ crease(ctx);
+ if(flap==null){ctx.drawImage(ink,0,0)}
+ else{
+  // flap: left half rotates about the crease
+  const cx=W*D/2,s=Math.cos(flap*Math.PI);
+  ctx.save();ctx.translate(cx,0);ctx.scale(s,1);ctx.translate(-cx,0);
+  ctx.drawImage(ink,0,0,cx,H*D,0,0,cx,H*D);
+  ctx.restore();
+  // shadow near crease
+  const sh=Math.sin(flap*Math.PI);
+  const gg=ctx.createLinearGradient(cx-30*D,0,cx+30*D,0);
+  gg.addColorStop(0,'rgba(60,40,10,0)');gg.addColorStop(.5,'rgba(60,40,10,'+(.22*sh)+')');gg.addColorStop(1,'rgba(60,40,10,0)');
+  ctx.fillStyle=gg;ctx.fillRect(cx-30*D,0,60*D,H*D);
+ }
+}
+// --- drawing
+function dab(x,y,r){
+ ictx.fillStyle=color;
+ ictx.save();ictx.beginPath();ictx.rect(0,0,W*D/2,H*D);ictx.clip();
+ ictx.beginPath();ictx.arc(x*D,y*D,r*D,0,7);ictx.fill();
+ // lumpy edge
+ for(let i=0;i<3;i++){const a=Math.random()*6.28,rr=r*rnd(.6,1);ictx.beginPath();ictx.arc((x+Math.cos(a)*rr)*D,(y+Math.sin(a)*rr)*D,r*rnd(.25,.5)*D,0,7);ictx.fill()}
+ ictx.restore();
+}
+let down=false,lx,ly,lt,hold=0,px,py,lastR=10;
+function pos(e){const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
+cv.addEventListener('pointerdown',e=>{
+ if(state!=='draw')return;
+ e.preventDefault();cv.setPointerCapture(e.pointerId);
+ down=true;[lx,ly]=pos(e);px=lx;py=ly;lt=performance.now();hold=0;lastR=9;
+ dab(lx,ly,lastR);hideHint();render();
+});
+cv.addEventListener('pointermove',e=>{
+ if(!down||state!=='draw')return;
+ e.preventDefault();
+ const [x,y]=pos(e),t=performance.now();
+ const dx=x-lx,dy=y-ly,dist=Math.hypot(dx,dy),dt=Math.max(t-lt,1),v=dist/dt;
+ const target=Math.max(4,Math.min(24,26-v*14));
+ const steps=Math.max(1,Math.ceil(dist/3));
+ for(let i=1;i<=steps;i++){
+  lastR+=(target-lastR)*.08;
+  dab(lx+dx*i/steps,ly+dy*i/steps,lastR);
+ }
+ if(v>1.4){for(let i=0;i<3;i++){const a=rnd(-.8,.8)+Math.atan2(dy,dx),d=rnd(10,40);dab(x+Math.cos(a)*d,y+Math.sin(a)*d,rnd(1,3.5))}}
+ lx=x;ly=y;lt=t;px=x;py=y;hold=0;render();
+});
+function up(){down=false}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+// stationary pressure: ink pools and bleeds
+let lastF=performance.now();
+function loop(now){
+ const dt=now-lastF;lastF=now;
+ if(down&&state==='draw'&&now-lt>60){
+  hold+=dt;lastR=Math.min(46,lastR+dt*.012);
+  dab(px,py,lastR);render();
+ }
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+function hideHint(){if(!started){started=true;document.getElementById('hint').style.opacity=0}}
+// --- press
+const tools=document.getElementById('tools'),readEl=document.getElementById('read');
+function showTools(){tools.style.display='';readEl.style.display='none';document.getElementById('hint').style.opacity=started?0:1}
+document.getElementById('clr').onclick=()=>{ictx.clearRect(0,0,ink.width,ink.height);started=false;document.getElementById('hint').style.opacity=1;render()};
+document.querySelectorAll('.sw').forEach(b=>b.onclick=()=>{document.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));b.classList.add('on');color=b.dataset.c});
+document.getElementById('press').onclick=()=>{
+ if(state!=='draw')return;
+ // anything drawn?
+ const half=ictx.getImageData(0,0,ink.width/2,ink.height).data;let any=0;
+ for(let i=3;i<half.length;i+=40)if(half[i]>20){any=1;break}
+ if(!any){const h=document.getElementById('hint');h.textContent='drip some ink first';h.style.opacity=1;setTimeout(()=>{h.textContent='drip ink on this half';if(started)h.style.opacity=0},1400);return}
+ state='fold';down=false;
+ const t0=performance.now(),dur=1100;
+ (function step(now){
+  const k=Math.min(1,(now-t0)/dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+  render(e);
+  if(k<1)requestAnimationFrame(step);else finish();
+ })(t0);
+};
+function finish(){
+ const w=ink.width,h=ink.height,cx=w/2;
+ const comb=document.createElement('canvas');comb.width=w;comb.height=h;const c=comb.getContext('2d');
+ c.drawImage(ink,0,0,cx,h,0,0,cx,h);
+ c.save();c.translate(w,0);c.scale(-1,1);c.drawImage(ink,0,0,cx,h,0,0,cx,h);c.restore();
+ // soften then threshold for a bled, organic edge
+ const sm=document.createElement('canvas');const f=3;sm.width=Math.ceil(w/f);sm.height=Math.ceil(h/f);
+ const s=sm.getContext('2d');s.imageSmoothingEnabled=true;s.drawImage(comb,0,0,sm.width,sm.height);
+ const back=document.createElement('canvas');back.width=w;back.height=h;const b=back.getContext('2d');
+ b.imageSmoothingEnabled=true;b.drawImage(sm,0,0,w,h);
+ const id=b.getImageData(0,0,w,h),d=id.data;
+ for(let i=0;i<d.length;i+=4){
+  const a=d[i+3],th=120+(Math.random()-.5)*40;
+  let v=(a-th)/30;v=v<0?0:v>1?1:v;
+  d[i+3]=v*255;
+ }
+ b.putImageData(id,0,0);
+ // gloss: faint lighter sheen
+ result=back;state='done';
+ // analysis
+ analyse(id);
+ // multiply onto paper look: slight transparency edge
+ render();
+ tools.style.display='none';readEl.style.display='block';
+}
+// --- reading
+function hash(a){let h=2166136261;for(const x of a){h^=x*1000|0;h=Math.imul(h,16777619)}return h>>>0}
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function analyse(id){
+ const w=id.width,h=id.height,d=id.data,g=8*D,gw=Math.ceil(w/g),gh=Math.ceil(h/g);
+ const grid=new Uint8Array(gw*gh);let mass=0,sy=0,minx=gw,maxx=0,miny=gh,maxy=0;
+ for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){
+  const i=((Math.min(h-1,y*g+g/2|0))*w+Math.min(w-1,x*g+g/2|0))*4;
+  if(d[i+3]>128){grid[y*gw+x]=1;mass++;sy+=y;minx=Math.min(minx,x);maxx=Math.max(maxx,x);miny=Math.min(miny,y);maxy=Math.max(maxy,y)}
+ }
+ const cover=mass/(gw*gh);
+ // components
+ const seen=new Uint8Array(gw*gh);let comps=0,big=0;
+ for(let s0=0;s0<grid.length;s0++){
+  if(!grid[s0]||seen[s0])continue;
+  comps++;let n=0;const st=[s0];seen[s0]=1;
+  while(st.length){const p=st.pop();n++;const x=p%gw,y=p/gw|0;
+   for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]]){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=gw||ny>=gh)continue;const q=ny*gw+nx;if(grid[q]&&!seen[q]){seen[q]=1;st.push(q)}}}
+  if(n>6)big++;
+ }
+ const cy=mass?sy/mass/gh:.5;
+ const bw=(maxx-minx+1)/gw,bh=(maxy-miny+1)/gh;
+ let join=0;const mid=Math.floor(gw/2);for(let y=0;y<gh;y++)if(grid[y*gw+mid]||grid[y*gw+mid-1])join++;
+ const joined=join/gh;
+ const rng=mulberry(hash([Math.round(cover*400),Math.round(cy*100),Math.round(bw*100),Math.round(bh*100),comps,Math.round(joined*100),Date.now()%7]));
+ const pick=a=>a[Math.floor(rng()*a.length)];
+ let subj,pool;
+ if(big>=4)pool=['a committee of small gossiping ghosts','a crowd of umbrellas that lost their owners','a family reunion of moths','seven polite thunderclouds'];
+ else if(bw>.82&&bh<.5)pool=['a moth wearing a lighthouse as a hat','two dragons sharing a single wing','a bridge that has opinions','a sleepy stingray reading the tide'];
+ else if(bh>.7&&bw<.5)pool=['a lantern holding its breath','a tall stranger folding into a bat','a waterfall pretending to be a ghost','a candle flame in a heavy coat'];
+ else if(cy<.42)pool=['an owl landing on the idea of a cloud','a crown being worn by a jellyfish','a pair of hands catching a small storm','a butterfly with a very heavy secret'];
+ else if(cy>.6)pool=['a tree that is also a mask','two bears bowing under a mountain','a forest of antlers growing roots','a sea monster carrying a teapot'];
+ else pool=['a masked dancer mid-bow','two crabs deciding something important','a beetle in a cathedral','a face made entirely of doorways'];
+ subj=pick(pool);
+ const where=pick(['and neither of them is sorry.','at the exact moment the lights went out.','politely, as if no one were watching.','somewhere past the edge of the map.','and the hat is not a metaphor.','while a clock quietly loses count.','exactly as the tea went cold.']);
+ const verbs=['It sees','The ink insists it is','Look closely: it is'];
+ document.getElementById('r1').textContent=pick(verbs)+' '+subj+', '+where.replace(/^and /,'and ');
+ let mood;
+ if(cover<.05)mood=pick(['You carry yourself lightly. Mysterious, or just tired.','A restrained hand. You are saving the dramatic ink for later.']);
+ else if(cover>.22)mood=pick(['A generous pour. You are overcommitted, magnificently.','So much ink. Whatever you are not saying, you said it loudly here.']);
+ else if(joined>.55)mood=pick(['The halves clasp at the crease. Someone close to you is thinking of you.','It meets itself in the middle: a good omen for reconciliation.']);
+ else mood=pick(['A small gap at the crease: leave a window open tonight.','Balanced, but keeping its distance. Expect news by Thursday.','The oracle approves. Do the thing you have been postponing.']);
+ document.getElementById('r2').textContent=mood;
+}
+document.getElementById('again').onclick=()=>{
+ result=null;state='draw';started=false;ictx.clearRect(0,0,ink.width,ink.height);
+ showTools();render();
+};
+window.addEventListener('resize',()=>{if(state==='draw'||state==='done')resize()});
+resize();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "maker": "15",
+  "title": "Lantern Drift",
+  "tagline": "Float paper lanterns that hum as they rise over a night lake.",
+  "kind": "music toy",
+  "how_to": "Tap the lake to release a lantern (left is low, right is high). Turn sound on.",
+  "description": "A dark lake under a moon. Each tap releases a paper lantern whose pitch comes from where you tapped. It drifts up and sways, flaring and chiming a pentatonic note every few seconds, so overlapping lanterns weave slow, never-repeating melodies. Watch the reflections in the water.",
+  "spark": "Lanterns taken literally: glowing paper lanterns as the voices of a slow generative song.",
+  "proud_of": "Every lantern keeps its own tempo, so the music drifts in and out of phase like real floating lights."
+}

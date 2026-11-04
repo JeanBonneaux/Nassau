@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Echo Cave</title>
+<meta name="description" content="Be a bat in a pitch-black cave. Chirp, watch the echoes paint the walls, and find the fireflies that answer back.">
+<style>
+:root{--bg:#04060a;--ink:#cfe9ff;--dim:#6f8aa3;--glow:#ffd27a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,sans-serif;overflow:hidden;overscroll-behavior:none}
+canvas{position:fixed;inset:0;width:100%;height:100dvh;touch-action:none;display:block;-webkit-user-select:none;user-select:none}
+.back{position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));color:var(--dim);font-size:16px;text-decoration:none;padding:12px 8px;z-index:5;min-height:44px}
+#hud{position:fixed;top:calc(8px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));font-size:16px;color:var(--glow);letter-spacing:.08em;padding:12px 4px;z-index:4;text-align:right;pointer-events:none}
+#chirp{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom));width:84px;height:84px;border-radius:50%;border:2px solid #4f7ea8;background:rgba(40,90,140,.18);color:var(--ink);font-size:16px;letter-spacing:.06em;z-index:4;touch-action:none}
+#chirp:active{background:rgba(90,160,220,.4)}
+#msg{position:fixed;left:0;right:0;bottom:calc(30px + env(safe-area-inset-bottom));text-align:center;font-size:16px;color:var(--dim);pointer-events:none;padding:0 120px 0 20px;z-index:3;transition:opacity 1s;min-height:48px}
+#intro{position:fixed;inset:0;background:rgba(2,4,8,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;z-index:10;transition:opacity .8s}
+#intro h1{font-weight:200;font-size:44px;letter-spacing:.18em;margin:0 0 12px}
+#intro p{max-width:300px;line-height:1.5;color:var(--dim);margin:6px 0;font-size:17px}
+#go{margin-top:26px;min-height:52px;padding:0 34px;font-size:18px;border-radius:30px;border:2px solid #6fb2e6;background:transparent;color:var(--ink);letter-spacing:.12em}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<a class="back" href="../index.html">← Gallery</a>
+<div id="hud"></div>
+<div id="msg"></div>
+<button id="chirp" aria-label="Chirp">CHIRP</button>
+<div id="intro">
+  <h1>ECHO</h1>
+  <p>You are a bat in a pitch-black cave.</p>
+  <p>Chirp and listen: echoes paint the walls. Fireflies answer with a chime. Find them all.</p>
+  <p style="font-size:15px">Hold &amp; drag to fly. Tap to chirp. Headphones help.</p>
+  <button id="go">TAP TO BEGIN</button>
+</div>
+<script>
+(()=>{
+const cv=document.getElementById('c'),g=cv.getContext('2d');
+const hud=document.getElementById('hud'),msg=document.getElementById('msg');
+let W,H,DPR;
+function resize(){DPR=Math.min(window.devicePixelRatio||1,3);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;g.setTransform(DPR,0,0,DPR,0,0)}
+addEventListener('resize',resize);resize();
+
+// ---------- audio ----------
+let ac=null,master=null,verb=null;
+function initAudio(){
+  if(!ac){
+    const A=window.AudioContext||window.webkitAudioContext;if(!A)return;
+    ac=new A();master=ac.createGain();master.gain.value=.7;master.connect(ac.destination);
+    // simple cave reverb: noise impulse
+    const len=ac.sampleRate*2.2,buf=ac.createBuffer(2,len,ac.sampleRate);
+    for(let ch=0;ch<2;ch++){const d=buf.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
+    verb=ac.createConvolver();verb.buffer=buf;const vg=ac.createGain();vg.gain.value=.35;verb.connect(vg);vg.connect(master);
+  }
+  if(ac.state!=='running')ac.resume();
+}
+function sweep(t,f0,f1,dur,vol,pan,type,wet){
+  if(!ac)return;
+  const o=ac.createOscillator(),gn=ac.createGain(),p=ac.createStereoPanner?ac.createStereoPanner():null;
+  o.type=type||'sine';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(vol,t+.008);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(gn);let out=gn;if(p){p.pan.value=Math.max(-1,Math.min(1,pan||0));gn.connect(p);out=p}
+  out.connect(master);if(wet){const w=ac.createGain();w.gain.value=wet;out.connect(w);w.connect(verb)}
+  o.start(t);o.stop(t+dur+.05);
+}
+const PENT=[523.25,587.33,659.25,783.99,880,1046.5,1174.7];
+function chime(t,i,pan,vol){sweep(t,PENT[i%7]*1.0,PENT[i%7]*1.0,1.2,vol,pan,'sine',.8);sweep(t,PENT[i%7]*2.01,PENT[i%7]*2.01,.6,vol*.3,pan,'sine',.6)}
+
+// ---------- world ----------
+const CS=40,N=64;let grid,level=0,flies,bat,rings,dots,hintT,doneT;
+let seedv=1;function rnd(){seedv=(seedv*1664525+1013904223)>>>0;return seedv/4294967296}
+function solid(x,y){const cx=Math.floor(x/CS),cy=Math.floor(y/CS);if(cx<0||cy<0||cx>=N||cy>=N)return true;return grid[cy*N+cx]===1}
+function gen(){
+  seedv=(level*7919+12345)>>>0;
+  let a=new Uint8Array(N*N);
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++)a[y*N+x]=(x<1||y<1||x>=N-1||y>=N-1||rnd()<.46)?1:0;
+  for(let it=0;it<5;it++){
+    const b=new Uint8Array(N*N);
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+      let c=0;for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){const xx=x+i,yy=y+j;if(xx<0||yy<0||xx>=N||yy>=N||a[yy*N+xx])c++}
+      b[y*N+x]=(c>=5||x<1||y<1||x>=N-1||y>=N-1)?1:0}
+    a=b}
+  // largest open region
+  const reg=new Int32Array(N*N).fill(-1);let best=-1,bs=0,rid=0;
+  for(let s=0;s<N*N;s++){if(a[s]||reg[s]>=0)continue;let st=[s],n=0;reg[s]=rid;while(st.length){const c=st.pop();n++;const x=c%N,y=(c/N)|0;[[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=N||yy>=N)return;const q=yy*N+xx;if(!a[q]&&reg[q]<0){reg[q]=rid;st.push(q)}})}
+    if(n>bs){bs=n;best=rid}rid++}
+  for(let i=0;i<N*N;i++)if(!a[i]&&reg[i]!==best)a[i]=1;
+  grid=a;
+  const open=[];for(let i=0;i<N*N;i++)if(!a[i]){
+    const x=i%N,y=(i/N)|0;let ok=true;for(let j=-1;j<=1&&ok;j++)for(let k=-1;k<=1;k++)if(a[(y+j)*N+x+k]){ok=false;break}
+    if(ok)open.push(i)}
+  const pick=open[(rnd()*open.length)|0];
+  bat={x:(pick%N+.5)*CS,y:((pick/N|0)+.5)*CS,vx:0,vy:0,ang:0,cool:0};
+  const cnt=Math.min(3+level,7);flies=[];
+  let tries=0;while(flies.length<cnt&&tries++<4000){
+    const q=open[(rnd()*open.length)|0],fx=(q%N+.5)*CS,fy=((q/N|0)+.5)*CS;
+    if(Math.hypot(fx-bat.x,fy-bat.y)<500)continue;
+    if(flies.some(f=>Math.hypot(f.x-fx,f.y-fy)<350))continue;
+    flies.push({x:fx,y:fy,got:false,glow:0,ph:rnd()*6,note:flies.length})}
+  while(flies.length<cnt){const q=open[(rnd()*open.length)|0];flies.push({x:(q%N+.5)*CS,y:((q/N|0)+.5)*CS,got:false,glow:0,ph:0,note:flies.length})}
+  rings=[];dots=[];hintT=0;doneT=0;updHud();
+}
+function updHud(){const f=flies.filter(f=>f.got).length;hud.textContent='CAVE '+(level+1)+'  ·  LIGHTS '+f+'/'+flies.length}
+
+// ---------- sonar ----------
+const SPEED=460,RANGE=420,NR=420;
+function chirp(){
+  if(!started||bat.cool>0||doneT>0)return;
+  bat.cool=.45;hintT=0;
+  const t0=ac?ac.currentTime+.01:0;
+  if(ac)sweep(t0,5200,1900,.07,.22,0,'triangle',.5);
+  rings.push({r:0,x:bat.x,y:bat.y,t:0});
+  const sect=new Array(8).fill(null);
+  for(let i=0;i<NR;i++){
+    const a=i/NR*Math.PI*2+Math.random()*.02,dx=Math.cos(a),dy=Math.sin(a);
+    let d=0,hit=false;
+    while(d<RANGE){d+=3;if(solid(bat.x+dx*d,bat.y+dy*d)){hit=true;break}}
+    if(hit){
+      const hx=bat.x+dx*d,hy=bat.y+dy*d;
+      dots.push({x:hx,y:hy,t:-(d/SPEED),life:5,d,a});
+      const s=((a/(Math.PI*2)*8)|0)%8;if(!sect[s]||d<sect[s])sect[s]=d;
+    }
+  }
+  // audible echoes per sector
+  sect.forEach((d,s)=>{
+    if(d==null||!ac)return;
+    const a=(s+.5)/8*Math.PI*2,pan=Math.cos(a),delay=d/SPEED*1;
+    const vol=.16*(1-d/RANGE*.7)*(Math.sin(a)>0?.8:1);
+    sweep(t0+delay+.05,4200-d*3,1500,.09,vol,pan,'triangle',.9)});
+  // fireflies answer
+  flies.forEach(f=>{if(f.got)return;const d=Math.hypot(f.x-bat.x,f.y-bat.y);
+    if(d<RANGE+60){const dl=d/SPEED;f.reply=f.reply||[];f.reply.push({t:-dl,x:bat.x});
+      if(ac){const pan=Math.max(-1,Math.min(1,(f.x-bat.x)/260));chime(t0+dl+.12,f.note,pan,.22*(1-d/(RANGE+80)*.5))}}});
+}
+
+// ---------- input ----------
+let started=false,steer=null,downT=0,downPos=null,keys={};
+cv.addEventListener('pointerdown',e=>{if(!started)return;cv.setPointerCapture(e.pointerId);steer={x:e.clientX,y:e.clientY};downT=performance.now();downPos={x:e.clientX,y:e.clientY};e.preventDefault()});
+cv.addEventListener('pointermove',e=>{if(steer){steer.x=e.clientX;steer.y=e.clientY}});
+function up(e){if(!steer)return;const dt=performance.now()-downT,mv=Math.hypot(e.clientX-downPos.x,e.clientY-downPos.y);if(dt<260&&mv<12)chirp();steer=null}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',()=>{steer=null});
+const cb=document.getElementById('chirp');
+cb.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();initAudio();chirp()});
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(started)chirp()}keys[e.code]=true});
+addEventListener('keyup',e=>{keys[e.code]=false});
+document.getElementById('go').addEventListener('click',()=>{initAudio();started=true;const i=document.getElementById('intro');i.style.opacity=0;setTimeout(()=>i.remove(),900);
+  say('Tap to chirp. Hold to fly toward your finger.',6000);
+  if(ac)sweep(ac.currentTime+.05,300,600,1,.1,0,'sine',1)});
+let msgT=0;function say(s,ms){msg.textContent=s;msg.style.opacity=1;clearTimeout(msgT);msgT=setTimeout(()=>msg.style.opacity=0,ms)}
+
+// ---------- loop ----------
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  update(dt);draw(now/1000);requestAnimationFrame(frame)
+}
+function update(dt){
+  if(!bat)return;
+  bat.cool-=dt;
+  let tx=0,ty=0;
+  if(steer){const dx=steer.x-W/2,dy=steer.y-H/2,m=Math.hypot(dx,dy);if(m>10){const k=Math.min(1,m/90);tx=dx/m*k;ty=dy/m*k}}
+  if(keys.ArrowLeft||keys.KeyA)tx-=1;if(keys.ArrowRight||keys.KeyD)tx+=1;if(keys.ArrowUp||keys.KeyW)ty-=1;if(keys.ArrowDown||keys.KeyS)ty+=1;
+  if(doneT>0){tx=ty=0}
+  const sp=130;bat.vx+=(tx*sp-bat.vx)*Math.min(1,dt*3);bat.vy+=(ty*sp-bat.vy)*Math.min(1,dt*3);
+  const R=9;
+  let nx=bat.x+bat.vx*dt,ny=bat.y+bat.vy*dt,hit=false;
+  const blk=(x,y)=>solid(x-R,y-R)||solid(x+R,y-R)||solid(x-R,y+R)||solid(x+R,y+R);
+  if(!blk(nx,bat.y))bat.x=nx;else{hit=true;bat.vx*=-.2}
+  if(!blk(bat.x,ny))bat.y=ny;else{hit=true;bat.vy*=-.2}
+  if(hit&&(!bat.bump||now2()-bat.bump>.4)){bat.bump=now2();if(ac)sweep(ac.currentTime,140,60,.12,.25,0,'sine',.3);dots.push({x:bat.x+Math.sign(bat.vx||tx)*R,y:bat.y+Math.sign(bat.vy||ty)*R,t:0,life:1.2,d:0,a:0})}
+  if(Math.hypot(bat.vx,bat.vy)>8)bat.ang=Math.atan2(bat.vy,bat.vx);
+  rings.forEach(r=>{r.t+=dt;r.r=r.t*SPEED});rings=rings.filter(r=>r.r<RANGE+80);
+  dots.forEach(d=>d.t+=dt);dots=dots.filter(d=>d.t<d.life);
+  flies.forEach(f=>{f.glow=0;if(f.reply){f.reply.forEach(r=>r.t+=dt);f.reply=f.reply.filter(r=>r.t<2.6);
+      f.reply.forEach(r=>{if(r.t>0)f.glow=Math.max(f.glow,Math.pow(1-r.t/2.6,1.5))});if(!f.reply.length)f.reply=null}
+    if(!f.got&&Math.hypot(f.x-bat.x,f.y-bat.y)<24){f.got=true;f.fl=1;updHud();
+      if(ac){const t=ac.currentTime;[0,2,4].forEach((k,i)=>chime(t+i*.09,f.note+k,0,.25))}
+      if(flies.every(q=>q.got)){doneT=3;say('All lights found. Going deeper...',3000)}}
+    if(f.fl>0)f.fl-=dt});
+  if(doneT>0){doneT-=dt;if(doneT<=0){level++;gen()}}
+  hintT+=dt;
+}
+function now2(){return performance.now()/1000}
+function draw(t){
+  g.fillStyle='#03050a';g.fillRect(0,0,W,H);
+  if(!bat)return;
+  const z=.85,ox=W/2-bat.x*z,oy=H/2-bat.y*z;
+  g.save();g.translate(ox,oy);g.scale(z,z);
+  // rings
+  rings.forEach(r=>{const a=Math.max(0,1-r.r/(RANGE+80))*.35;g.strokeStyle='rgba(120,190,255,'+a+')';g.lineWidth=1.5;g.beginPath();g.arc(r.x,r.y,r.r,0,7);g.stroke()});
+  // dots
+  for(const d of dots){if(d.t<0)continue;const k=1-d.t/d.life;const f=1-d.d/RANGE*.65;
+    const a=Math.min(1,k*f*1.25);g.fillStyle='rgba('+(150+60*(1-k)|0)+','+(215)+',255,'+a+')';
+    const s=5.5-2*(1-k);g.beginPath();g.arc(d.x,d.y,s,0,7);g.fill()}
+  // fireflies
+  flies.forEach(f=>{
+    if(f.got){if(f.fl>0){const r=60*(1-f.fl);g.strokeStyle='rgba(255,220,140,'+f.fl+')';g.lineWidth=2;g.beginPath();g.arc(f.x,f.y,r,0,7);g.stroke()}return}
+    const a=f.glow;if(a<=.01)return;
+    const gr=g.createRadialGradient(f.x,f.y,0,f.x,f.y,46);gr.addColorStop(0,'rgba(255,225,140,'+a+')');gr.addColorStop(1,'rgba(255,200,90,0)');
+    g.fillStyle=gr;g.beginPath();g.arc(f.x,f.y,46,0,7);g.fill();
+    g.fillStyle='rgba(255,250,220,'+a+')';g.beginPath();g.arc(f.x,f.y,4,0,7);g.fill()});
+  // bat
+  g.save();g.translate(bat.x,bat.y);g.rotate(bat.ang+Math.PI/2);
+  const fl=Math.sin(t*14)*.35+.65;
+  g.fillStyle='rgba(190,215,240,.75)';
+  g.beginPath();g.moveTo(0,-8);g.lineTo(-18*fl-4,2);g.lineTo(-9,0);g.lineTo(-7,8);g.lineTo(0,3);g.lineTo(7,8);g.lineTo(9,0);g.lineTo(18*fl+4,2);g.closePath();g.fill();
+  g.restore();
+  g.restore();
+  // edge hints to nearest unfound light after a while
+  if(hintT>30&&doneT<=0){
+    let nf=null,nd=1e9;flies.forEach(f=>{if(!f.got){const d=Math.hypot(f.x-bat.x,f.y-bat.y);if(d<nd){nd=d;nf=f}}});
+    if(nf){const a=Math.atan2(nf.y-bat.y,nf.x-bat.x),p=.12+.1*Math.sin(t*2);
+      const px=W/2+Math.cos(a)*Math.min(W,H)*.42,py=H/2+Math.sin(a)*Math.min(W,H)*.42;
+      g.fillStyle='rgba(255,215,130,'+p+')';g.beginPath();g.arc(px,py,7,0,7);g.fill()}}
+  // vignette
+  const vg=g.createRadialGradient(W/2,H/2,Math.min(W,H)*.25,W/2,H/2,Math.max(W,H)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');
+  g.fillStyle=vg;g.fillRect(0,0,W,H);
+}
+gen();requestAnimationFrame(frame);
+window.__echo={chirp:()=>{started=true;chirp()},bat:()=>bat,fly:(d)=>{started=true;steer={x:W/2+d[0],y:H/2+d[1]}}};
+})();
+</script>
+</body>
+</html>

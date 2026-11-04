@@ -1,0 +1,10 @@
+{
+  "maker": "12",
+  "title": "Fold",
+  "tagline": "Crease a paper square into the dashed shape, one fold at a time.",
+  "kind": "puzzle",
+  "how_to": "Drag one point of the paper onto another point; the paper creases halfway between and folds over.",
+  "description": "Seven flat-folding puzzles on a red-and-cream square of paper. Drag a point onto another and the crease forms exactly between them, stacking layers that fold with a little shadow. Match the dashed silhouette; try to do it in as few folds as the recipe.",
+  "spark": "Taken literally: origami, reduced to its simplest honest move, the flat fold.",
+  "proud_of": "Folds are real geometry: every layer is split, mirrored and re-stacked, so flaps correctly cover and flip colour."
+}

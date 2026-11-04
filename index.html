@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Swarm of Sixteen</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Sixteen Claude agents were each told to make something, anything. This is what they made.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a gallery wall. A 4×4 index of the sixteen works opens the page, then one wall label per work: one column on a phone, two or three side by side on wider screens. */
+:root {
+  --wall: #EDEFF3;
+  --label: #FFFFFF;
+  --ink: #14161B;
+  --ink-2: #4C5361;
+  --hair: #CAD0D9;
+  --cobalt: #1C3AD4;
+  --on-cobalt: #FFFFFF;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wall: #101217; --label: #191C23; --ink: #EBEDF1; --ink-2: #A1A9B8;
+    --hair: #2D323C; --cobalt: #95A7FF; --on-cobalt: #0B1030;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --wall: #101217; --label: #191C23; --ink: #EBEDF1; --ink-2: #A1A9B8;
+  --hair: #2D323C; --cobalt: #95A7FF; --on-cobalt: #0B1030;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--wall);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 1rem;
+  line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+img { display: block; max-width: 100%; height: auto; }
+[hidden] { display: none !important; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 3px; }
+.wrap { max-width: 1240px; margin-inline: auto; }
+
+.mono { font-family: var(--mono); font-weight: 500; font-size: 0.75rem; line-height: 1.3; letter-spacing: 0.07em; text-transform: uppercase; }
+
+/* Masthead */
+.masthead { padding-block: 44px 28px; display: grid; gap: 18px; }
+.masthead .mono { color: var(--ink-2); margin: 0; }
+h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: clamp(3rem, 13vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.lede { margin: 0; max-width: 60ch; font-size: 1.0625rem; }
+.facts { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 20px; color: var(--ink-2); }
+
+/* Index of all sixteen */
+.index { padding-block: 8px 44px; }
+.index h2, .behind h2 { margin: 0 0 14px; color: var(--ink-2); }
+.index ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 8px; }
+@media (min-width: 760px) { .index ol { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 14px 10px; } }
+.index a { display: grid; gap: 5px; text-decoration: none; position: relative; }
+.index img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--label); border: 1px solid var(--hair); }
+.index .no { position: absolute; top: 0; left: 0; background: var(--cobalt); color: var(--on-cobalt); padding: 2px 5px; font-size: 0.6875rem; letter-spacing: 0.04em; }
+.index .spark { font-family: var(--mono); font-size: 0.6875rem; line-height: 1.2; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.index a:hover img { border-color: var(--cobalt); }
+
+/* Wall labels */
+.works { display: grid; grid-template-columns: minmax(0, 1fr); gap: 44px 28px; padding-block: 0 64px; }
+@media (min-width: 720px) { .works { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .works { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.work { display: flex; flex-direction: column; min-width: 0; scroll-margin-top: calc(16px + env(safe-area-inset-top, 0px)); }
+.shot { display: block; background: var(--label); border: 1px solid var(--hair); }
+.shot img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.label { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 18px 18px 20px; background: var(--label); border: 1px solid var(--hair); border-top: 0; }
+.meta { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--ink-2); }
+.meta .no { color: var(--cobalt); }
+.work h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-stretch: 112%;
+  font-weight: 760;
+  font-size: 1.625rem;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.work h3 a { text-decoration: none; }
+.tagline { margin: 0; font-weight: 560; font-size: 1.0625rem; line-height: 1.4; }
+.desc { margin: 0; }
+.howto { margin: 0; font-size: 0.9375rem; color: var(--ink-2); }
+.howto .mono { color: var(--ink); margin-right: 6px; }
+.note { margin: 2px 0 0; padding-top: 12px; border-top: 1px solid var(--hair); font-size: 0.9375rem; color: var(--ink-2); }
+.note p { margin: 0; }
+.note cite { display: block; margin-top: 6px; font-style: normal; }
+.open {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 10px;
+  min-height: 44px; padding: 0 18px;
+  background: var(--cobalt); color: var(--on-cobalt);
+  font-weight: 620; font-size: 0.9375rem; text-decoration: none;
+}
+.open:hover { filter: brightness(1.08); }
+.label .spacer { margin-top: 4px; }
+
+/* Behind the scenes */
+.behind { border-top: 1px solid var(--hair); padding-block: 32px 24px; display: grid; gap: 16px; }
+.behind p { margin: 0; max-width: 62ch; }
+details { background: var(--label); border: 1px solid var(--hair); }
+summary { cursor: pointer; padding: 12px 16px; min-height: 44px; font-weight: 600; }
+details[open] summary { border-bottom: 1px solid var(--hair); }
+details pre { margin: 0; padding: 14px 16px; max-height: 70vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 0.8125rem/1.55 var(--mono); }
+.claims { margin: 0; padding: 14px 16px 14px 44px; display: grid; gap: 8px; font-size: 0.9375rem; }
+.claims b { font-weight: 600; }
+.colophon { padding-block: 8px 40px; color: var(--ink-2); font-size: 0.875rem; }
+.colophon p { margin: 0; max-width: 62ch; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <p class="mono">Open studio · 4 November 2026</p>
+    <h1>Swarm of Sixteen</h1>
+    <p class="lede">Sixteen Claude agents worked side by side, each told only to make something, anything. Each one chose its own idea, claimed it on a shared board so no two made the same thing, built it as a small offline web page, and tested it on a simulated iPhone. These are their sixteen pieces, with the notes they left.</p>
+    <ul class="facts mono">
+      <li>16 makers</li>
+      <li>One shared brief</li>
+      <li>One random word each</li>
+      <li>Made for a phone</li>
+    </ul>
+  </header>
+
+  <nav class="index" aria-labelledby="index-title">
+    <h2 class="mono" id="index-title">All works, by maker and spark word</h2>
+    <ol>
+      <li><a href="#maker-01" aria-label="01: Clockwork Chimes"><img src="01-clockwork-chimes/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">01</span><span class="spark">clockwork</span></a></li>
+      <li><a href="#maker-02" aria-label="02: Mossed Over"><img src="02-mossed-over/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">02</span><span class="spark">moss</span></a></li>
+      <li><a href="#maker-03" aria-label="03: Small Hours FM"><img src="03-small-hours-fm/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">03</span><span class="spark">radio</span></a></li>
+      <li><a href="#maker-04" aria-label="04: Waggle"><img src="04-waggle/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">04</span><span class="spark">bees</span></a></li>
+      <li><a href="#maker-05" aria-label="05: Glass Harp"><img src="05-glass-harp/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">05</span><span class="spark">glass</span></a></li>
+      <li><a href="#maker-06" aria-label="06: Long Way South"><img src="06-long-way-south/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">06</span><span class="spark">migration</span></a></li>
+      <li><a href="#maker-07" aria-label="07: Khipu"><img src="07-khipu/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">07</span><span class="spark">knots</span></a></li>
+      <li><a href="#maker-08" aria-label="08: Blot Reader"><img src="08-blot-reader/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">08</span><span class="spark">ink</span></a></li>
+      <li><a href="#maker-09" aria-label="09: Rainmaker Mesa"><img src="09-rainmaker-mesa/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">09</span><span class="spark">erosion</span></a></li>
+      <li><a href="#maker-10" aria-label="10: Orrery Music Box"><img src="10-orrery/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">10</span><span class="spark">orbit</span></a></li>
+      <li><a href="#maker-11" aria-label="11: Score &amp; Bake"><img src="11-score-and-bake/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">11</span><span class="spark">sourdough</span></a></li>
+      <li><a href="#maker-12" aria-label="12: Fold"><img src="12-fold/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">12</span><span class="spark">origami</span></a></li>
+      <li><a href="#maker-13" aria-label="13: Platen"><img src="13-platen/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">13</span><span class="spark">typewriter</span></a></li>
+      <li><a href="#maker-14" aria-label="14: Dig"><img src="14-dig/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">14</span><span class="spark">fossils</span></a></li>
+      <li><a href="#maker-15" aria-label="15: Lantern Drift"><img src="15-lantern-drift/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">15</span><span class="spark">lanterns</span></a></li>
+      <li><a href="#maker-16" aria-label="16: Echo Cave"><img src="16-echo-cave/thumb-sm.jpg" alt="" width="320" height="240" loading="lazy"><span class="no mono">16</span><span class="spark">echo</span></a></li>
+    </ol>
+  </nav>
+
+  <main class="works">
+    <article class="work" id="maker-01">
+      <a class="shot" href="01-clockwork-chimes/index.html" tabindex="-1" aria-hidden="true"><img src="01-clockwork-chimes/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">01</span> <span>toy</span> <span>Spark: clockwork</span></p>
+        <h3><a href="01-clockwork-chimes/index.html">Clockwork Chimes</a></h3>
+        <p class="tagline">Mesh brass gears; their pegs strike chimes in gear-ratio rhythms.</p>
+        <p class="desc">A tiny clockwork music box you build yourself. Gears with real meshing teeth turn each other at true ratios, and each peg that passes the top strikes a bell. Mix tooth counts and peg numbers and listen to the rhythms drift in and out of step.</p>
+        <p class="howto"><span class="mono">How to</span>Tap to wind it, pick a gear size, drag it against another gear, tap a gear to change its pegs. Sound on.</p>
+        <blockquote class="note"><p>Every placed gear is phase-aligned so its teeth truly interleave with its neighbour&#x27;s, and turning ratios are exact.</p><cite class="mono">Maker 01, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="01-clockwork-chimes/index.html">Open Clockwork Chimes <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-02">
+      <a class="shot" href="02-mossed-over/index.html" tabindex="-1" aria-hidden="true"><img src="02-mossed-over/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">02</span> <span>interactive poem</span> <span>Spark: moss</span></p>
+        <h3><a href="02-mossed-over/index.html">Mossed Over</a></h3>
+        <p class="tagline">Brush moss off old stones to read their poems before it returns.</p>
+        <p class="desc">Five old stones each carry a tiny poem, but moss has grown over the words. Brush it away with your finger to read, and notice that the green slowly creeps back from the edges of what you cleared.</p>
+        <p class="howto"><span class="mono">How to</span>Drag a finger across a stone to brush the moss away; use the arrows or dots to visit the next stone.</p>
+        <blockquote class="note"><p>The moss regrows cell by cell from its own edges, so a cleared patch genuinely closes up like a living thing.</p><cite class="mono">Maker 02, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="02-mossed-over/index.html">Open Mossed Over <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-03">
+      <a class="shot" href="03-small-hours-fm/index.html" tabindex="-1" aria-hidden="true"><img src="03-small-hours-fm/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">03</span> <span>toy</span> <span>Spark: radio</span></p>
+        <h3><a href="03-small-hours-fm/index.html">Small Hours FM</a></h3>
+        <p class="tagline">Six invented night stations hiding in the static.</p>
+        <p class="desc">A night radio with a glowing tuning dial. Between the hiss and heterodyne whistles hide six synthesized stations: a music-box lullaby, a numbers broadcast, brush jazz, a weather report for nobody, a lighthouse theremin and a station of dead air. Station names un-garble as you tune closer; find all six.</p>
+        <p class="howto"><span class="mono">How to</span>Tap Switch on (sound on), then drag the dial left and right to tune in stations.</p>
+        <blockquote class="note"><p>Every station plays live all at once and the dial just crossfades them, so tuning feels like a real signal swelling out of the noise.</p><cite class="mono">Maker 03, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="03-small-hours-fm/index.html">Open Small Hours FM <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-04">
+      <a class="shot" href="04-waggle/index.html" tabindex="-1" aria-hidden="true"><img src="04-waggle/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">04</span> <span>puzzle</span> <span>Spark: bees</span></p>
+        <h3><a href="04-waggle/index.html">Waggle</a></h3>
+        <p class="tagline">Read a honeybee&#x27;s dance and find the flowers.</p>
+        <p class="desc">A forager bee dances on the honeycomb: the angle of her waggle run from vertical is the flowers&#x27; angle from the sun, and its length in time is the distance. Turn that into a spot on the meadow map over five rounds, with optional protractor and ruler guides. The sun moves between rounds, so you must re-do the sum.</p>
+        <p class="howto"><span class="mono">How to</span>Watch the dancing bee, work out the bearing and distance, tap the map to drop a pin, then send the foragers. No sound.</p>
+        <blockquote class="note"><p>The dance itself: a wiggling figure-eight with trailing gold dust, whose run length and timing really encode the answer.</p><cite class="mono">Maker 04, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="04-waggle/index.html">Open Waggle <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-05">
+      <a class="shot" href="05-glass-harp/index.html" tabindex="-1" aria-hidden="true"><img src="05-glass-harp/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">05</span> <span>music toy</span> <span>Spark: glass</span></p>
+        <h3><a href="05-glass-harp/index.html">Glass Harp</a></h3>
+        <p class="tagline">Wet-finger crystal glasses: rub the rim to sing, drag the water to tune.</p>
+        <p class="desc">Five crystal glasses stand on a table, each filled to a different level. Rub a rim and it slowly builds a pure, shimmering tone while the rim visibly wobbles and the water ripples. Drag a glass&#x27;s body to pour or drain water and watch the pitch glide; switch off snapping for free tuning.</p>
+        <p class="howto"><span class="mono">How to</span>Turn sound on, circle a finger on a glass rim; drag a glass up or down to change its water.</p>
+        <blockquote class="note"><p>The rim itself deforms in a two-lobe vibration mode as it sings, and speed of rubbing controls how loud it grows.</p><cite class="mono">Maker 05, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="05-glass-harp/index.html">Open Glass Harp <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-06">
+      <a class="shot" href="06-long-way-south/index.html" tabindex="-1" aria-hidden="true"><img src="06-long-way-south/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">06</span> <span>game</span> <span>Spark: migration</span></p>
+        <h3><a href="06-long-way-south/index.html">Long Way South</a></h3>
+        <p class="tagline">Lead a night-migrating flock home; every bird is a note.</p>
+        <p class="desc">You lead a flock of birds on a 2,400 km night flight from dusk to sunrise. Glide through warm thermals to rest, gather lost birds who join the formation, and steer around storms that scatter the flock. Each bird owns a pentatonic note, so the melody you hear is exactly the flock you still have.</p>
+        <p class="howto"><span class="mono">How to</span>Drag anywhere to steer the lead bird; turn the sound on for the flock&#x27;s song.</p>
+        <blockquote class="note"><p>The music is the flock itself: lose a bird and its note drops out of the song.</p><cite class="mono">Maker 06, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="06-long-way-south/index.html">Open Long Way South <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-07">
+      <a class="shot" href="07-khipu/index.html" tabindex="-1" aria-hidden="true"><img src="07-khipu/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">07</span> <span>toy</span> <span>Spark: knots</span></p>
+        <h3><a href="07-khipu/index.html">Khipu</a></h3>
+        <p class="tagline">Tie knotted cords that write numbers, Inca style.</p>
+        <p class="desc">A khipu was a set of knotted cords the Inca used for accounting. Tap bands on the hanging cords to tie knots for ones, tens, hundreds and thousands. The gold sum cord on the right ties itself to the total. Try Challenge to tie target numbers.</p>
+        <p class="howto"><span class="mono">How to</span>Tap a band on a cord to tie a knot; switch to Untying to remove; try Challenge.</p>
+        <blockquote class="note"><p>The sum cord re-ties its own knots live as you add to the others.</p><cite class="mono">Maker 07, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="07-khipu/index.html">Open Khipu <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-08">
+      <a class="shot" href="08-blot-reader/index.html" tabindex="-1" aria-hidden="true"><img src="08-blot-reader/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">08</span> <span>toy</span> <span>Spark: ink</span></p>
+        <h3><a href="08-blot-reader/index.html">Blot Reader</a></h3>
+        <p class="tagline">Drip ink, press the fold, and an oracle reads your blot.</p>
+        <p class="desc">A sheet of paper with a crease down the middle. Drip, flick and pool ink on the left half, then press the fold: the flap swings over and prints a mirrored blot. An oracle reads it aloud, and its reading depends on how much ink you used, where it sits and whether the halves touch.</p>
+        <p class="howto"><span class="mono">How to</span>Drag on the left half to drip ink (hold still to pool it), then tap Press the fold.</p>
+        <blockquote class="note"><p>The slow-moving pen makes fat pools and fast flicks throw splatter, so every blot feels hand-made.</p><cite class="mono">Maker 08, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="08-blot-reader/index.html">Open Blot Reader <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-09">
+      <a class="shot" href="09-rainmaker-mesa/index.html" tabindex="-1" aria-hidden="true"><img src="09-rainmaker-mesa/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">09</span> <span>toy</span> <span>Spark: erosion</span></p>
+        <h3><a href="09-rainmaker-mesa/index.html">Rainmaker Mesa</a></h3>
+        <p class="tagline">Pour rain on a block of rock and watch it become a canyon.</p>
+        <p class="desc">A mesa of layered hard and soft rock sits waiting. Rain droplets carry away sediment and drop it downstream, carving branching valleys, stepped cliffs and pale sandy fans. Concentrate rain in one spot to cut a canyon, or let the storm run fast for thousands of years.</p>
+        <p class="howto"><span class="mono">How to</span>Drag to pour rain where you want it; use Storm, speed and Water buttons, and New rock to start over.</p>
+        <blockquote class="note"><p>Alternating hard and soft strata make cliffs and ledges appear as the valleys deepen.</p><cite class="mono">Maker 09, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="09-rainmaker-mesa/index.html">Open Rainmaker Mesa <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-10">
+      <a class="shot" href="10-orrery/index.html" tabindex="-1" aria-hidden="true"><img src="10-orrery/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">10</span> <span>music toy</span> <span>Spark: orbit</span></p>
+        <h3><a href="10-orrery/index.html">Orrery Music Box</a></h3>
+        <p class="tagline">Hang planets on seven rings and let them ring the gate.</p>
+        <p class="desc">Seven concentric rings turn at seven different speeds, outer ones low and slow, inner ones high and quick. Each planet you hang rings a bell when it sweeps past the golden gate at the top. Stack planets on different rings and listen to polyrhythms drift in and out of phase, then press Surprise for a random system.</p>
+        <p class="howto"><span class="mono">How to</span>Tap to begin (sound on), then tap a ring to hang a planet; tap a planet to remove it.</p>
+        <blockquote class="note"><p>Every ring&#x27;s speed is a whole-number multiple of the slowest, so all the rhythms realign every cycle and the pattern always resolves.</p><cite class="mono">Maker 10, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="10-orrery/index.html">Open Orrery Music Box <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-11">
+      <a class="shot" href="11-score-and-bake/index.html" tabindex="-1" aria-hidden="true"><img src="11-score-and-bake/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">11</span> <span>toy</span> <span>Spark: sourdough</span></p>
+        <h3><a href="11-score-and-bake/index.html">Score &amp; Bake</a></h3>
+        <p class="tagline">Slash a sourdough loaf, then watch the oven open your cuts.</p>
+        <p class="desc">You are the baker with the blade. Draw cuts across a floured sourdough boule, choose how dark to bake it, and watch the oven spring split your slashes into crumb-white openings with raised golden ears. Different patterns get different verdicts, and an unscored loaf blows out its side.</p>
+        <p class="howto"><span class="mono">How to</span>Drag across the dough to score it, pick a doneness, then tap Bake. No sound.</p>
+        <blockquote class="note"><p>The ear lifts on the side the blade travelled, so your drag direction shapes the bloom.</p><cite class="mono">Maker 11, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="11-score-and-bake/index.html">Open Score &amp; Bake <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-12">
+      <a class="shot" href="12-fold/index.html" tabindex="-1" aria-hidden="true"><img src="12-fold/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">12</span> <span>puzzle</span> <span>Spark: origami</span></p>
+        <h3><a href="12-fold/index.html">Fold</a></h3>
+        <p class="tagline">Crease a paper square into the dashed shape, one fold at a time.</p>
+        <p class="desc">Seven flat-folding puzzles on a red-and-cream square of paper. Drag a point onto another and the crease forms exactly between them, stacking layers that fold with a little shadow. Match the dashed silhouette; try to do it in as few folds as the recipe.</p>
+        <p class="howto"><span class="mono">How to</span>Drag one point of the paper onto another point; the paper creases halfway between and folds over.</p>
+        <blockquote class="note"><p>Folds are real geometry: every layer is split, mirrored and re-stacked, so flaps correctly cover and flip colour.</p><cite class="mono">Maker 12, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="12-fold/index.html">Open Fold <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-13">
+      <a class="shot" href="13-platen/index.html" tabindex="-1" aria-hidden="true"><img src="13-platen/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">13</span> <span>toy</span> <span>Spark: typewriter</span></p>
+        <h3><a href="13-platen/index.html">Platen</a></h3>
+        <p class="tagline">A typewriter with a bell, no backspace and a two-colour ribbon.</p>
+        <p class="desc">A tactile typewriter you play on your phone. Each strike lands slightly off, ink varies, and the carriage jams at the margin so letters pile up. Nudge the carriage and roll the platen by half lines to overstrike, then watch Demo type a moon in two passes.</p>
+        <p class="howto"><span class="mono">How to</span>Tap the keys (sound on); listen for the margin bell, press Return, and try Demo.</p>
+        <blockquote class="note"><p>Everything is synthesized live, from the key clack and the Return ratchet to the bell&#x27;s inharmonic ring.</p><cite class="mono">Maker 13, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="13-platen/index.html">Open Platen <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-14">
+      <a class="shot" href="14-dig/index.html" tabindex="-1" aria-hidden="true"><img src="14-dig/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">14</span> <span>toy</span> <span>Spark: fossils</span></p>
+        <h3><a href="14-dig/index.html">Dig</a></h3>
+        <p class="tagline">Brush the dust off a slab and find what was buried.</p>
+        <p class="desc">A slab of rock hides a procedurally made fossil: an ammonite, trilobite, fern, scallop, lizard or sea urchin. Sweep the brush over the dust and watch the relief emerge, then get a museum tag with a made-up Latin name. Specimens you keep go into a drawer that is saved on your device.</p>
+        <p class="howto"><span class="mono">How to</span>Drag to brush the dust away (use Pick for fine edges); sound is optional.</p>
+        <blockquote class="note"><p>The dust hides a faint ghost of the shape beneath, and the relief is lit from per-pixel height maps so ribs and whorls look carved.</p><cite class="mono">Maker 14, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="14-dig/index.html">Open Dig <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-15">
+      <a class="shot" href="15-lantern-drift/index.html" tabindex="-1" aria-hidden="true"><img src="15-lantern-drift/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">15</span> <span>music toy</span> <span>Spark: lanterns</span></p>
+        <h3><a href="15-lantern-drift/index.html">Lantern Drift</a></h3>
+        <p class="tagline">Float paper lanterns that hum as they rise over a night lake.</p>
+        <p class="desc">A dark lake under a moon. Each tap releases a paper lantern whose pitch comes from where you tapped. It drifts up and sways, flaring and chiming a pentatonic note every few seconds, so overlapping lanterns weave slow, never-repeating melodies. Watch the reflections in the water.</p>
+        <p class="howto"><span class="mono">How to</span>Tap the lake to release a lantern (left is low, right is high). Turn sound on.</p>
+        <blockquote class="note"><p>Every lantern keeps its own tempo, so the music drifts in and out of phase like real floating lights.</p><cite class="mono">Maker 15, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="15-lantern-drift/index.html">Open Lantern Drift <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="work" id="maker-16">
+      <a class="shot" href="16-echo-cave/index.html" tabindex="-1" aria-hidden="true"><img src="16-echo-cave/thumb.jpg" alt="" width="1200" height="900" loading="lazy"></a>
+      <div class="label">
+        <p class="meta mono"><span class="no">16</span> <span>game</span> <span>Spark: echo</span></p>
+        <h3><a href="16-echo-cave/index.html">Echo Cave</a></h3>
+        <p class="tagline">Chirp in the dark and let the echoes draw the cave.</p>
+        <p class="desc">You are a bat in a pitch-black cave. Every chirp sends out a ring whose echoes light the walls where it hits and sound from the side they bounce back from. Hidden fireflies answer your call with a chime; fly into each one to move on to a deeper, new cave.</p>
+        <p class="howto"><span class="mono">How to</span>Hold and drag to fly, tap to chirp (or use the button); turn sound on and wear headphones.</p>
+        <blockquote class="note"><p>Echo timing is physical: farther walls light up and sound later, panned to the side they came from.</p><cite class="mono">Maker 16, on what it’s proudest of</cite></blockquote>
+        <a class="open" href="16-echo-cave/index.html">Open Echo Cave <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+  </main>
+
+  <section class="behind" aria-labelledby="behind-title">
+    <h2 class="mono" id="behind-title">How it was made</h2>
+    <p>All sixteen agents ran at once from the same brief. To keep sixteen copies of one model from converging on one idea, each got a random spark word it could use, twist or ignore, and a shared claims board: if a new idea was basically the same experience as one claimed earlier, its maker had to pick another. Every piece had to run offline in a single folder, work with touch, and pass a checker that opened it as an iPhone in a headless browser, reported errors, and took the thumbnail shown here.</p>
+    <details>
+      <summary>The claims board, in the order ideas were claimed</summary>
+      <ol class="claims">
+        <li><b>03 · Small Hours FM</b>: Drag a glowing tuning dial through static to find six invented night-radio stations, all synthesized live.</li>
+        <li><b>05 · Glass Harp</b>: Wet-finger crystal glasses: rub rims to sing, drag the water to tune them.</li>
+        <li><b>10 · Orrery Music Box</b>: Tap rings to hang planets that orbit and ring pentatonic bells as they cross the gate.</li>
+        <li><b>09 · Rainmaker Mesa</b>: Pour rain on a block of rock and watch rivers carve canyons, deltas and fans in real hydraulic erosion</li>
+        <li><b>13 · Platen</b>: A tactile typewriter: type, ding the bell, roll the platen and overstrike to make typewriter art</li>
+        <li><b>04 · Waggle</b>: Decode a honeybee&#x27;s waggle dance on the comb and tap where the flowers are on the meadow map.</li>
+        <li><b>15 · Lantern Drift</b>: Release paper lanterns from a dark lake; each hums a pentatonic note as it rises and glows in time</li>
+        <li><b>11 · Score &amp; Bake</b>: Slash a sourdough loaf with a blade, then watch the oven spring split your cuts open into ears.</li>
+        <li><b>02 · Mossed Over</b>: Old stones carry tiny poems, but moss has grown over them; brush it away to read, and it slowly creeps back.</li>
+        <li><b>06 · Long Way South</b>: Steer a flock of night-migrating birds through thermals and storms; every bird you save adds a note to the song.</li>
+        <li><b>16 · Echo Cave</b>: Be a bat in the dark: chirp, listen to the echoes paint the walls, find the fireflies that answer.</li>
+        <li><b>08 · Blot Reader</b>: Drip ink on one half of a sheet, press the fold, and an oracle reads the mirrored blot aloud.</li>
+        <li><b>07 · Khipu</b>: Tie Inca-style knotted cords that store numbers; a sum cord adds them up, plus counting challenges.</li>
+        <li><b>12 · Fold</b>: Drag a corner onto a point to crease and fold a paper square into target silhouettes.</li>
+        <li><b>01 · Clockwork Chimes</b>: Place meshing gears; pegs on each wheel strike notes, so gear ratios become polyrhythms.</li>
+        <li><b>14 · Dig</b>: Brush dust off a slab of rock to uncover a procedurally carved fossil, name it, keep it in your drawer.</li>
+      </ol>
+    </details>
+    <details>
+      <summary>The brief every maker received</summary>
+      <pre># Maker brief
+
+You are one of **16 makers** working at the same time, each in your own folder, each the same kind of AI as you. Your job: **decide for yourself what to make, make it, and present it.** It can be anything: a game, a toy, generative art, a piece of music, an interactive story, a poem you can play with, a tool, a simulation, a visual explainer, a puzzle, something that doesn&#x27;t have a name yet. The person who asked for this will open everything on an **iPhone** (maybe later on a laptop) from a gallery page that links to each maker&#x27;s work. Surprise and delight them. Make the thing you&#x27;d be proud to show.
+
+Your maker number (NN) and your spark word are in the message that sent you here. In the paths below, `$S` stands for `/tmp/claude-0/-home-user-Nassau/989baced-b5ca-53c9-9381-0f692586d1b9/scratchpad/swarm` (write it out in full in your commands; your shell doesn&#x27;t have `$S` set).
+
+## Your spark
+
+One random word, there so that 16 copies of the same model don&#x27;t all make the same thing. Use it literally, twist it, take only its mood, or ignore it if a better idea grabs you.
+
+## Steps
+
+1. **Brainstorm** at least five genuinely different ideas: different kinds of thing, not five variations of one. Pick the one you&#x27;re most excited about that you can finish and polish. Small and delightful beats big and broken.
+2. **Claim it** on the shared board so the others can steer away from it:
+   `bash $S/claim.sh NN &quot;Title&quot; &quot;one-line pitch&quot;`
+   It prints the whole board. If a line above yours is basically the same experience as your idea, choose another idea and run the command again (it replaces your line). Sharing a theme is fine; making the same thing twice is not. Glance at the board again before you start building.
+3. **Build** it in your own folder, `/home/user/Nassau/NN-slug/` (NN is your number; slug is a short lowercase hyphenated name). Create the folder yourself.
+4. **Check** it with the check tool (below), open the screenshot, fix, and repeat until it passes and genuinely looks good.
+5. **Write `about.json`** in your folder (format below).
+6. **Run the check one last time**, with actions that make the thumbnail show your work at its best (start it, play a little, let the art grow).
+7. **Reply** with your report (format below). That reply is your final output.
+
+## Hard requirements
+
+- Entry point `index.html`: a complete standalone document with `&lt;!doctype html&gt;`, `&lt;meta charset=&quot;utf-8&quot;&gt;`, `&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;` (add `, viewport-fit=cover` if you use safe-area insets), a real `&lt;title&gt;` and `&lt;meta name=&quot;description&quot; content=&quot;…&quot;&gt;`. All text in English.
+- **Self-contained and offline.** Nothing may load from the network: no CDNs, no web fonts, no APIs, no remote images. Inline your CSS and JS. You may add other files to your folder (images or sounds you generate, JSON, extra pages) and refer to them with relative paths (`sprite.png`, never `/NN-slug/sprite.png`). For type, use system fonts (`system-ui, -apple-system, sans-serif`; `ui-serif, Georgia, serif`; `ui-monospace, Menlo, monospace`) or draw your own letters.
+- Folder under 2 MB, containing only what the page needs plus `about.json` and `thumb.jpg` (the check tool writes it). Keep scratch files and generator scripts in `$S/work/NN/`.
+- **Phone first.** It must work well in Safari on an iPhone held upright (390 px wide): touch controls (nothing that only works with hover or a keyboard; keyboard support on desktop is a bonus), tap targets at least 44 px, no horizontal scrolling, body text at least 16 px, safe areas respected (`env(safe-area-inset-*)`). For full-screen layouts use `100dvh` or `innerHeight`, not `100vh`. On canvases set `touch-action: none` and scale by `devicePixelRatio` so they&#x27;re crisp. It should also look right on a laptop.
+- **iOS Safari realities.** Sound can only start from a tap: create or resume the `AudioContext` inside a `pointerdown` or `click` handler, and show a clear tap-to-start when there&#x27;s audio. No vibration, no Web MIDI, no Fullscreen API on iPhone. Motion and orientation sensors need `DeviceMotionEvent.requestPermission()` called from a tap, and must never be the only way to use the thing. Prefer pointer events (`pointerdown/move/up`), which cover touch and mouse. No `alert`/`confirm`/`prompt`, no popups. If you use `localStorage` (say, for a best score), wrap every access in `try/catch` and work fine without it.
+- A small, unobtrusive link back to the gallery, `&lt;a href=&quot;../index.html&quot;&gt;← Gallery&lt;/a&gt;`, somewhere it won&#x27;t get in the way.
+- **Original work.** If you make a game, make an original one: not a recreation or clone of an existing game (its name, characters, art, levels or look). No copyrighted characters, song lyrics or long quotations. Nothing that imitates a real person, brand or organization. Friendly for any audience.
+- **Unrelated to this repository&#x27;s other projects**: nothing about the Bahamas, Nassau or Eleuthera, boat crossings, fish, wave or sun forecasts, expense tracking, or neurons in language models.
+
+## Overdone: push past these
+
+Conway&#x27;s Game of Life, particle fountains, Mandelbrot zooms, starfields, falling code, to-do lists, pomodoro timers, calculators, Snake/Pong/Breakout/falling-block clones, bouncing balls, plain trivia quizzes. If your idea lands on one of these, keep going until it has its own point of view.
+
+## House rules
+
+- Write only inside your own folder and `$S/work/NN/`, plus your line on the board through `claim.sh`. Never change anyone else&#x27;s folder.
+- No git commands that change anything (`add`, `commit`, `checkout`, `switch`, `stash`, `reset`, `branch`, `push`…). The coordinator commits everything at the end.
+- Don&#x27;t publish, upload, email or post anything; don&#x27;t use the Artifact tool or any connector; don&#x27;t start sessions, agents or scheduled tasks.
+- Don&#x27;t install packages (`npm install`, `pip install`). You have Node 22, Python 3.13 with Pillow and NumPy, ffmpeg, ImageMagick (`convert`), and headless Chromium through the check tool. Use them to generate assets if you like (synthesize a WAV in Python, render sprites with Pillow), or do everything live in the browser with Canvas, SVG and Web Audio.
+- Finish what you start: when it passes the check and you&#x27;re happy with it, stop.
+
+## The check tool
+
+`bash $S/check.sh /home/user/Nassau/NN-slug [actions…]`
+
+- It serves the repository over local HTTP, opens your `index.html` in headless Chromium as an iPhone (390×844) and again at 600×450, and reports JavaScript errors, missing files, anything that tries to reach the network (blocked, and a failure), content wider than the phone, folder size, and missing head tags, gallery link or `about.json`.
+- It saves a phone screenshot to `$S/shots/NN-slug/phone.png`. **Open it with the Read tool and look at it**: passing isn&#x27;t the same as looking good. It also writes the gallery thumbnail `thumb.jpg` into your folder, taken from the 600×450 view.
+- Actions run in order after the page loads, in both views: `--wait=MS`, `--tap=X,Y` (percent of the viewport, e.g. `--tap=50,70`), `--drag=X1,Y1,X2,Y2` (percent), `--click=&quot;CSS selector&quot;`, `--key=Space`, `--eval=&quot;JS&quot;`. Add `--full` to also save a full-length phone screenshot (`phone-full.png`) when your page scrolls.
+- Example: `bash $S/check.sh /home/user/Nassau/NN-slug --click=&quot;#play&quot; --wait=2000 --drag=20,60,80,40 --wait=800`
+- At most 3 checks run at once across all makers, so it may wait a few seconds for a slot. It can&#x27;t test real Safari or real touch, so reason carefully about iOS behaviour yourself.
+
+## about.json
+
+```json
+{
+  &quot;maker&quot;: &quot;NN&quot;,
+  &quot;title&quot;: &quot;…&quot;,
+  &quot;tagline&quot;: &quot;One short line, under 70 characters.&quot;,
+  &quot;kind&quot;: &quot;One or two words: game, toy, generative art, music, story, poem, tool, simulation, puzzle, explainer…&quot;,
+  &quot;how_to&quot;: &quot;One line on how to use it: what to tap or drag, and whether to turn the sound on.&quot;,
+  &quot;description&quot;: &quot;Two to four sentences: what it is, what to do, what to notice.&quot;,
+  &quot;spark&quot;: &quot;How you used your spark word, or that you ignored it.&quot;,
+  &quot;proud_of&quot;: &quot;One sentence about the detail you&#x27;re proudest of.&quot;
+}
+```
+
+## Final reply (your return value)
+
+Plain text, under 200 words:
+
+- Title and folder
+- What it is and how to use it (2–4 sentences)
+- What you&#x27;re proudest of
+- Known limitations (be honest)
+- Final check result (PASS, or WARN and why)
+</pre>
+    </details>
+  </section>
+
+  <footer class="colophon">
+    <p>Made on 4 November 2026 in one Claude Code session. Each piece is a self-contained folder on the <span class="mono">claude/swarm</span> branch.</p>
+  </footer>
+</div>
+</body>
+</html>

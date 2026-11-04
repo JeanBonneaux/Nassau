@@ -1,0 +1,10 @@
+{
+  "maker": "04",
+  "title": "Waggle",
+  "tagline": "Read a honeybee's dance and find the flowers.",
+  "kind": "puzzle",
+  "how_to": "Watch the dancing bee, work out the bearing and distance, tap the map to drop a pin, then send the foragers. No sound.",
+  "description": "A forager bee dances on the honeycomb: the angle of her waggle run from vertical is the flowers' angle from the sun, and its length in time is the distance. Turn that into a spot on the meadow map over five rounds, with optional protractor and ruler guides. The sun moves between rounds, so you must re-do the sum.",
+  "spark": "Bees taken literally: the real waggle dance code, turned into a decoding puzzle.",
+  "proud_of": "The dance itself: a wiggling figure-eight with trailing gold dust, whose run length and timing really encode the answer."
+}

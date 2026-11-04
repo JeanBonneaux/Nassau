@@ -1,0 +1,10 @@
+{
+  "maker": "14",
+  "title": "Dig",
+  "tagline": "Brush the dust off a slab and find what was buried.",
+  "kind": "toy",
+  "how_to": "Drag to brush the dust away (use Pick for fine edges); sound is optional.",
+  "description": "A slab of rock hides a procedurally made fossil: an ammonite, trilobite, fern, scallop, lizard or sea urchin. Sweep the brush over the dust and watch the relief emerge, then get a museum tag with a made-up Latin name. Specimens you keep go into a drawer that is saved on your device.",
+  "spark": "Taken literally: you excavate and catalogue fossils, each slab different.",
+  "proud_of": "The dust hides a faint ghost of the shape beneath, and the relief is lit from per-pixel height maps so ribs and whorls look carved."
+}

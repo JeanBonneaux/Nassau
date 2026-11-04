@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Score &amp; Bake</title>
+<meta name="description" content="Slash a sourdough loaf with a blade, then watch the oven spring split your cuts open into golden ears.">
+<style>
+:root{
+  --bg:#241913; --panel:#33241b; --ink:#f6e8cf; --muted:#c8b08d; --accent:#e8a24a; --accent2:#c97a2c;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:ui-serif,Georgia,"Times New Roman",serif;overscroll-behavior:none}
+body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 0;min-height:48px}
+h1{font-size:22px;margin:0;letter-spacing:.02em;font-weight:700}
+h1 span{color:var(--accent)}
+header a{color:var(--muted);font:16px system-ui,-apple-system,sans-serif;text-decoration:none;
+  min-height:44px;display:flex;align-items:center;padding:0 4px}
+#stage{flex:1;min-height:0;position:relative}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#bar{padding:8px 16px 14px;background:var(--panel);border-top:1px solid #4a3527;
+  display:flex;flex-direction:column;gap:10px;font-family:system-ui,-apple-system,sans-serif}
+#msg{min-height:48px;font-size:16px;line-height:1.35;color:var(--muted)}
+#msg b{display:block;color:var(--ink);font:700 19px ui-serif,Georgia,serif;margin-bottom:1px}
+.row{display:flex;gap:8px}
+button{font:600 16px system-ui,-apple-system,sans-serif;min-height:48px;border-radius:12px;border:1px solid #5b4332;
+  background:#432f23;color:var(--ink);padding:0 14px;cursor:pointer;touch-action:manipulation}
+button:disabled{opacity:.4}
+button:active:not(:disabled){transform:scale(.97)}
+.seg{flex:1}
+.seg[aria-pressed=true]{background:#6b4a2f;border-color:var(--accent);color:#fff}
+#bake{flex:1.6;background:linear-gradient(#f0b256,#d07f2a);border:0;color:#2b1708;font-size:18px}
+#bake:disabled{opacity:.45}
+.small{flex:.8}
+</style>
+</head>
+<body>
+<header>
+  <h1>Score <span>&amp;</span> Bake</h1>
+  <a href="../index.html">← Gallery</a>
+</header>
+<div id="stage"><canvas id="c" aria-label="Sourdough loaf to score"></canvas></div>
+<div id="bar">
+  <div id="msg"></div>
+  <div class="row" id="doneRow">
+    <button class="seg" data-d="0" aria-pressed="false">Pale</button>
+    <button class="seg" data-d="1" aria-pressed="true">Golden</button>
+    <button class="seg" data-d="2" aria-pressed="false">Dark</button>
+  </div>
+  <div class="row">
+    <button id="undo" class="small">Undo</button>
+    <button id="clear" class="small">Clear</button>
+    <button id="bake">Bake</button>
+  </div>
+</div>
+<script>
+(function(){
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const msg=document.getElementById('msg');
+const bakeBtn=document.getElementById('bake'), undoBtn=document.getElementById('undo'), clearBtn=document.getElementById('clear');
+const segs=[...document.querySelectorAll('.seg')];
+const AR=0.82;               // loaf height / width
+let W=0,H=0,dpr=1,cx=0,cy=0,R=1;
+let state='score', cuts=[], cur=null, t=0, bakeStart=0, doneness=1, blowout=false;
+let hintAlpha=1;
+let flour,blots,rings,wob;
+
+// seeded random for a stable loaf texture
+let seed=7;function rnd(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646}
+function newLoaf(){
+  seed=(Math.random()*1e6|0)+1;
+  flour=[];blots=[];rings=[];
+  for(let i=0;i<650;i++){
+    const a=rnd()*6.283,r=Math.sqrt(rnd())*1.02;
+    flour.push([Math.cos(a)*r,Math.sin(a)*r*AR,0.004+rnd()*0.012,0.12+rnd()*0.35]);
+  }
+  for(let i=0;i<46;i++){
+    const a=rnd()*6.283,r=Math.sqrt(rnd())*0.95;
+    blots.push([Math.cos(a)*r,Math.sin(a)*r*AR,0.12+rnd()*0.3,rnd()]);
+  }
+  // banneton flour rings: faint concentric ridges
+  const n=5+(rnd()*3|0);
+  for(let i=0;i<n;i++)rings.push([0.18+i*(0.78/n)+rnd()*0.03,rnd()*6.283,2+rnd()*3]);
+  wob=[rnd()*6,rnd()*6,rnd()*6];
+}
+newLoaf();
+
+function resize(){
+  const r=cv.getBoundingClientRect();
+  dpr=Math.min(window.devicePixelRatio||1,3);
+  W=r.width;H=r.height;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  R=Math.min(W*0.43,H*0.44/AR);
+  cx=W/2;cy=H*0.5;
+  draw();
+}
+window.addEventListener('resize',resize);
+if(window.ResizeObserver)new ResizeObserver(resize).observe(cv);
+
+function loafPath(c){
+  c.beginPath();
+  for(let i=0;i<=72;i++){
+    const a=i/72*6.2832;
+    const r=1+0.022*Math.sin(2*a+wob[0])+0.016*Math.sin(5*a+wob[1])+0.01*Math.sin(3*a+wob[2]);
+    const x=Math.cos(a)*r,y=Math.sin(a)*r*AR;
+    i?c.lineTo(x,y):c.moveTo(x,y);
+  }
+  c.closePath();
+}
+const lerp=(a,b,k)=>a+(b-a)*k;
+const mix=(c1,c2,k)=>[lerp(c1[0],c2[0],k),lerp(c1[1],c2[1],k),lerp(c1[2],c2[2],k)];
+const rgb=(c,a)=>`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a==null?1:a})`;
+const ease=x=>x<0?0:x>1?1:1-Math.pow(1-x,2.2);
+const DOUGH=[238,219,181];
+const TARGETS=[[226,178,110],[196,120,50],[108,52,22]];
+
+function smooth(pts){
+  let p=pts;
+  for(let k=0;k<2;k++){
+    const q=[p[0]];
+    for(let i=1;i<p.length-1;i++)q.push([(p[i-1][0]+p[i][0]+p[i+1][0])/3,(p[i-1][1]+p[i][1]+p[i+1][1])/3]);
+    q.push(p[p.length-1]);p=q;
+  }
+  return p;
+}
+function plen(p){let L=0;for(let i=1;i<p.length;i++)L+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);return L}
+
+// draw one cut as variable-width ribbon segments
+function drawCut(c,cut,k,crust){
+  const p=cut.pts,L=cut.len;
+  const maxW=cut.max;
+  const thin=0.014;
+  const w=thin+(maxW-thin)*ease(k);
+  const open=ease(k);
+  let acc=0;
+  const seg=[];
+  for(let i=1;i<p.length;i++){
+    const dx=p[i][0]-p[i-1][0],dy=p[i][1]-p[i-1][1],d=Math.hypot(dx,dy)||1e-6;
+    acc+=d;
+    const u=Math.min(1,Math.max(0,(acc-d/2)/L));
+    const prof=Math.max(0.12,Math.pow(Math.sin(Math.PI*u),0.55));
+    seg.push({a:p[i-1],b:p[i],nx:-dy/d,ny:dx/d,w:w*prof,u});
+  }
+  c.lineCap='round';
+  // shadow rim
+  for(const s of seg){
+    c.strokeStyle=rgb(mix(crust,[56,26,8],0.3+0.6*open));
+    c.lineWidth=s.w+0.012*open+0.006;
+    c.beginPath();c.moveTo(s.a[0],s.a[1]);c.lineTo(s.b[0],s.b[1]);c.stroke();
+  }
+  // crumb interior
+  const crumb=mix([226,200,160],[247,232,196],open);
+  for(const s of seg){
+    c.strokeStyle=rgb(crumb);
+    c.lineWidth=s.w;
+    c.beginPath();c.moveTo(s.a[0],s.a[1]);c.lineTo(s.b[0],s.b[1]);c.stroke();
+  }
+  // soft depth in the middle of the opening
+  for(const s of seg){
+    c.strokeStyle=rgb(mix(crumb,[196,146,86],0.7*open));
+    c.lineWidth=s.w*0.42;
+    c.beginPath();c.moveTo(s.a[0],s.a[1]);c.lineTo(s.b[0],s.b[1]);c.stroke();
+  }
+  // the ear: a raised lip of crust on one side, caught by the light
+  if(open>0.02){
+    const earC=mix(crust,[250,205,120],0.35);
+    for(const s of seg){
+      const off=(s.w/2+s.w*0.16)*1.0;
+      const ax=s.a[0]+s.nx*off,ay=s.a[1]+s.ny*off,bx=s.b[0]+s.nx*off,by=s.b[1]+s.ny*off;
+      c.strokeStyle=rgb(mix(crust,[70,32,12],0.6*open));
+      c.lineWidth=s.w*0.36;
+      c.beginPath();c.moveTo(ax+s.nx*0.006,ay+s.ny*0.006);c.lineTo(bx+s.nx*0.006,by+s.ny*0.006);c.stroke();
+      c.strokeStyle=rgb(mix(crust,earC,Math.min(1,open*1.4)));
+      c.lineWidth=s.w*0.3;
+      c.beginPath();c.moveTo(ax,ay);c.lineTo(bx,by);c.stroke();
+      c.strokeStyle=rgb(mix(earC,[255,235,170],0.6*open));
+      c.lineWidth=s.w*0.08;
+      c.beginPath();c.moveTo(ax-s.nx*s.w*0.05,ay-s.ny*s.w*0.05);c.lineTo(bx-s.nx*s.w*0.05,by-s.ny*s.w*0.05);c.stroke();
+    }
+  }
+}
+
+function draw(){
+  if(!W)return;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const k=state==='score'?0:t;
+  const oven=state==='score'?0:Math.min(1,ease(t*1.4));
+  // backdrop: wooden dark with oven glow
+  const bg=ctx.createRadialGradient(cx,cy,R*0.3,cx,cy,Math.max(W,H)*0.8);
+  bg.addColorStop(0,rgb(mix([62,44,32],[120,56,20],oven)));
+  bg.addColorStop(1,rgb(mix([30,21,15],[38,16,8],oven)));
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // parchment sheet
+  ctx.save();
+  ctx.translate(cx,cy);
+  const pr=R*1.2;
+  ctx.fillStyle=rgb(mix([196,176,138],[170,128,76],oven*0.8));
+  ctx.beginPath();
+  const pw=pr*1.0,ph=pr*AR*1.05;
+  ctx.roundRect?ctx.roundRect(-pw,-ph,pw*2,ph*2,R*0.1):ctx.rect(-pw,-ph,pw*2,ph*2);
+  ctx.fill();
+  ctx.restore();
+
+  const spring=1+0.1*ease(k);
+  const crust=mix(DOUGH,TARGETS[doneness],ease(k)*0.95);
+  ctx.save();
+  ctx.translate(cx,cy);ctx.scale(R*spring,R*spring);
+  // shadow
+  ctx.save();
+  ctx.translate(0.03,0.06);loafPath(ctx);ctx.fillStyle='rgba(30,12,2,.38)';ctx.fill();ctx.restore();
+  loafPath(ctx);ctx.fillStyle=rgb(crust);ctx.fill();
+  ctx.save();loafPath(ctx);ctx.clip();
+  // browning blotches
+  for(const b of blots){
+    const a=ease(k)*(0.25+0.5*b[3]);
+    if(a<0.01)continue;
+    const g=ctx.createRadialGradient(b[0],b[1],0,b[0],b[1],b[2]);
+    const dk=mix(crust,[60,24,6],0.5);
+    g.addColorStop(0,rgb(dk,a));g.addColorStop(1,rgb(dk,0));
+    ctx.fillStyle=g;ctx.fillRect(b[0]-b[2],b[1]-b[2],b[2]*2,b[2]*2);
+  }
+  // flour rings from the banneton
+  ctx.lineWidth=0.012;
+  for(const r of rings){
+    ctx.strokeStyle=`rgba(255,250,235,${0.2*(1-0.5*ease(k))})`;
+    ctx.beginPath();ctx.ellipse(0,0,r[0],r[0]*AR,0,r[1],r[1]+r[2]);ctx.stroke();
+  }
+  // flour dust
+  for(const f of flour){
+    ctx.fillStyle=`rgba(255,252,242,${f[3]*(1-0.55*ease(k))})`;
+    ctx.beginPath();ctx.arc(f[0],f[1],f[2],0,6.283);ctx.fill();
+  }
+  // cuts
+  for(const cut of cuts)drawCut(ctx,cut,k,crust);
+  // lighting
+  const sh=ctx.createRadialGradient(-0.25,-0.3*AR,0.1,0,0,1.05);
+  sh.addColorStop(0,'rgba(255,240,210,.22)');
+  sh.addColorStop(0.55,'rgba(255,240,210,0)');
+  sh.addColorStop(0.82,'rgba(30,10,0,.14)');
+  sh.addColorStop(1,'rgba(20,6,0,.5)');
+  ctx.fillStyle=sh;ctx.fillRect(-1.2,-1,2.4,2);
+  ctx.restore();
+  ctx.restore();
+
+  // live blade stroke
+  if(cur&&cur.pts.length>1){
+    ctx.save();
+    ctx.lineCap='round';ctx.lineJoin='round';
+    const pts=cur.pts;
+    ctx.beginPath();
+    pts.forEach((p,i)=>{const x=cx+p[0]*R,y=cy+p[1]*R;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+    ctx.strokeStyle='rgba(60,28,10,.8)';ctx.lineWidth=4;ctx.stroke();
+    ctx.strokeStyle='rgba(255,236,190,.9)';ctx.lineWidth=1.2;ctx.stroke();
+    ctx.restore();
+  }
+  // hint
+  if(state==='score'&&hintAlpha>0.01&&!cuts.length){
+    ctx.save();
+    ctx.globalAlpha=hintAlpha;
+    ctx.fillStyle='rgba(60,36,16,.8)';
+    ctx.font='italic 600 '+Math.max(16,R*0.1)+'px ui-serif,Georgia,serif';
+    ctx.textAlign='center';
+    ctx.fillText('drag a blade across the dough',cx,cy+R*AR*0.05);
+    ctx.restore();
+  }
+}
+
+function setMsg(h,s){msg.innerHTML=h?`<b>${h}</b>${s}`:s}
+function inside(u,v){return u*u+(v/AR)*(v/AR)<0.94}
+
+function toLocal(e){
+  const r=cv.getBoundingClientRect();
+  return [(e.clientX-r.left-cx)/R,(e.clientY-r.top-cy)/R];
+}
+function finishStroke(){
+  if(!cur)return;
+  const pts=cur.pts;
+  cur=null;
+  if(pts.length>=3&&plen(pts)>0.16&&cuts.length<12){
+    const sp=smooth(pts);
+    const L=plen(sp);
+    cuts.push({pts:sp,len:L,max:0.05+0.045*Math.min(1,L/1.2)});
+  }
+  updateUI();draw();
+}
+cv.addEventListener('pointerdown',e=>{
+  if(state!=='score')return;
+  e.preventDefault();
+  try{cv.setPointerCapture(e.pointerId)}catch(_){}
+  const p=toLocal(e);
+  cur={pts:[]};
+  if(inside(p[0],p[1]))cur.pts.push(p);
+  hintAlpha=0;
+});
+cv.addEventListener('pointermove',e=>{
+  if(!cur||state!=='score')return;
+  const p=toLocal(e);
+  if(!inside(p[0],p[1])){
+    if(cur.pts.length>1){finishStroke();cur={pts:[]}}
+    else cur.pts=[];
+    return;
+  }
+  const l=cur.pts[cur.pts.length-1];
+  if(!l||Math.hypot(p[0]-l[0],p[1]-l[1])>0.02){cur.pts.push(p);draw()}
+});
+const up=()=>{if(cur){finishStroke()}};
+cv.addEventListener('pointerup',up);
+cv.addEventListener('pointercancel',up);
+
+function updateUI(){
+  const sc=state==='score';
+  bakeBtn.disabled=state==='baking';
+  undoBtn.disabled=!sc||!cuts.length;
+  clearBtn.disabled=!sc||!cuts.length;
+  segs.forEach(b=>b.disabled=!sc);
+  bakeBtn.textContent=state==='done'?'New loaf':state==='baking'?'Baking…':'Bake';
+  if(sc){
+    if(!cuts.length)setMsg('','Score the top with one confident cut, or ten. The direction you drag changes which side the ear lifts.');
+    else setMsg('',cuts.length+(cuts.length===1?' cut':' cuts')+'. Add more, undo, or hit Bake.');
+  }
+}
+
+function segInter(a,b,c,d){
+  const s1x=b[0]-a[0],s1y=b[1]-a[1],s2x=d[0]-c[0],s2y=d[1]-c[1];
+  const den=(-s2x*s1y+s1x*s2y);if(Math.abs(den)<1e-9)return false;
+  const s=(-s1y*(a[0]-c[0])+s1x*(a[1]-c[1]))/den,t=(s2x*(a[1]-c[1])-s2y*(a[0]-c[0]))/den;
+  return s>=0&&s<=1&&t>=0&&t<=1;
+}
+function crossing(){
+  for(let i=0;i<cuts.length;i++)for(let j=i+1;j<cuts.length;j++){
+    const A=cuts[i].pts,B=cuts[j].pts;
+    for(let a=1;a<A.length;a++)for(let b=1;b<B.length;b++)
+      if(segInter(A[a-1],A[a],B[b-1],B[b]))return true;
+  }
+  return false;
+}
+function angle(c){const p=c.pts;return Math.atan2(p[p.length-1][1]-p[0][1],p[p.length-1][0]-p[0][0])}
+function parallel(){
+  if(cuts.length<2)return false;
+  const a0=angle(cuts[0]);
+  return cuts.every(c=>{let d=Math.abs(angle(c)-a0)%Math.PI;d=Math.min(d,Math.PI-d);return d<0.4});
+}
+function verdict(){
+  let h,s;
+  const n=cuts.length;
+  if(blowout){h='Blowout!';s='No score, no mercy. The steam found its own way out, right through the side.'}
+  else if(n>=7){h='Doily loaf';s='So many exits that the loaf never got tall. Lovely lace, though.'}
+  else if(crossing()){h='Crosshatch';s='Crossed cuts seal each other at the joins, so the crust bulges into little pillows.'}
+  else if(n===1&&cuts[0].len>0.9){h='The classic ear';s='One bold slash, and the crust curled up along its edge like a lip.'}
+  else if(n===1){h='A modest smile';s='A short cut gives a small, tidy bloom. Try going longer next time.'}
+  else if(parallel()){h='Baker’s metronome';s='Even, parallel slashes opened evenly. That is the sound of a steady hand.'}
+  else{h='Free-form';s='Nobody scores it quite like you do, and the oven spring went along with it.'}
+  const tail=['Pale crust: five more minutes next time.','','Dark and bold: bakery-window shade.'][doneness];
+  setMsg(h,s+(tail?' '+tail:''));
+}
+
+function makeBlowout(){
+  const a0=rnd()*6.283,pts=[];
+  const span=0.9+rnd()*0.5;
+  for(let i=0;i<=22;i++){
+    const a=a0+span*i/22;
+    const r=0.84+0.05*Math.sin(i*1.7)+ (rnd()-0.5)*0.05;
+    pts.push([Math.cos(a)*r,Math.sin(a)*r*AR]);
+  }
+  const L=plen(pts);
+  return {pts,len:L,max:0.11};
+}
+
+function startBake(){
+  if(state!=='score')return;
+  blowout=!cuts.length;
+  if(blowout)cuts=[makeBlowout()];
+  state='baking';t=0;bakeStart=performance.now();
+  setMsg('','Oven spring in progress. The steam is lifting the crust and the cuts are opening.');
+  updateUI();
+  requestAnimationFrame(tick);
+}
+function tick(now){
+  if(state!=='baking')return;
+  t=Math.min(1,(now-bakeStart)/5000);
+  draw();
+  if(t<1)requestAnimationFrame(tick);
+  else{state='done';updateUI();verdict();draw()}
+}
+function reset(){
+  state='score';cuts=[];cur=null;t=0;blowout=false;hintAlpha=1;
+  newLoaf();updateUI();draw();
+}
+
+bakeBtn.addEventListener('click',()=>{state==='done'?reset():startBake()});
+undoBtn.addEventListener('click',()=>{cuts.pop();updateUI();draw()});
+clearBtn.addEventListener('click',()=>{cuts=[];updateUI();draw()});
+segs.forEach(b=>b.addEventListener('click',()=>{
+  doneness=+b.dataset.d;
+  segs.forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+}));
+
+updateUI();
+resize();
+// fallback if layout wasn't ready
+requestAnimationFrame(resize);
+})();
+</script>
+</body>
+</html>
