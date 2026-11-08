@@ -1,14 +1,14 @@
 # Piloter un Roomba 694 : quatre voies d'accès
 
-*Synthèse documentaire arrêtée au **2026-11-08**, sans essai sur un robot réel. Étiquettes : **[694 confirmé]** = la source nomme ou montre un Roomba 694 ; **[autre modèle : XXX]** = autre modèle ou famille ; **[non confirmé]** = modèle non précisé, témoignage vague ou inférence (toujours signalée comme telle). Les points susceptibles d'évoluer portent la mention *(état au …)*.*
+*Synthèse documentaire arrêtée au **2026-11-08**, sans essai sur un robot réel ; mis à jour le même jour avec votre photo de la prise série de votre 694. Étiquettes : **[694 confirmé]** = la source nomme ou montre un Roomba 694 ; **[autre modèle : XXX]** = autre modèle ou famille ; **[non confirmé]** = modèle non précisé, témoignage vague ou inférence (toujours signalée comme telle). Les points susceptibles d'évoluer portent la mention *(état au …)*.*
 
 ## Réponse courte : deux vraies interfaces, deux compléments
 
-Un Roomba 694 se commande par **deux interfaces réelles**. Le **port série Open Interface (OI)**, prise Mini-DIN 7 broches cachée sous le capot supérieur, donne tout : démarrage, conduite des roues, capteurs, alimentation d'un petit module [1]. Le **Wi-Fi local** (MQTT sur TLS, port 8883) évite toute ouverture mais se limite aux ordres de haut niveau et à l'état de mission [2, 3]. L'**infrarouge** et la **simulation d'appui sur les boutons** ne servent qu'à démarrer, rentrer ou réveiller le robot [1, 4, 5], sans retour d'état. Point clé : **aucune photo du port série d'un 694 n'a été trouvée** ; sa présence se déduit des photos d'un 692 dit « physiquement identique » [6, 7] et de deux utilisateurs de 694 qui font tourner le pilote OI create_robot, l'un d'eux disant avoir rebranché « the MDIN » (la prise Mini-DIN) [8]. Selon un propos rapporté, iRobot ne « supporte » pas l'OI sur ses robots Wi-Fi [8]. En Wi-Fi, le robot répond, mais **Home Assistant 2026.11 ne s'y connecte plus** [9] *(état au 2026-11-07)*.
+Un Roomba 694 se commande par **deux interfaces réelles**. Le **port série Open Interface (OI)**, prise Mini-DIN 7 broches cachée sous le capot supérieur, donne tout : démarrage, conduite des roues, capteurs, alimentation d'un petit module [1]. Le **Wi-Fi local** (MQTT sur TLS, port 8883) évite toute ouverture mais se limite aux ordres de haut niveau et à l'état de mission [2, 3]. L'**infrarouge** et la **simulation d'appui sur les boutons** ne servent qu'à démarrer, rentrer ou réveiller le robot [1, 4, 5], sans retour d'état. Point clé : **votre photo du 2026-11-08 montre la prise Mini-DIN 7 broches sur votre 694** [125] **[694 confirmé]**. Aucune photo publiée ne la montrait : on la déduisait des photos d'un 692 dit « physiquement identique » [6, 7] et de deux utilisateurs de 694 faisant tourner le pilote OI create_robot, l'un d'eux disant avoir rebranché « the MDIN » (la prise Mini-DIN) [8]. Selon un propos rapporté, iRobot ne « supporte » pas l'OI sur ses robots Wi-Fi [8]. En Wi-Fi, le robot répond, mais **Home Assistant 2026.11 ne s'y connecte plus** [9] *(état au 2026-11-07)*.
 
 | Voie | Démarrer / arrêter | Piloter les roues | Lire les capteurs | Alimenter un module | Ouverture / soudure | Statut sur 694 | Réf. |
 |---|---|---|---|---|---|---|---|
-| **Port série OI** (Mini-DIN 7) | Oui | Oui (modes Safe/Full) | Oui (pare-chocs, vide, encodeurs, batterie…) | Oui : batterie brute, 200 mA continus | Déclipser le capot ; pas de soudure si la fiche passe | **[694 confirmé]** par deux témoignages brefs (dont « plugged the MDIN back in ») ; aucune photo (port vu sur 692) | [1, 6, 8] |
+| **Port série OI** (Mini-DIN 7) | Oui | Oui (modes Safe/Full) | Oui (pare-chocs, vide, encodeurs, batterie…) | Oui : batterie brute, 200 mA continus | Déclipser le capot ; pas de soudure si la fiche passe | **[694 confirmé]** : prise vue sur votre robot (votre photo) + deux témoignages publiés ; brochage à vérifier au multimètre | [1, 6, 8, 125] |
 | **Wi-Fi local** (MQTT/TLS 8883) | Oui (start, stop, pause, dock, find) | Non | Partiel : batterie, phase, bac, erreurs | Non | Aucune | **[694 confirmé]** | [3, 9] |
 | **Infrarouge** (vers le récepteur du robot) | Possible (Clean, Dock, Power) | Grossier (gauche, avant, droite) | Non | Non | Aucune (LED IR) | **[non confirmé]** | [1, 10] |
 | **Boutons** (contact en parallèle de CLEAN…) | Oui (Clean, Spot, Dock, réveil) | Non | Non | Non | Ouverture + soudure | **[non confirmé]** | [4, 11] |
@@ -19,12 +19,13 @@ Un Roomba 694 se commande par **deux interfaces réelles**. Le **port série Ope
 - Lancer, arrêter, renvoyer à la base : le Wi-Fi local suffit, sans ouvrir le robot [3].
 - ESP32-CAM ou Raspberry Pi + caméra : les 200 mA du port ne suffisent pas ; prévoir batterie directe ou alimentation séparée [15].
 
-## 1. Port série OI : la voie complète, à vérifier sur votre robot
+## 1. Port série OI : la voie complète, présente sur votre robot
 
-### Présence sur le 694 : forte présomption, aucune photo
+### Présence sur le 694 : confirmée par votre photo
 
 | Indice | Statut |
 |---|---|
+| Votre photo (2026-11-08) : prise Mini-DIN 7 broches (7 trous + détrompeur rectangulaire) visible par un trou rond sous le capot [125] | **[694 confirmé]** (votre robot) |
 | iFixit, 692 (guide de 2023) : Mini-DIN soudé sur la carte « R3 MAIN PCB WIFI CD », « (c) 2020 iRobot » [6, 16] | [autre modèle : 692] |
 | BestReviews (2024-03-04) : « The Roomba 692 and 694 are physically identical » [7] | [autre modèle : 692 + 694] |
 | create_robot #64 : erreur « unknown mode detected » « on 694, running kinetic on Raspberry Pi Zero W » (2021-11-12), « on a 694 w/ a Raspberry PI 3B » (2022-01-15), « It came back on after I plugged the MDIN back in » (même utilisateur, même jour), « never bricked it » [8] | **[694 confirmé]** — témoignages brefs, sans photo ni câblage |
@@ -34,7 +35,7 @@ Un Roomba 694 se commande par **deux interfaces réelles**. Le **port série Ope
 | ESP32 sur le port d'un 692 : « mine isn't working », cause inconnue [19] | [autre modèle : 692] |
 
 - iFixit ne publie pour le 694 que trois guides (batterie, brosse, filtre) [20] ; le seul projet visant son port n'a encore rien vérifié [21] [694 confirmé].
-- **Inférence [non confirmé]** : le 694 a très probablement le même port au même endroit, puisque BestReviews le dit physiquement identique au 692, dont la carte date de 2020, année de sortie du 694 [7, 16, 20]. Seul un coup d'œil sous le capot le prouvera.
+- Votre photo confirme ce que laissait prévoir le 692 (« physically identical » [7], carte de 2020 [16]) : le port est présent sur votre robot [125] [694 confirmé]. Rien ne prouve que tous les 694 fabriqués l'aient [non confirmé].
 
 ### Accès : déclipser le capot (procédure du 692)
 
@@ -54,6 +55,11 @@ Référence : la spécification « Create 2 OI … based on the iRobot Roomba 60
 | 4 | TXD | sortie série du robot, 0–5 V |
 | 5 | BRC | Baud Rate Change (sert aussi au réveil) |
 | 6, 7 | GND | masse, côté circonférence extérieure |
+
+**Sur votre prise** (géométrie lue sur votre photo, numéros reportés depuis le schéma officiel [1, 125] ; **à vérifier au multimètre**) : trou du haut = 3 (RXD) ; côté gauche, de haut en bas = 5 (BRC), 6 (GND), 7 (GND) ; côté droit, de haut en bas = 1 (Vpwr), 2 (Vpwr) ; en bas à droite = 4 (TXD). Repères : la rangée de trois trous porte 5-6-7, les deux trous dans l'axe du détrompeur rectangulaire sont 3 et 4. La spec place 6 et 7 « towards the outside circumference » [1] ; ce repère n'est pas vérifiable sur la photo [non confirmé].
+
+![Brochage reporté sur la prise de votre 694](images/acces_694_minidin_brochage_annote.jpg)
+*Roomba 694 — votre prise, numéros reportés depuis la spec OI (p. 3) [1, 125] : à confirmer au multimètre (tension batterie entre 1-2 et 6-7, 0 V entre 6 et 7).*
 
 - **115200 bauds, 8N1, sans contrôle de flux** ; 19200 par l'opcode 129, trois impulsions basses sur BRC ou Clean tenu ~10 s à l'extinction, jusqu'à la perte d'alimentation du processeur [1]. iRobot déconseille 115200 sur un AVR à 16 MHz [28] [autre modèle : Create 2].
 - **Piège de numérotation** : la note iRobot 3,3 V suit le câble Tensility, « opposite pin numbering convention as Roomba » (3/4 et 5/7 permutés) [29] [autre modèle : Create 2]. Brochages faux publiés : broche 7 « Device Detect » à la masse [30] [non confirmé] ; « +5V (Pin 6) / GND (Pin 1) » sur un 560 [31]. Vérifier Vpwr (1-2) et masse (6-7) au multimètre.
@@ -175,9 +181,12 @@ Aucune mesure de TXD n'est publiée pour 690, 692 ou 694. **Inférence [non conf
 - Cloud et voix : appli iRobot Home, Alexa, Google [12] [694 confirmé] ; IFTTT (Start, Dock, Stop, Pause) [100] [non confirmé] ; le tout dépend des serveurs d'iRobot [101].
 - Greffe de carte (ESP32-S3 à la place de la carte iRobot) : modèle jamais nommé [102, 103] [non confirmé]. Module commercial RooWifi sur le port [104] [non confirmé].
 
-## 6. Photos et vidéos : le 692 sert de référence
+## 6. Photos et vidéos : votre 694, puis le 692
 
-Aucune photo ni vidéo d'un 694 ouvert n'a été trouvée. Index complet des 35 images : [images/SOURCES.md](images/SOURCES.md).
+Aucune photo ni vidéo publiée d'un 694 ouvert n'a été trouvée ; la seule est la vôtre. Index complet des 37 images : [images/SOURCES.md](images/SOURCES.md).
+
+![Prise Mini-DIN de votre 694](images/acces_694_minidin_photo_utilisateur.jpg)
+*Roomba 694 — votre photo du 2026-11-08 : prise Mini-DIN 7 broches sous le capot (version annotée en section 1) [125] **[694 confirmé]**.*
 
 ![Capot du 692 déclipsé à la spatule](images/acces_692_retrait_capot_spatule_ifixit.jpg)
 *Roomba 692 — capot supérieur déclipsé à la spatule (iFixit, guide 167779, étape 6) [6].*
@@ -390,3 +399,4 @@ Leçons des projets caméra :
 - [122] hackaday.io, S. Jansen, projet 183524 « Old Roomba, new tricks » — <https://hackaday.io/project/183524-old-roomba-new-tricks>
 - [123] GitHub ajeanney/esp32-roomba — <https://github.com/ajeanney/esp32-roomba>
 - [124] GitHub PreussLabsLLC/RoomBerry26 — <https://github.com/PreussLabsLLC/RoomBerry26>
+- [125] Votre photo de la prise série de votre Roomba 694, envoyée le 2026-11-08 — `images/acces_694_minidin_photo_utilisateur.jpg` (version annotée : `images/acces_694_minidin_brochage_annote.jpg`)
