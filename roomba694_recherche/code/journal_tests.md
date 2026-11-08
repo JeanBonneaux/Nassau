@@ -9,7 +9,8 @@ Session locale du 2026-11-08 (après-midi et soirée) sur l'ordinateur Windows r
 - Une seule correction au sketch : une pause de 20 ms avant chaque requête capteur. Sans elle, une requête sur deux restait sans réponse sur ce robot. Un ajout : la touche `k` (encodeurs des roues, distance, angle).
 - Mesures lues par l'OI : 15 580 mV, -127 mA, 17 à 19 °C, 1853 / 2068 mAh, état de charge 0, mode OI lu 2 en Passive et 3 en Safe (décalage de +1 confirmé sur ce 694).
 - Réveil par la broche BRC : **fonctionne** (`w` puis `s`, sans toucher au bouton CLEAN), mais les lectures qui suivent contiennent des octets parasites (`B0 02`) et le robot s'est rendormi une minute plus tard. À approfondir (section 5).
-- Déplacements : voir la section 5 (en attente de l'accord de l'utilisateur au moment où ces lignes sont écrites).
+- Déplacements validés (avance, recul, deux rotations sur place, 150 mm/s pendant 1,5 s) : les encodeurs donnent 500 pas pour 22 cm comme prévu, à 1 à 2 % près ; le paquet « distance » (19) est inutilisable sur ce robot, le paquet « angle » (20) reste à vérifier.
+- Session terminée par `s` puis `x`.
 
 ## Environnement
 
@@ -274,10 +275,100 @@ Mode OI lu : 2   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur 690/694 la valeur est s
 
 Lecture : environ 250 pas sur chaque roue dans le même sens, soit 11 cm vers l'avant depuis le dernier allumage du robot (un déplacement à la main compte aussi). L'ordre d'avance a donc commencé puis a été interrompu avant son terme. La valeur « distance » de 19903 mm est aberrante (première lecture depuis l'allumage, ou bug connu du paquet 19 sur certains firmwares) : se fier aux encodeurs. Robot revenu en Passive, à l'arrêt. Leçon : pour un essai de déplacement, fixer le câble USB et la carte, ou mieux, alimenter la carte par une batterie portable fixée sur le robot, ce qui supprime le câble à arracher.
 
-### Reste à faire
+### Déplacements : second essai réussi
 
-- Déplacements : essai à refaire, câble sécurisé.
-- Fin de session (`s` puis `x`) : à faire au moment d'arrêter.
+Cause de la coupure identifiée par l'utilisateur : câble USB mal enfoncé. Câble rebranché, robot au sol hors de sa base, espace dégagé. Séquence `s`, `k`, `k`, `f`, `8`, `k`, `2`, `k`, `4`, `k`, `6`, `k`, `s`, `b`, 3 s entre chaque touche :
+
+```
+---- envoi : 's' ----
+Envoyé : Start (128) -> Passive
+
+---- envoi : 'k' ----
+Encodeurs : gauche 249, droit 255   (508,8 pas par tour, roue de 72 mm : 1 pas = 0,445 mm)
+Distance depuis la lecture précédente : 14326 mm
+Angle depuis la lecture précédente : 0 degrés
+
+---- envoi : 'k' ----
+Encodeurs : gauche 249, droit 255   (508,8 pas par tour, roue de 72 mm : 1 pas = 0,445 mm)
+Distance depuis la lecture précédente : 430 mm
+Angle depuis la lecture précédente : 0 degrés
+
+---- envoi : 'f' ----
+Envoyé : Safe (131)
+
+---- envoi : '8' ----
+Avance.
+Roues arrêtées.
+
+---- envoi : 'k' ----
+Encodeurs : gauche 749, droit 765   (508,8 pas par tour, roue de 72 mm : 1 pas = 0,445 mm)
+Distance depuis la lecture précédente : 630 mm
+Angle depuis la lecture précédente : 0 degrés
+
+---- envoi : '2' ----
+Recule.
+Roues arrêtées.
+
+---- envoi : 'k' ----
+Encodeurs : gauche 236, droit 284   (508,8 pas par tour, roue de 72 mm : 1 pas = 0,445 mm)
+Distance depuis la lecture précédente : -210 mm
+Angle depuis la lecture précédente : 0 degrés
+
+---- envoi : '4' ----
+Tourne à gauche.
+Roues arrêtées.
+
+---- envoi : 'k' ----
+Encodeurs : gauche -295, droit 826   (508,8 pas par tour, roue de 72 mm : 1 pas = 0,445 mm)
+Distance depuis la lecture précédente : 0 mm
+Angle depuis la lecture précédente : 104 degrés
+
+---- envoi : '6' ----
+Tourne à droite.
+Roues arrêtées.
+
+---- envoi : 'k' ----
+Encodeurs : gauche 210, droit 332   (508,8 pas par tour, roue de 72 mm : 1 pas = 0,445 mm)
+Distance depuis la lecture précédente : 0 mm
+Angle depuis la lecture précédente : -104 degrés
+
+---- envoi : 's' ----
+Envoyé : Start (128) -> Passive
+
+---- envoi : 'b' ----
+Tension batterie : 15524 mV   (multimètre sur Vpwr : 14,66 V)
+Courant : -127 mA   (négatif = décharge)
+Température : 16 °C
+Charge : 1588 / 2068 mAh
+État de charge : 0   (0 pas en charge, 1 reconditionnement, 2 pleine, 3 entretien, 4 attente, 5 défaut)
+Mode OI lu : 2   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur 690/694 la valeur est souvent décalée de +1)
+```
+
+Dépouillement (1 pas = 0,4446 mm ; attendu par ordre : 150 mm/s × 1,5 s = 225 mm par roue) :
+
+| Ordre | Δ gauche (pas) | Δ droit (pas) | Δ gauche (mm) | Δ droit (mm) | Paquets 19 / 20 |
+|---|---|---|---|---|---|
+| repos (entre les deux `k`) | 0 | 0 | 0 | 0 | distance 430 mm : **faux** |
+| `8` avance 1,5 s | +500 | +510 | +222 | +227 | distance 630 mm : **faux** |
+| `2` recul 1,5 s | -513 | -481 | -228 | -214 | distance -210 mm |
+| `4` rotation gauche 1,5 s | -531 | +542 | -236 | +241 | angle +104° |
+| `6` rotation droite 1,5 s | +505 | -494 | +225 | -220 | angle -104° |
+
+- **Encodeurs : fiables.** En ligne droite, 1 à 2 % de l'attendu. En rotation, 5 à 7 % de plus que 225 mm : les roues frottent et patinent un peu sur le tapis pendant une rotation sur place.
+- Bilan de la séquence : gauche -39 pas (-17 mm), droite +77 pas (+34 mm). Le robot est revenu à 2 ou 3 cm de son point de départ avec un cap décalé d'une douzaine de degrés, cohérent avec ce que l'utilisateur a vu.
+- **Paquet 19 (distance) : inutilisable** sur ce robot (430 mm à l'arrêt, 630 mm pour 225 réels), conforme au bug connu de certains firmwares. **Paquet 20 (angle)** : cohérent (0 en ligne droite, ±104° en rotation) mais un peu en dessous du calcul par encodeurs, 477 mm d'écart entre roues sur un entraxe de 235 mm donnent 116°. À vérifier contre une mesure physique avant de s'y fier ; pour une carte, partir des encodeurs et d'un gyroscope.
+
+### Fin de session
+
+`s` puis `x` envoyés : OI fermée, robot en Passive puis Off, libre de dormir et de se recharger. Câble USB à débrancher.
+
+```
+---- envoi : 's' ----
+Envoyé : Start (128) -> Passive
+
+---- envoi : 'x' ----
+Envoyé : Stop (173) -> OI fermée
+```
 
 ## Problèmes rencontrés et corrections
 
@@ -286,7 +377,8 @@ Lecture : environ 250 pas sur chaque roue dans le même sens, soit 11 cm vers l'
 3. **Tension lue 15,58 V contre 14,66 V au multimètre le matin** : écart de 0,9 V, cohérent avec une recharge du robot entre les deux mesures ; à confirmer par l'utilisateur. Le courant négatif et l'état de charge 0 sont cohérents avec un robot hors de sa base.
 4. Les trois lignes de signal ne portent aucune résistance série de 1 kΩ (conseillée dans le README, facultative) : fonctionne tel quel.
 5. **Réveil par BRC fragile** : octets parasites `B0 02` dans les réponses pendant au moins 6 s après le réveil, puis rendormissement au bout d'une minute environ (section 5). Non résolu, à investiguer.
-6. **Coupure USB pendant la séquence de déplacement** (section 5) : liaison perdue, stop envoyé dès le rebranchement, robot en Passive. Ajout de la touche `k` (odométrie brute) au sketch à cette occasion.
+6. **Coupure USB pendant la première séquence de déplacement** (section 5) : câble mal enfoncé ; liaison perdue, stop envoyé dès le rebranchement, robot en Passive, séquence refaite avec succès. Ajout de la touche `k` (odométrie brute) au sketch à cette occasion.
+7. **Paquet 19 (distance) faux** sur ce robot : utiliser les encodeurs (paquets 43 et 44). Paquet 20 (angle) à vérifier.
 
 ## Outils
 
