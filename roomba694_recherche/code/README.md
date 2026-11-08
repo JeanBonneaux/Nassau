@@ -24,7 +24,13 @@ Conséquence : la sortie du robot est déjà en 3,3 V. Aucun adaptateur de nivea
 | 6 ou 7 (GND) | GND | masse commune obligatoire |
 | 1, 2 (Vpwr) | **rien** | ne pas relier pour ce test |
 
+Carte de l'utilisateur (photo du 2026-11-08) : ESP32 DevKit 30 broches, module ESP32-WROOM-32 sans PSRAM, USB-C, CP2102. Sérigraphie : RX2 = GPIO16, TX2 = GPIO17, D4 = GPIO4, trois broches voisines sur le bord droit.
+
+![Câblage sur la carte](../images/cablage_esp32_devkit30_test1.jpg)
+
 Carte avec PSRAM (ESP32-WROVER) : GPIO16/17 sont pris par la PSRAM, utiliser 25/26 (modifier `PIN_RX`/`PIN_TX`).
+
+Prompt prêt à coller pour la session Claude Code locale qui fera la compilation et le test : [PROMPT_session_locale.md](PROMPT_session_locale.md).
 
 ## `roomba694_test1/` — console série
 
