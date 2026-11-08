@@ -84,11 +84,13 @@ Plan de montage établi par la session locale du 2026-11-08 (soir) : l'ESP32 enf
 | 10 | rangée 14 | rangée 16 | résistance 1 kΩ |
 | 11 | rangée 16 | robot trou **5** (BRC) | fil long |
 | 12 | bande bleue − | robot trou **6** (GND) | fil long, sans résistance |
-| 13 | module GY-521 **debout**, 8 broches dans les rangées 3 à 10 : VCC en 3, GND en 4, SCL en 5, SDA en 6 ; rangées 7 à 10 libres | | |
+| 13 | module GY-521 **sur ses broches** (connecteur droit : les 8 broches descendent dans la colonne c, rangées 3 à 10, le circuit reste à plat au-dessus de la plaque, puce vers le haut, corps tourné vers le canal) : VCC en 3, GND en 4, SCL en 5, SDA en 6 ; rangées 7 à 10 libres | | |
 | 14 | rangée 3 (VCC) | bande rouge + | fil |
 | 15 | rangée 4 (GND) | bande bleue − | fil |
 | 16 | rangée 5 (SCL) | trou libre au-dessus de **D22** | fil |
 | 17 | rangée 6 (SDA) | trou libre au-dessus de **D21** | fil |
+
+Position du module (vue de côté et de dessus) : `../images/gy521_position_sur_plaque.jpg`. Le module est à plat, son axe Z est vertical : c'est le gyroscope Z qui mesure les rotations du robot.
 
 Repères (approximatifs, lire le numéro imprimé sur la plaque) : 3V3 ≈ 30, GND ≈ 31, D4 ≈ 34, RX2 ≈ 35, TX2 ≈ 36, D21 ≈ 40, D22 ≈ 43. **Plan dessiné sur la photo de la plaque, numéros = étapes de ce tableau : `../images/plan_sur_photo_plaque.jpg`.** Photo annotée de la plaque : `../images/plaque_esp32_placee_rangees.jpg`. Schéma de la zone composants (position du GY-521, résistances, fils) : `../images/plan_plaque_zone_composants.jpg`. **Attention** : sur cette plaque, les bandes d'alimentation semblent coupées vers les rangées 31-33 ; brancher les deux fils qui alimentent les bandes (étapes 1 et 2) dans des trous de bande situés **au-dessus de la rangée 29**, du même côté que le gyroscope, puis vérifier au multimètre 3,3 V entre la bande rouge et la bande bleue près de la rangée 5. Dans une moitié de plaque, les cinq trous d'une rangée sont reliés et deux rangées voisines ne le sont pas : une résistance va donc d'une rangée à l'autre (23, 19 et 15 restent vides pour la lisibilité). Vérifier que la bande rouge n'est pas coupée au milieu de la plaque. Dernier coup d'œil avant l'USB : rien sur les trous 1 et 2 du robot, la bande rouge ne va qu'au VCC du gyroscope, chaque résistance a une patte dans chaque rangée.
 
