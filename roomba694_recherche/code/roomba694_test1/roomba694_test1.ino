@@ -159,6 +159,18 @@ void printSensors() {
   if (readSensor(18, b, 1)) Serial.printf("Boutons : CLEAN %u, SPOT %u, DOCK %u\n", b[0] & 1, (b[0] >> 1) & 1, (b[0] >> 2) & 1);
 }
 
+// Odométrie brute : compteurs des roues (paquets 43 et 44, signés), puis distance (19) et angle (20) cumulés depuis la lecture précédente.
+void printEncoders() {
+  uint8_t b[2];
+  if (!readSensor(43, b, 2)) { noAnswer(); return; }
+  int16_t left = i16(b);
+  int16_t right = 0;
+  if (readSensor(44, b, 2)) right = i16(b);
+  Serial.printf("Encodeurs : gauche %d, droit %d   (508,8 pas par tour, roue de 72 mm : 1 pas = 0,445 mm)\n", left, right);
+  if (readSensor(19, b, 2)) Serial.printf("Distance depuis la lecture précédente : %d mm\n", i16(b));
+  if (readSensor(20, b, 2)) Serial.printf("Angle depuis la lecture précédente : %d degrés\n", i16(b));
+}
+
 void printHelp() {
   Serial.println(F(
     "\n=== Roomba 694 — test OI v1 ===\n"
@@ -170,6 +182,7 @@ void printHelp() {
     " 8  avance   2  recule   4  tourne à gauche   6  tourne à droite   5 ou espace  stop\n"
     "    (chaque ordre dure 1,5 s puis les roues s'arrêtent seules)\n"
     " a  anti-veille BRC toutes les 60 s (on/off)\n"
+    " k  encodeurs des roues, distance et angle depuis la lecture précédente\n"
     " o  Power (extinction)           x  Stop OI (à faire en fin de session)\n"));
 }
 
@@ -197,6 +210,7 @@ void handle(char c) {
       break;
     case 'o': setMode(OI_POWER, F("Power (133)")); break;
     case 'x': setMode(OI_STOP,  F("Stop (173) -> OI fermée")); break;
+    case 'k': printEncoders(); break;
     default:  Serial.printf("Touche inconnue : '%c' ('?' pour l'aide)\n", c); break;
   }
 }

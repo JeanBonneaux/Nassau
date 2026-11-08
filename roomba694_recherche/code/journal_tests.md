@@ -6,7 +6,7 @@ Session locale du 2026-11-08 (après-midi et soirée) sur l'ordinateur Windows r
 
 - Compilation du sketch du premier coup, sans erreur ni avertissement ; téléversement et test à vide sans problème.
 - Premier essai sur le robot : aucune réponse. Cause trouvée avec une variante diagnostic du sketch ([roomba694_diag/](roomba694_diag/), touche `n`) : côté robot, deux pions n'étaient pas dans les bons trous. Après recâblage par l'utilisateur, **la liaison fonctionne**.
-- Une seule correction au sketch : une pause de 20 ms avant chaque requête capteur. Sans elle, une requête sur deux restait sans réponse sur ce robot.
+- Une seule correction au sketch : une pause de 20 ms avant chaque requête capteur. Sans elle, une requête sur deux restait sans réponse sur ce robot. Un ajout : la touche `k` (encodeurs des roues, distance, angle).
 - Mesures lues par l'OI : 15 580 mV, -127 mA, 17 à 19 °C, 1853 / 2068 mAh, état de charge 0, mode OI lu 2 en Passive et 3 en Safe (décalage de +1 confirmé sur ce 694).
 - Réveil par la broche BRC : **fonctionne** (`w` puis `s`, sans toucher au bouton CLEAN), mais les lectures qui suivent contiennent des octets parasites (`B0 02`) et le robot s'est rendormi une minute plus tard. À approfondir (section 5).
 - Déplacements : voir la section 5 (en attente de l'accord de l'utilisateur au moment où ces lignes sont écrites).
@@ -245,10 +245,39 @@ Le réveil par BRC **fonctionne** sur ce 694 : pas besoin du bouton CLEAN. Mais 
 
 Hypothèses à vérifier dans une prochaine session, avec l'écho brut `r` de la variante diagnostic : texte ou trame que le robot émet après un réveil par BRC (peut-être à une autre vitesse) et qui se mêle aux réponses ; réveil par BRC « partiel » qui ne maintient pas l'OI ouverte. Parades possibles : attendre 2 à 3 s et vider la réception avant `s`, envoyer `s` deux fois, activer l'anti-veille `a`, rejeter les lectures hors plage et relire.
 
+### Déplacements : premier essai interrompu par une coupure USB
+
+Accord de l'utilisateur obtenu pour avance, recul et rotations, « pas beaucoup à cause du fil » USB. Avant l'essai, ajout au sketch de la touche `k` (compteurs des roues, paquets 43 et 44, signés ; distance 19 et angle 20 cumulés depuis la lecture précédente), pour mesurer ce que vaut l'odométrie : à 150 mm/s pendant 1,5 s, on attend environ 22 cm, soit environ 506 pas par roue.
+
+Séquence lancée : `w`, `s`, `s`, `k`, `k`, `f`, `8`, `k`, `2`, `k`, `4`, `k`, `6`, `k`, `s`, `b`, avec 3 s entre chaque touche. Pendant la séquence, la liaison USB a été perdue (« A device attached to the system is not functioning », puis le port COM4 a disparu), sans que l'on sache combien d'ordres étaient partis. Risque réel : si la carte perd son alimentation pendant un ordre de déplacement, l'arrêt automatique au bout de 1,5 s, qui vit dans l'ESP32, ne part jamais et le robot garde son dernier ordre. Après rebranchement du câble par l'utilisateur, envoi immédiat de stop, `s`, `k`, `b` :
+
+```
+---- envoi : ' ' ----
+Roues arrêtées.
+
+---- envoi : 's' ----
+Envoyé : Start (128) -> Passive
+
+---- envoi : 'k' ----
+Encodeurs : gauche 249, droit 255   (508,8 pas par tour, roue de 72 mm : 1 pas = 0,445 mm)
+Distance depuis la lecture précédente : 19903 mm
+Angle depuis la lecture précédente : 0 degrés
+
+---- envoi : 'b' ----
+Tension batterie : 15552 mV   (multimètre sur Vpwr : 14,66 V)
+Courant : -127 mA   (négatif = décharge)
+Température : 18 °C
+Charge : 1593 / 2068 mAh
+État de charge : 0   (0 pas en charge, 1 reconditionnement, 2 pleine, 3 entretien, 4 attente, 5 défaut)
+Mode OI lu : 2   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur 690/694 la valeur est souvent décalée de +1)
+```
+
+Lecture : environ 250 pas sur chaque roue dans le même sens, soit 11 cm vers l'avant depuis le dernier allumage du robot (un déplacement à la main compte aussi). L'ordre d'avance a donc commencé puis a été interrompu avant son terme. La valeur « distance » de 19903 mm est aberrante (première lecture depuis l'allumage, ou bug connu du paquet 19 sur certains firmwares) : se fier aux encodeurs. Robot revenu en Passive, à l'arrêt. Leçon : pour un essai de déplacement, fixer le câble USB et la carte, ou mieux, alimenter la carte par une batterie portable fixée sur le robot, ce qui supprime le câble à arracher.
+
 ### Reste à faire
 
-- Déplacements (`8`, `2`, `4`, `6`) : **en attente de l'accord explicite de l'utilisateur** au moment où ces lignes sont écrites.
-- Fin de session (`s` puis `x`) : le robot s'est rendormi de lui-même en Passive, état sûr (il peut dormir et se recharger).
+- Déplacements : essai à refaire, câble sécurisé.
+- Fin de session (`s` puis `x`) : à faire au moment d'arrêter.
 
 ## Problèmes rencontrés et corrections
 
@@ -257,6 +286,7 @@ Hypothèses à vérifier dans une prochaine session, avec l'écho brut `r` de la
 3. **Tension lue 15,58 V contre 14,66 V au multimètre le matin** : écart de 0,9 V, cohérent avec une recharge du robot entre les deux mesures ; à confirmer par l'utilisateur. Le courant négatif et l'état de charge 0 sont cohérents avec un robot hors de sa base.
 4. Les trois lignes de signal ne portent aucune résistance série de 1 kΩ (conseillée dans le README, facultative) : fonctionne tel quel.
 5. **Réveil par BRC fragile** : octets parasites `B0 02` dans les réponses pendant au moins 6 s après le réveil, puis rendormissement au bout d'une minute environ (section 5). Non résolu, à investiguer.
+6. **Coupure USB pendant la séquence de déplacement** (section 5) : liaison perdue, stop envoyé dès le rebranchement, robot en Passive. Ajout de la touche `k` (odométrie brute) au sketch à cette occasion.
 
 ## Outils
 
