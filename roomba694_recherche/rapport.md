@@ -61,6 +61,8 @@ Référence : la spécification « Create 2 OI … based on the iRobot Roomba 60
 ![Brochage reporté sur la prise de votre 694](images/acces_694_minidin_brochage_annote.jpg)
 *Roomba 694 — votre prise, numéros reportés depuis la spec OI (p. 3) [1, 125] : à confirmer au multimètre (tension batterie entre 1-2 et 6-7, 0 V entre 6 et 7).*
 
+Procédure pas à pas, à imprimer : [test_multimetre_roomba694.pdf](test_multimetre_roomba694.pdf).
+
 - **115200 bauds, 8N1, sans contrôle de flux** ; 19200 par l'opcode 129, trois impulsions basses sur BRC ou Clean tenu ~10 s à l'extinction, jusqu'à la perte d'alimentation du processeur [1]. iRobot déconseille 115200 sur un AVR à 16 MHz [28] [autre modèle : Create 2].
 - **Piège de numérotation** : la note iRobot 3,3 V suit le câble Tensility, « opposite pin numbering convention as Roomba » (3/4 et 5/7 permutés) [29] [autre modèle : Create 2]. Brochages faux publiés : broche 7 « Device Detect » à la masse [30] [non confirmé] ; « +5V (Pin 6) / GND (Pin 1) » sur un 560 [31]. Vérifier Vpwr (1-2) et masse (6-7) au multimètre.
 
