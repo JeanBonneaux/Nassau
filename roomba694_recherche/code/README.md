@@ -26,6 +26,8 @@ Conséquence : la sortie du robot est déjà en 3,3 V. Aucun adaptateur de nivea
 
 Carte de l'utilisateur (photo du 2026-11-08) : ESP32 DevKit 30 broches, module ESP32-WROOM-32 sans PSRAM, USB-C, CP2102. Sérigraphie : RX2 = GPIO16, TX2 = GPIO17, D4 = GPIO4, trois broches voisines sur le bord droit.
 
+![Brochage complet, une couleur par fil](../images/brochage_complet_roomba694_esp32.jpg)
+
 ![Câblage sur la carte](../images/cablage_esp32_devkit30_test1.jpg)
 
 Carte avec PSRAM (ESP32-WROVER) : GPIO16/17 sont pris par la PSRAM, utiliser 25/26 (modifier `PIN_RX`/`PIN_TX`).
