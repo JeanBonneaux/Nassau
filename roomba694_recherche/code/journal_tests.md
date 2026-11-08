@@ -8,6 +8,7 @@ Session locale du 2026-11-08 (après-midi et soirée) sur l'ordinateur Windows r
 - Premier essai sur le robot : aucune réponse. Cause trouvée avec une variante diagnostic du sketch ([roomba694_diag/](roomba694_diag/), touche `n`) : côté robot, deux pions n'étaient pas dans les bons trous. Après recâblage par l'utilisateur, **la liaison fonctionne**.
 - Une seule correction au sketch : une pause de 20 ms avant chaque requête capteur. Sans elle, une requête sur deux restait sans réponse sur ce robot.
 - Mesures lues par l'OI : 15 580 mV, -127 mA, 17 à 19 °C, 1853 / 2068 mAh, état de charge 0, mode OI lu 2 en Passive et 3 en Safe (décalage de +1 confirmé sur ce 694).
+- Réveil par la broche BRC : **fonctionne** (`w` puis `s`, sans toucher au bouton CLEAN), mais les lectures qui suivent contiennent des octets parasites (`B0 02`) et le robot s'est rendormi une minute plus tard. À approfondir (section 5).
 - Déplacements : voir la section 5 (en attente de l'accord de l'utilisateur au moment où ces lignes sont écrites).
 
 ## Environnement
@@ -217,9 +218,37 @@ Envoyé : Start (128) -> Passive
 
 Lecture : mode OI 2 en Passive puis 3 en Safe, soit le décalage de +1 décrit dans le rapport, confirmé sur ce robot. Notes entendues et LEDs vues : à confirmer par l'utilisateur (non observables depuis le PC).
 
+### Réveil par BRC
+
+Quelques minutes après le dernier ordre, le robot s'était rendormi (`b` : « Pas de réponse »). Séquence `w` (impulsion BRC de 200 ms), 3 s, `s`, 3 s, `b` :
+
+```
+---- envoi : 'b' ----
+Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN.
+
+---- envoi : 'w' ----
+Impulsion BRC envoyée.
+
+---- envoi : 's' ----
+Envoyé : Start (128) -> Passive
+
+---- envoi : 'b' ----
+Tension batterie : 15580 mV   (multimètre sur Vpwr : 14,66 V)
+Courant : -20478 mA   (négatif = décharge)
+Température : 17 °C
+Charge : 45058 / 2068 mAh
+État de charge : 176   (0 pas en charge, 1 reconditionnement, 2 pleine, 3 entretien, 4 attente, 5 défaut)
+Mode OI lu : 2   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur 690/694 la valeur est souvent décalée de +1)
+```
+
+Le réveil par BRC **fonctionne** sur ce 694 : pas besoin du bouton CLEAN. Mais certaines valeurs sont absurdes, et ce sont toujours les mêmes octets `B0 02` qui remplacent la réponse attendue (45058 = 0xB002 ; -20478 = 0xB002 lu en signé ; 176 = 0xB0), sur des paquets différents d'une lecture à l'autre. Une seconde lecture 6 s plus tard donnait courant -111 mA et charge 1839 mAh corrects, mais capacité 45058 et mode OI 176 faux. Une minute plus tard, plus aucune réponse : le robot s'était rendormi, alors qu'après un réveil par CLEAN il était resté joignable plus de dix minutes avec des lectures toutes propres.
+
+Hypothèses à vérifier dans une prochaine session, avec l'écho brut `r` de la variante diagnostic : texte ou trame que le robot émet après un réveil par BRC (peut-être à une autre vitesse) et qui se mêle aux réponses ; réveil par BRC « partiel » qui ne maintient pas l'OI ouverte. Parades possibles : attendre 2 à 3 s et vider la réception avant `s`, envoyer `s` deux fois, activer l'anti-veille `a`, rejeter les lectures hors plage et relire.
+
+### Reste à faire
+
 - Déplacements (`8`, `2`, `4`, `6`) : **en attente de l'accord explicite de l'utilisateur** au moment où ces lignes sont écrites.
-- Réveil par BRC (`w`) : pas encore évalué avec le bon câblage (les deux essais de la section 4.1 ont eu lieu avec BRC mal relié). À tester quand le robot se sera rendormi.
-- Fin de session (`s` puis `x`) : à faire.
+- Fin de session (`s` puis `x`) : le robot s'est rendormi de lui-même en Passive, état sûr (il peut dormir et se recharger).
 
 ## Problèmes rencontrés et corrections
 
@@ -227,6 +256,7 @@ Lecture : mode OI 2 en Passive puis 3 en Safe, soit le décalage de +1 décrit d
 2. **Une requête capteur sur deux sans réponse** : la spécification OI demande au moins 15 ms entre deux requêtes de capteurs, le sketch les enchaînait sans pause. Correction a minima dans `readSensor()` des deux sketches : `delay(20);` avant la requête. Après correction, toutes les requêtes répondent.
 3. **Tension lue 15,58 V contre 14,66 V au multimètre le matin** : écart de 0,9 V, cohérent avec une recharge du robot entre les deux mesures ; à confirmer par l'utilisateur. Le courant négatif et l'état de charge 0 sont cohérents avec un robot hors de sa base.
 4. Les trois lignes de signal ne portent aucune résistance série de 1 kΩ (conseillée dans le README, facultative) : fonctionne tel quel.
+5. **Réveil par BRC fragile** : octets parasites `B0 02` dans les réponses pendant au moins 6 s après le réveil, puis rendormissement au bout d'une minute environ (section 5). Non résolu, à investiguer.
 
 ## Outils
 
