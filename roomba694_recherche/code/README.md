@@ -68,31 +68,29 @@ Rien sur la masse ni sur l'alimentation. 1 kΩ ne gêne pas la liaison à 115200
 
 Module de l'utilisateur : GY-521 (sérigraphie « HW-123 », 8 broches : VCC, GND, SCL, SDA, XDA, XCL, AD0, INT). Liaison I²C sur les broches par défaut de l'ESP32 : **SDA = D21 (GPIO21), SCL = D22 (GPIO22)**, toujours sur le bord droit de la carte. Alimentation du module en 3,3 V depuis la broche 3V3 de la carte (le module a son propre régulateur et ses résistances de rappel I²C). AD0 laissé libre → adresse I²C 0x68. XDA, XCL, INT : libres.
 
-Plan de montage établi par la session locale du 2026-11-08 (soir) : l'ESP32 enfiché sur une plaque d'essai, rangées ~29 à 45, la rangée de trous libres au-dessus des broches du bord droit (D23 … 3V3). Alimentation **uniquement par l'USB-C de la carte** (PC, puis batterie portable). Les bandes du haut de la plaque distribuent le 3,3 V (rouge +) et la masse (bleue −) **de la carte**. Trous 1 et 2 du robot : vides.
+Plan de montage (version du 2026-11-08, tard le soir, après repositionnement de la plaque **à l'horizontale** sur le robot) : la carte ESP32 est à droite de la plaque, ses broches 3V3 … D23 dans la colonne b du bandeau du haut, **3V3 en rangée 11 et D23 en rangée 25** ; la rangée de trous libres (colonne a) est juste au-dessus des broches. Les composants vont à gauche de la carte, rangées 28 à 48 du bandeau du haut (le ruban adhésif commence vers la rangée 50). Alimentation **uniquement par l'USB-C de la carte**. Les bandes du haut distribuent le 3,3 V (rouge +) et la masse (bleue −) **de la carte**, tout étant branché dans leur segment de droite (rangées ≤ 30). Trous 1, 2 et 7 du robot : vides.
 
-| # | De | Vers | Quoi |
-|---|---|---|---|
-| 1 | trou libre au-dessus de **3V3** | bande rouge + | fil (la bande porte 3,3 V) |
-| 2 | trou libre au-dessus de **GND** | bande bleue − | fil |
-| 3 | trou libre au-dessus de **TX2** | rangée 22 | fil |
-| 4 | rangée 22 | rangée 24 | résistance 1 kΩ |
-| 5 | rangée 24 | robot trou **3** (RXD) | fil long mâle-mâle |
-| 6 | trou libre au-dessus de **RX2** | rangée 18 | fil |
-| 7 | rangée 18 | rangée 20 | résistance 1 kΩ |
-| 8 | rangée 20 | robot trou **4** (TXD) | fil long |
-| 9 | trou libre au-dessus de **D4** | rangée 14 | fil |
-| 10 | rangée 14 | rangée 16 | résistance 1 kΩ |
-| 11 | rangée 16 | robot trou **5** (BRC) | fil long |
-| 12 | bande bleue − | robot trou **6** (GND) | fil long, sans résistance |
-| 13 | module GY-521 **sur ses broches** (connecteur droit : les 8 broches descendent dans la colonne c, rangées 3 à 10, le circuit reste à plat au-dessus de la plaque, puce vers le haut, corps tourné vers le canal) : VCC en 3, GND en 4, SCL en 5, SDA en 6 ; rangées 7 à 10 libres | | |
-| 14 | rangée 3 (VCC) | bande rouge + | fil |
-| 15 | rangée 4 (GND) | bande bleue − | fil |
-| 16 | rangée 5 (SCL) | trou libre au-dessus de **D22** | fil |
-| 17 | rangée 6 (SDA) | trou libre au-dessus de **D21** | fil |
+| # | De | Vers | Quoi | Trou du robot |
+|---|---|---|---|---|
+| 1 | trou libre de **3V3** (r11) | bande rouge +, trou vers r10 | fil | — |
+| 2 | trou libre de **GND** (r12) | bande bleue −, trou vers r10 | fil | — |
+| 3 | trou libre de **TX2** (r17) | r44 (colonne b) | fil | — |
+| 4 | r44 | r46 | résistance 1 kΩ debout, colonne c | — |
+| 5 | r46 (colonne d) | prise du robot | fil long, bout mâle | **trou 3** (RXD) |
+| 6 | trou libre de **RX2** (r16) | r41 (colonne b) | fil | — |
+| 7 | r41 | r43 | résistance 1 kΩ debout, colonne c | — |
+| 8 | r43 (colonne d) | prise du robot | fil long | **trou 4** (TXD) |
+| 9 | trou libre de **D4** (r15) | r38 (colonne b) | fil | — |
+| 10 | r38 | r40 | résistance 1 kΩ debout, colonne c | — |
+| 11 | r40 (colonne d) | prise du robot | fil long | **trou 5** (BRC) |
+| 12 | bande bleue − (trou vers r20) | prise du robot | fil long, sans résistance | **trou 6** (GND) |
+| 13 | module GY-521 sur ses broches, colonne c, rangées 29 à 36 : VCC 29, GND 30, SCL 31, SDA 32 ; XDA, XCL, AD0, INT (33 à 36) libres ; corps à plat vers le canal, puce en haut | | | — |
+| 14 | r29 (VCC, colonne b) | bande rouge +, trou vers r27 | fil | — |
+| 15 | r30 (GND, colonne b) | bande bleue −, trou vers r28 | fil | — |
+| 16 | r31 (SCL, colonne b) | trou libre de **D22** (r24) | fil | — |
+| 17 | r32 (SDA, colonne b) | trou libre de **D21** (r21) | fil | — |
 
-Position du module (vue de côté et de dessus) : `../images/gy521_position_sur_plaque.jpg`. Le module est à plat, son axe Z est vertical : c'est le gyroscope Z qui mesure les rotations du robot.
-
-Repères (approximatifs, lire le numéro imprimé sur la plaque) : 3V3 ≈ 30, GND ≈ 31, D4 ≈ 34, RX2 ≈ 35, TX2 ≈ 36, D21 ≈ 40, D22 ≈ 43. **Plan dessiné sur la photo de la plaque, numéros = étapes de ce tableau : `../images/plan_sur_photo_plaque.jpg`.** Photo annotée de la plaque : `../images/plaque_esp32_placee_rangees.jpg`. Schéma de la zone composants (position du GY-521, résistances, fils) : `../images/plan_plaque_zone_composants.jpg`. **Attention** : sur cette plaque, les bandes d'alimentation semblent coupées vers les rangées 31-33 ; brancher les deux fils qui alimentent les bandes (étapes 1 et 2) dans des trous de bande situés **au-dessus de la rangée 29**, du même côté que le gyroscope, puis vérifier au multimètre 3,3 V entre la bande rouge et la bande bleue près de la rangée 5. Dans une moitié de plaque, les cinq trous d'une rangée sont reliés et deux rangées voisines ne le sont pas : une résistance va donc d'une rangée à l'autre (23, 19 et 15 restent vides pour la lisibilité). Vérifier que la bande rouge n'est pas coupée au milieu de la plaque. Dernier coup d'œil avant l'USB : rien sur les trous 1 et 2 du robot, la bande rouge ne va qu'au VCC du gyroscope, chaque résistance a une patte dans chaque rangée.
+Rangées des broches de la carte (colonne b, à lire sur la plaque) : 3V3 11, GND 12, D15 13, D2 14, D4 15, RX2 16, TX2 17, D5 18, D18 19, D19 20, D21 21, RX0 22, TX0 23, D22 24, D23 25. Les bandes sont probablement coupées vers le milieu de la plaque (rangées 31-33 observées sur une photo précédente) : toutes les connexions aux bandes ci-dessus sont dans le même segment (rangées 10 à 28), donc sans risque ; vérifier après mise sous tension 3,3 V entre bande rouge et bande bleue près de la rangée 27. Image du plan sur la photo de la plaque : `../images/plan_sur_photo_plaque.jpg`. Position du module : `../images/gy521_position_sur_plaque.jpg` (module à plat, axe Z vertical).
 
 ## Alimentation par le robot (étape suivante, non câblée)
 
