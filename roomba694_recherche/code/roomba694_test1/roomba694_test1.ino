@@ -1,7 +1,7 @@
 /*
   roomba694_test1.ino
   Premier test de l'Open Interface (OI) d'un iRobot Roomba 694 avec un ESP32 classique (ESP32-WROOM, devkit 30 ou 38 broches).
-  Version 1 — 2026-11-08. Ce code n'a pas été compilé ni testé ici : à compiler dans l'IDE Arduino (paquet de cartes "esp32" d'Espressif).
+  Version 1 — 2026-11-08. Compilé, téléversé et validé sur le robot le 2026-11-08 (arduino-cli 1.5.1, paquet esp32 3.3.7) : voir journal_tests.md.
 
   CÂBLAGE — valide pour le robot mesuré le 2026-11-08 (TXD robot = 3,3 V ; RXD et BRC tirés à 5 V ; masse sur 6 et 7)
     Robot broche 4 (TXD, 3,3 V)  -> GPIO16 (RX2)        1 kΩ en série conseillé, facultatif
@@ -64,6 +64,7 @@ bool readExact(uint8_t* buf, size_t n) {
 
 // Interroge un paquet capteur (opcode 142). Renvoie false si le robot ne répond pas.
 bool readSensor(uint8_t packetId, uint8_t* buf, size_t len) {
+  delay(20);   // au moins 15 ms entre deux requêtes capteur (spec OI) : sans cette pause, une requête sur deux restait sans réponse sur le 694 (test du 2026-11-08)
   flushInput();
   robot.write(OI_SENSORS);
   robot.write(packetId);

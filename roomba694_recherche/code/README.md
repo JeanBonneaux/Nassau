@@ -1,6 +1,6 @@
 # Code — Roomba 694 piloté par un ESP32
 
-État au 2026-11-08. Sketches Arduino pour un ESP32 classique (ESP32-WROOM, devkit 30 ou 38 broches). Rien n'a été compilé ici : à compiler dans l'IDE Arduino avec le paquet de cartes « esp32 » d'Espressif.
+État au 2026-11-08 (soir). Sketches Arduino pour un ESP32 classique (ESP32-WROOM, devkit 30 ou 38 broches), compilés avec arduino-cli 1.5.1 et le paquet « esp32 » 3.3.7, téléversés et validés sur le robot : déroulé et mesures dans [journal_tests.md](journal_tests.md).
 
 ## Mesures faites sur le robot (multimètre, 2026-11-08)
 
