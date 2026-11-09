@@ -92,6 +92,45 @@ Plan de montage (version du 2026-11-08, tard le soir, après repositionnement de
 
 Rangées des broches de la carte (colonne b, à lire sur la plaque) : 3V3 11, GND 12, D15 13, D2 14, D4 15, RX2 16, TX2 17, D5 18, D18 19, D19 20, D21 21, RX0 22, TX0 23, D22 24, D23 25. Les bandes sont probablement coupées vers le milieu de la plaque (rangées 31-33 observées sur une photo précédente) : toutes les connexions aux bandes ci-dessus sont dans le même segment (rangées 10 à 28), donc sans risque ; vérifier après mise sous tension 3,3 V entre bande rouge et bande bleue près de la rangée 27. Image du plan sur la photo de la plaque : `../images/plan_sur_photo_plaque.jpg`. Position du module : `../images/gy521_position_sur_plaque.jpg` (module à plat, axe Z vertical).
 
+## Brochage complet au 2026-11-09 (robot, gyroscope, radar à ultrasons)
+
+Vue depuis la carte ESP32. « haut » = colonne de broches 3V3 … D23 (rangée libre a au-dessus), « bas » = colonne VIN … EN (rangée libre j au-dessous) ; les rangées sont celles imprimées sur la plaque (3V3 et VIN en rangée 11). Le radar (en gras) est **préparé, pas encore câblé** : schéma trou par trou dans [../images/plan_radar_ultrason_plaque.png](../images/plan_radar_ultrason_plaque.png), explications dans [../notes/G_radar_ultrason_servo.md](../notes/G_radar_ultrason_servo.md).
+
+| Broche ESP32 | Rangée | Relié à | Remarque |
+|---|---|---|---|
+| 3V3 | 11 haut | bande rouge du haut → GY-521 VCC | 3,3 V du régulateur de la carte ; rien d'autre dessus |
+| GND (côté 3V3) | 12 haut | bande bleue du haut → GY-521 GND et robot trou 6 | masse commune |
+| D4 (GPIO4) | 15 haut | 1 kΩ → robot trou 5 (BRC) | sortie, haute au repos ; impulsion basse = réveil |
+| RX2 (GPIO16) | 16 haut | 1 kΩ → robot trou 4 (TXD, 3,3 V) | entrée série depuis le robot |
+| TX2 (GPIO17) | 17 haut | 1 kΩ → robot trou 3 (RXD) | sortie série vers le robot |
+| D21 (GPIO21) | 21 haut | GY-521 SDA | I²C, 400 kHz |
+| D22 (GPIO22) | 24 haut | GY-521 SCL | I²C |
+| **VIN** | 11 bas | **bande rouge du bas (5 V) → HC-SR04 Vcc, servo rouge, condensateur +** | 5 V de l'USB (4,6 à 5,0 V lus) ; plus tard sortie 5 V de l'abaisseur |
+| **GND (côté VIN)** | 12 bas | **bande bleue du bas → HC-SR04 Gnd, servo brun, condensateur −, 2 kΩ du diviseur** | masse commune (les deux GND de la carte sont reliés) |
+| **D27 (GPIO27)** | 16 bas | **servo SG90, fil orange** | PWM 50 Hz, 500 à 2500 µs |
+| **D32 (GPIO32)** | 20 bas | **HC-SR04 Trig** | impulsion de 10 µs, 3,3 V suffisent |
+| **D34 (GPIO34)** | 22 bas | **point milieu du diviseur : Echo → 1 kΩ → D34, et 2 kΩ de D34 vers la masse** | entrée seule, 3,3 V max : jamais l'Echo (5 V) en direct |
+| D15, D2, D5, D18, D19, RX0, TX0, D23 | haut | rien | RX0/TX0 = USB |
+| D13, D12, D14, D26, D25, D33, D35, VN, VP, EN | bas | rien | D25/D26 réservés au LiDAR (UART1, note F) |
+
+| Trou du robot (Mini-DIN 7) | Rôle | Relié à |
+|---|---|---|
+| 1, 2 | Vpwr, 14 à 21 V | **rien** (plus tard l'entrée de l'abaisseur, note F) |
+| 3 | RXD, entrée du robot | 1 kΩ ← TX2 |
+| 4 | TXD, sortie du robot (3,3 V) | 1 kΩ → RX2 |
+| 5 | BRC, réveil | 1 kΩ ← D4 |
+| 6 | masse | bande bleue du haut |
+| 7 | masse | rien |
+
+| Module | Broche | Relié à |
+|---|---|---|
+| GY-521 | VCC, GND, SCL, SDA | bande rouge du haut (3,3 V), bande bleue du haut, D22, D21 ; XDA, XCL, AD0, INT libres |
+| HC-SR04 | Vcc, Trig, Echo, Gnd | bande rouge du bas (5 V), D32, 1 kΩ vers D34 (+ 2 kΩ vers la masse), bande bleue du bas |
+| SG90 | brun, rouge, orange | bande bleue du bas, bande rouge du bas (5 V), D27 |
+| condensateur 100 à 470 µF | +, − | bande rouge du bas, bande bleue du bas (patte longue = +) |
+
+Les bandes du haut (3,3 V) et du bas (5 V) ne doivent jamais être reliées entre elles ; seules les masses sont communes, par la carte.
+
 ## Alimentation par le robot (étape suivante, non câblée)
 
 Vpwr (broches 1-2) → abaisseur à découpage **5 V fixe** (CANADUINO 9-35 V → 5 V, 5 A, à borniers, commandé sur Amazon.ca) à travers un interrupteur → broche VIN de l'ESP32 et rail 5 V de la plaque (bande rouge du bas : radar à ultrasons, puis LiDAR). Mesurer 5,0 V en sortie **avant** de brancher la carte ; ne jamais brancher l'USB du PC en même temps. Budget du port : 200 mA continus côté batterie (coupure au-delà de 500 mA en crête), soit environ 500 mA sous 5 V après conversion ; chiffrage et références dans [../notes/F_ameliorations_programmation_cartographie.md](../notes/F_ameliorations_programmation_cartographie.md), section 2.1.
