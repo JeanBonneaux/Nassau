@@ -204,7 +204,7 @@ async function refresh(){
    $('imuhint').textContent=s.imu.cal?'calibration en cours, ne bougez pas le robot…':'cap positif = rotation vers la gauche (anti-horaire), comme l\'OI ; z remet à zéro, robot immobile';}
   else{$('yaw').textContent='–';$('rate').textContent='–';$('imuhint').textContent='MPU-6050 non détecté';}
   $('ba').className=s.keep?'on':'';$('bj').className=s.csv?'on':'';
-  $('up').textContent=(s.ql?'lecture groupée des capteurs':'lecture des capteurs paquet par paquet')+' · '+s.host+'.local';
+  $('up').textContent=(s.ql?'lecture groupée des capteurs':'lecture des capteurs paquet par paquet')+' · '+s.host+'.local · dernier redémarrage : '+s.rst;
  }catch(e){$('dot').className='dot warn';$('sttxt').textContent='carte injoignable…';}
 }
 let seq=0;

@@ -151,9 +151,26 @@ Encodeurs après ce réveil : 2 / 4 (ils repartent de zéro à chaque réveil, c
 
 Interface web (v2) vérifiée hors robot : pages servies depuis un petit serveur local avec de fausses données `/api/state`, `/api/log`, `/api/scan` ; rendu correct au format téléphone (375 px), aucune erreur de script, pavé de pilotage : un appui envoie `/api/cmd?c=8` puis `/api/cmd?c=%20` au relâchement, STOP envoie `c=%20`, liste des réseaux affichée après « Chercher les réseaux ». Deux retouches faites à cette occasion : légende du dessin du robot sur deux lignes, et console web qui n'ajoute que les lignes nouvelles.
 
-(à compléter : tests depuis le téléphone, réseau de la maison, console TCP et mise à jour sans câble depuis le PC, gyroscope en rotation)
+## 8. Depuis le téléphone : réseau de la maison, pilotage, incidents
 
-## 8. Problèmes rencontrés et corrections
+- **Réseau de la maison** : enregistré par l'utilisateur depuis la nouvelle page /wifi (téléphone sur « Roomba694 »), connexion obtenue, adresse 192.168.18.25. Le PC (192.168.18.6) joint la carte : `ping` 95 ms, `/api/state` en 0,13 s, console TCP (`tcp_console.ps1 -HostName 192.168.18.25 -Commands 'i'`) fonctionnelle. Le câble USB a été débranché du PC pour alimenter la carte par la batterie portable fixée sur le robot.
+- **« Ça ne fonctionne pas »** : le journal de la carte (`/api/log`) a montré la cause : réveil puis « Passive (s) », puis flèches, **sans « Safe (f) »** ; le robot ignore les ordres de roues en Passive. Puis le robot s'est rendormi et n'a plus répondu, ni aux impulsions BRC envoyées par le réseau. Après appui sur CLEAN par l'utilisateur, puis `s` et `f` depuis la page : le robot roule, piloté depuis le téléphone (vitesse réglée à 60 mm/s par l'utilisateur). Le voyant CLEAN clignote pendant le pilotage en Safe.
+- **Redémarrages répétés de la carte** sur batterie portable : uptime observé 199 s, puis 47 s, puis 406 s, puis 50 s, puis 12 s, puis 11 s... soit un redémarrage toutes les 2 à 6 minutes, y compris pendant le pilotage. Chaque redémarrage perdait l'anti-veille, le mode et la vitesse choisie (retour à 150 mm/s). Cause à établir : la version 20:46 affiche la raison du dernier redémarrage (`esp_reset_reason`) au démarrage, dans `i`, dans `/api/state` (`rst`) et en bas de la page : « BAISSE DE TENSION » désignerait l'alimentation (câble, batterie), « PLANTAGE » le firmware.
+- **Flux continu de capteurs** : après un de ces redémarrages, toutes les lectures sont devenues du charabia (« Tension batterie : 4924 mV », « Mode OI lu : 19 », encodeur droit 4924). 4924 = `0x133C` : en-tête 19 (`0x13`) et longueur 60 (`0x3C`) d'un **flux de capteurs (opcode 148)**, et 60 octets = exactement nos 22 identifiants + 38 octets de données. Le robot a donc reçu notre liste avec l'opcode 148 (flux toutes les 15 ms) au lieu de 149, vraisemblablement un octet altéré au moment d'un redémarrage de la carte (la ligne TX2 n'est pas pilotée pendant la réinitialisation). Tout ce qui est lu ensuite est décalé. Correction (version 20:46) : opcode 150 (pause du flux) envoyé au démarrage de la carte, touche `p` pour le renvoyer à la main, et envoi automatique après trois lectures périodiques incohérentes de suite.
+- Ajouts de la même version : arrêt des roues envoyé au démarrage de la carte (un redémarrage pendant un déplacement en Safe laisserait sinon le robot sur son dernier ordre), vitesse de la page conservée en mémoire d'un démarrage à l'autre.
+
+## 9. Mise à jour sans câble depuis le PC
+
+| Voie | Résultat |
+|---|---|
+| ArduinoOTA : `espota.exe -r -i 192.168.18.25 -p 3232 --auth=roomba694 -f build/esp32.esp32.esp32/roomba694_wifi.ino.bin` | « Sending invitation… Authenticating… OK » puis « No response from device » : la carte doit ouvrir une connexion vers le PC pour recevoir le fichier, et le pare-feu de Windows la bloque selon toute vraisemblance (à autoriser une fois pour `espota.exe`, ou utiliser l'autre voie) |
+| Page /update : `curl -u admin:roomba694 -F "firmware=@…/roomba694_wifi.ino.bin" http://192.168.18.25/update` | « Mise à jour réussie, la carte redémarre. » : 1 065 990 octets en 10,7 s ; 20 s plus tard la carte répond avec la nouvelle version (compilée 20:46:54), raison du redémarrage « redémarrage logiciel (mise à jour) », robot joignable |
+
+Après cette mise à jour le robot répond à nouveau normalement (la pause du flux au démarrage a suffi).
+
+Reste à faire : lire la raison des redémarrages après la prochaine coupure (pied de page ou `i`), comparer le cap du gyroscope et les encodeurs sur un quart de tour, consigner les réponses du robot en Safe pendant un déplacement.
+
+## 10. Problèmes rencontrés et corrections
 
 | Problème | Cause | Correction |
 |---|---|---|
@@ -164,8 +181,12 @@ Interface web (v2) vérifiée hors robot : pages servies depuis un petit serveur
 | Page /wifi inutilisable depuis le téléphone | identifiant non communiqué, redémarrage de la carte, téléphone quittant le réseau sans internet | plus d'identifiant sur /wifi, connexion sans redémarrage, liste des réseaux, état et cause d'échec affichés, conseils sur la page |
 | Inondation « Roues arrêtées. » | origine non identifiée (touche stop en rafale ?) | arrêt et message limités à une fois par seconde si déjà arrêté ; octets non imprimables ignorés ; « Touche inconnue » limitée |
 | Prototypes non générés pour `web.ino` ; `'asyncfunction' does not name a type` | limites de l'outil Arduino face au second `.ino` et au JavaScript des pages | prototypes explicites ; HTML déplacé dans `pages.h` |
-| Robot rendormi malgré l'anti-veille BRC | non élucidé (BRC inefficace sur ce 694 ? touche `x`/`o` envoyée depuis la page ?) | réveil par `w` puis `s` fonctionne ; à instrumenter plus tard |
+| Robot rendormi malgré l'anti-veille BRC | non élucidé (BRC inefficace sur ce 694 ?) ; les impulsions BRC ne le réveillent pas toujours non plus | CLEAN puis `s` reste la méthode sûre ; `w` deux fois à 4 s d'intervalle parfois |
+| Flèches sans effet depuis le téléphone | robot en Passive (Safe jamais envoyé) | rappel sur la page ; séquence CLEAN, `s`, `f` |
+| Lectures incohérentes (4924 mV, mode 19) | robot passé en flux continu (opcode 148) après un redémarrage de la carte | opcode 150 au démarrage, touche `p`, envoi automatique après trois lectures incohérentes |
+| Redémarrages de la carte toutes les 2 à 6 min sur batterie portable | à établir (tension ? plantage ?) | raison du redémarrage affichée ; arrêt des roues et pause du flux au démarrage ; vitesse conservée |
+| ArduinoOTA « No response from device » | connexion retour carte → PC bloquée (pare-feu) | mise à jour par la page /update, qui fonctionne |
 
-## 9. Rappel de fin de session
+## 11. Rappel de fin de session
 
 Toujours finir par `s` puis `x` (console série, console TCP ou page web). Ne jamais brancher l'USB du PC et une autre alimentation en même temps. Ne pas utiliser les flèches de la page tant que le câble USB relie la carte au PC.

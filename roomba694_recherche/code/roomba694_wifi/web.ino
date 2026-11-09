@@ -71,6 +71,7 @@ void handleState() {
   j += b;
   j += "\"ap\":{\"ssid\":"; jsonStr(j, AP_SSID);
   j += ",\"ip\":\""; j += WiFi.softAPIP().toString(); j += "\",\"clients\":"; j += (int)WiFi.softAPgetStationNum(); j += "},";
+  j += "\"rst\":"; jsonStr(j, resetReasonText()); j += ',';
   bool on = (WiFi.status() == WL_CONNECTED);
   j += "\"sta\":{\"saved\":"; jsonStr(j, savedSsid.c_str());
   j += ",\"on\":"; j += on ? "true" : "false";
@@ -80,7 +81,7 @@ void handleState() {
   http.send(200, "application/json", j);
 }
 
-const char* ALLOWED_WEB_CMDS = "?wsfchbeknml82465 ajioxgzq";
+const char* ALLOWED_WEB_CMDS = "?wsfchbeknml82465 ajioxgzqp";
 
 void handleCmd() {
   String c = http.arg("c");
@@ -96,6 +97,9 @@ void handleSpeed() {
   int v = http.arg("v").toInt();
   if (v < 20 || v > SPEED_MM_S) { http.send(400, "text/plain; charset=utf-8", "vitesse hors limites"); return; }
   driveSpeed = (int16_t)v;
+  prefs.begin("cfg", false);
+  prefs.putInt("speed", driveSpeed);   // conservée d'un démarrage à l'autre
+  prefs.end();
   out.printf("Vitesse réglée à %d mm/s (page web).\n", (int)driveSpeed);
   http.send(200, "text/plain", String(driveSpeed));
 }
@@ -104,7 +108,7 @@ void handleSpeed() {
 void handleLog() {
   uint32_t since = http.hasArg("since") ? strtoul(http.arg("since").c_str(), nullptr, 10) : 0;
   uint32_t end = logSeq;                                  // lignes terminées : 0 .. end-1
-  uint32_t start = (end > LOG_LINES) ? end - LOG_LINES : 0;
+  uint32_t start = (end >= LOG_LINES) ? end - (LOG_LINES - 1) : 0;   // la case la plus ancienne est en cours de réécriture
   if (since > start) start = since;
   if (start > end) start = end;
   String j;

@@ -36,6 +36,7 @@
 #include <Preferences.h>
 #include <Wire.h>
 #include "driver/gpio.h"
+#include "esp_system.h"   // esp_reset_reason() : pourquoi la carte a redémarré
 
 #if __has_include("secrets.h")
 #include "secrets.h"
@@ -66,7 +67,7 @@ constexpr uint32_t POLL_BACKOFF_MS   = 2000;   // période quand le robot ne ré
 enum : uint8_t {
   OI_START = 128, OI_SAFE = 131, OI_FULL = 132, OI_POWER = 133, OI_CLEAN = 135,
   OI_LEDS = 139, OI_SONG = 140, OI_PLAY = 141, OI_SENSORS = 142, OI_DOCK = 143,
-  OI_DRIVE_DIRECT = 145, OI_QUERY_LIST = 149, OI_STOP = 173
+  OI_DRIVE_DIRECT = 145, OI_QUERY_LIST = 149, OI_STREAM_PAUSE = 150, OI_STOP = 173
 };
 
 HardwareSerial& robot = Serial2;
@@ -412,11 +413,29 @@ void printImu() {
 }
 
 // Fin d'un cycle de lecture : contrôle de plausibilité, mise à jour de l'état, ligne CSV éventuelle
+// Met en pause un éventuel flux continu de capteurs (opcode 148 « Stream ») et vide le tampon. Vu le 2026-11-08 :
+// le robot s'est mis à diffuser notre liste de paquets toutes les 15 ms (en-tête 0x13, 60 octets), et toutes les
+// lectures suivantes renvoyaient ces octets décalés (tension « 4924 mV », mode « 19 »...).
+void pauseStream() {
+  finishPendingQueryList();
+  robot.write(OI_STREAM_PAUSE);
+  robot.write((uint8_t)0);
+  delay(40);
+  flushInput();
+  out.println(F("Flux continu de capteurs (opcode 148) mis en pause (150, 0), tampon vidé."));
+}
+
 void pollFinish(bool ok, const uint8_t* buf) {
-  if (ok) {                                     // rejette les lectures polluées par des octets parasites (réveil par BRC...)
+  static uint8_t implausible = 0;
+  if (ok) {                                     // rejette les lectures polluées par des octets parasites (réveil par BRC, flux 148...)
     uint16_t v = u16(buf + 3);                  // tension
     int8_t   t = (int8_t)buf[7];                // température
-    if (v < 8000 || v > 22000 || buf[2] > 5 || t < -20 || t > 80 || buf[20] > 4) ok = false;   // buf[2] état de charge, buf[20] mode OI
+    if (v < 8000 || v > 22000 || buf[2] > 5 || t < -20 || t > 80 || buf[20] > 4) {   // buf[2] état de charge, buf[20] mode OI
+      ok = false;
+      if (++implausible >= 3) { implausible = 0; pauseStream(); }   // des octets arrivent mais n'ont pas de sens : flux 148 probable
+    } else {
+      implausible = 0;
+    }
   }
   if (ok) {
     parseState(buf);
@@ -621,7 +640,8 @@ void printInfo() {
              st.ok ? "joignable" : "sans réponse", (unsigned long)(millis() - st.lastOkMs),
              useQueryList ? "lecture groupée 149" : "lecture paquet par paquet",
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
-  out.printf("Firmware roomba694_wifi v2, compilé le %s %s, en marche depuis %lu s\n", __DATE__, __TIME__, (unsigned long)(millis() / 1000));
+  out.printf("Firmware roomba694_wifi v2, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
+             __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
 }
 
 void printHelp() {
@@ -639,6 +659,7 @@ void printHelp() {
     " j  journal CSV toutes les 200 ms (on/off)   i  informations Wi-Fi et état\n"
     " g  gyroscope MPU-6050 (cap, vitesse)   z  recalibrer le gyroscope et remettre le cap à zéro (robot immobile)\n"
     " q  réessayer la lecture groupée des capteurs (opcode 149) et afficher les octets reçus\n"
+    " p  mettre en pause un flux continu de capteurs (opcode 150) si les lectures sont devenues incohérentes\n"
     " o  Power (extinction)           x  Stop OI (à faire en fin de session)\n"));
 }
 
@@ -654,6 +675,7 @@ void handle(char c) {
     case 'e': printSensors(); break;
     case 'k': printEncoders(); break;
     case 'n': printLevels(); break;
+    case 'p': pauseStream(); break;
     case 'm': playJingle(); break;
     case 'l': ledDemo(); break;
     // Le message n'est affiché qu'au départ : la page web répète l'ordre toutes les 400 ms tant que le bouton est maintenu.
@@ -810,6 +832,22 @@ void tcpTick() {
 }
 
 // ---------- Démarrage et boucle ----------
+// Raison du dernier redémarrage de la carte, en clair (affichée au démarrage, par 'i' et dans /api/state)
+const char* resetReasonText() {
+  switch (esp_reset_reason()) {
+    case ESP_RST_POWERON:  return "mise sous tension";
+    case ESP_RST_SW:       return "redémarrage logiciel (mise à jour)";
+    case ESP_RST_PANIC:    return "PLANTAGE du firmware";
+    case ESP_RST_INT_WDT:
+    case ESP_RST_TASK_WDT:
+    case ESP_RST_WDT:      return "chien de garde (programme bloqué)";
+    case ESP_RST_BROWNOUT: return "BAISSE DE TENSION (alimentation USB insuffisante : câble, batterie)";
+    case ESP_RST_EXT:      return "broche EN (bouton reset ou ligne RTS du port série)";
+    case ESP_RST_DEEPSLEEP: return "sortie de veille profonde";
+    default:               return "inconnue";
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   pinMode(PIN_BRC, OUTPUT);
@@ -817,6 +855,16 @@ void setup() {
   robot.begin(115200, SERIAL_8N1, PIN_RX, PIN_TX);   // réglage par défaut du Roomba 600 : 115200 bauds, 8N1
   delay(500);
   printHelp();
+  out.printf("Redémarrage de la carte : %s.\n", resetReasonText());
+  // Seul ordre envoyé au robot au démarrage : roues à l'arrêt. Sans effet s'il dort ou s'il est en Passive ;
+  // indispensable si la carte a redémarré (coupure d'alimentation, plantage) pendant un déplacement en Safe,
+  // car le robot garderait sinon son dernier ordre de roues.
+  driveDirect(0, 0);
+  robot.write(OI_STREAM_PAUSE);   // et fin d'un éventuel flux continu laissé par une session précédente
+  robot.write((uint8_t)0);
+  prefs.begin("cfg", true);
+  driveSpeed = constrain(prefs.getInt("speed", SPEED_MM_S), 20, (int)SPEED_MM_S);   // vitesse choisie sur la page, conservée
+  prefs.end();
   setupWifi();
   if (imuInit()) {
     out.printf("Gyroscope MPU-6050 détecté (WHO_AM_I 0x%02X) : calibration pendant 1 s, robot immobile.\n", imu.whoami);
@@ -824,7 +872,7 @@ void setup() {
   } else {
     out.println(F("Gyroscope MPU-6050 non détecté (VCC->3V3, GND, SCL->D22, SDA->D21) : fonctions g et z inactives."));
   }
-  out.println(F("Rien n'est envoyé au robot au démarrage. Séquence conseillée : s, b (robot réveillé : CLEAN ou 'w')."));
+  out.println(F("Séquence conseillée : s, b (robot réveillé par CLEAN, ou par 'w' deux fois à 4 s d'intervalle)."));
 }
 
 void loop() {
