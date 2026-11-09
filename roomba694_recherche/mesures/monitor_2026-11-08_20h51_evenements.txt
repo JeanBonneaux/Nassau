@@ -1,0 +1,319 @@
+20:51:24  Observation de 192.168.18.25 pendant 1200 s, une mesure toutes les 1.0 s. CSV : roomba694_recherche/mesures\monitor_2026-11-08_20h51.csv
+20:51:24  première mesure : carte en marche depuis 187 s (raison : redémarrage logiciel (mise à jour)), robot joignable, mode brut 3, 14853 mV, cap 182.9°
+20:51:28  console : Tourne à droite (150 mm/s).
+20:51:28  console : Roues arrêtées.
+20:52:01  console : Tourne à droite (150 mm/s).
+20:52:02  pare-chocs gauche 1, droit 0
+20:52:02  console : Roues arrêtées.
+20:52:02  console : Avance (150 mm/s).
+20:52:03  pare-chocs gauche 0, droit 0
+20:52:13  déplacement 20:52:01 -> 20:52:13 : encodeurs G +3646 / D +3437 pas = +1575 mm, rotation d'après encodeurs -23°, d'après gyroscope -17.6°
+20:52:13  console : Roues arrêtées.
+20:52:14  console : Tourne à gauche (150 mm/s).
+20:52:15  console : Roues arrêtées.
+20:52:15  console : Avance (150 mm/s).
+20:52:21  console : Roues arrêtées.
+20:52:21  console : Tourne à gauche (150 mm/s).
+20:52:22  console : Roues arrêtées.
+20:52:22  console : Avance (150 mm/s).
+20:52:25  déplacement 20:52:14 -> 20:52:25 : encodeurs G +2806 / D +3167 pas = +1328 mm, rotation d'après encodeurs +39°, d'après gyroscope +60.2°
+20:52:25  console : Roues arrêtées.
+20:52:25  console : Tourne à droite (150 mm/s).
+20:52:26  console : Roues arrêtées.
+20:52:26  console : Tourne à droite (150 mm/s).
+20:52:26  console : Roues arrêtées.
+20:52:27  console : Avance (150 mm/s).
+20:52:29  déplacement 20:52:27 -> 20:52:29 : encodeurs G +619 / D +619 pas = +275 mm, rotation d'après encodeurs +0°, d'après gyroscope -6.5°
+20:52:29  console : Roues arrêtées.
+20:52:32  console : Tourne à gauche (150 mm/s).
+20:52:33  console : Roues arrêtées.
+20:52:33  console : Avance (150 mm/s).
+20:52:34  console : Roues arrêtées.
+20:52:35  console : Tourne à gauche (150 mm/s).
+20:52:36  déplacement 20:52:35 -> 20:52:36 : encodeurs G -107 / D +111 pas = +1 mm, rotation d'après encodeurs +24°, d'après gyroscope +18.7°
+20:52:36  console : Roues arrêtées.
+20:52:37  console : Avance (150 mm/s).
+20:52:38  pare-chocs gauche 1, droit 0
+20:52:38  console : Roues arrêtées.
+20:52:39  mode OI : Passive (brut 2)
+20:52:39  roue levée gauche 1, droite 0
+20:52:41  console : Tourne à droite (150 mm/s).
+20:52:42  déplacement 20:52:41 -> 20:52:42 : encodeurs G +0 / D +0 pas = +0 mm, rotation d'après encodeurs +0°, d'après gyroscope +0.0°
+20:52:42  console : Roues arrêtées.
+20:52:42  console : Tourne à droite (150 mm/s).
+20:52:43  console : Roues arrêtées.
+20:52:43  console : Tourne à droite (150 mm/s).
+20:52:44  console : Roues arrêtées.
+20:52:44  console : Recule (150 mm/s).
+20:52:45  déplacement 20:52:43 -> 20:52:45 : encodeurs G +0 / D +0 pas = +0 mm, rotation d'après encodeurs +0°, d'après gyroscope +0.0°
+20:52:45  console : Roues arrêtées.
+20:52:47  roue levée gauche 0, droite 0
+20:52:50  console : Avance (150 mm/s).
+20:52:50  console : Roues arrêtées.
+20:52:51  déplacement 20:52:50 -> 20:52:51 : encodeurs G +0 / D +0 pas = +0 mm, rotation d'après encodeurs +0°, d'après gyroscope +0.0°
+20:52:51  console : Avance (150 mm/s).
+20:52:51  console : Roues arrêtées.
+20:52:53  pare-chocs gauche 0, droit 0
+20:52:55  console : Avance (150 mm/s).
+20:52:55  console : Roues arrêtées.
+20:52:56  console : Avance (150 mm/s).
+20:52:59  console : Roues arrêtées.
+20:53:00  déplacement 20:52:56 -> 20:53:00 : encodeurs G +0 / D +0 pas = +0 mm, rotation d'après encodeurs +0°, d'après gyroscope +0.0°
+20:53:02  console : Avance (150 mm/s).
+20:53:03  console : Roues arrêtées.
+20:53:04  console : Tourne à droite (150 mm/s).
+20:53:05  déplacement 20:53:04 -> 20:53:05 : encodeurs G +0 / D +0 pas = +0 mm, rotation d'après encodeurs +0°, d'après gyroscope +0.0°
+20:53:05  console : Roues arrêtées.
+20:53:06  mode OI : Safe (brut 3)
+20:53:06  console : Envoyé : Safe (131)
+20:53:07  console : Avance (150 mm/s).
+20:53:07  console : Roues arrêtées.
+20:53:07  console : Tourne à droite (150 mm/s).
+20:53:08  console : Roues arrêtées.
+20:53:08  console : Avance (150 mm/s).
+20:53:17  console : Roues arrêtées.
+20:53:17  console : Tourne à droite (150 mm/s).
+20:53:18  déplacement 20:53:08 -> 20:53:18 : encodeurs G +2987 / D +2489 pas = +1217 mm, rotation d'après encodeurs -54°, d'après gyroscope -56.0°
+20:53:18  console : Roues arrêtées.
+20:53:19  console : Avance (150 mm/s).
+20:53:27  déplacement 20:53:19 -> 20:53:27 : encodeurs G +2500 / D +2500 pas = +1112 mm, rotation d'après encodeurs +0°, d'après gyroscope +2.1°
+20:53:27  console : Roues arrêtées.
+20:53:28  console : Avance (150 mm/s).
+20:53:29  console : Roues arrêtées.
+20:53:30  console : Avance (150 mm/s).
+20:53:30  console : Roues arrêtées.
+20:53:31  console : Tourne à gauche (150 mm/s).
+20:53:32  déplacement 20:53:31 -> 20:53:32 : encodeurs G -222 / D +224 pas = +0 mm, rotation d'après encodeurs +48°, d'après gyroscope +48.2°
+20:53:32  console : Roues arrêtées.
+20:53:33  console : Avance (150 mm/s).
+20:53:35  pare-chocs gauche 1, droit 0
+20:53:35  déplacement 20:53:33 -> 20:53:35 : encodeurs G +611 / D +612 pas = +272 mm, rotation d'après encodeurs +0°, d'après gyroscope +2.4°
+20:53:35  console : Roues arrêtées.
+20:53:36  pare-chocs gauche 0, droit 0
+20:53:36  console : Recule (150 mm/s).
+20:53:36  console : Roues arrêtées.
+20:53:36  console : Avance (150 mm/s).
+20:53:37  pare-chocs gauche 1, droit 0
+20:53:37  console : Roues arrêtées.
+20:53:37  console : Recule (150 mm/s).
+20:53:38  pare-chocs gauche 0, droit 0
+20:53:38  console : Roues arrêtées.
+20:53:38  console : Avance (150 mm/s).
+20:53:39  déplacement 20:53:37 -> 20:53:39 : encodeurs G -59 / D -18 pas = -17 mm, rotation d'après encodeurs +4°, d'après gyroscope +0.2°
+20:53:39  console : Roues arrêtées.
+20:53:39  console : Recule (150 mm/s).
+20:53:39  console : Roues arrêtées.
+20:53:39  console : Avance (150 mm/s).
+20:53:40  pare-chocs gauche 1, droit 0
+20:53:40  console : Roues arrêtées.
+20:53:40  console : Recule (150 mm/s).
+20:53:41  pare-chocs gauche 0, droit 0
+20:53:42  console : Roues arrêtées.
+20:53:42  console : Tourne à droite (150 mm/s).
+20:53:43  déplacement 20:53:41 -> 20:53:43 : encodeurs G +251 / D -536 pas = -63 mm, rotation d'après encodeurs -85°, d'après gyroscope -90.6°
+20:53:43  console : Roues arrêtées.
+20:53:43  console : Avance (150 mm/s).
+20:53:57  déplacement 20:53:44 -> 20:53:57 : encodeurs G +4117 / D +4118 pas = +1831 mm, rotation d'après encodeurs +0°, d'après gyroscope +3.2°
+20:53:57  console : Roues arrêtées.
+20:53:58  console : Tourne à gauche (150 mm/s).
+20:53:58  console : Roues arrêtées.
+20:53:58  console : Tourne à gauche (150 mm/s).
+20:53:58  console : Roues arrêtées.
+20:54:28  console : Avance (150 mm/s).
+20:54:35  déplacement 20:54:28 -> 20:54:35 : encodeurs G +2242 / D +2242 pas = +997 mm, rotation d'après encodeurs +0°, d'après gyroscope +1.5°
+20:54:35  console : Roues arrêtées.
+20:54:36  console : Tourne à droite (150 mm/s).
+20:54:37  console : Roues arrêtées.
+20:54:37  console : Avance (150 mm/s).
+20:54:41  console : Roues arrêtées.
+20:54:41  console : Tourne à droite (150 mm/s).
+20:54:42  déplacement 20:54:36 -> 20:54:42 : encodeurs G +1525 / D +963 pas = +553 mm, rotation d'après encodeurs -61°, d'après gyroscope -55.0°
+20:54:42  console : Roues arrêtées.
+20:54:42  console : Tourne à droite (150 mm/s).
+20:54:42  console : Roues arrêtées.
+20:54:43  console : Tourne à droite (150 mm/s).
+20:54:43  console : Roues arrêtées.
+20:54:43  console : Avance (150 mm/s).
+20:54:46  console : Roues arrêtées.
+20:54:46  console : Tourne à gauche (150 mm/s).
+20:54:46  console : Roues arrêtées.
+20:54:46  console : Avance (150 mm/s).
+20:54:50  pare-chocs gauche 1, droit 0
+20:54:50  déplacement 20:54:43 -> 20:54:50 : encodeurs G +1865 / D +2048 pas = +870 mm, rotation d'après encodeurs +20°, d'après gyroscope +26.3°
+20:54:50  console : Roues arrêtées.
+20:54:57  console : Avance (150 mm/s).
+20:54:58  pare-chocs gauche 0, droit 0
+20:54:58  déplacement 20:54:57 -> 20:54:58 : encodeurs G +323 / D +322 pas = +143 mm, rotation d'après encodeurs -0°, d'après gyroscope +0.5°
+20:54:58  console : Roues arrêtées.
+20:55:00  console : Avance (150 mm/s).
+20:55:00  console : Roues arrêtées.
+20:55:00  console : Avance (150 mm/s).
+20:55:03  déplacement 20:55:01 -> 20:55:03 : encodeurs G +488 / D +488 pas = +217 mm, rotation d'après encodeurs +0°, d'après gyroscope +0.2°
+20:55:03  console : Roues arrêtées.
+20:55:05  console : Avance (150 mm/s).
+20:55:09  console : Roues arrêtées.
+20:55:10  déplacement 20:55:05 -> 20:55:10 : encodeurs G +1287 / D +1287 pas = +572 mm, rotation d'après encodeurs +0°, d'après gyroscope +0.6°
+20:55:12  console : Avance (150 mm/s).
+20:55:19  déplacement 20:55:12 -> 20:55:19 : encodeurs G +2064 / D +2064 pas = +918 mm, rotation d'après encodeurs +0°, d'après gyroscope +1.2°
+20:55:19  console : Roues arrêtées.
+20:55:20  console : Tourne à droite (150 mm/s).
+20:55:20  console : Roues arrêtées.
+20:55:21  console : Avance (150 mm/s).
+20:55:22  pare-chocs gauche 1, droit 0
+20:55:22  console : Roues arrêtées.
+20:55:22  console : Tourne à droite (150 mm/s).
+20:55:23  console : Roues arrêtées.
+20:55:23  console : Avance (150 mm/s).
+20:55:24  pare-chocs gauche 0, droit 0
+20:55:25  déplacement 20:55:21 -> 20:55:25 : encodeurs G +822 / D +449 pas = +283 mm, rotation d'après encodeurs -40°, d'après gyroscope -34.6°
+20:55:25  console : Roues arrêtées.
+20:55:26  console : Tourne à gauche (150 mm/s).
+20:55:27  console : Roues arrêtées.
+20:55:27  console : Avance (150 mm/s).
+20:55:28  déplacement 20:55:26 -> 20:55:28 : encodeurs G +33 / D +428 pas = +102 mm, rotation d'après encodeurs +43°, d'après gyroscope +41.3°
+20:55:28  console : Roues arrêtées.
+20:55:28  console : Tourne à gauche (150 mm/s).
+20:55:28  console : Roues arrêtées.
+20:55:30  console : Avance (150 mm/s).
+20:55:30  console : Roues arrêtées.
+20:55:30  console : Tourne à droite (150 mm/s).
+20:55:31  console : Roues arrêtées.
+20:55:31  console : Avance (150 mm/s).
+20:55:31  console : Roues arrêtées.
+20:55:32  déplacement 20:55:30 -> 20:55:32 : encodeurs G +200 / D +95 pas = +66 mm, rotation d'après encodeurs -11°, d'après gyroscope -11.8°
+20:55:54  console : Recule (150 mm/s).
+20:55:58  console : Roues arrêtées.
+20:55:59  console : Tourne à gauche (150 mm/s).
+20:56:00  déplacement 20:55:54 -> 20:56:00 : encodeurs G -1550 / D -999 pas = -567 mm, rotation d'après encodeurs +60°, d'après gyroscope +60.3°
+20:56:00  console : Roues arrêtées.
+20:56:02  console : Tourne à gauche (150 mm/s).
+20:56:02  console : Roues arrêtées.
+20:56:03  console : Avance (150 mm/s).
+20:56:26  console : Roues arrêtées.
+20:56:27  déplacement 20:56:03 -> 20:56:27 : encodeurs G -58192 / D -58023 pas = -25835 mm, rotation d'après encodeurs +18°, d'après gyroscope +4.8°
+20:56:27  console : Tourne à gauche (150 mm/s).
+20:56:27  console : Roues arrêtées.
+20:56:28  console : Avance (150 mm/s).
+20:56:30  console : Roues arrêtées.
+20:56:31  déplacement 20:56:28 -> 20:56:31 : encodeurs G +715 / D +714 pas = +318 mm, rotation d'après encodeurs -0°, d'après gyroscope +0.7°
+20:56:32  console : Tourne à gauche (150 mm/s).
+20:56:34  déplacement 20:56:32 -> 20:56:34 : encodeurs G -540 / D +537 pas = -1 mm, rotation d'après encodeurs +117°, d'après gyroscope +106.7°
+20:56:34  console : Roues arrêtées.
+20:56:34  console : Tourne à gauche (150 mm/s).
+20:56:34  console : Roues arrêtées.
+20:56:35  console : Tourne à gauche (150 mm/s).
+20:56:35  console : Roues arrêtées.
+20:56:39  console : Tourne à droite (150 mm/s).
+20:56:40  console : Roues arrêtées.
+20:56:45  console : Tourne à droite (150 mm/s).
+20:56:46  déplacement 20:56:45 -> 20:56:46 : encodeurs G +35 / D -32 pas = +1 mm, rotation d'après encodeurs -7°, d'après gyroscope -7.1°
+20:56:46  console : Roues arrêtées.
+20:56:53  console : Tourne à droite (150 mm/s).
+20:56:53  console : Roues arrêtées.
+20:56:57  console : Tourne à gauche (150 mm/s).
+20:56:57  console : Roues arrêtées.
+20:56:57  console : Tourne à gauche (150 mm/s).
+20:56:57  console : Roues arrêtées.
+20:57:01  console : LEDs envoyées (mode Safe requis).
+20:57:03  console : Chanson envoyée (mode Safe requis : 'f' d'abord).
+20:57:13  console : Tension batterie : 14853 mV
+20:57:13  console : Courant : -151 mA   (négatif = décharge)
+20:57:13  console : Température : 20 °C
+20:57:13  console : Charge : 1266 / 2068 mAh
+20:57:13  console : État de charge : 0   (0 pas en charge, 1 reconditionnement, 2 pleine, 3 entretien, 4 attente, 5 défaut)
+20:57:13  console : Mode OI lu : 3   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur ce 694 la valeur est décalée de +1)
+20:57:28  console : Tourne à droite (150 mm/s).
+20:57:28  console : Roues arrêtées.
+20:57:28  console : Tourne à droite (150 mm/s).
+20:57:29  console : Roues arrêtées.
+20:57:29  console : Tourne à droite (150 mm/s).
+20:57:29  console : Roues arrêtées.
+20:57:30  déplacement 20:57:28 -> 20:57:30 : encodeurs G +302 / D -288 pas = +3 mm, rotation d'après encodeurs -64°, d'après gyroscope -60.0°
+20:57:30  console : Tourne à droite (150 mm/s).
+20:57:30  console : Roues arrêtées.
+20:57:30  console : Tourne à droite (150 mm/s).
+20:57:30  console : Roues arrêtées.
+20:57:31  console : Tourne à droite (150 mm/s).
+20:57:31  console : Roues arrêtées.
+20:57:31  console : Tourne à droite (150 mm/s).
+20:57:31  console : Roues arrêtées.
+20:57:32  console : Tourne à droite (150 mm/s).
+20:57:32  console : Roues arrêtées.
+20:57:32  console : Tourne à droite (150 mm/s).
+20:57:32  console : Roues arrêtées.
+20:57:32  console : Tourne à droite (150 mm/s).
+20:57:33  console : Roues arrêtées.
+20:57:34  console : Roues arrêtées.
+20:57:35  console : Tourne à droite (150 mm/s).
+20:57:35  console : Roues arrêtées.
+20:57:36  console : Avance (150 mm/s).
+20:57:37  déplacement 20:57:36 -> 20:57:37 : encodeurs G +313 / D +315 pas = +140 mm, rotation d'après encodeurs +0°, d'après gyroscope +0.5°
+20:57:37  console : Roues arrêtées.
+20:57:38  console : Tourne à droite (150 mm/s).
+20:57:38  console : Roues arrêtées.
+20:57:38  console : Tourne à droite (150 mm/s).
+20:57:39  console : Roues arrêtées.
+20:57:39  console : Tourne à droite (150 mm/s).
+20:57:39  console : Roues arrêtées.
+20:57:40  console : Tourne à droite (150 mm/s).
+20:57:40  console : Roues arrêtées.
+20:57:40  console : Tourne à droite (150 mm/s).
+20:57:42  console : Roues arrêtées.
+20:57:42  console : Tourne à droite (150 mm/s).
+20:57:43  déplacement 20:57:40 -> 20:57:43 : encodeurs G +714 / D -718 pas = -1 mm, rotation d'après encodeurs -155°, d'après gyroscope -141.1°
+20:57:43  console : Roues arrêtées.
+20:57:44  console : Avance (150 mm/s).
+20:58:11  console : Roues arrêtées.
+20:58:11  console : Tourne à gauche (150 mm/s).
+20:58:12  déplacement 20:57:44 -> 20:58:12 : encodeurs G +8139 / D +8679 pas = +3739 mm, rotation d'après encodeurs +59°, d'après gyroscope +67.6°
+20:58:12  console : Roues arrêtées.
+20:58:13  console : Avance (150 mm/s).
+20:58:16  déplacement 20:58:13 -> 20:58:16 : encodeurs G +961 / D +960 pas = +427 mm, rotation d'après encodeurs -0°, d'après gyroscope +0.5°
+20:58:16  console : Roues arrêtées.
+20:58:17  console : Tourne à gauche (150 mm/s).
+20:58:17  console : Roues arrêtées.
+20:58:18  console : Avance (150 mm/s).
+20:58:18  console : Roues arrêtées.
+20:58:18  console : Tourne à gauche (150 mm/s).
+20:58:19  console : Roues arrêtées.
+20:58:19  console : Avance (150 mm/s).
+20:58:20  déplacement 20:58:19 -> 20:58:20 : encodeurs G +114 / D +212 pas = +72 mm, rotation d'après encodeurs +11°, d'après gyroscope +14.7°
+20:58:20  console : Roues arrêtées.
+20:58:20  console : Tourne à gauche (150 mm/s).
+20:58:20  console : Roues arrêtées.
+20:58:20  console : Avance (150 mm/s).
+20:58:21  console : Roues arrêtées.
+20:58:21  console : Avance (150 mm/s).
+20:58:22  déplacement 20:58:21 -> 20:58:22 : encodeurs G +134 / D +91 pas = +50 mm, rotation d'après encodeurs -5°, d'après gyroscope -4.9°
+20:58:23  console : Roues arrêtées.
+20:58:23  console : Tourne à droite (150 mm/s).
+20:58:23  console : Roues arrêtées.
+20:58:23  console : Tourne à droite (150 mm/s).
+20:58:23  console : Roues arrêtées.
+20:58:24  console : Tourne à droite (150 mm/s).
+20:58:24  console : Roues arrêtées.
+20:58:25  console : Avance (150 mm/s).
+20:58:26  console : Roues arrêtées.
+20:58:26  console : Avance (150 mm/s).
+20:58:26  console : Roues arrêtées.
+20:58:27  console : Avance (150 mm/s).
+20:58:27  console : Roues arrêtées.
+20:58:27  console : Avance (150 mm/s).
+20:58:27  console : Roues arrêtées.
+20:58:28  console : Avance (150 mm/s).
+20:58:28  console : Roues arrêtées.
+20:58:29  console : Avance (150 mm/s).
+20:58:29  console : Roues arrêtées.
+20:58:35  mode OI : Passive (brut 2)
+20:58:35  console : Envoyé : Seek Dock (143)
+20:58:55  pare-chocs gauche 1, droit 0
+20:58:56  console : Query List (149) : 0 octet(s) sur 38 en 600 ms, lecture paquet par paquet désormais (q pour réessayer).
+20:58:57  pare-chocs gauche 0, droit 0
+20:58:58  pare-chocs gauche 0, droit 1
+20:58:59  pare-chocs gauche 0, droit 0
+20:59:00  roue levée gauche 1, droite 1
+20:59:02  roue levée gauche 0, droite 0
+20:59:07  carte injoignable (URLError)
+20:59:18  carte de nouveau joignable
+20:59:18  REDÉMARRAGE de la carte (en marche depuis 3 s) — raison : mise sous tension
+21:00:02  pare-chocs gauche 1, droit 1

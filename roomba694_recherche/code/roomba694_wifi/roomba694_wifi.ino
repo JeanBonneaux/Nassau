@@ -57,7 +57,7 @@ constexpr int      PIN_TX  = 17;    // vers le RXD du robot (trou 3)
 constexpr int      PIN_BRC = 4;     // BRC (trou 5)
 constexpr int16_t  SPEED_MM_S        = 150;    // plafond des essais (maximum de l'OI : 500)
 constexpr uint32_t DRIVE_TIMEOUT_MS  = 1500;   // arrêt automatique des roues sans nouvel ordre
-constexpr uint32_t KEEP_AWAKE_MS     = 60000;  // période de l'impulsion BRC anti-veille (touche 'a')
+constexpr uint32_t KEEP_AWAKE_MS     = 45000;  // période de l'impulsion BRC anti-veille (touche 'a') ; d'autres montages constatent qu'il en faut plus d'une par minute
 constexpr uint32_t ANSWER_TIMEOUT_MS = 200;    // attente maximale d'une réponse capteur
 constexpr uint32_t INTER_QUERY_MS    = 20;     // pause minimale entre deux requêtes capteur (spec : 15 ms)
 constexpr uint32_t POLL_PERIOD_MS    = 200;    // période de la lecture périodique des capteurs
@@ -549,7 +549,7 @@ void printBattery() {
     charge = u16(b);
     if (readSensor(26, b, 2)) out.printf("Charge : %u / %u mAh\n", charge, u16(b));
   }
-  if (readSensor(21, b, 1)) out.printf("État de charge : %u   (0 pas en charge, 1 reconditionnement, 2 pleine, 3 entretien, 4 attente, 5 défaut)\n", b[0]);
+  if (readSensor(21, b, 1)) out.printf("État de charge : %u   (0 pas en charge, 1 reconditionnement, 2 charge à pleine puissance, 3 entretien, 4 attente, 5 défaut)\n", b[0]);
   if (readSensor(35, b, 1)) out.printf("Mode OI lu : %u   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur ce 694 la valeur est décalée de +1)\n", b[0]);
 }
 
@@ -655,7 +655,7 @@ void printHelp() {
     " m  jouer 3 notes (Safe)         l  LEDs (Safe)\n"
     " 8  avance   2  recule   4  tourne à gauche   6  tourne à droite   5 ou espace  stop\n"
     "    (chaque ordre dure 1,5 s puis les roues s'arrêtent seules ; 150 mm/s)\n"
-    " a  anti-veille BRC toutes les 60 s (on/off)\n"
+    " a  anti-veille BRC toutes les 45 s (on/off)\n"
     " j  journal CSV toutes les 200 ms (on/off)   i  informations Wi-Fi et état\n"
     " g  gyroscope MPU-6050 (cap, vitesse)   z  recalibrer le gyroscope et remettre le cap à zéro (robot immobile)\n"
     " q  réessayer la lecture groupée des capteurs (opcode 149) et afficher les octets reçus\n"

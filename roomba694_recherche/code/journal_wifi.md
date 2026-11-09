@@ -170,7 +170,33 @@ Après cette mise à jour le robot répond à nouveau normalement (la pause du f
 
 Reste à faire : lire la raison des redémarrages après la prochaine coupure (pied de page ou `i`), comparer le cap du gyroscope et les encodeurs sur un quart de tour, consigner les réponses du robot en Safe pendant un déplacement.
 
-## 10. Problèmes rencontrés et corrections
+## 10. Observation de dix minutes pendant le pilotage au téléphone (20:51 → 21:01)
+
+Outil : `code/outils/monitor_wifi.py` (une lecture de `/api/state` et de `/api/log` par seconde, sans rien envoyer au robot) ; fichiers `mesures/monitor_2026-11-08_20h51.csv` (608 lignes) et `…_evenements.txt`. Robot en Safe, piloté depuis la page par l'utilisateur, 192 s de roues en mouvement.
+
+- **Cap du gyroscope contre rotation calculée par les encodeurs** (rotation = (Δdroit − Δgauche) × 0,4446 mm / 235 mm), par épisode de mouvement :
+
+  | Type de mouvement | Encodeurs | Gyroscope |
+  |---|---|---|
+  | rotation sur place | +48° | +48,2° |
+  | rotation sur place | −85° | −90,6° |
+  | rotation sur place | +60° | +60,3° |
+  | rotation sur place | +117° | +106,7° |
+  | rotation sur place | −64° | −60,0° |
+  | rotation sur place | −155° | −141,1° |
+  | ligne droite 1,1 à 1,8 m | 0° | +2,1° à +3,2° |
+  | virage en roulant | +39° | +60,2° |
+  | virage en roulant | −23° | −17,6° |
+
+  Lecture : sur une rotation sur place les deux concordent à quelques degrés près, les encodeurs surestimant les grandes rotations (−155° contre −141°, comme les 5 à 7 % de trop vus l'après-midi) ; en ligne droite le gyroscope voit 1 à 3° que les encodeurs ne voient pas (vrai léger virage ou dérive) ; en virage en roulant les écarts grandissent (glissement). Le gyroscope est donc le bon juge du cap, les encodeurs celui de la distance.
+- **Les compteurs d'encodeurs sont sur 16 bits signés** : un épisode a affiché −58 192 pas en 24 s (impossible), c'est le passage de +32 767 à −32 768. Le script en tient compte désormais (différence modulo 65 536) ; à faire aussi dans tout calcul d'odométrie.
+- **Capteurs** : pare-chocs gauche et droit vus actifs lors de contacts avec les murs ; light bumper jusqu'à 1 300 (gauche) près d'un mur, quelques dizaines à 1 m ; capteurs de vide à 0 quand le robot est soulevé ou sur sa base, 770 à 2 400 au sol ; roues levées signalées en montant sur la base.
+- **Retour à la base** : « Base (h) » (Seek Dock 143) envoyé depuis la page à 20:58:35 : le robot passe en Passive, cherche et rejoint sa base seul en 25 s (pare-chocs puis roues levées sur la rampe) ; courant ensuite +1 295 mA, état de charge 2 (charge à pleine puissance). Tension vue de 14,21 V (roues en mouvement, −1 240 mA) à 15,92 V (sur la base).
+- **Un redémarrage de la carte** pendant la montée sur la base, raison lue : « mise sous tension », donc coupure franche de l'alimentation (connecteur USB ou batterie portable secoués par le choc avec la rampe), ni baisse de tension progressive ni plantage. Les redémarrages répétés de la soirée ont très probablement la même cause mécanique : scotcher batterie et connecteurs, ou alimenter la carte depuis le robot.
+- Après ce redémarrage la lecture groupée a de nouveau échoué (0 octet) puis la lecture paquet par paquet a repris sans incohérence : la pause du flux (150) au démarrage joue son rôle.
+- Fin de session : `s` puis `x` envoyés par le réseau une fois le robot sur sa base (OI fermée, charge en cours).
+
+## 11. Problèmes rencontrés et corrections
 
 | Problème | Cause | Correction |
 |---|---|---|
@@ -184,9 +210,9 @@ Reste à faire : lire la raison des redémarrages après la prochaine coupure (p
 | Robot rendormi malgré l'anti-veille BRC | non élucidé (BRC inefficace sur ce 694 ?) ; les impulsions BRC ne le réveillent pas toujours non plus | CLEAN puis `s` reste la méthode sûre ; `w` deux fois à 4 s d'intervalle parfois |
 | Flèches sans effet depuis le téléphone | robot en Passive (Safe jamais envoyé) | rappel sur la page ; séquence CLEAN, `s`, `f` |
 | Lectures incohérentes (4924 mV, mode 19) | robot passé en flux continu (opcode 148) après un redémarrage de la carte | opcode 150 au démarrage, touche `p`, envoi automatique après trois lectures incohérentes |
-| Redémarrages de la carte toutes les 2 à 6 min sur batterie portable | à établir (tension ? plantage ?) | raison du redémarrage affichée ; arrêt des roues et pause du flux au démarrage ; vitesse conservée |
+| Redémarrages de la carte toutes les 2 à 6 min sur batterie portable | coupure franche de l'alimentation (« mise sous tension » lue après le redémarrage observé), connecteur USB ou batterie secoués | raison du redémarrage affichée ; arrêt des roues et pause du flux au démarrage ; vitesse conservée ; à faire : fixer connecteurs et batterie, ou alimenter depuis le robot |
 | ArduinoOTA « No response from device » | connexion retour carte → PC bloquée (pare-feu) | mise à jour par la page /update, qui fonctionne |
 
-## 11. Rappel de fin de session
+## 12. Rappel de fin de session
 
 Toujours finir par `s` puis `x` (console série, console TCP ou page web). Ne jamais brancher l'USB du PC et une autre alimentation en même temps. Ne pas utiliser les flèches de la page tant que le câble USB relie la carte au PC.

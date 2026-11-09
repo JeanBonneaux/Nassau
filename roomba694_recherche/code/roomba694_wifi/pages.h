@@ -165,7 +165,7 @@ window.addEventListener('blur',holdEnd);
 $('spd').addEventListener('input',()=>{$('spdv').textContent=$('spd').value+' mm/s';});
 $('spd').addEventListener('change',()=>{fetch('/api/speed?v='+$('spd').value).catch(()=>{});});
 const MODES={1:'Off',2:'Passive',3:'Safe',4:'Full'};
-const CHG={0:'pas en charge',1:'reconditionnement',2:'charge pleine',3:"charge d'entretien",4:'attente',5:'défaut'};
+const CHG={0:'pas en charge',1:'reconditionnement',2:'en charge (pleine puissance)',3:"charge d'entretien",4:'attente',5:'défaut'};
 function col(on,c){return on?c:'#3a4255';}
 async function refresh(){
  try{
