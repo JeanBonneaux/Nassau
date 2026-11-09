@@ -2,18 +2,22 @@
 // Troisième fichier du sketch roomba694_wifi : l'outil Arduino le concatène après roomba694_wifi.ino et avant web.ino
 // (ordre alphabétique), il voit donc tout ce que définit le fichier principal (out, prefs, stopWheels, driving...).
 // Version 3 — préparé le 2026-11-09, PAS ENCORE TESTÉ sur le matériel (voir notes/G_radar_ultrason_servo.md).
+// Relu et corrigé le même jour, avant tout essai : rappel interne vers la masse sur l'entrée Echo, et capteur maintenu
+// devant tant qu'une avance est demandée (voir radarForwardBlocked et radarTask).
 //
-// CÂBLAGE (détail et plan de plaque : notes/G_radar_ultrason_servo.md). Les deux modules marchent en 5 V. Sur la plaque
-// de l'utilisateur, la colonne de broches « VIN » de la carte est collée au bord (aucun trou libre, photo du 2026-11-09) :
-// le 5 V des modules vient d'une source externe amenée sur une bande libre de la plaque (second port de la batterie USB,
-// puis sortie 5 V de l'abaisseur de la note F), et tous les signaux sont du côté 3V3 de la carte, dont la colonne de
-// trous libres est accessible. Jamais le 5 V des modules sur 3V3.
-//   HC-SR04 : Vcc -> bande 5 V ; Gnd -> GND ; Trig <- D19 (GPIO19) ;
-//             Echo -> 1 kΩ -> D23 (GPIO23), et 2 kΩ de D23 vers GND : diviseur qui ramène les 5 V de l'Echo à 3,3 V.
+// CÂBLAGE (détail et dessin sur la photo de la plaque : notes/G_radar_ultrason_servo.md). Les deux modules marchent en
+// 5 V. Décision de l'utilisateur du 2026-11-09 : ce 5 V est pris sur la broche VIN de la carte (environ 4,7 V quand la
+// carte est alimentée par son USB : le 5 V de l'USB moins la diode de la carte), par un fil qu'il pose lui-même jusqu'à
+// la ligne rouge de la bande d'alimentation libre, du côté VIN de la plaque ; la ligne bleue de cette bande est reliée
+// à la masse. Tous les signaux sont du côté 3V3 de la carte, dans le trou libre à côté de chaque broche.
+// Jamais ce 5 V sur 3V3, ni sur la ligne rouge du côté 3V3 (3,3 V de la carte et du gyroscope).
+//   HC-SR04 : Vcc -> ligne 5 V ; Gnd -> masse ; Trig <- D19 (GPIO19) ;
+//             Echo -> 1 kΩ -> D23 (GPIO23), et 2 kΩ de D23 vers la masse : diviseur qui ramène l'Echo (≈ 4,7 V) à ≈ 3,1 V.
 //             L'Echo sort du 5 V : JAMAIS directement sur une broche de l'ESP32.
-//   SG90    : fil brun -> GND ; fil rouge -> bande 5 V ; fil orange (signal) <- D18 (GPIO18).
-//   Un condensateur de 100 à 470 µF entre la bande 5 V et GND, près du servo, amortit ses appels de courant (jusqu'à
-//   250 mA en mouvement) : si la carte redémarre avec la raison « baisse de tension » quand le servo bouge, c'est lui.
+//   SG90    : fil brun -> masse ; fil rouge -> ligne 5 V ; fil orange (signal) <- D18 (GPIO18).
+//   Un condensateur de 100 à 470 µF entre la ligne 5 V et la masse (patte longue au 5 V), près du servo, amortit ses
+//   appels de courant (jusqu'à 250 mA en mouvement, 650 mA bloqué). Ce courant traverse la prise USB et la diode de la
+//   carte : si la carte redémarre avec la raison « baisse de tension » quand le servo bouge, c'est lui.
 //   (Première version du 2026-11-09 : D27 / D32 / D34 côté VIN, abandonnée faute de trous libres de ce côté.)
 //
 // FONCTIONNEMENT : une tâche sur le second cœur (comme le gyroscope) pilote le servo (PWM 50 Hz par LEDC, sans
@@ -30,16 +34,21 @@
 // SÉCURITÉ (option « arrêt auto », active par défaut) : la distance « devant » est la médiane des trois dernières mesures
 // du secteur ±15° (contre les mesures parasites). Si elle est sous le seuil (30 cm par défaut) et récente (< 1,5 s),
 // la boucle principale arrête les roues quand le robot avance et refuse les ordres d'avance ; reculer et tourner restent
-// possibles. En balayage, pendant une marche avant, le capteur se place devant et mesure à 10 Hz (option « devant en
-// marche avant »), puis reprend le balayage à l'arrêt : sinon le secteur avant ne serait revu qu'une fois par passage
-// (~2 s, soit 30 cm parcourus à 150 mm/s). Le pare-chocs du robot reste la vraie sécurité : le capteur, posé sur le
-// dessus du robot, ne voit ni les obstacles bas (pieds de chaise) ni les surfaces absorbantes.
+// possibles. En balayage, dès qu'une avance est demandée et pendant toute la marche avant, le capteur se place devant
+// et mesure à 10 Hz (option « devant en marche avant ») ; il y reste 1 s après le dernier ordre d'avance, puis reprend
+// le balayage : sinon le secteur avant ne serait revu qu'une fois par passage (~2 s, soit 30 cm parcourus à 150 mm/s),
+// et un refus d'avancer expirerait tout seul pendant que l'on maintient le bouton.
+// Limites connues : en mode fixe orienté ailleurs que devant, rien ne surveille l'avant ; au premier ordre d'avance en
+// balayage, le robot peut parcourir quelques centimètres avant que le capteur ne soit revenu devant ; en balayage, la
+// médiane mélange trois directions voisines (-10°, 0°, +10° au pas de 10°). Le pare-chocs du robot reste la vraie
+// sécurité : le capteur, posé sur le dessus du robot, ne voit ni les obstacles bas (pieds de chaise) ni les surfaces
+// absorbantes.
 // La tâche n'écrit jamais sur la console ni vers le robot (réservés à la boucle principale) : elle pose des valeurs et
 // des compteurs que radarTick(), la console ('u') et les pages lisent.
 
 constexpr int PIN_SERVO = 18;   // D18 : signal du servo SG90 (fil orange)
 constexpr int PIN_TRIG  = 19;   // D19 : Trig du HC-SR04 (3,3 V suffisent pour le déclencher)
-constexpr int PIN_ECHO  = 23;   // D23 : Echo du HC-SR04 à travers le diviseur 1 kΩ / 2 kΩ (le 2 kΩ vers GND tient la broche à 0 V au repos)
+constexpr int PIN_ECHO  = 23;   // D23 : Echo du HC-SR04 à travers le diviseur 1 kΩ / 2 kΩ (le 2 kΩ vers GND tient la broche à 0 V au repos ; rappel interne en plus, voir radarSetup)
 
 constexpr int      RADAR_SPAN_MAX   = 80;                                       // degrés de part et d'autre du centre
 constexpr int      RADAR_SLOT_DEG   = 5;                                        // résolution de la carte polaire
@@ -49,6 +58,7 @@ constexpr uint32_t RADAR_SETTLE_MS  = 80;                                       
 constexpr uint32_t RADAR_PING_MS    = 60;                                       // intervalle minimal entre deux mesures (fiche HC-SR04)
 constexpr uint32_t RADAR_FIXED_MS   = 100;                                      // période des mesures en mode fixe et en suivi (10 Hz)
 constexpr uint32_t RADAR_FRESH_MS   = 1500;                                     // âge maximal d'une distance « devant » pour la sécurité
+constexpr uint32_t RADAR_HOLD_MS    = 1000;                                     // le capteur reste devant ce temps après le dernier ordre d'avance (la page le répète toutes les 400 ms)
 constexpr uint32_t ECHO_MAX_US      = 25000;                                    // écho plus long : rien à portée (4,3 m aller-retour)
 constexpr int      US_MIN_MM        = 20;                                       // en dessous, le capteur ne mesure pas : on plafonne
 constexpr int      US_FAR_MM        = 4000;                                     // valeur « rien à portée » dans les calculs
@@ -61,7 +71,7 @@ struct RadarState {
   volatile uint8_t  mode = RADAR_OFF;
   volatile bool     present = false;      // au moins un écho reçu depuis le démarrage
   volatile bool     absent = false;       // cinq mesures de suite sans réaction du capteur (Echo jamais monté)
-  volatile bool     following = false;    // balayage interrompu : capteur devant pendant une marche avant
+  volatile bool     following = false;    // balayage interrompu : capteur devant (marche avant demandée ou en cours)
   // Réglages, conservés en mémoire flash (espace « radar ») :
   volatile int16_t  seuilCm = 30;         // distance d'arrêt automatique
   volatile bool     securite = true;      // arrêt auto et refus d'avancer vers un obstacle
@@ -80,6 +90,10 @@ struct RadarState {
   volatile uint32_t ms[RADAR_SLOTS];      // date de chaque case
 } radar;
 portMUX_TYPE radarMux = portMUX_INITIALIZER_UNLOCKED;
+// Dernier ordre d'avance reçu (touche 8), accepté ou refusé : posé par radarForwardBlocked() dans la boucle principale,
+// lu par la tâche radar pour garder le capteur devant tant que l'on demande à avancer.
+volatile uint32_t radarFwdMs = 0;
+volatile bool     radarFwdSeen = false;
 
 // ---------- Servo SG90 par LEDC (50 Hz, 16 bits : 20 000 µs sur 65 535 pas, soit 0,3 µs de résolution) ----------
 bool servoOn = false;        // impulsions en cours
@@ -174,7 +188,12 @@ void radarTask(void*) {
 
     int  pas = constrain((int)radar.pas, 5, 45);
     int  amp = constrain((int)radar.amplitude, 5, RADAR_SPAN_MAX);
-    bool follow = (mode == RADAR_SWEEP) && radar.autoFront && driveForward;
+    // Capteur devant pendant la marche avant, et aussi tant que l'avance est demandée (bouton maintenu), même refusée :
+    // sinon le balayage reprendrait dès l'arrêt automatique, la mesure « devant » vieillirait, le refus expirerait au
+    // bout de 1,5 s et le robot s'approcherait de l'obstacle par à-coups.
+    uint32_t fwdMs = radarFwdMs;                                                   // lu avant millis() : l'âge ne peut pas être négatif
+    bool wanted = radarFwdSeen && (millis() - fwdMs) < RADAR_HOLD_MS;
+    bool follow = (mode == RADAR_SWEEP) && radar.autoFront && (driveForward || wanted);
     radar.following = follow;
     bool fixed = (mode == RADAR_FIXED) || follow;
     int  target;
@@ -259,7 +278,7 @@ void radarSaveSettings() {
 void radarSetup() {
   pinMode(PIN_TRIG, OUTPUT);
   digitalWrite(PIN_TRIG, LOW);
-  pinMode(PIN_ECHO, INPUT);
+  pinMode(PIN_ECHO, INPUT_PULLDOWN);   // rappel interne (~45 kΩ) vers la masse : entrée calme tant que rien n'est câblé, sans effet sur le diviseur
   for (int i = 0; i < RADAR_SLOTS; i++) { radar.mm[i] = -1; radar.ms[i] = 0; }
   radarLoadSettings();
   attachInterrupt(digitalPinToInterrupt(PIN_ECHO), echoIsr, CHANGE);
@@ -299,8 +318,11 @@ bool radarObstacleAhead() {
 }
 
 // Appelée par la touche '8' avant d'avancer : vrai (et message, au plus un toutes les 2 s) si le radar interdit l'avance.
+// Note aussi la date de la demande : la tâche radar garde le capteur devant tant que les demandes continuent.
 bool radarForwardBlocked() {
   static uint32_t lastMsgMs = 0;
+  radarFwdMs = millis();
+  radarFwdSeen = true;
   if (!radarObstacleAhead()) return false;
   radar.refused = radar.refused + 1;
   if (millis() - lastMsgMs > 2000) {
@@ -335,7 +357,7 @@ void radarPrintStatus() {
   int16_t f = radar.frontMm;
   uint32_t age = millis() - radar.frontMs;
   out.printf("Radar à ultrasons : mode %s%s, capteur vers %d°, servo %s, HC-SR04 %s\n", radarModeName(radar.mode),
-             radar.following ? " (devant, marche avant en cours)" : "", (int)radar.servoDeg,
+             radar.following ? " (devant : marche avant demandée ou en cours)" : "", (int)radar.servoDeg,
              servoRelaxed ? "relâché" : "maintenu", radar.absent ? "SANS RÉACTION" : radar.present ? "détecté" : "pas encore entendu");
   if (f > 0)       out.printf("Devant : %d cm (mesure vieille de %lu ms)\n", f / 10, (unsigned long)age);
   else if (f == 0) out.printf("Devant : rien à portée (< 4 m), mesure vieille de %lu ms\n", (unsigned long)age);

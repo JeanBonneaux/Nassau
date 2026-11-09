@@ -2,7 +2,7 @@
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
   Version 3 — 2026-11-09 : « radar » à ultrasons, capteur HC-SR04 sur servo SG90 (fichier radar.ino : modes arrêt / fixe /
     balayage, carte polaire sur la page web, arrêt automatique devant un obstacle, /api/radar, touches r et u, colonne us_mm
-    du CSV). Code préparé, PAS ENCORE TESTÉ sur le matériel.
+    du CSV). Code préparé, relu et corrigé le 2026-11-09, PAS ENCORE TESTÉ sur le matériel.
   Version 2 — 2026-11-08. Dérivé de roomba694_test1 (mêmes touches, même câblage, mêmes sécurités), avec en plus :
     - un point d'accès Wi-Fi « Roomba694 » toujours actif (adresse 192.168.4.1), et en option la connexion au réseau
       de la maison, enregistré depuis la page /wifi (identifiants stockés dans la carte, jamais dans le code ni affichés) ;
@@ -18,8 +18,9 @@
   trou 5 (BRC) <- GPIO4 ; trou 6 ou 7 (GND) -- GND. Broches 1-2 du robot (batterie, 14 à 21 V) : jamais reliées.
   L'ESP32 est alimenté par son USB (PC ou batterie portable).
   Radar (v3) : signal du servo SG90 sur D18, HC-SR04 Trig sur D19 et Echo sur D23 à travers un diviseur 1 kΩ / 2 kΩ ; les deux
-  modules en 5 V depuis une source externe amenée sur une bande libre de la plaque (la colonne VIN de la carte est collée au bord
-  de la plaque, sans trou libre), jamais sur 3V3. Détail : radar.ino et notes/G_radar_ultrason_servo.md.
+  modules en 5 V pris sur la broche VIN de la carte (environ 4,7 V sur USB) par un fil posé par l'utilisateur jusqu'à la ligne
+  rouge de la bande d'alimentation libre du côté VIN de la plaque (décision du 2026-11-09), jamais sur 3V3 ni sur la ligne rouge
+  du côté 3V3. Détail : radar.ino et notes/G_radar_ultrason_servo.md.
 
   SÉCURITÉ : vitesse plafonnée à 150 mm/s, pas de mode Full, arrêt automatique des roues 1,5 s après chaque ordre,
   arrêt des roues si le client TCP se déconnecte ou si une mise à jour commence. Rien n'est envoyé au robot au démarrage.
