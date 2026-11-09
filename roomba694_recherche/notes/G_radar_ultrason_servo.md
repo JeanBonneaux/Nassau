@@ -42,7 +42,7 @@ Résistances : 1 kΩ = brun-noir-rouge, 2 kΩ = rouge-noir-rouge (le kit en a). 
 
 ### 2.2 Sur la plaque d'essai (plan de la note README, carte à droite, rangées 11 à 25)
 
-Schéma trou par trou, dans l'orientation de la photo de la plaque : [`images/plan_radar_ultrason_plaque.png`](../images/plan_radar_ultrason_plaque.png). Brochage complet (robot, gyroscope, radar) : [`code/README.md`](../code/README.md), section « Brochage complet ».
+Schéma trou par trou, dans l'orientation de la photo de la plaque : [`images/plan_radar_ultrason_plaque.png`](../images/plan_radar_ultrason_plaque.png) ; version simplifiée en quatre blocs (A le 5 V et la masse, B le servo, C le capteur de distance, D les deux résistances), avec les mots employés avec l'utilisateur : [`images/plan_radar_ultrason_plaque_simple.png`](../images/plan_radar_ultrason_plaque_simple.png). Sur sa carte, la patte 5 V s'appelle **VIN** (pas de patte « 5V »). Brochage complet (robot, gyroscope, radar) : [`code/README.md`](../code/README.md), section « Brochage complet ».
 
 La carte occupe les colonnes b à i ; la rangée libre **au-dessus** (colonne a) sert déjà au robot et au gyroscope. La rangée libre **au-dessous** (colonne j) est intacte : c'est elle qu'on utilise ici, avec **les deux bandes du bas** (rouge = 5 V, bleue = masse), libres elles aussi. Rangées des broches du bas, à lire sur la sérigraphie avant de brancher : VIN 11, GND 12, D13 13, D12 14, D14 15, **D27 16**, D26 17, D25 18, D33 19, **D32 20**, D35 21, **D34 22**, VN 23, VP 24, EN 25.
 
