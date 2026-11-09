@@ -166,7 +166,7 @@ Interface web (v2) vérifiée hors robot : pages servies depuis un petit serveur
 | ArduinoOTA : `espota.exe -r -i 192.168.18.25 -p 3232 --auth=roomba694 -f build/esp32.esp32.esp32/roomba694_wifi.ino.bin` | « Sending invitation… Authenticating… OK » puis « No response from device » : la carte doit ouvrir une connexion vers le PC pour recevoir le fichier, et le pare-feu de Windows la bloque selon toute vraisemblance (à autoriser une fois pour `espota.exe`, ou utiliser l'autre voie) |
 | Page /update : `curl -u admin:roomba694 -F "firmware=@…/roomba694_wifi.ino.bin" http://192.168.18.25/update` | « Mise à jour réussie, la carte redémarre. » : 1 065 990 octets en 10,7 s ; 20 s plus tard la carte répond avec la nouvelle version (compilée 20:46:54), raison du redémarrage « redémarrage logiciel (mise à jour) », robot joignable |
 
-Après cette mise à jour le robot répond à nouveau normalement (la pause du flux au démarrage a suffi).
+Après cette mise à jour le robot répond à nouveau normalement (la pause du flux au démarrage a suffi). Deux autres mises à jour par la même voie dans la soirée, robot en charge sur sa base et OI fermée : 21:17 (libellé de l'état de charge 2 : « charge à pleine puissance »), 21:23 (anti-veille BRC toutes les 45 s au lieu de 60, d'après les retours d'autres montages). Chacune : 1,07 Mo en 10 s, redémarrage « logiciel (mise à jour) ».
 
 Reste à faire : lire la raison des redémarrages après la prochaine coupure (pied de page ou `i`), comparer le cap du gyroscope et les encodeurs sur un quart de tour, consigner les réponses du robot en Safe pendant un déplacement.
 
