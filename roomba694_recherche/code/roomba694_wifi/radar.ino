@@ -3,15 +3,18 @@
 // (ordre alphabétique), il voit donc tout ce que définit le fichier principal (out, prefs, stopWheels, driving...).
 // Version 3 — préparé le 2026-11-09, PAS ENCORE TESTÉ sur le matériel (voir notes/G_radar_ultrason_servo.md).
 //
-// CÂBLAGE (détail et plan de plaque : notes/G_radar_ultrason_servo.md). Les deux modules marchent en 5 V : ils se
-// branchent sur la broche VIN de la carte, qui porte le 5 V de l'USB tant que la carte est alimentée par USB (et plus
-// tard le 5 V de l'abaisseur). Jamais sur 3V3.
-//   HC-SR04 : Vcc -> VIN (5 V) ; Gnd -> GND ; Trig <- D32 (GPIO32) ;
-//             Echo -> 1 kΩ -> D34 (GPIO34), et 2 kΩ de D34 vers GND : diviseur qui ramène les 5 V de l'Echo à 3,3 V.
-//             L'Echo sort du 5 V : JAMAIS directement sur une broche de l'ESP32. D34 est une entrée seule, c'est voulu.
-//   SG90    : fil brun -> GND ; fil rouge -> VIN (5 V) ; fil orange (signal) <- D27 (GPIO27).
-//   Un condensateur de 100 à 470 µF entre VIN et GND, près du servo, amortit ses appels de courant (jusqu'à 250 mA en
-//   mouvement) : si la carte redémarre avec la raison « baisse de tension » quand le servo bouge, c'est lui.
+// CÂBLAGE (détail et plan de plaque : notes/G_radar_ultrason_servo.md). Les deux modules marchent en 5 V. Sur la plaque
+// de l'utilisateur, la colonne de broches « VIN » de la carte est collée au bord (aucun trou libre, photo du 2026-11-09) :
+// le 5 V des modules vient d'une source externe amenée sur une bande libre de la plaque (second port de la batterie USB,
+// puis sortie 5 V de l'abaisseur de la note F), et tous les signaux sont du côté 3V3 de la carte, dont la colonne de
+// trous libres est accessible. Jamais le 5 V des modules sur 3V3.
+//   HC-SR04 : Vcc -> bande 5 V ; Gnd -> GND ; Trig <- D19 (GPIO19) ;
+//             Echo -> 1 kΩ -> D23 (GPIO23), et 2 kΩ de D23 vers GND : diviseur qui ramène les 5 V de l'Echo à 3,3 V.
+//             L'Echo sort du 5 V : JAMAIS directement sur une broche de l'ESP32.
+//   SG90    : fil brun -> GND ; fil rouge -> bande 5 V ; fil orange (signal) <- D18 (GPIO18).
+//   Un condensateur de 100 à 470 µF entre la bande 5 V et GND, près du servo, amortit ses appels de courant (jusqu'à
+//   250 mA en mouvement) : si la carte redémarre avec la raison « baisse de tension » quand le servo bouge, c'est lui.
+//   (Première version du 2026-11-09 : D27 / D32 / D34 côté VIN, abandonnée faute de trous libres de ce côté.)
 //
 // FONCTIONNEMENT : une tâche sur le second cœur (comme le gyroscope) pilote le servo (PWM 50 Hz par LEDC, sans
 // bibliothèque) et le capteur (impulsion Trig de 10 µs, durée de l'écho mesurée par interruption sur Echo) ; rien ne
@@ -34,9 +37,9 @@
 // La tâche n'écrit jamais sur la console ni vers le robot (réservés à la boucle principale) : elle pose des valeurs et
 // des compteurs que radarTick(), la console ('u') et les pages lisent.
 
-constexpr int PIN_SERVO = 27;   // D27 : signal du servo SG90 (fil orange)
-constexpr int PIN_TRIG  = 32;   // D32 : Trig du HC-SR04 (3,3 V suffisent pour le déclencher)
-constexpr int PIN_ECHO  = 34;   // D34 : Echo du HC-SR04 à travers le diviseur 1 kΩ / 2 kΩ (entrée seule, sans rappel interne)
+constexpr int PIN_SERVO = 18;   // D18 : signal du servo SG90 (fil orange)
+constexpr int PIN_TRIG  = 19;   // D19 : Trig du HC-SR04 (3,3 V suffisent pour le déclencher)
+constexpr int PIN_ECHO  = 23;   // D23 : Echo du HC-SR04 à travers le diviseur 1 kΩ / 2 kΩ (le 2 kΩ vers GND tient la broche à 0 V au repos)
 
 constexpr int      RADAR_SPAN_MAX   = 80;                                       // degrés de part et d'autre du centre
 constexpr int      RADAR_SLOT_DEG   = 5;                                        // résolution de la carte polaire
@@ -314,7 +317,7 @@ void radarTick() {
   if (radar.present && !wasPresent) { wasPresent = true; out.println(F("Radar : capteur HC-SR04 détecté (premier écho reçu).")); }
   if (radar.absent != wasAbsent) {
     wasAbsent = radar.absent;
-    if (wasAbsent) out.println(F("Radar : le capteur ne réagit pas (Echo jamais haut) : vérifier Vcc->VIN, Gnd->GND, Trig->D32, Echo->1 k->D34 (+2 k vers GND)."));
+    if (wasAbsent) out.println(F("Radar : le capteur ne réagit pas (Echo jamais haut) : vérifier Vcc->5 V, Gnd->GND, Trig->D19, Echo->1 k->D23 (+2 k vers GND)."));
     else out.println(F("Radar : le capteur réagit de nouveau."));
   }
   if (driving && driveForward && radarObstacleAhead()) {

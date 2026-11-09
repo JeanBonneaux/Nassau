@@ -7,7 +7,7 @@ Rédigé le 2026-11-09 (nuit). **État : code écrit et compilé (firmware `room
 - Le HC-SR04 mesure la distance de l'obstacle devant lui (2 cm à 4 m, cône d'environ 15°) ; monté sur le servo SG90, il balaie de −80° à +80° et dessine une **carte polaire des distances** sur la page web : un « radar » grossier en attendant le LiDAR (note F).
 - Le firmware s'en sert aussi comme **garde-fou** : si un obstacle est vu devant à moins du seuil (30 cm par défaut), les roues sont arrêtées quand le robot avance et les ordres d'avance sont refusés ; reculer et tourner restent possibles. Le pare-chocs du robot reste la vraie sécurité.
 - Les deux modules marchent en 5 V : ils se branchent sur la broche **VIN** de la carte (le 5 V de l'USB tant que la carte est alimentée par USB ; plus tard le rail 5 V de l'abaisseur de la note F). L'Echo du HC-SR04 sort du 5 V : il passe par un **diviseur 1 kΩ / 2 kΩ** avant d'entrer dans l'ESP32 (qui ne supporte que 3,3 V).
-- Broches choisies : servo sur **D27**, Trig sur **D32**, Echo (après diviseur) sur **D34**. Elles sont du côté « VIN » de la carte, dont la rangée de trous libres (colonne j) n'est pas encore utilisée, et les bandes d'alimentation du bas de la plaque, libres, serviront de rail 5 V.
+- Broches choisies (révision du 2026-11-09, matin) : servo sur **D18**, Trig sur **D19**, Echo (après diviseur) sur **D23**, toutes du côté 3V3 de la carte, celui qui a une colonne de trous libres. La première version (D27 / D32 / D34, côté VIN) est abandonnée : la photo de la plaque montre que la colonne VIN est collée au bord, sans aucun trou libre, donc ni VIN ni ces broches ne sont accessibles. Conséquence : le 5 V des modules ne peut pas venir de la broche VIN ; il viendra d'une source externe amenée sur une bande libre de la plaque (second port de la batterie USB en attendant, puis la sortie 5 V de l'abaisseur de la note F, idéalement la version à prise USB qui alimente aussi la carte par son câble).
 
 ## 1. Les deux modules
 
@@ -19,6 +19,8 @@ Rédigé le 2026-11-09 (nuit). **État : code écrit et compilé (firmware `room
 Les deux sont des modules « 5 V Arduino » ; l'ESP32 est une carte 3,3 V. Les deux règles qui en découlent : **le 5 V des modules vient de VIN, jamais de 3V3** (le régulateur 3,3 V de la carte ne tiendrait pas le servo et le HC-SR04 n'aime pas 3,3 V) ; **l'Echo ne touche jamais directement une broche de l'ESP32**.
 
 ## 2. Câblage
+
+> **Révision du 2026-11-09 (matin).** Les sections 2.1 et 2.2 et les deux schémas `images/plan_radar_ultrason_plaque*.png` ont été écrits en supposant une rangée de trous libres du côté VIN de la carte. La photo de la plaque sur le robot montre qu'il n'y en a pas : la carte occupe la plaque jusqu'au bord de ce côté. Ce qui reste vrai : les deux modules, le diviseur 1 kΩ / 2 kΩ sur l'Echo, le condensateur, les règles. Ce qui change : les signaux vont côté 3V3 (servo **D18**, Trig **D19**, Echo **D23**, dans la colonne de trous libres déjà utilisée par le robot et le gyroscope), et le 5 V vient d'une source externe posée sur une bande libre de la plaque. Les schémas seront refaits une fois la source 5 V choisie.
 
 ### 2.1 Vue d'ensemble
 

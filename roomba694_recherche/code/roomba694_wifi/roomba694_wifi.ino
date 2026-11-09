@@ -17,8 +17,9 @@
   CÂBLAGE : identique à roomba694_test1. Robot trou 4 (TXD, 3,3 V) -> GPIO16 (RX2) ; trou 3 (RXD) <- GPIO17 (TX2) ;
   trou 5 (BRC) <- GPIO4 ; trou 6 ou 7 (GND) -- GND. Broches 1-2 du robot (batterie, 14 à 21 V) : jamais reliées.
   L'ESP32 est alimenté par son USB (PC ou batterie portable).
-  Radar (v3) : signal du servo SG90 sur D27, HC-SR04 Trig sur D32 et Echo sur D34 à travers un diviseur 1 kΩ / 2 kΩ ; les deux
-  modules en 5 V sur la broche VIN (le 5 V de l'USB), jamais sur 3V3. Détail : radar.ino et notes/G_radar_ultrason_servo.md.
+  Radar (v3) : signal du servo SG90 sur D18, HC-SR04 Trig sur D19 et Echo sur D23 à travers un diviseur 1 kΩ / 2 kΩ ; les deux
+  modules en 5 V depuis une source externe amenée sur une bande libre de la plaque (la colonne VIN de la carte est collée au bord
+  de la plaque, sans trou libre), jamais sur 3V3. Détail : radar.ino et notes/G_radar_ultrason_servo.md.
 
   SÉCURITÉ : vitesse plafonnée à 150 mm/s, pas de mode Full, arrêt automatique des roues 1,5 s après chaque ordre,
   arrêt des roues si le client TCP se déconnecte ou si une mise à jour commence. Rien n'est envoyé au robot au démarrage.

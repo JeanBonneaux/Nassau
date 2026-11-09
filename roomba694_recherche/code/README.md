@@ -94,24 +94,23 @@ Rangées des broches de la carte (colonne b, à lire sur la plaque) : 3V3 11, GN
 
 ## Brochage complet au 2026-11-09 (robot, gyroscope, radar à ultrasons)
 
-Vue depuis la carte ESP32. « haut » = colonne de broches 3V3 … D23 (rangée libre a au-dessus), « bas » = colonne VIN … EN (rangée libre j au-dessous) ; les rangées sont celles imprimées sur la plaque (3V3 et VIN en rangée 11). Le radar (en gras) est **préparé, pas encore câblé** : schéma trou par trou dans [../images/plan_radar_ultrason_plaque.png](../images/plan_radar_ultrason_plaque.png), explications dans [../notes/G_radar_ultrason_servo.md](../notes/G_radar_ultrason_servo.md).
+Vue depuis la carte ESP32. « haut » = colonne de broches 3V3 … D23, avec une colonne de trous libres à côté ; « bas » = colonne VIN … EN, **collée au bord de la plaque, sans trou libre** (photo du 2026-11-09). Les numéros de rangée dépendent de la position de la carte sur la plaque (3V3 en rangée 11 sur le plan du 2026-11-08, en rangée 15 sur la photo du 2026-11-09) : se repérer aux étiquettes imprimées sur la carte. Le radar (en gras) est **préparé, pas encore câblé** ; les deux schémas `images/plan_radar_ultrason_plaque*.png` supposaient la colonne VIN accessible et sont **à refaire**. Explications dans [../notes/G_radar_ultrason_servo.md](../notes/G_radar_ultrason_servo.md).
 
 | Broche ESP32 | Rangée | Relié à | Remarque |
 |---|---|---|---|
-| 3V3 | 11 haut | bande rouge du haut → GY-521 VCC | 3,3 V du régulateur de la carte ; rien d'autre dessus |
-| GND (côté 3V3) | 12 haut | bande bleue du haut → GY-521 GND et robot trou 6 | masse commune |
-| D4 (GPIO4) | 15 haut | 1 kΩ → robot trou 5 (BRC) | sortie, haute au repos ; impulsion basse = réveil |
-| RX2 (GPIO16) | 16 haut | 1 kΩ → robot trou 4 (TXD, 3,3 V) | entrée série depuis le robot |
-| TX2 (GPIO17) | 17 haut | 1 kΩ → robot trou 3 (RXD) | sortie série vers le robot |
-| D21 (GPIO21) | 21 haut | GY-521 SDA | I²C, 400 kHz |
-| D22 (GPIO22) | 24 haut | GY-521 SCL | I²C |
-| **VIN** | 11 bas | **bande rouge du bas (5 V) → HC-SR04 Vcc, servo rouge, condensateur +** | 5 V de l'USB (4,6 à 5,0 V lus) ; plus tard sortie 5 V de l'abaisseur |
-| **GND (côté VIN)** | 12 bas | **bande bleue du bas → HC-SR04 Gnd, servo brun, condensateur −, 2 kΩ du diviseur** | masse commune (les deux GND de la carte sont reliés) |
-| **D27 (GPIO27)** | 16 bas | **servo SG90, fil orange** | PWM 50 Hz, 500 à 2500 µs |
-| **D32 (GPIO32)** | 20 bas | **HC-SR04 Trig** | impulsion de 10 µs, 3,3 V suffisent |
-| **D34 (GPIO34)** | 22 bas | **point milieu du diviseur : Echo → 1 kΩ → D34, et 2 kΩ de D34 vers la masse** | entrée seule, 3,3 V max : jamais l'Echo (5 V) en direct |
-| D15, D2, D5, D18, D19, RX0, TX0, D23 | haut | rien | RX0/TX0 = USB |
-| D13, D12, D14, D26, D25, D33, D35, VN, VP, EN | bas | rien | D25/D26 réservés au LiDAR (UART1, note F) |
+| 3V3 | haut | bande rouge du haut → GY-521 VCC | 3,3 V du régulateur de la carte ; rien d'autre dessus |
+| GND (côté 3V3) | haut | bande bleue du haut → GY-521 GND et robot trou 6 | masse commune |
+| D4 (GPIO4) | haut | 1 kΩ → robot trou 5 (BRC) | sortie, haute au repos ; impulsion basse = réveil |
+| RX2 (GPIO16) | haut | 1 kΩ → robot trou 4 (TXD, 3,3 V) | entrée série depuis le robot |
+| TX2 (GPIO17) | haut | 1 kΩ → robot trou 3 (RXD) | sortie série vers le robot |
+| D21 (GPIO21) | haut | GY-521 SDA | I²C, 400 kHz |
+| D22 (GPIO22) | haut | GY-521 SCL | I²C |
+| **D18 (GPIO18)** | haut | **servo SG90, fil orange** | PWM 50 Hz, 500 à 2500 µs |
+| **D19 (GPIO19)** | haut | **HC-SR04 Trig** | impulsion de 10 µs, 3,3 V suffisent |
+| **D23 (GPIO23)** | haut | **point milieu du diviseur : Echo → 1 kΩ → D23, et 2 kΩ de D23 vers la masse** | 3,3 V max : jamais l'Echo (5 V) en direct |
+| **+ 5 V des modules** | bande libre de la plaque | **HC-SR04 Vcc, servo rouge, condensateur +** | source externe à choisir : second port de la batterie USB (câble USB dénudé ou adaptateur USB → fils), puis sortie 5 V de l'abaisseur (note F) ; la masse de cette source rejoint la bande bleue du haut |
+| D15, D2, D5, RX0, TX0 | haut | rien | RX0/TX0 = USB ; D2, D5, D15 : broches de démarrage, à éviter |
+| VIN, GND, D13, D12, D14, D27, D26, D25, D33, D32, D35, D34, VN, VP, EN | bas | rien d'accessible | colonne collée au bord de la plaque ; D25/D26 (LiDAR) demanderont de déplacer la carte ou une seconde plaque |
 
 | Trou du robot (Mini-DIN 7) | Rôle | Relié à |
 |---|---|---|
@@ -125,11 +124,11 @@ Vue depuis la carte ESP32. « haut » = colonne de broches 3V3 … D23 (rangée 
 | Module | Broche | Relié à |
 |---|---|---|
 | GY-521 | VCC, GND, SCL, SDA | bande rouge du haut (3,3 V), bande bleue du haut, D22, D21 ; XDA, XCL, AD0, INT libres |
-| HC-SR04 | Vcc, Trig, Echo, Gnd | bande rouge du bas (5 V), D32, 1 kΩ vers D34 (+ 2 kΩ vers la masse), bande bleue du bas |
-| SG90 | brun, rouge, orange | bande bleue du bas, bande rouge du bas (5 V), D27 |
-| condensateur 100 à 470 µF | +, − | bande rouge du bas, bande bleue du bas (patte longue = +) |
+| HC-SR04 | Vcc, Trig, Echo, Gnd | bande 5 V, D19, 1 kΩ vers D23 (+ 2 kΩ vers la masse), masse |
+| SG90 | brun, rouge, orange | masse, bande 5 V, D18 |
+| condensateur 100 à 470 µF | +, − | bande 5 V, masse (patte longue = +) |
 
-Les bandes du haut (3,3 V) et du bas (5 V) ne doivent jamais être reliées entre elles ; seules les masses sont communes, par la carte.
+La bande 3,3 V (rouge du haut) et la bande 5 V ne doivent jamais être reliées entre elles ; seules les masses sont communes.
 
 ## Alimentation par le robot (étape suivante, non câblée)
 
@@ -147,7 +146,7 @@ Même câblage, mêmes touches et mêmes sécurités que `roomba694_test1`, plus
 - **Observation depuis le PC** (carte sur le réseau de la maison) : `python roomba694_recherche/code/outils/monitor_wifi.py 192.168.18.25 1200 1 roomba694_recherche/mesures` lit `/api/state` et `/api/log` chaque seconde pendant 20 min sans rien envoyer au robot, écrit un CSV (batterie, mode, encodeurs, cap, pare-chocs, capteurs…) et un fichier d'événements datés (redémarrages de la carte et leur raison, pare-chocs, épisodes de déplacement avec distance et rotation d'après les encodeurs comparées au gyroscope). Exemple du 2026-11-08 dans `roomba694_recherche/mesures/`. Avec le firmware v3, deux colonnes de plus : `radar_mode` et `us_mm`.
 - **Lecture des capteurs** : toutes les 200 ms par une seule requête groupée (opcode 149, 22 paquets, 38 octets). Le 694 testé y répond, mais met plusieurs centaines de ms à envoyer la réponse complète : le firmware la ramasse au fil de la boucle, sans bloquer (délai maximal 600 ms), et aucune autre requête n'est envoyée tant qu'elle est attendue. Sans réponse complète, repli sur une lecture paquet par paquet (un paquet par passage de la boucle, cycle de 0,6 s environ) ; touche `q` pour réessayer la lecture groupée et afficher les octets reçus et le temps de réponse. Si le robot ne répond plus (endormi, OI fermée), une tentative toutes les 2 s seulement.
 - **Gyroscope** : touche `g` (accélérations, vitesses de rotation, axe vertical détecté, cap intégré), touche `z` (recalibration 1 s robot immobile et cap remis à zéro). Le cap est positif vers la gauche (anti-horaire), comme l'angle de l'OI ; une petite zone morte (0,3 °/s) évite la dérive à l'arrêt, mais le cap peut dériver pendant les mouvements : `z` avant chaque mesure.
-- **Radar à ultrasons (v3, préparé le 2026-11-09, non testé)** : HC-SR04 sur servo SG90 ; servo sur **D27**, Trig sur **D32**, Echo sur **D34** à travers un diviseur 1 kΩ / 2 kΩ, les deux modules en 5 V sur **VIN** (câblage sur la plaque, fixation et plan de test : [../notes/G_radar_ultrason_servo.md](../notes/G_radar_ultrason_servo.md)). Carte « Radar à ultrasons » sur la page : modes arrêt / fixe devant / balayage, dessin polaire (toucher le dessin oriente le capteur), seuil d'arrêt, arrêt auto (roues arrêtées et avance refusée si un obstacle est à moins du seuil devant), « devant en marche avant », sens du servo, pas, amplitude, portée du dessin. Touches `r` (mode suivant) et `u` (état, compteurs et carte en texte). API `/api/radar` (état, carte `points` = [angle, mm, âge], réglages par paramètres `mode`, `angle`, `seuil`, `securite`, `auto`, `pas`, `amplitude`, `ech`, `inv`, `effacer`), résumé `radar` dans `/api/state`. Outil PC : `python roomba694_recherche/code/outils/radar_capture.py 192.168.18.25 120 0.5 roomba694_recherche/mesures` (une ligne CSV par mesure avec encodeurs et cap du moment, dernière carte en SVG).
+- **Radar à ultrasons (v3, préparé le 2026-11-09, non testé)** : HC-SR04 sur servo SG90 ; servo sur **D18**, Trig sur **D19**, Echo sur **D23** à travers un diviseur 1 kΩ / 2 kΩ, le 5 V des deux modules depuis une source externe sur une bande libre de la plaque (la colonne VIN de la carte est collée au bord, sans trou libre : révision du 2026-11-09, câblage en cours de refonte ; fixation et plan de test : [../notes/G_radar_ultrason_servo.md](../notes/G_radar_ultrason_servo.md)). Carte « Radar à ultrasons » sur la page : modes arrêt / fixe devant / balayage, dessin polaire (toucher le dessin oriente le capteur), seuil d'arrêt, arrêt auto (roues arrêtées et avance refusée si un obstacle est à moins du seuil devant), « devant en marche avant », sens du servo, pas, amplitude, portée du dessin. Touches `r` (mode suivant) et `u` (état, compteurs et carte en texte). API `/api/radar` (état, carte `points` = [angle, mm, âge], réglages par paramètres `mode`, `angle`, `seuil`, `securite`, `auto`, `pas`, `amplitude`, `ech`, `inv`, `effacer`), résumé `radar` dans `/api/state`. Outil PC : `python roomba694_recherche/code/outils/radar_capture.py 192.168.18.25 120 0.5 roomba694_recherche/mesures` (une ligne CSV par mesure avec encodeurs et cap du moment, dernière carte en SVG).
 - **Mises à jour sans câble** :
   1. page http://192.168.4.1/update : envoyer le fichier `.bin` produit par `arduino-cli compile --fqbn esp32:esp32:esp32 --export-binaries roomba694_recherche/code/roomba694_wifi` (il apparaît dans `roomba694_wifi/build/esp32.esp32.esp32/roomba694_wifi.ino.bin`) ;
      Depuis le PC, sans navigateur : `curl -u admin:roomba694 -F "firmware=@roomba694_recherche/code/roomba694_wifi/build/esp32.esp32.esp32/roomba694_wifi.ino.bin" http://ADRESSE_IP/update` (testé : 1,07 Mo en 11 s, la carte redémarre avec la nouvelle version) ;
