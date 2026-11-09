@@ -6,6 +6,8 @@
 #
 # Usage : python monitor_wifi.py [adresse] [duree_s] [periode_s] [dossier_de_sortie]
 #   ex.  : python monitor_wifi.py 192.168.18.25 1200 1 roomba694_recherche/mesures
+# Firmware v3 : colonnes radar_mode (0 arrêt, 1 fixe, 2 balayage) et us_mm (distance devant mesurée par le radar à
+# ultrasons : > 0 mm, 0 rien à portée, -1 inconnue) ; vides avec un firmware plus ancien.
 import csv
 import datetime
 import json
@@ -30,7 +32,7 @@ ev_path = os.path.join(outdir, f"monitor_{stamp}_evenements.txt")
 FIELDS = ["heure", "uptime_s", "robot_ok", "age_s", "mode", "v_mV", "i_mA", "t_C", "q_mAh", "enc_g", "enc_d",
           "cap_deg", "rot_dps", "roues", "vitesse", "bump_g", "bump_d", "drop_g", "drop_d",
           "vide_g", "vide_avg", "vide_avd", "vide_d", "lb_g", "lb_avg", "lb_cg", "lb_cd", "lb_avd", "lb_d",
-          "lbits", "btn", "ap_clients", "sta_ip", "rst"]
+          "lbits", "btn", "radar_mode", "us_mm", "ap_clients", "sta_ip", "rst"]
 
 
 def now():
@@ -60,6 +62,7 @@ def row_from_state(s):
         "vide_g": r["cliff"][0], "vide_avg": r["cliff"][1], "vide_avd": r["cliff"][2], "vide_d": r["cliff"][3],
         "lb_g": r["light"][0], "lb_avg": r["light"][1], "lb_cg": r["light"][2], "lb_cd": r["light"][3],
         "lb_avd": r["light"][4], "lb_d": r["light"][5], "lbits": r["lbits"], "btn": r["btn"],
+        "radar_mode": s.get("radar", {}).get("mode", ""), "us_mm": s.get("radar", {}).get("front_mm", ""),
         "ap_clients": s["ap"]["clients"], "sta_ip": s["sta"]["ip"], "rst": s.get("rst", ""),
     }
 

@@ -1,5 +1,8 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 3 — 2026-11-09 : « radar » à ultrasons, capteur HC-SR04 sur servo SG90 (fichier radar.ino : modes arrêt / fixe /
+    balayage, carte polaire sur la page web, arrêt automatique devant un obstacle, /api/radar, touches r et u, colonne us_mm
+    du CSV). Code préparé, PAS ENCORE TESTÉ sur le matériel.
   Version 2 — 2026-11-08. Dérivé de roomba694_test1 (mêmes touches, même câblage, mêmes sécurités), avec en plus :
     - un point d'accès Wi-Fi « Roomba694 » toujours actif (adresse 192.168.4.1), et en option la connexion au réseau
       de la maison, enregistré depuis la page /wifi (identifiants stockés dans la carte, jamais dans le code ni affichés) ;
@@ -14,6 +17,8 @@
   CÂBLAGE : identique à roomba694_test1. Robot trou 4 (TXD, 3,3 V) -> GPIO16 (RX2) ; trou 3 (RXD) <- GPIO17 (TX2) ;
   trou 5 (BRC) <- GPIO4 ; trou 6 ou 7 (GND) -- GND. Broches 1-2 du robot (batterie, 14 à 21 V) : jamais reliées.
   L'ESP32 est alimenté par son USB (PC ou batterie portable).
+  Radar (v3) : signal du servo SG90 sur D27, HC-SR04 Trig sur D32 et Echo sur D34 à travers un diviseur 1 kΩ / 2 kΩ ; les deux
+  modules en 5 V sur la broche VIN (le 5 V de l'USB), jamais sur 3V3. Détail : radar.ino et notes/G_radar_ultrason_servo.md.
 
   SÉCURITÉ : vitesse plafonnée à 150 mm/s, pas de mode Full, arrêt automatique des roues 1,5 s après chaque ordre,
   arrêt des roues si le client TCP se déconnecte ou si une mise à jour commence. Rien n'est envoyé au robot au démarrage.
@@ -87,13 +92,17 @@ uint32_t lastPollMs = 0;
 bool     useQueryList = true;
 int16_t  driveSpeed = SPEED_MM_S;   // vitesse des touches 8/2/4/6, réglable depuis la page web (plafond SPEED_MM_S)
 uint32_t lastStopMs = 0;
+volatile bool driveForward = false;  // dernier ordre de roues = marche avant (lu par la tâche radar et par la sécurité du radar)
 volatile uint8_t staReason = 0;     // dernière cause de déconnexion du réseau de la maison (événement Wi-Fi), 0 = aucune
 volatile bool    staGotIp = false;
 
 // Pages web et API HTTP : définies dans web.ino (second fichier du sketch), déclarées ici pour setupWifi()
 void handleRoot();  void handleState();  void handleCmd();  void handleSpeed();  void handleLog();  void handleScan();
 void handleWifiGet();  void handleWifiPost();  void handleWifiForget();
-void handleUpdateGet();  void handleUpdateDone();  void handleUpdateUpload();
+void handleUpdateGet();  void handleUpdateDone();  void handleUpdateUpload();  void handleRadar();
+// Radar à ultrasons (HC-SR04 sur servo SG90) : défini dans radar.ino (troisième fichier du sketch), déclaré ici pour la boucle
+void radarSetup();  void radarTick();  bool radarForwardBlocked();  void radarCycleMode();  void radarPrintStatus();
+int  radarFrontMm();  void radarStateJson(String& j);
 
 // ---------- Gyroscope et accéléromètre MPU-6050 (module GY-521, I2C) ----------
 // Câblage : VCC -> 3V3, GND -> GND, SCL -> D22 (GPIO22), SDA -> D21 (GPIO21) ; AD0, XDA, XCL, INT libres.
@@ -388,16 +397,16 @@ void parseState(const uint8_t* b) {
 }
 
 void printCsvHeader() {
-  out.println(F("csv,ms,enc_g,enc_d,pc_g,pc_d,roue_g,roue_d,vide_g,vide_avg,vide_avd,vide_d,lb_g,lb_avg,lb_cg,lb_cd,lb_avd,lb_d,mv,ma,mode,cap_deg,rot_dps"));
+  out.println(F("csv,ms,enc_g,enc_d,pc_g,pc_d,roue_g,roue_d,vide_g,vide_avg,vide_avd,vide_d,lb_g,lb_avg,lb_cg,lb_cd,lb_avd,lb_d,mv,ma,mode,cap_deg,rot_dps,us_mm"));
 }
 
 void printCsvLine() {
-  out.printf("csv,%lu,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%d,%u,%.1f,%.1f\n",
+  out.printf("csv,%lu,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%d,%u,%.1f,%.1f,%d\n",
              (unsigned long)millis(), st.encL, st.encR,
              (st.bumpsDrops >> 1) & 1, st.bumpsDrops & 1, (st.bumpsDrops >> 3) & 1, (st.bumpsDrops >> 2) & 1,
              st.cliff[0], st.cliff[1], st.cliff[2], st.cliff[3],
              st.light[0], st.light[1], st.light[2], st.light[3], st.light[4], st.light[5],
-             st.voltage, st.current, st.mode, imu.yawDeg, imu.rateDps);
+             st.voltage, st.current, st.mode, imu.yawDeg, imu.rateDps, radarFrontMm());   // us_mm : -1 inconnu, 0 rien à portée
 }
 
 void printImu() {
@@ -508,6 +517,7 @@ void driveDirect(int16_t right, int16_t left) {
   writeI16(right);   // roue droite d'abord, puis roue gauche (ordre imposé par l'OI)
   writeI16(left);
   driving = (right != 0 || left != 0);
+  driveForward = (right > 0 && left > 0);
   lastDriveMs = millis();
 }
 
@@ -640,7 +650,7 @@ void printInfo() {
              st.ok ? "joignable" : "sans réponse", (unsigned long)(millis() - st.lastOkMs),
              useQueryList ? "lecture groupée 149" : "lecture paquet par paquet",
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
-  out.printf("Firmware roomba694_wifi v2, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
+  out.printf("Firmware roomba694_wifi v3, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
              __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
 }
 
@@ -658,6 +668,7 @@ void printHelp() {
     " a  anti-veille BRC toutes les 45 s (on/off)\n"
     " j  journal CSV toutes les 200 ms (on/off)   i  informations Wi-Fi et état\n"
     " g  gyroscope MPU-6050 (cap, vitesse)   z  recalibrer le gyroscope et remettre le cap à zéro (robot immobile)\n"
+    " r  radar à ultrasons : arrêt -> fixe devant -> balayage (on tourne)   u  état du radar et carte des distances\n"
     " q  réessayer la lecture groupée des capteurs (opcode 149) et afficher les octets reçus\n"
     " p  mettre en pause un flux continu de capteurs (opcode 150) si les lectures sont devenues incohérentes\n"
     " o  Power (extinction)           x  Stop OI (à faire en fin de session)\n"));
@@ -679,7 +690,8 @@ void handle(char c) {
     case 'm': playJingle(); break;
     case 'l': ledDemo(); break;
     // Le message n'est affiché qu'au départ : la page web répète l'ordre toutes les 400 ms tant que le bouton est maintenu.
-    case '8': if (!driving) out.printf("Avance (%d mm/s).\n", driveSpeed);          driveDirect( driveSpeed,  driveSpeed); break;
+    case '8': if (radarForwardBlocked()) break;   // obstacle devant à moins du seuil (radar à ultrasons, arrêt auto actif)
+              if (!driving) out.printf("Avance (%d mm/s).\n", driveSpeed);          driveDirect( driveSpeed,  driveSpeed); break;
     case '2': if (!driving) out.printf("Recule (%d mm/s).\n", driveSpeed);          driveDirect(-driveSpeed, -driveSpeed); break;
     case '4': if (!driving) out.printf("Tourne à gauche (%d mm/s).\n", driveSpeed); driveDirect( driveSpeed, -driveSpeed); break;
     case '6': if (!driving) out.printf("Tourne à droite (%d mm/s).\n", driveSpeed); driveDirect(-driveSpeed,  driveSpeed); break;
@@ -701,6 +713,8 @@ void handle(char c) {
       if (imu.present) { imu.calibRequested = true; out.println(F("Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.")); }
       else out.println(F("Gyroscope non détecté."));
       break;
+    case 'r': radarCycleMode(); break;
+    case 'u': radarPrintStatus(); break;
     case 'o': setMode(OI_POWER, F("Power (133)")); break;
     case 'x': setMode(OI_STOP,  F("Stop (173) -> OI fermée")); break;
     default: {
@@ -766,6 +780,7 @@ void setupWifi() {
   http.on("/api/speed", HTTP_GET, handleSpeed);
   http.on("/api/log", HTTP_GET, handleLog);
   http.on("/api/scan", HTTP_GET, handleScan);
+  http.on("/api/radar", HTTP_GET, handleRadar);
   http.on("/wifi", HTTP_GET, handleWifiGet);
   http.on("/wifi", HTTP_POST, handleWifiPost);
   http.on("/wifi/forget", HTTP_POST, handleWifiForget);
@@ -872,6 +887,7 @@ void setup() {
   } else {
     out.println(F("Gyroscope MPU-6050 non détecté (VCC->3V3, GND, SCL->D22, SDA->D21) : fonctions g et z inactives."));
   }
+  radarSetup();   // radar à ultrasons : broches, réglages, tâche sur le second cœur ; reste en mode arrêt tant qu'on ne l'active pas
   out.println(F("Séquence conseillée : s, b (robot réveillé par CLEAN, ou par 'w' deux fois à 4 s d'intervalle)."));
 }
 
@@ -888,4 +904,5 @@ void loop() {
   ArduinoOTA.handle();
   wifiTick();
   pollTick();
+  radarTick();   // arrêt des roues devant un obstacle, messages du radar
 }

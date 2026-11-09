@@ -46,6 +46,9 @@ svg{display:block;margin:0 auto;max-width:100%}
 .hint{color:var(--mut);font-size:.82em;margin:6px 0 0}
 a{color:#8cb4ff}
 footer{text-align:center;color:var(--mut);font-size:.85em;padding:10px}
+.row label{display:flex;align-items:center;gap:5px;flex:1 1 auto;color:var(--mut);font-size:.9em;white-space:nowrap}
+select{font:inherit;font-size:.9em;background:#0b0d12;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
+canvas{display:block;margin:10px auto 0;width:100%;max-width:320px;touch-action:manipulation}
 </style></head><body>
 <header>
 <h1>Roomba 694 <small id="ver">…</small></h1>
@@ -107,6 +110,31 @@ footer{text-align:center;color:var(--mut);font-size:.85em;padding:10px}
 <div>Encodeurs G / D<b id="enc">–</b></div><div>Boutons<b id="btn">–</b></div>
 <div>Vide (G, AvG, AvD, D)<b id="cliff" style="font-size:.95em">–</b></div><div>Light bumper (6)<b id="light" style="font-size:.95em">–</b></div>
 </div>
+</div>
+
+<div class="card"><h2>Radar à ultrasons <span id="rdst" style="text-transform:none;letter-spacing:0"></span></h2>
+<div class="row">
+<button id="rm0" onclick="radar('mode=off')">Arrêt</button>
+<button id="rm1" onclick="radar('mode=fixe&angle=0')">Fixe devant</button>
+<button id="rm2" onclick="radar('mode=balayage')">Balayage</button>
+</div>
+<canvas id="rc" width="320" height="190"></canvas>
+<div class="kv" style="margin-top:8px">
+<div>Devant<b id="rfront">–</b></div><div>Capteur vers<b id="rservo">–</b></div>
+</div>
+<div class="speed">seuil d'arrêt <input type="range" id="rseuil" min="10" max="100" step="5" value="30"> <span id="rseuilv">30 cm</span></div>
+<div class="row" style="margin-top:8px">
+<label><input type="checkbox" id="rsec" onchange="radar('securite='+(this.checked?1:0))">arrêt auto</label>
+<label><input type="checkbox" id="rauto" onchange="radar('auto='+(this.checked?1:0))">devant en marche avant</label>
+<label><input type="checkbox" id="rinv" onchange="radar('inv='+(this.checked?1:0))">servo inversé</label>
+</div>
+<div class="row" style="margin-top:8px">
+<label>pas <select id="rpas" onchange="radar('pas='+this.value)"><option>5</option><option>10</option><option>15</option><option>20</option></select>°</label>
+<label>±<select id="ramp" onchange="radar('amplitude='+this.value)"><option>30</option><option>45</option><option>60</option><option>80</option></select>°</label>
+<label>portée <select id="rport" onchange="if(rd)drawRadar(rd)"><option>100</option><option selected>200</option><option>400</option></select> cm</label>
+<button style="flex:0 0 auto" onclick="radar('effacer=1')">Effacer</button>
+</div>
+<p class="hint">HC-SR04 sur servo SG90 : 0° = devant, positif = gauche. Touchez le dessin pour orienter le capteur (mode fixe). Les points pâlissent avec l'âge, l'arc rouge pointillé est le seuil d'arrêt, le trait bleu la direction du capteur.</p>
 </div>
 
 <div class="card"><h2>Gyroscope</h2>
@@ -217,6 +245,44 @@ async function pollLog(){
   seq=r.seq;
  }catch(e){}
 }
+let rd=null;
+async function radar(q){try{drawRadar(await (await fetch('/api/radar?'+q)).json());}catch(e){}}
+async function pollRadar(){try{drawRadar(await (await fetch('/api/radar')).json());}catch(e){}}
+function drawRadar(r){
+ rd=r;
+ for(let k=0;k<3;k++)$('rm'+k).className=(r.mode===k?'on':'');
+ $('rdst').textContent=r.absent?'· capteur sans réaction':(r.following?'· devant (marche avant)':'');
+ const fresh=r.front_age<3000;
+ $('rfront').textContent=(!fresh||r.front_cm<0)?'–':(r.front_cm>0?r.front_cm.toFixed(0)+' cm':'rien < 4 m');
+ $('rfront').style.color=(fresh&&r.front_cm>0&&r.front_cm<r.seuil)?'var(--bad)':'';
+ $('rservo').textContent=(r.servo>0?'+':'')+r.servo+'°';
+ if(document.activeElement!==$('rseuil')){$('rseuil').value=r.seuil;$('rseuilv').textContent=r.seuil+' cm';}
+ $('rsec').checked=r.securite;$('rauto').checked=r.auto;$('rinv').checked=r.inv;$('rpas').value=r.pas;$('ramp').value=r.amplitude;
+ const c=$('rc'),x=c.getContext('2d'),W=c.width,H=c.height,cx=W/2,cy=H-16,R=H-32,port=+$('rport').value;
+ x.clearRect(0,0,W,H);
+ x.fillStyle='#232a38';x.beginPath();x.moveTo(cx,cy);x.arc(cx,cy,R,Math.PI,2*Math.PI);x.closePath();x.fill();
+ x.strokeStyle='#3a4255';x.lineWidth=1;
+ for(let k=1;k<=4;k++){x.beginPath();x.arc(cx,cy,R*k/4,Math.PI,2*Math.PI);x.stroke();}
+ for(const a of[-60,-30,0,30,60]){const t=a*Math.PI/180;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx-R*Math.sin(t),cy-R*Math.cos(t));x.stroke();}
+ x.fillStyle='#6b7386';x.font='10px system-ui';x.textAlign='left';
+ for(let k=1;k<=4;k++)x.fillText(Math.round(port*k/4)+'',cx+3,cy-R*k/4+10);
+ x.textAlign='center';x.fillText('gauche',28,cy+12);x.fillText('droite',W-28,cy+12);
+ x.strokeStyle='rgba(255,82,82,.7)';x.setLineDash([4,3]);x.beginPath();x.arc(cx,cy,R*Math.min(1,r.seuil/port),Math.PI,2*Math.PI);x.stroke();x.setLineDash([]);
+ if(r.mode){const t=r.servo*Math.PI/180;x.strokeStyle='rgba(79,140,255,.8)';x.lineWidth=2;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx-R*Math.sin(t),cy-R*Math.cos(t));x.stroke();x.lineWidth=1;}
+ for(const p of r.points){const a=p[0]*Math.PI/180,cm=p[1]/10,age=p[2],al=Math.max(.2,1-age/8000);
+  if(cm<=0){x.fillStyle='rgba(154,163,181,'+al+')';x.beginPath();x.arc(cx-(R-3)*Math.sin(a),cy-(R-3)*Math.cos(a),2,0,7);x.fill();continue;}
+  const d=Math.min(1,cm/port),px=cx-R*d*Math.sin(a),py=cy-R*d*Math.cos(a);
+  x.fillStyle=cm<r.seuil?'rgba(255,82,82,'+al+')':'rgba(61,220,132,'+al+')';
+  x.beginPath();x.arc(px,py,cm>port?3:5,0,7);x.fill();
+  if(cm>port){x.strokeStyle='rgba(61,220,132,'+al+')';x.beginPath();x.arc(px,py,6,0,7);x.stroke();}}
+ x.fillStyle='#e8eaf0';x.beginPath();x.arc(cx,cy,4,0,7);x.fill();
+}
+$('rseuil').addEventListener('input',()=>{$('rseuilv').textContent=$('rseuil').value+' cm';});
+$('rseuil').addEventListener('change',()=>radar('seuil='+$('rseuil').value));
+$('rc').addEventListener('click',e=>{const c=$('rc'),b=c.getBoundingClientRect(),sx=c.width/b.width,sy=c.height/b.height;
+ const dx=(e.clientX-b.left)*sx-c.width/2,dy=(c.height-16)-(e.clientY-b.top)*sy;if(dy<5)return;
+ const a=Math.max(-80,Math.min(80,Math.round(Math.atan2(-dx,dy)*180/Math.PI)));radar('mode=fixe&angle='+a);});
+let rt=0;setInterval(()=>{rt++;if((rd&&rd.mode)||rt%4===0)pollRadar();},500);pollRadar();
 setInterval(refresh,600);refresh();setInterval(pollLog,1000);pollLog();
 </script></body></html>
 )=====";

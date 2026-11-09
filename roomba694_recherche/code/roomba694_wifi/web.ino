@@ -9,6 +9,8 @@
 //          /api/speed?v=N  vitesse des flèches, 50 à SPEED_MM_S mm/s
 //          /api/log?since=N  dernières lignes de la console (journal en mémoire, voir TeeOut)
 //          /api/scan    réseaux Wi-Fi à portée (lance une recherche, puis renvoie la liste)
+//          /api/radar   radar à ultrasons (radar.ino) : état et carte polaire en JSON ; paramètres facultatifs : mode=off|fixe|balayage,
+//                       angle=-80..80, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..80, ech=1..3, inv=0|1, effacer=1
 //
 // Le mot de passe du réseau de la maison n'est jamais renvoyé par l'API ni affiché sur la console.
 
@@ -53,7 +55,7 @@ void handleState() {
   j.reserve(1800);
   char b[720];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v2 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"ql\":%s,"
+    "{\"ms\":%lu,\"ver\":\"v3 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"ql\":%s,"
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u},"
@@ -69,6 +71,7 @@ void handleState() {
     imu.present ? "true" : "false", imu.calibrating ? "true" : "false", imu.yawDeg, imu.rateDps,
     imu.acc[0], imu.acc[1], imu.acc[2]);
   j += b;
+  radarStateJson(j);   // "radar":{mode, front_mm, age, present, servo}
   j += "\"ap\":{\"ssid\":"; jsonStr(j, AP_SSID);
   j += ",\"ip\":\""; j += WiFi.softAPIP().toString(); j += "\",\"clients\":"; j += (int)WiFi.softAPgetStationNum(); j += "},";
   j += "\"rst\":"; jsonStr(j, resetReasonText()); j += ',';
@@ -81,7 +84,7 @@ void handleState() {
   http.send(200, "application/json", j);
 }
 
-const char* ALLOWED_WEB_CMDS = "?wsfchbeknml82465 ajioxgzqp";
+const char* ALLOWED_WEB_CMDS = "?wsfchbeknml82465 ajioxgzqpru";
 
 void handleCmd() {
   String c = http.arg("c");
@@ -218,4 +221,60 @@ void handleUpdateUpload() {
     Update.abort();
     out.println(F("Mise à jour interrompue."));
   }
+}
+
+// ---------- Radar à ultrasons (radar.ino) : état, carte et réglages ----------
+// /api/radar renvoie l'état ; les paramètres facultatifs modifient d'abord les réglages (conservés en flash, sauf le mode et l'angle).
+void handleRadar() {
+  bool save = false;
+  if (http.hasArg("angle")) radar.fixedDeg = (int8_t)constrain(http.arg("angle").toInt(), -RADAR_SPAN_MAX, RADAR_SPAN_MAX);
+  if (http.hasArg("mode")) {
+    String m = http.arg("mode");
+    if (m == "off" || m == "arret") radarSetMode(RADAR_OFF);
+    else if (m == "fixe")           radarSetMode(RADAR_FIXED);
+    else if (m == "balayage")       radarSetMode(RADAR_SWEEP);
+    else { http.send(400, "text/plain; charset=utf-8", "mode inconnu : off, fixe ou balayage"); return; }
+  } else if (http.hasArg("angle") && radar.mode == RADAR_FIXED) {
+    out.printf("Radar : capteur vers %d°.\n", (int)radar.fixedDeg);
+  }
+  if (http.hasArg("seuil"))     { radar.seuilCm = (int16_t)constrain(http.arg("seuil").toInt(), 10, 150); out.printf("Radar : seuil d'arrêt %d cm.\n", (int)radar.seuilCm); save = true; }
+  if (http.hasArg("securite"))  { radar.securite = http.arg("securite") == "1"; out.printf("Radar : arrêt automatique %s.\n", radar.securite ? "activé" : "désactivé"); save = true; }
+  if (http.hasArg("auto"))      { radar.autoFront = http.arg("auto") == "1"; out.printf("Radar : capteur devant pendant une marche avant : %s.\n", radar.autoFront ? "oui" : "non"); save = true; }
+  if (http.hasArg("pas"))       { int v = http.arg("pas").toInt(); if (v >= 5 && v <= 45 && v % 5 == 0) { radar.pas = (int8_t)v; save = true; } }
+  if (http.hasArg("amplitude")) { int v = http.arg("amplitude").toInt(); if (v >= 20 && v <= RADAR_SPAN_MAX) { radar.amplitude = (int8_t)((v / 5) * 5); save = true; } }
+  if (http.hasArg("ech"))       { radar.ech = (int8_t)constrain(http.arg("ech").toInt(), 1, 3); save = true; }
+  if (http.hasArg("inv"))       { radar.inverse = http.arg("inv") == "1"; out.printf("Radar : sens du servo %s.\n", radar.inverse ? "inversé" : "normal"); save = true; }
+  if (http.hasArg("effacer"))   radarClearMap();
+  if (save) radarSaveSettings();
+
+  String j;
+  j.reserve(1100);
+  char b[400];
+  snprintf(b, sizeof(b),
+    "{\"mode\":%u,\"present\":%s,\"absent\":%s,\"following\":%s,\"servo\":%d,\"front_cm\":%.1f,\"front_age\":%lu,"
+    "\"seuil\":%d,\"securite\":%s,\"auto\":%s,\"pas\":%d,\"amplitude\":%d,\"ech\":%d,\"inv\":%s,"
+    "\"mesures\":%lu,\"sans_echo\":%lu,\"defauts\":%lu,\"passages\":%lu,\"arrets\":%lu,\"refus\":%lu,\"points\":[",
+    (unsigned)radar.mode, radar.present ? "true" : "false", radar.absent ? "true" : "false", radar.following ? "true" : "false",
+    (int)radar.servoDeg, radar.frontMm < 0 ? -1.0 : radar.frontMm / 10.0, (unsigned long)(millis() - radar.frontMs),
+    (int)radar.seuilCm, radar.securite ? "true" : "false", radar.autoFront ? "true" : "false", (int)radar.pas, (int)radar.amplitude,
+    (int)radar.ech, radar.inverse ? "true" : "false",
+    (unsigned long)radar.pings, (unsigned long)radar.noEcho, (unsigned long)radar.faults, (unsigned long)radar.sweeps,
+    (unsigned long)radar.stops, (unsigned long)radar.refused);
+  j += b;
+  int16_t  mm[RADAR_SLOTS];
+  uint32_t ms[RADAR_SLOTS];
+  portENTER_CRITICAL(&radarMux);                 // copie cohérente de la carte : la tâche radar écrit pendant ce temps
+  for (int i = 0; i < RADAR_SLOTS; i++) { mm[i] = radar.mm[i]; ms[i] = radar.ms[i]; }
+  portEXIT_CRITICAL(&radarMux);
+  uint32_t now = millis();
+  bool first = true;
+  for (int i = 0; i < RADAR_SLOTS; i++) {
+    if (mm[i] < 0) continue;                     // case jamais mesurée
+    char p[40];
+    snprintf(p, sizeof(p), "%s[%d,%d,%lu]", first ? "" : ",", -RADAR_SPAN_MAX + i * RADAR_SLOT_DEG, (int)mm[i], (unsigned long)(now - ms[i]));
+    j += p;                                      // [angle en degrés, distance en mm (0 = rien à portée), âge en ms]
+    first = false;
+  }
+  j += "]}";
+  http.send(200, "application/json", j);
 }

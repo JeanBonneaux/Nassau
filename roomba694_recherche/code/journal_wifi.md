@@ -8,6 +8,7 @@ Date : 2026-11-08 (soir), à la suite de [journal_tests.md](journal_tests.md). M
 - Première version (v1) testée par USB puis par le téléphone : la page s'affiche, mais l'enregistrement du réseau de la maison a échoué (page protégée par un identifiant non communiqué, puis redémarrage de la carte). Une version 2 corrige cela et refait l'interface (voir § 6).
 - Trois comportements du 694 mesurés ce soir : octet parasite `B0` quelques secondes après un réveil par BRC (lecture fausse une fois : température −80 °C, puis état de charge 176) ; réponse à la lecture groupée (opcode 149, 22 paquets) correcte mais lente, au-delà des 200 ms d'attente d'une lecture simple ; rendormissement du robot malgré l'anti-veille par BRC (à creuser).
 - Le robot n'a pas bougé de la soirée (câble USB vers le PC branché) : aucun test de déplacement par la page web pour l'instant.
+- **2026-11-09 : version 3 préparée** (radar à ultrasons HC-SR04 sur servo SG90, fichier `radar.ino`), compilée (1 093 074 octets, 83 %), **pas encore téléversée, câblée ni testée** : § 13 et [../notes/G_radar_ultrason_servo.md](../notes/G_radar_ultrason_servo.md).
 
 ## 1. Câblage du jour
 
@@ -34,6 +35,7 @@ Trous 1 et 2 du robot jamais reliés. GY-521 à plat, puce vers le haut, AD0 lib
 | v2, deuxième essai | — | erreur : `'asyncfunction' does not name a type` dans le HTML : l'outil Arduino prend le JavaScript des pages (`function ...`) pour des fonctions C++ et génère de faux prototypes → le HTML est déplacé dans `pages.h` (les `.h` ne sont pas analysés) |
 | v2 (interface refaite, lecture groupée bloquante) | 1 063 691 octets (81 %), 58 248 octets de RAM | OK, sans avertissement |
 | v2 finale (lecture groupée non bloquante) | voir § 7 | |
+| v3 (radar à ultrasons, 2026-11-09) | 1 093 074 octets (83 %), 59 248 octets de RAM | OK, sans avertissement ; pas encore téléversée |
 
 Téléversement par USB sur COM4 à chaque fois : `arduino-cli upload -p COM4 --fqbn esp32:esp32:esp32 roomba694_recherche/code/roomba694_wifi`, environ 12 s pour 1,06 Mo (« Hash of data verified »).
 
@@ -216,3 +218,13 @@ Outil : `code/outils/monitor_wifi.py` (une lecture de `/api/state` et de `/api/l
 ## 12. Rappel de fin de session
 
 Toujours finir par `s` puis `x` (console série, console TCP ou page web). Ne jamais brancher l'USB du PC et une autre alimentation en même temps. Ne pas utiliser les flèches de la page tant que le câble USB relie la carte au PC.
+
+## 13. Version 3 (2026-11-09) : radar à ultrasons, préparée et compilée, non testée
+
+Demande de l'utilisateur : tirer le meilleur parti de deux modules de son kit ELEGOO, le capteur à ultrasons HC-SR04 et le micro-servo SG90, en attendant le LiDAR (note F). Rien n'a été câblé ni téléversé : le robot est resté en charge sur sa base.
+
+- **Code** : nouveau fichier `radar.ino` (tâche sur le second cœur : servo par PWM LEDC 50 Hz sans bibliothèque, mesure de l'écho par interruption, carte polaire 33 cases de −80° à +80°, médiane des trois dernières mesures du secteur avant, modes arrêt / fixe / balayage, « devant en marche avant », réglages en flash) ; dans le fichier principal : touches `r` et `u`, refus de la touche `8` et arrêt des roues devant un obstacle (`radarTick`), colonne `us_mm` du CSV, drapeau `driveForward` ; dans `web.ino` : `/api/radar`, résumé `radar` dans `/api/state`, version « v3 » ; dans `pages.h` : carte « Radar à ultrasons » avec dessin polaire sur `canvas`, réglages, orientation du capteur en touchant le dessin. Outils : `monitor_wifi.py` (colonnes `radar_mode`, `us_mm`), nouveau `radar_capture.py` (CSV par mesure avec encodeurs et cap, dernière carte en SVG).
+- **Broches** : D27 servo, D32 Trig, D34 Echo via diviseur 1 kΩ / 2 kΩ, 5 V des modules sur VIN. Côté « VIN » de la carte, dont la rangée de trous libres (colonne j) et les bandes du bas sont encore vides d'après les photos de la plaque (`images/plaque_esp32_placee_rangees.jpg`).
+- **Compilation** : 1 093 074 octets (83 % de la flash), 59 248 octets de RAM, sans avertissement (`arduino-cli compile --fqbn esp32:esp32:esp32 --export-binaries`). Fichier `build/esp32.esp32.esp32/roomba694_wifi.ino.bin` prêt pour la page /update.
+- **Page web** : vérifiée hors robot, au format téléphone (375 px), avec un petit serveur local servant la page et de fausses réponses `/api/state`, `/api/log`, `/api/radar` : la carte « Radar à ultrasons » se dessine (mur à 1,5 m en vert, obstacle sous le seuil en rouge, « rien à portée » en gris au bord, points hors portée du dessin en cercles creux, trait bleu de la direction du capteur), aucune erreur de script ; toucher le dessin à gauche envoie `mode=fixe&angle=45` et la page affiche « Fixe devant » et « Capteur vers +45° » ; « Arrêt » vide la carte et affiche « – » devant ; réglages (seuil, cases, pas, amplitude, portée, Effacer) rendus correctement.
+- **Reste à faire, dans l'ordre** (plan détaillé dans la note G, section 5) : téléverser la v3 (la carte « Radar » apparaît, mode arrêt, rien ne change pour le robot) ; câbler carte hors tension, deux mesures au multimètre (5 V sur la bande du bas, 0 V sur l'Echo divisé au repos) ; servo seul (sens de rotation, case « servo inversé ») ; capteur seul (livre à 20, 50, 100 cm) ; balayage sur la table ; carte depuis le robot à l'arrêt ; **avec l'accord de l'utilisateur**, test de l'arrêt automatique devant un carton à 60 mm/s ; plus tard, comparaison distance ultrason / encodeurs en approchant un mur.
