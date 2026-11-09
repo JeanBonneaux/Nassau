@@ -2,12 +2,14 @@
 
 Recherche web du 2026-11-08 (soir), menée en trois volets parallèles (matériel ajouté ; façons de programmer ; cartographie et autonomie), chaque lien ouvert et vérifié. Elle complète la note [C_projets_existants.md](C_projets_existants.md) (ponts série ESP8266/ESP32/Raspberry Pi et projets caméra, déjà recensés) et s'appuie sur ce que nous avons mesuré nous-mêmes sur le 694 ([../code/journal_tests.md](../code/journal_tests.md), [../code/journal_wifi.md](../code/journal_wifi.md)).
 
+Mise à jour du 2026-11-08 (nuit) : décision de **ne plus utiliser de batterie portable** (tout alimenté par la prise du robot, LiDAR compris), budget de courant chiffré et références d'achat Amazon.fr en section 2.1, liste des modules du kit confirmée en section 5.
+
 ## En deux mots
 
 - **Aucune carte ne viendra du robot lui-même** : la série 600 navigue au hasard et l'application iRobot ne garde que des statistiques. La carte viendra de notre électronique.
 - **Ce que nous avons déjà (ESP32 + encodeurs + gyroscope) permet une carte « par contact »** reconnaissable d'une pièce, comme le projet « Old Roomba, new tricks » (Roomba 632 + ESP8266 + MPU-6050, la configuration la plus proche de la nôtre). Pas une carte métrique.
 - **La seule voie vers une vraie carte de l'appartement est un LiDAR 2D (65 à 110 €)**. Bonne nouvelle : l'ESP32 suffit à lire le LiDAR et à envoyer les mesures en Wi-Fi vers le PC, qui fait le calcul (SLAM). Un Raspberry Pi ne devient nécessaire que pour une navigation autonome sans PC allumé.
-- **Première amélioration matérielle à faire : l'alimentation.** Les redémarrages de la carte de ce soir ont pour cause une coupure franche de l'alimentation (connecteur ou batterie secoués). Les autres bricoleurs alimentent leur module depuis la prise du robot avec un petit abaisseur de tension, dans la limite de 200 mA, avec un interrupteur.
+- **Première amélioration matérielle à faire : l'alimentation.** Les redémarrages de la carte de ce soir ont pour cause une coupure franche de l'alimentation (connecteur ou batterie secoués). Les autres bricoleurs alimentent leur module depuis la prise du robot avec un petit abaisseur de tension, dans la limite de 200 mA, avec un interrupteur. Ces 200 mA se comptent côté robot (14 à 21 V) : après conversion en 5 V il reste environ 500 mA, de quoi alimenter la carte, le gyroscope **et** le LiDAR sans batterie portable (section 2.1).
 - Les pièges rapportés par les autres recoupent les nôtres : veille après 5 min en Passive, réveil BRC capricieux, paquets « distance » faux, robot qui ne se recharge pas en Safe, TX à 5 V de certains robots, octets parasites.
 
 ## 1. Ce que le 694 ne fera jamais seul
@@ -31,7 +33,18 @@ La spécification officielle (série 600) est claire : les broches 1-2 (Vpwr) do
 
 Pièges confirmés ailleurs : TX à 5 V d'un robot qui grille l'entrée d'un Raspberry Pi [H15] (notre 694 sort du 3,3 V, mesuré) ; module Thinking Cleaner qui se met en sécurité sous 10 % de batterie [H18] ; brosse principale qui perturbe le magnétomètre d'une IMU [H19] ; bug de réveil BRC pendant la charge d'entretien, contourné par une LED infrarouge qui imite la télécommande [H17].
 
-**Pour nous** : un abaisseur MP1584EN ou Mini360 réglé à 5,0 V vers la broche VIN de l'ESP32 (jamais en même temps que l'USB), un interrupteur, et un condensateur de quelques centaines de µF en sortie. L'ESP32 + gyroscope (100 à 250 mA) tient dans les 200 mA du port, un LiDAR (290 mA) non : lui garder la batterie USB ou une batterie séparée.
+**Pour nous (décision du 2026-11-08 : plus de batterie portable, tout depuis le robot).** Le fusible limite le courant **côté robot** ; un abaisseur à découpage transforme la puissance, donc 200 mA sous 14 à 16 V (2,8 à 3,2 W) deviennent, avec un rendement de 85 %, environ **480 à 540 mA sous 5 V**. Budget estimé (rendement 85 %, batterie à 14,4 V ; consommation de l'ESP32 d'après [A5, A6], du LD19 d'après sa fiche technique [A7]) :
+
+| Charge sur le rail 5 V | Courant sous 5 V | Courant côté robot |
+|---|---|---|
+| ESP32 Wi-Fi actif (130 à 160 mA en moyenne, pointes de 0,3 à 0,7 A pendant moins d'une milliseconde, lissées par les condensateurs) + GY-521 (4 mA) | ~150 mA | ~60 mA |
+| + LiDAR LD19 en rotation (180 mA) | ~330 mA | ~135 mA |
+| + LiDAR au lancement (300 mA pendant 1 à 2 s) | ~450 mA | ~185 mA |
+| Limite de la prise (spécification) | | 200 mA en continu, coupure du fusible au-delà de 500 mA en crête |
+
+Montage retenu : un abaisseur **5 V fixe** (rien à régler, donc pas d'erreur de réglage), entrée acceptant au moins 30 V (la prise monte à 21-22 V sur la base), sortie 3 A, du type « module voiture 12/24 V → 5 V 3 A » moulé avec fils. Entrée + sur la broche 1 ou 2 du robot **à travers un interrupteur**, entrée − sur 6 ou 7 ; sortie 5 V sur le rail + de la plaque d'essai, qui alimente la broche VIN de l'ESP32 et le 5 V du LiDAR ; masse commune (déjà le cas pour la liaison série) ; un condensateur de 470 à 1000 µF sur le rail 5 V (« Old Roomba, new tricks » a réglé ses coupures Wi-Fi avec 3300 µF [H8]). Règles : câbler prise débranchée du robot (les broches 1-2 sont sous tension même robot éteint), vérifier la polarité au multimètre, puis mesurer 5,0 V en sortie **avant** de relier la carte ; ne jamais brancher l'USB du PC tant que le fil VIN est en place (retirer ce fil d'abord ; les mises à jour passent de toute façon par /update en Wi-Fi) ; couper l'interrupteur quand le robot n'est pas sur sa base (sinon ~135 mA vident sa batterie de 1800 mAh en une douzaine d'heures). L'arrêt du moteur du LiDAR par sa broche PWM est documenté mais des utilisateurs le rapportent inopérant [A8] : PWM à la masse (régulation interne à 10 Hz) et, si l'on veut couper le LiDAR sans couper la carte, un second interrupteur ou un petit module MOSFET sur son 5 V.
+
+Références Amazon.fr relevées le 2026-11-08 (prix à vérifier sur la fiche) : abaisseur moulé Yeeco 8-35 V → 5 V 3 A avec fils [A1], ou GYVRM 8-58 V → 5 V 3 A [A2] ; à défaut, lot de MP1584EN réglables 4,5-28 V [A3], à régler à 5,0 V au multimètre avant tout branchement ; interrupteur à bascule KCD1 deux broches avec fils [A4] ; kit LiDAR LDROBOT D500 à 79 € [A9]. Rien dans le kit ELEGOO ne remplace l'abaisseur (section 5).
 
 ### 2.2 Fixations
 
@@ -49,7 +62,7 @@ Dans tous les cas : laisser la prise Mini-DIN accessible, garder le robot assez 
 
 | Capteur | Prix | Alimentation | Lisible par l'ESP32 ? |
 |---|---|---|---|
-| LiDAR LDROBOT LD19 / kit D500 | 65 à 105 € [H28, M4] | 5 V, 290 mA, UART 230400 | oui (bibliothèque kaiaai/LDS) [H33] |
+| LiDAR LDROBOT LD19 / kit D500 | 65 à 105 € [H28, M4], 79 € sur Amazon.fr [A9] | 5 V, 180 mA en rotation, 300 mA au lancement [A7], UART 230400 | oui (bibliothèque kaiaai/LDS) [H33] |
 | LiDAR RPLIDAR C1 | 75 à 80 € [H28] | 5 V | oui |
 | LiDAR RPLIDAR A1 | 105 à 150 € [H28 à H30] | 5 V, UART 115200 | oui ; le plus documenté sur Roomba (Perceptor, CMU) |
 | LiDAR LD14P (kit D200) | 50 à 55 € [H28] | 5 V | oui |
@@ -112,8 +125,8 @@ Les six light bumpers (paquets 46 à 51, « force » 0 à 4095, pas une distance
 
 | Étape | Achat | Ce qu'on obtient |
 |---|---|---|
-| 1 — maintenant (0 €) | rien : ESP32 + MPU-6050 + encodeurs | le firmware calcule et envoie la position (x, y, cap) avec les bits light bumper et pare-chocs 10 fois par seconde ; un script Python sur le PC trace trajectoire et contacts sur une grille de 10 cm ; départ et retour sur la base pour fermer la boucle. Résultat : plan grossier d'une pièce. |
-| 2 — carte propre (75 à 110 €) | LiDAR LD19/D500 (ou LDS02RR d'occasion), abaisseur 5 V | l'ESP32 lit le LiDAR (kaiaai/LDS) et relaie vers le PC ; SLAM sur PC (BreezySLAM, ou slam_toolbox dans ROS 2 sous WSL2/Docker). Résultat : carte métrique de l'appartement, pilotage au téléphone. |
+| 1 — maintenant (~12 €) | abaisseur 5 V fixe + interrupteur + condensateur (section 2.1) ; ESP32 + MPU-6050 + encodeurs déjà en place | le firmware calcule et envoie la position (x, y, cap) avec les bits light bumper et pare-chocs 10 fois par seconde ; un script Python sur le PC trace trajectoire et contacts sur une grille de 10 cm ; départ et retour sur la base pour fermer la boucle. Résultat : plan grossier d'une pièce. |
+| 2 — carte propre (~80 €) | kit LiDAR D500 (79 € [A9]) ou LDS02RR d'occasion ; alimenté par le robot via l'abaisseur de l'étape 1 (section 2.1) | l'ESP32 lit le LiDAR (kaiaai/LDS) et relaie vers le PC ; SLAM sur PC (BreezySLAM, ou slam_toolbox dans ROS 2 sous WSL2/Docker). Résultat : carte métrique de l'appartement, pilotage au téléphone. |
 | 3 — autonomie (+70 à 120 €) | Raspberry Pi 4 ou 5, batterie 12 V + abaisseur 5 A | ROS 2 embarqué : create_robot, slam_toolbox puis Nav2 (±5 cm) et exploration automatique. |
 
 ## 4. Programmation : comment les autres programment leur Roomba
@@ -178,31 +191,35 @@ Alexa par émulation Wemo sur ESP8266 (2021) [P26] ; pilotage web + caméra avec
 
 ## 5. Vos modules : lesquels servent le projet
 
-D'après la photo de votre kit ELEGOO (Mega 2560, « most complete starter kit ») et la boîte du GY-521, à vérifier dans la boîte :
+Contenu confirmé le 2026-11-08 par la fiche du kit (Mega 2560 R3 ; LCD1602, lecteur RFID RC522, DHT11, détecteur de mouvement PIR HC-SR501, télémètre ultrason, capteur de niveau d'eau, GY-521, pilote de LED MAX7219, clavier 16 touches, joystick, encodeur rotatif, module relais, servo SG90, moteur pas à pas, moteur à courant continu, plaque d'essai, fils, LED, résistances, condensateurs, circuits intégrés, horloge temps réel). Les lignes « si présent » concernent des modules habituels de ce kit que la fiche ne cite pas.
 
 | Module | Utile ? | Usage pour le Roomba |
 |---|---|---|
 | GY-521 (MPU-6050) | **oui, en place** | cap du robot, validé ce soir ; à éloigner de la brosse principale si on ajoute un magnétomètre un jour |
-| HC-SR04 (ultrason) + servo SG90 | oui, étape « 1 bis » | télémètre balayé à l'arrêt (portée 0,02 à 4 m, cône large) pour voir les murs à distance avant d'acheter un LiDAR ; résultat grossier mais instructif ; 5 V et diviseur de tension sur Echo |
-| Récepteur infrarouge + télécommande | oui, amusant | piloter le robot avec la télécommande du kit, décodée par l'ESP32 (le robot a aussi son propre récepteur IR, voir note E) |
-| Buzzer | oui, trivial | bip de la carte au démarrage, à la perte de liaison, au pare-chocs |
+| HC-SR04 (ultrason) + servo SG90 | oui, étape « 1 bis » | télémètre balayé à l'arrêt (portée 0,02 à 4 m, cône large) pour voir les murs à distance en attendant le LiDAR ; résultat grossier mais instructif ; 5 V depuis le rail de l'abaisseur (le servo tire 100 à 250 mA en mouvement : pas en même temps que le LiDAR), diviseur 1 kΩ / 2 kΩ sur Echo |
+| Résistances, condensateurs | oui | 1 kΩ en série sur la liaison (en place) ; diviseur sur l'Echo du HC-SR04 ; condensateurs électrolytiques en parallèle sur le rail 5 V (section 2.1) |
+| Écran LCD 1602 | oui, confort | état de la carte sans téléphone : adresse IP, tension, mode, dernière erreur ; version sans I2C : six broches de l'ESP32, logique 5 V à adapter |
+| Matrice LED MAX7219 | confort | « visage » ou état du robot en trois fils SPI ; logique 5 V, fonctionne en général avec des signaux 3,3 V |
 | DHT11 (température, humidité) | oui, original | carte de température et d'humidité de l'appartement pendant que le robot roule (une mesure par position) |
-| Photorésistance | oui, simple | carte de luminosité, détection d'une pièce éteinte |
-| Écran LCD 1602 ou OLED | oui, confort | état de la carte sans téléphone : adresse IP, tension, mode, dernière erreur |
-| Horloge temps réel DS3231 | peut-être | horodatage des mesures quand il n'y a pas de Wi-Fi |
-| Joystick | peut-être | pilotage manuel filaire ; le téléphone fait déjà mieux |
-| Détecteur de son | gadget | « claque des mains » pour démarrer |
-| RFID RC522 | non | portée de quelques centimètres, inutilisable pour se repérer dans une pièce |
-| Relais, moteur pas à pas, L293D, afficheurs 7 segments, matrice LED | non | sans objet pour le robot |
-| Module d'alimentation de plaque d'essai | non | entrée 6,5 à 12 V : la batterie du robot (14 à 21 V) dépasserait sa limite |
+| Récepteur infrarouge + télécommande (si présent) | oui, amusant | piloter le robot avec la télécommande du kit, décodée par l'ESP32 (le robot a aussi son propre récepteur IR, voir note E) |
+| Buzzer (si présent) | oui, trivial | bip de la carte au démarrage, à la perte de liaison, au pare-chocs |
+| Photorésistance (si présent) | oui, simple | carte de luminosité, détection d'une pièce éteinte |
+| Détecteur de mouvement PIR HC-SR501 | gadget | mettre le robot en pause quand quelqu'un bouge dans la pièce ; 5 V, portée 7 m |
+| RFID RC522 | gadget | portée 2 à 3 cm : étiquettes collées au sol au pas des portes et lecteur sous le robot pour savoir dans quelle pièce il est ; pas une localisation |
+| Horloge temps réel | peut-être | horodatage des mesures sans Wi-Fi ; en Wi-Fi l'heure vient du réseau |
+| Joystick, clavier 16 touches, encodeur rotatif | non | le téléphone fait déjà mieux |
+| Arduino Mega 2560 | non pour le robot | l'ESP32 fait tout ; garder le Mega pour essayer un module à part sur le PC |
+| Relais | non | couper le LiDAR serait possible mais la bobine consomme 70 mA : préférer un petit module MOSFET |
+| Capteur de niveau d'eau, moteur pas à pas, moteur CC, L293D, afficheurs 7 segments | non | sans objet pour le robot |
+| Module d'alimentation de plaque d'essai (si présent) | **non, danger** | entrée 6,5 à 12 V, régulateur linéaire : la batterie du robot (14 à 21 V) le détruirait |
 
-À acheter, dans l'ordre : un abaisseur MP1584EN ou Mini360 (3 €) et un interrupteur, pour alimenter l'ESP32 depuis le robot ; une plaque et des entretoises M3 ; puis un LiDAR LD19/D500 (65 à 105 €) ou un LDS02RR d'occasion (15 à 35 €) ; beaucoup plus tard un Raspberry Pi 4 ou 5.
+À acheter, option sans batterie portable (décision du 2026-11-08) : 1) un abaisseur 5 V fixe moulé 8-35 V → 5 V 3 A [A1] (ou GYVRM [A2]), un interrupteur à bascule [A4] et, si le kit n'a pas de condensateurs de 100 µF ou plus, un 1000 µF 16 V : une douzaine d'euros en tout ; 2) le kit LiDAR LDROBOT D500 (79 € [A9]) ; 3) une plaque et des entretoises M3 ; beaucoup plus tard un Raspberry Pi 4 ou 5.
 
 ## 6. Ce que cela change pour notre firmware
 
 1. **Odométrie dans la carte** : intégrer x, y, cap à partir des encodeurs (16 bits signés, différence modulo 65 536) et du gyroscope, exposer `/api/pose` et une ligne CSV ; sur le PC, un script qui trace la trajectoire et les contacts (étape 1 du plan).
 2. **Grille d'occupation** simple sur l'ESP32 (section 3.4) et affichage dans la page web.
-3. **Préparer le LiDAR** : la liaison robot occupe UART2 (GPIO16/17) ; un LiDAR LD19 se branche sur UART1 (par exemple GPIO25/26) à 230 400 bauds, lu par kaiaai/LDS, et ses scans partent en UDP vers le PC.
+3. **Préparer le LiDAR** : la liaison robot occupe UART2 (GPIO16/17) ; un LiDAR LD19 se branche sur UART1 (par exemple GPIO25/26) à 230 400 bauds, lu par kaiaai/LDS, et ses scans partent en UDP vers le PC. Son 5 V vient du rail de l'abaisseur, sa broche PWM va à la masse (section 2.1).
 4. **Robustesse déjà ajoutée ce soir** : pause du flux 148, arrêt des roues au démarrage, raison du redémarrage ; reste à alimenter proprement la carte.
 
 ## Sources
@@ -210,5 +227,7 @@ D'après la photo de votre kit ELEGOO (Mega 2560, « most complete starter kit �
 Volet matériel (H) : H1 https://cdn.hackaday.io/files/1835247851890816/2021-04-13_iRobot_Roomba_600_Open_Interface_Spec-3.pdf · H2 https://www.adafruit.com/product/2438 · H3 https://www.servomagazine.com/magazine/article/irobot-create2-raspberry-pi-picreate · H4 https://hackaday.io/project/8290-esp8266-controlled-roomba · H5 https://myhomethings.eu/en/roomba-voice-control-alexa-and-belkin-wemo-emulator/ · H6 https://hackaday.com/2021/03/09/roomba-gets-alexa-support-with-an-esp8266-stowaway · H7 https://hackaday.io/project/183524-old-roomba-new-tricks · H8 https://hackaday.io/project/183524-controll-yer-roomba-600-series-with-esp8266/log/202540-add-hardware · H9 https://www.thesmarthomehookup.com/?p=377 · H10 https://nnarain.github.io/2021/02/14/iRobot-Create-2-Mounting-a-Raspberry-Pi.html · H11 https://nnarain.github.io/2026/01/13/iRobot-Create-2-openGrid-baseplate.html · H12 https://nnarain.github.io/2026/02/02/iRobot-Create-2-Battery-Mounting-Solution.html · H13 https://nnarain.github.io/2026/02/15/iRobot-Create-2-Mounting-and-Powering-Pi.html · H15 https://hackaday.io/project/18005-raspberry-pi-teleprescence-v1 · H16 https://forum.mysensors.org/post/53041 · H17 https://github.com/brembygit/ESPHomeRoombaComponent · H18 https://community.smartthings.com/t/deprecated-thinking-cleaner-2-x-roomba-control/65671?page=3 · H19 https://hackaday.io/project/178565-roomba-rpi · H20 https://jetsonhacks.com/2015/06/15/jetson-tk1-create-2-robot-part-i/ · H21 https://jetsonhacks.com/2015/07/11/jetsonbot-part-ii-a-vision-robot-with-a-create-2-base/ · H24 https://github.com/7675t/roomblock · H26 https://hackaday.io/project/178565-roomba-rpi/discussion-178856 · H28 https://www.waveshare.com/product/modules/sensors/light-ranging.htm?mode=grid · H29 https://robot-italy.com/en/products/4010-slamtec-rplidar-a1-360-laser-range-scanner · H30 https://www.waveshare.com/wiki/RPLIDAR_A1 · H33 https://github.com/kaiaai/LDS · H35 https://exp-tech.de/en/products/x2 · H36 https://github.com/kaiaai/awesome-2d-lidars · H38 https://blog.arduino.cc/2026/05/05/boomba-is-a-roomba-with-every-upgrade-imaginable/ · H40 https://github.com/pkyanam/ArduRoomba · H43 https://en.wikipedia.org/wiki/TurtleBot · H44 https://github.com/apojomovsky/lubobot · H45 https://github.com/AutonomyLab/create_robot
 
 Volet cartographie (M) : M1 https://homesupport.irobot.com/articles/en_US/Knowledge/53000 · M2 https://support.irobot.de/articles/en_US/Knowledge/19531 · M3 https://www.bestcordlessvacuumguide.com/roomba-694-review/ · M4 https://sensorlidar.com/products/ldrobot-ld06-ld19-d300-of-laser-radar-lidar-scanner-360-scanning-d500-lidar-kit-support-ros1-and-ros2-for-indoor-and-outdoor · M5 http://course.ece.cmu.edu/~ece500/projects/s20-teamb2/wp-content/uploads/sites/84/2020/05/Team_B2.pdf · M6 https://kendell.dev/blog/roombamotors · M7 https://hackaday.io/project/203547/logs?sort=oldest · M8 https://hackaday.io/project/183524-old-roomba-new-tricks · M9 https://github.com/AutonomyLab/libcreate · M10 https://github.com/kreslotim/Wall-SLAM · M11 https://hackaday.io/project/203547-perceptor-ros2-autonomous-mapping-navigation · M12 https://hackaday.io/project/20628-open-simple-lidar/log/67460-testing-lidar-with-ros · M13 https://github.com/simondlevy/BreezySLAM · M14 https://github.com/hippo5329/linorobot2_hardware/wiki · M15 https://discourse.openrobotics.org/t/fyi-10-low-cost-lidar-lds-interfaced-to-ros2-micro-ros-arduino/36369 · M16 https://structables.lunar.icu/How-to-Make-an-Autonomous-Robot-for-Under-30 · M17 https://dev.to/admantium/ros-simultaneous-mapping-and-localization-with-rtabmap-2o09 · M18 https://community.husarion.com/t/onboard-rgb-d-slam-not-feasible-on-rosbot-2r-due-to-raspberry-pi-4-cpu-load/2161 · M19 https://kendell.dev/milliblog/lightbumper · Prix Raspberry Pi : https://www.raspberrypi.com/products/raspberry-pi-4-model-b/ et https://www.blog-nouvelles-technologies.fr/350916/raspberry-pi-5-modele-1-go-52-euros/
+
+Achats et alimentation (A, relevés le 2026-11-08) : A1 https://www.amazon.fr/Yeeco-Etanche-Converter-Dalimentation-R%C3%A9gulateur/dp/B015B5XQWW · A2 https://www.amazon.fr/Convertisseur-Dalimentation-Abaisseur-Voiture-Ventilateur/dp/B0DGFZ3RN2 · A3 https://www.amazon.fr/MP1584EN-Convertisseurs-Abaisseur-Tension-R%C3%A9glable/dp/B0FDQ759MP · A4 https://www.amazon.fr/Interrupteur-Bascule-Broches-Couvercle-%C3%A9tanche/dp/B0BM95Q68T · A5 https://esp32.com/viewtopic.php?p=12510 · A6 https://community.hubble.com/guides/esp32-power-consumption-datasheet-vs-reality · A7 https://botland.com.pl/img/art/inne/21991_Karta%20katalogowa.pdf et https://waveshare.com/wiki/DTOF_LIDAR_LD19 · A8 https://forum.youyeetoo.com/t/ld19-external-speed-control/329 · A9 https://www.amazon.fr/LDROBOT-Outdoor-Navigation-Scanning-Support/dp/B0DDKXQ23R · Spécification OI 600 (fusible 200 mA, 500 mA crête) : H1 et https://anrg.usc.edu/ee579/spring2016/Roomba/iRobot_Roomba_600_Open_Interface_Spec.pdf
 
 Volet programmation (P) : P1 https://github.com/Apocrathia/Roomba · P2 https://github.com/pkyanam/ArduRoomba · P3 https://github.com/thehookup/MQTT-Roomba-ESP01 · P4 https://github.com/johnboiles/esp-roomba-mqtt · P5 https://github.com/ShonP40/ESPRoomba · P6 https://github.com/brembygit/ESPHomeRoombaComponent · P7 https://retsamedoc.github.io/esphome-components/roomba/ · P8 https://github.com/AutonomyLab/libcreate · P9 https://pypi.org/project/pycreate2/ · P10 https://github.com/AtsushiSakai/PyRoombaAdapter · P11 https://www.npmjs.com/package/create2 · P12 https://github.com/drzaiusx11/create-oi · P13 https://crates.io/api/v1/crates/barredora · P14 https://github.com/Sollimann/CleanIt · P15 https://index.ros.org/r/create_robot/ · P16 https://github.com/AutonomyLab/create_robot/issues/64 · P17 https://github.com/process1183/roomba-rpi · P18 https://github.com/koalazak/dorita980 · P19 https://github.com/koalazak/rest980 · P20 https://github.com/pschmitt/roombapy · P21 https://github.com/NickWaterton/Roomba980-Python · P22 https://www.home-assistant.io/integrations/roomba/ · P23 https://github.com/johnnyh1975/ha_roomba_plus · P24 https://github.com/solarkennedy/roomba-bridge-esphome · P25 https://www.manufacturingdive.com/news/roomba-braava-maker-irobot-chapter-11-bankruptcy-acquisition-picea-china/807997/ · P26 https://hackaday.com/2021/03/09/roomba-gets-alexa-support-with-an-esp8266-stowaway/ · P27 https://circuitdigest.com/news/hacking-roomba-turn-your-vacuum-into-a-web-controlled-robot-with-esp32 · P28 https://github.com/meech-ward/roomba · P29 https://www.rose-hulman.edu/class/cs/archive/csse120-old/csse120-old-terms/200920robotics/Homework/hw12.html · P30 https://hackaday.com/2024/01/15/vroomba-gets-upgrades-and-a-spoiler/ · Pièges terrain : https://www.crc.id.au/hacking-the-roomba-600/ et https://hackaday.io/project/183524-controll-yer-roomba-600-series-with-esp8266/log/202538-interfacing
