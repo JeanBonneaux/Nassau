@@ -24,6 +24,7 @@ Rédigé le 2026-11-09 au soir, après les premiers essais du radar sur le maté
 | 2026-11-10 | Position du capteur de distance jamais mesurée (problème 9) | 143 mm lus au contact du pare-chocs avec une paroi : capteur à 27 mm en avant du centre pour un rayon de 170 mm | Première valeur pour le réglage `dx` de la carte (encore à 0) ; à confirmer à la règle |
 | 2026-11-10 | L'arrêt sur pare-chocs dans le cerveau est la condition de toute translation décidée par lui (gain rapide 6) | Firmware v6 : arrêt réflexe et verrou, vérifiés sur un vrai contact | Condition remplie ; délai encore de 200 ms au plus |
 
+| 2026-11-10 | Estimation : murs et stations à 2 ou 3 cm près à partir de tours sur place ; critère : chaque mur d'accord à 3 cm entre stations, première et cinquième station à 3 cm | Carré de 60 cm, six stations : trois murs d'accord à 0,3, 0,6 et 1,7 cm entre stations, le quatrième à 3,0 cm ; retour au point de départ : 1,0° d'erreur de cap, environ 2 cm d'erreur de position sur l'axe mesuré, après 2,70 m ([journal_wifi.md § 23](../code/journal_wifi.md)) | L'estimation tient sur ce premier essai, sans mètre ruban ; à refaire dans une vraie pièce, avec un carré plus grand et deux cotes mesurées |
 ### État de l'ordre de travail du rapport
 
 | Étape du rapport | État |
@@ -31,7 +32,7 @@ Rédigé le 2026-11-09 au soir, après les premiers essais du radar sur le maté
 | 0. Une soirée sans code nouveau | **en cours le 2026-11-10** : essai du mode Safe sur la base fait ; enregistrement pendant un pilotage fait et analysé (§ 21) ; multimètre et règle remis à plus tard par l'utilisateur ; enregistrement pendant un tour sur place, papier et ruban sous un capteur de vide, infrarouge face à la base : à faire |
 | 1. Fondations du firmware | **commencé le 2026-11-10** : gain rapide 6 fait pour le pare-chocs (firmware v6, vérifié sur un contact) ; restent le fil de réveil, la lecture 20 fois par seconde, l'horloge unique, les signaux déjà décodés dans le journal (infrarouge, courants), les enregistrements bruts du capteur de distance, le zéro du gyroscope, le texte « bat: » de la base |
 | 2. Séance d'étalonnage | **entamée le 2026-11-10** sans mètre ruban : vitesses réelles à cinq réglages, contact avec une paroi (position du capteur, capteurs optiques), échelle du gyroscope à ±0,3 % par trois tours ; restent les tours de plusieurs tours, le mètre ruban, le servo |
-| 3. Une pièce à partir de tours, sur le PC | **premier pas le 2026-11-10** : deux stations à 0,84 m l'une de l'autre dessinées dans un même repère (figure 16 des analyses) ; restent les murs en lignes et le carré de cinq tours |
+| 3. Une pièce à partir de tours, sur le PC | **premier essai complet le 2026-11-10** : carré de 60 cm piloté par l'assistant devant la base, six tours, murs en lignes (figure 17 des analyses, journal § 23) ; restent l'ajustement d'ensemble des stations sur les murs, la comparaison au mètre ruban, une vraie pièce avec un carré d'un mètre |
 | 4 à 7 | à faire |
 
 ## Objectif fixé par l'utilisateur

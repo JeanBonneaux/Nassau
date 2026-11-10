@@ -526,3 +526,47 @@ Demande de l'utilisateur après lecture du § 21 : « Continue, prends la main �
 **Fin de séance** à 13 h 08 : `s` puis `x`, capteur de distance éteint. Le robot reste à 22 cm de la paroi, hors de sa base ; batterie 1 856 mAh sur 2 068.
 
 **Pas fait** : tenue du cap au gyroscope, lecture 20 fois par seconde, infrarouge et courants dans le journal CSV (gains rapides 2 à 4), essai du recul pour quitter la base.
+
+## 23. Première carte : un carré de 60 cm piloté par l'assistant, six tours sur place, les murs en lignes (2026-11-10, 13 h 55 à 14 h 05)
+
+Demande de l'utilisateur : « Carte de pièce ». Le robot n'avait pas été déplacé : le premier tour retrouve la courbe du tour de 13 h 07, au même cap à 1° près. L'espace cartographié est donc celui où il se trouvait, devant sa base. Étape 3 du rapport (idée 2), premier essai complet.
+
+**Constats au réveil** :
+
+- **Le cap n'a pas bougé pendant 47 minutes de repos** : le cap affiché du gyroscope valait 382,7° à 13 h 55, exactement la rotation du tour de 13 h 07 (le tour remet le cap affiché à zéro en partant ; le cap de la position, lui, valait 487,1° = 104,4° + 382,7°). Fausse piste de l'assistant, écartée avant d'être annoncée : l'écart de 104° entre ces deux caps avait d'abord été pris pour une dérive, puis pour un robot déplacé à la main ; ce sont deux origines différentes du même cap. À retenir : `imu.yaw` et `pose.cap` de `/api/state` ne se comparent pas directement après un tour ou une touche `z`.
+- Texte du robot relevé par le cerveau pendant l'attente : « key-wakeup-wifi slept for 26 minutes 40 seconds » (un réveil vers 13 h 40 que personne n'a demandé, suivi d'un nouveau sommeil).
+- Réveil par l'assistant : `s` seul est resté sans réponse ; une impulsion de réveil (`w`), puis `s` : le robot répond (« key-wakeup-any slept for 11 minutes 50 seconds »), puis `f`, position remise à zéro (`0`).
+
+**Outil `code/outils/parcours_stations.py`** (nouveau) : va de point en point par sauts (rotation vers le point avec le gyroscope pour juge, avances d'1,3 s au plus, arrêt à moins de 3 cm d'après la position du cerveau), fait le tour sur place du firmware à chaque point et range ses mesures avec la position de départ dans `…_stations.json`. Il s'arrête à la première alarme ou au premier refus.
+
+**Le parcours** (`mesures/carre_20261110_135624_*`, `mesures/tour_20261110_135646.*` pour la station 0, tracé du cerveau `mesures/position_20261110_140234.*`) : station 0 à 22 cm du mur touché à 13 h 05, puis un carré de 60 cm de côté commencé 35 cm plus loin du mur, parcouru dans l'ordre 1, 2, 3, 4, puis retour au point 1 (station 5). Réglage 75 mm/s (93 à 99 mm/s réels).
+
+| Station | Position d'après le cerveau (mm) | Écart au point visé | Tour |
+|---|---|---|---|
+| 0 | (0, 0) | — | 382°, 102 mesures |
+| 1 | (−298, 155) | 17 mm | 381°, 99 mesures |
+| 2 | (−825, 451) | 12 mm | 382°, 99 mesures |
+| 3 | (−1 108, −60) | 15 mm | 380°, 96 mesures |
+| 4 | (−607, −348) | 12 mm | 382°, 100 mesures |
+| 5 | (−311, 168) | 5 mm | 381°, 97 mesures |
+
+39 sauts (23 avances pour 2,70 m, 16 rotations), aucune alarme, aucun refus, aucun arrêt réflexe ; fin de séance par `s` puis `x`, capteur de distance éteint. Le robot reste à la station 5, son centre à 54 cm du mur touché.
+
+**La carte** (`research_notes/…/data_analysis/h_carte_stations.py`, nouveau et rejouable ; `results_h_carre_20261110_135624.txt` ; figure 17). Dans chaque tour, un palier donne un point d'un mur et sa direction ; les directions votent pour deux axes à angle droit ; les paliers qui regardent le même axe et tombent au même endroit, vus de stations différentes, forment un mur, dont la direction est ensuite ajustée pour mettre les stations d'accord. Les stations restent où le cerveau les a placées : aucun ajustement d'ensemble encore.
+
+- Axes de la pièce dans le repère du cerveau : 57°, 147°, 237° et 327° ; 60 % des mesures de palier sont à moins de 20° de l'un d'eux.
+
+| Mur (direction de sa normale) | Position | Vu des stations | Écart-type entre stations |
+|---|---|---|---|
+| 327° (le mur touché à 13 h 05) | 19 cm | 0, 1, 2, 3, 4, 5 | 3,0 cm (étendue 9,7 cm) |
+| 147°, paroi proche | 158 cm | 0, 1, 5 | 0,6 cm |
+| 147°, paroi lointaine | 190 cm | 1, 2, 3, 5 | 1,7 cm |
+| 57°, paroi lointaine | 106 cm | 2, 3, 4 | 0,3 cm |
+| 57°, paroi proche | 83 cm | 0, 2 | (deux stations) |
+
+- **Critère du rapport** (« la position de chaque mur d'accord à 3 cm près entre stations ») : tenu pour trois murs sur quatre (0,3, 0,6 et 1,7 cm d'écart-type) ; le mur vu des six stations est à 3,0 cm d'écart-type mais 9,7 cm d'étendue. Explication probable, déjà rencontrée au § 22 : de loin, le capteur entend un objet situé 7 à 10 cm devant ce mur.
+- Dimensions : **175 cm** entre le mur touché et la paroi proche d'en face, **207 cm** jusqu'à la paroi lointaine. Non comparées au mètre ruban. Le quatrième côté (237°) n'est vu que d'une station : la pièce est ouverte de ce côté.
+- **Fermeture du carré** (stations 1 et 5, au même point d'après le cerveau à 18 mm près) : les deux courbes se superposent avec un décalage de 264,4° d'après le motif de la pièce contre 263,4° d'après le gyroscope, soit **1,0° d'erreur de cap après 4,7 tours de rotation cumulée**. Trois murs vus des deux tours disent que le robot est revenu 3,3, 5,3 et 3,0 cm plus près du côté 147° qu'au départ, quand le cerveau annonce 1,8 cm : erreur de position d'environ 2 cm le long de cet axe après 2,70 m. L'autre axe n'est pas observable (aucun mur vu des deux tours de ce côté). Critère du rapport (3 cm après ajustement) : tenu sur l'axe mesuré, sans même ajuster.
+- **Direction de la base** : les récepteurs infrarouges avant l'ont vue aux caps 156°, 156° et 149° depuis les stations 0, 1 et 2, qui se trouvent alignées vers elle : sa direction est donc connue, pas sa distance. Les stations 3, 4 et 5 ne l'ont pas attrapée : une lecture tous les 9° est trop peu pour une fenêtre de 10 à 20°.
+
+**Limites de ce premier essai** : six stations dans un rectangle de 60 cm, soit peu de recul pour fixer la direction des murs (ajustements de −3 à +6° autour des axes) ; rien n'est comparé au mètre ruban ; les stations ne sont pas encore ajustées ensemble sur les murs ; un meuble plan est pris pour un mur.
