@@ -1,15 +1,22 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 4 — 2026-11-09 (soir) :
+    - lecture des capteurs par une seule requête (142 puis 100 : paquets 7 à 58, 80 octets, réponse en 13 ms) à la place
+      de la liste 149 et de la lecture paquet par paquet (22 requêtes par cycle) : voir plus bas « Lecture des capteurs » ;
+    - les ordres de roues ne partent plus que si le robot est en mode Safe (voir wheelsAllowed) ;
+    - un texte envoyé par le robot (il en envoie en redémarrant) est reconnu, compté et affiché (touche v pour écouter la ligne) ;
+    - position du robot (x, y, cap) calculée avec les compteurs des roues et le gyroscope, tracé sur la page
+      (fichier position.ino, /api/pose, touche 0) : étape 2 de la cartographie (notes/H_cartographie_strategie.md).
   Version 3 — 2026-11-09 : « radar » à ultrasons, capteur HC-SR04 sur servo SG90 (fichier radar.ino : modes arrêt / fixe /
     balayage, carte polaire sur la page web, arrêt automatique devant un obstacle, /api/radar, touches r et u, colonne us_mm
-    du CSV). Code préparé, relu et corrigé le 2026-11-09, PAS ENCORE TESTÉ sur le matériel.
+    du CSV) et tour sur place (tour.ino). Essayés sur le matériel le 2026-11-09.
   Version 2 — 2026-11-08. Dérivé de roomba694_test1 (mêmes touches, même câblage, mêmes sécurités), avec en plus :
     - un point d'accès Wi-Fi « Roomba694 » toujours actif (adresse 192.168.4.1), et en option la connexion au réseau
       de la maison, enregistré depuis la page /wifi (identifiants stockés dans la carte, jamais dans le code ni affichés) ;
     - une console TCP sur le port 23 : mêmes touches qu'en USB, la sortie va à la fois sur l'USB et vers le client TCP ;
     - une page web sur le port 80 (fichier web.ino) : pavé de pilotage « maintenir pour rouler », vitesse réglable,
       batterie, capteurs dessinés, cap du gyroscope, console intégrée (/api/log), état en JSON (/api/state), /wifi, /update ;
-    - une lecture périodique des capteurs (toutes les 200 ms, opcode 149 « Query List », ou paquet par paquet si 149 échoue) ;
+    - une lecture périodique des capteurs (toutes les 200 ms ; par le groupe de paquets 100 depuis la version 4) ;
     - un gyroscope MPU-6050 (module GY-521) lu à 100 Hz sur le second cœur : cap intégré (touches g, z) ;
     - un journal CSV (touche j) ;
     - deux voies de mise à jour sans câble : la page /update (fichier .bin compilé) et ArduinoOTA (arduino-cli upload -p <adresse IP>).
@@ -94,7 +101,6 @@ bool     csvEnabled = false;
 bool     tcpWasConnected = false;
 bool     staWasConnected = false;
 uint32_t lastPollMs = 0;
-bool     useQueryList = true;
 int16_t  driveSpeed = SPEED_MM_S;   // vitesse des touches 8/2/4/6, réglable depuis la page web (plafond SPEED_MM_S)
 uint32_t lastStopMs = 0;
 volatile bool driveForward = false;  // dernier ordre de roues = marche avant (lu par la tâche radar et par la sécurité du radar)
@@ -104,12 +110,15 @@ volatile bool    staGotIp = false;
 // Pages web et API HTTP : définies dans web.ino (second fichier du sketch), déclarées ici pour setupWifi()
 void handleRoot();  void handleState();  void handleCmd();  void handleSpeed();  void handleLog();  void handleScan();
 void handleWifiGet();  void handleWifiPost();  void handleWifiForget();
-void handleUpdateGet();  void handleUpdateDone();  void handleUpdateUpload();  void handleRadar();
+void handleUpdateGet();  void handleUpdateDone();  void handleUpdateUpload();  void handleRadar();  void handleEssai();
 // Radar à ultrasons (HC-SR04 sur servo SG90) : défini dans radar.ino (troisième fichier du sketch), déclaré ici pour la boucle
 void radarSetup();  void radarTick();  bool radarForwardBlocked();  void radarCycleMode();  void radarPrintStatus();
 int  radarFrontMm();  void radarStateJson(String& j);
 // Tour sur place (rotation du robot avec mesure des distances) : défini dans tour.ino (quatrième fichier du sketch)
 void tourStart();  void tourTick();  bool tourActive();  void tourEnd(bool ok, const char* raison);  void handleTour();
+// Position du robot (x, y, cap) : définie dans position.ino (deuxième fichier du sketch)
+void poseUpdate();  void poseReset(bool annonce);  void posePrint();  void poseStateJson(String& j);  void handlePose();
+float poseX();  float poseY();  float poseCap();
 
 // ---------- Gyroscope et accéléromètre MPU-6050 (module GY-521, I2C) ----------
 // Câblage : VCC -> 3V3, GND -> GND, SCL -> D22 (GPIO22), SDA -> D21 (GPIO21) ; AD0, XDA, XCL, INT libres.
@@ -126,7 +135,8 @@ struct ImuState {
   int      vertAxis = -1;              // 0 = X, 1 = Y, 2 = Z : axe du module qui voit la gravité
   float    vertSign = 1.0f;            // +1 si cet axe pointe vers le haut
   float    bias[3] = { 0, 0, 0 };      // biais du gyroscope au repos, °/s
-  volatile float yawDeg = 0;           // cap intégré, degrés
+  volatile float yawDeg = 0;           // cap intégré depuis le démarrage de la carte, degrés ; jamais remis à zéro (la position en dépend)
+  volatile float yawZero = 0;          // valeur de yawDeg à la dernière remise à zéro (touche z) : le cap affiché est yawDeg - yawZero
   volatile float rateDps = 0;          // vitesse de rotation autour de la verticale, °/s
   volatile float acc[3] = { 0, 0, 0 }; // g
   volatile float gyr[3] = { 0, 0, 0 }; // °/s, biais retiré
@@ -188,8 +198,11 @@ void imuCalibrate() {
   for (int k = 1; k < 3; k++) if (fabsf(sa[k]) > fabsf(sa[v])) v = k;
   imu.vertAxis = v;
   imu.vertSign = (sa[v] >= 0) ? 1.0f : -1.0f;
-  imu.yawDeg = 0;
+  imu.yawZero = imu.yawDeg;   // cap affiché remis à zéro ; yawDeg lui-même continue, pour que la position ne saute pas
 }
+
+// Cap affiché (touche g, page, CSV) : degrés depuis la dernière remise à zéro, positif vers la gauche.
+float imuCap() { return imu.yawDeg - imu.yawZero; }
 
 void imuTask(void*) {
   uint32_t last = micros();
@@ -263,7 +276,56 @@ void writeI16(int16_t v) {
   robot.write((uint8_t)(u & 0xFF));
 }
 
-void flushInput() { while (robot.available()) robot.read(); }
+// ---------- Le robot vient-il de redémarrer ? ----------
+// Un Roomba qui redémarre (batterie retirée puis remise, ou ordre Reset) envoie quelques lignes de texte sur sa prise.
+// Vu le 2026-11-09 sur ce 694 : « rtc configured: LSI » à chaque réveil par la ligne BRC.
+// Tous les octets reçus en dehors d'une réponse valable passent par sniffByte() : une suite d'au moins 12 caractères
+// lisibles est comptée comme un démarrage (ou un réveil) du robot et signalée ; le texte est affiché quand il
+// s'arrête (sniffTick). Les suites plus courtes sont ignorées : des octets binaires ressemblent parfois à des lettres.
+constexpr uint8_t TEXT_RUN_MIN = 12;
+uint32_t robotBoots = 0;          // démarrages ou réveils du robot vus depuis le démarrage de la carte
+char     robotText[161];          // début du texte reçu
+size_t   robotTextLen = 0;
+char     runBuf[TEXT_RUN_MIN];    // caractères de la suite en cours, tant qu'elle est trop courte pour compter
+uint8_t  textRun = 0;             // longueur de la suite en cours (plafonnée à TEXT_RUN_MIN)
+bool     textActive = false;      // un texte est en cours de réception
+bool     textAnnounce = false;    // démarrage vu, pas encore signalé sur la console
+uint32_t textLastMs = 0;
+
+void textAppend(char c) {
+  if (c == '\r' || c == '\n') c = ' ';
+  if (robotTextLen >= sizeof(robotText) - 1) return;
+  if (c == ' ' && (robotTextLen == 0 || robotText[robotTextLen - 1] == ' ')) return;
+  robotText[robotTextLen++] = c;
+}
+
+void sniffByte(uint8_t c) {
+  bool texte = (c >= 0x20 && c < 0x7F) || c == '\r' || c == '\n';
+  if (!texte) { textRun = 0; return; }                 // octet binaire : la suite en cours est abandonnée
+  if (textRun < TEXT_RUN_MIN) {
+    runBuf[textRun++] = (char)c;
+    if (textRun < TEXT_RUN_MIN) return;                // suite encore trop courte pour compter
+    if (!textActive) { textActive = true; textAnnounce = true; robotBoots++; robotTextLen = 0; }
+    else textAppend(' ');
+    for (uint8_t i = 0; i < TEXT_RUN_MIN; i++) textAppend(runBuf[i]);
+  } else {
+    textAppend((char)c);
+  }
+  textLastMs = millis();
+}
+
+// Appelée par la boucle principale : signale le démarrage du robot, puis affiche le texte reçu 2 s après son dernier caractère.
+void sniffTick();
+
+void flushInput() { while (robot.available()) sniffByte((uint8_t)robot.read()); }
+
+// Au moins INTER_QUERY_MS entre deux échanges avec le robot (spécification OI : 15 ms ; mesuré sur ce 694 : sinon une
+// requête sur deux reste sans réponse), sans attendre pour rien quand le dernier échange est ancien.
+uint32_t lastExchangeMs = 0;      // dernière requête envoyée ou dernière réponse reçue
+void waitInterQuery() {
+  uint32_t since = millis() - lastExchangeMs;
+  if (since < INTER_QUERY_MS) delay(INTER_QUERY_MS - since);
+}
 
 bool readExact(uint8_t* buf, size_t n) {
   uint32_t t0 = millis();
@@ -271,19 +333,23 @@ bool readExact(uint8_t* buf, size_t n) {
   while (got < n && millis() - t0 < ANSWER_TIMEOUT_MS) {
     if (robot.available()) buf[got++] = (uint8_t)robot.read();
   }
+  lastExchangeMs = millis();
+  if (got != n) for (size_t i = 0; i < got; i++) sniffByte(buf[i]);   // réponse incomplète : du texte du robot, peut-être
   return got == n;
 }
 
-void finishPendingQueryList();
-void pollFinish(bool ok, const uint8_t* buf);
+void finishPendingRead();
+bool pollFinish(bool ok, const uint8_t* buf);
 
-// Interroge un paquet capteur (opcode 142). Renvoie false si le robot ne répond pas.
+// Interroge un seul paquet capteur (opcode 142). Renvoie false si le robot ne répond pas. Ne sert plus qu'à la
+// question simple « quelle tension ? » (paquet 22) ; tout le reste se lit par le groupe 100.
 bool readSensor(uint8_t packetId, uint8_t* buf, size_t len) {
-  finishPendingQueryList();   // ne jamais mélanger une réponse groupée encore attendue avec cette lecture
-  delay(INTER_QUERY_MS);   // au moins 15 ms entre deux requêtes (spec OI) : sinon une requête sur deux reste sans réponse
+  finishPendingRead();   // ne jamais mélanger une réponse encore attendue avec cette lecture
+  waitInterQuery();
   flushInput();
   robot.write(OI_SENSORS);
   robot.write(packetId);
+  lastExchangeMs = millis();
   return readExact(buf, len);
 }
 
@@ -296,8 +362,9 @@ void noAnswer() {
 
 // Touche 'y' : le robot est-il passé à 19200 bauds ? Un Roomba 600 quitte ses 115200 bauds si l'on garde CLEAN appuyé
 // une dizaine de secondes en l'éteignant (il joue alors une suite de notes descendantes), ou s'il reçoit trois impulsions
-// basses sur BRC après son allumage ; or D4 tire BRC vers le bas à chaque redémarrage de la carte. Il garde ensuite
-// 19200 bauds jusqu'au retrait de sa batterie ou jusqu'à l'ordre Baud (opcode 129). Symptômes vus le 2026-11-09 :
+// basses sur BRC après son allumage (les redémarrages de la carte n'y sont pour rien : essai du 2026-11-09,
+// journal_wifi.md § 17). Il garde ensuite 19200 bauds jusqu'au retrait de sa batterie, jusqu'à l'ordre Baud
+// (opcode 129) ou, vraisemblablement, jusqu'à un Reset. Symptômes vus le 2026-11-09 :
 // robot allumé, fils reliés, aucun ordre exécuté, et des octets reçus de la forme 00 / E0 (un bit à 19200 bauds dure
 // exactement six bits à 115200). Cette fonction parle au robot à 19200 bauds ; s'il répond, elle lui ordonne de
 // revenir à 115200 bauds (code 11), puis vérifie la liaison. Elle est appelée par la touche 'y', et d'elle-même dans
@@ -313,7 +380,7 @@ bool baudRescue(bool automatique) {
     if (!automatique) out.println(F("Essai à 19200 bauds refusé : les roues tournent. Arrêtez-les d'abord (5)."));
     return false;
   }
-  finishPendingQueryList();
+  finishPendingRead();
   lastBaudRescueMs = millis();
   out.println(automatique ? F("Robot muet ou incompréhensible : essai automatique de la liaison à 19200 bauds...")
                           : F("Essai de la liaison à 19200 bauds (Start, puis lecture de la tension)..."));
@@ -372,112 +439,201 @@ struct RobotState {
   uint16_t cliff[4] = {0, 0, 0, 0};
   uint16_t light[6] = {0, 0, 0, 0, 0, 0};
   int16_t  encL = 0, encR = 0;
+  // lus depuis la version 4 (groupe 100)
+  uint8_t  wall = 0, virtualWall = 0, overcur = 0, dirt = 0, irOmni = 0, irLeft = 0, irRight = 0, chargeSrc = 0, stasis = 0;
+  uint16_t wallSignal = 0;
+  int16_t  curL = 0, curR = 0, curBrush = 0, curSide = 0;   // courants des moteurs, mA
 } st;
 
-// Paquets lus à chaque cycle, dans cet ordre, et leur taille en octets (total 38)
-const uint8_t QL_IDS[]   = { 7, 18, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 35, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
-const uint8_t QL_SIZES[] = { 1,  1,  1,  2,  2,  1,  2,  2,  2,  2,  2,  2,  1,  2,  2,  1,  2,  2,  2,  2,  2,  2 };
-constexpr size_t QL_N = sizeof(QL_IDS);
-constexpr size_t QL_TOTAL = 38;
+// ---------- Lecture des capteurs : un seul groupe de paquets ----------
+// Jusqu'au 2026-11-09, la lecture périodique demandait une liste de 22 paquets (opcode 149), ou, le plus souvent, les
+// mêmes paquets un par un (22 requêtes « 142, numéro » par cycle de 0,6 s). Désormais une seule requête : 142 puis
+// 100, le groupe des paquets 7 à 58 (80 octets, réponse complète en 13 ms sur ce 694). Si le robot n'y répond pas
+// alors qu'il répond à une question simple, repli sur deux groupes : 6 (paquets 7 à 42, 52 octets) puis 101
+// (paquets 43 à 58, 28 octets), soit les mêmes 80 octets dans le même ordre.
+// Moins d'octets envoyés au robot, c'est aussi moins d'occasions qu'il en comprenne un de travers.
+// Piste écartée le 2026-11-09 : l'ancienne lecture envoyait souvent l'octet 7, qui est l'ordre Reset d'après la
+// documentation du Create 2. Essais faits (journal_wifi.md § 18) : sur ce 694, un 7 ne provoque rien, ni liaison
+// ouverte (Passive), ni liaison fermée par Stop.
+// Défaut corrigé au passage : l'ancienne lecture notait l'heure d'envoi « | 1 » pour qu'elle ne vaille jamais
+// zéro ; cette heure pouvait donc être en avance d'une milliseconde, et un passage de la boucle dans la même
+// milliseconde calculait une attente de 4 milliards de ms : faux « délai dépassé », zéro octet reçu, puis abandon
+// définitif de la lecture groupée au profit de la lecture paquet par paquet. Le journal de la carte du 2026-11-09
+// (20 h 57) montre ce message « 0 octet(s) sur 38 » moins de 40 s après un démarrage. Cause probable de l'échec
+// « non élucidé » du journal_wifi.md § 7 et § 9. Un drapeau séparé (allPending) remplace cette astuce.
+constexpr size_t   ALL_LEN        = 80;    // paquets 7 à 58
+constexpr size_t   ALL_SPLIT      = 52;    // paquets 7 à 42 (groupe 6)
+constexpr uint32_t ALL_TIMEOUT_MS = 300;   // attente maximale d'un groupe
+uint8_t  allBuf[ALL_LEN];
+size_t   allGot = 0, allWant = 0;
+bool     allPending = false;       // une réponse est attendue
+uint32_t allSentMs = 0;            // heure d'envoi du groupe en cours
+uint32_t allStartMs = 0;           // heure d'envoi de la première requête de la lecture en cours
+uint8_t  allGroupe = 100;          // groupe demandé en dernier : 100, 6 ou 101
+bool     useSplitGroups = false;   // vrai si le robot ne répond pas au groupe 100
+uint8_t  fails100 = 0;             // délais dépassés de suite sur le groupe 100 alors que le robot répond à une question simple
+uint32_t allFirstAnswerMs = 0;     // durée de la première réponse complète (affichée une fois)
+float    pollYaw = 0;              // cap du gyroscope (yawDeg) relevé à l'envoi de la requête qui lit les compteurs des roues
 
-// Une seule requête pour tous les paquets (opcode 149 « Query List »). Sur ce 694 la réponse complète (38 octets)
-// met plusieurs centaines de ms à arriver (mesure du 2026-11-08 : au-delà des 200 ms d'attente d'une lecture simple),
-// elle est donc ramassée au fil de la boucle principale, sans bloquer la page web ni la console.
-constexpr uint32_t QL_TIMEOUT_MS = 600;
-uint8_t  qlBuf[QL_TOTAL];
-size_t   qlGot = 0;
-uint32_t qlSentMs = 0;          // 0 : aucune réponse groupée attendue
-uint32_t qlFirstAnswerMs = 0;   // durée de la première réponse complète (affichée une fois)
-
-void sendQueryList() {
-  delay(INTER_QUERY_MS);
-  flushInput();
-  robot.write(OI_QUERY_LIST);
-  robot.write((uint8_t)QL_N);
-  robot.write(QL_IDS, QL_N);
-  qlGot = 0;
-  qlSentMs = millis() | 1;      // jamais 0
+void pollSend(uint8_t groupe) {    // 100, 6, ou 101 (suite du 6)
+  waitInterQuery();
+  if (groupe != 101) { flushInput(); allGot = 0; }
+  allWant = (groupe == 6) ? ALL_SPLIT : ALL_LEN;
+  allGroupe = groupe;
+  pollYaw = imu.yawDeg;
+  robot.write(OI_SENSORS);
+  robot.write(groupe);
+  allSentMs = millis();
+  lastExchangeMs = allSentMs;
+  if (groupe != 101) allStartMs = allSentMs;
+  allPending = true;
 }
 
-// Ramasse les octets de la réponse groupée : 1 si complète, -1 si délai dépassé, 0 si encore en attente.
-int qlCollect() {
-  while (robot.available() && qlGot < QL_TOTAL) qlBuf[qlGot++] = (uint8_t)robot.read();
-  if (qlGot == QL_TOTAL) return 1;
-  if (millis() - qlSentMs >= QL_TIMEOUT_MS) return -1;
+// Ramasse les octets de la réponse : 1 si complète, -1 si délai dépassé, 0 si encore en attente.
+int pollCollect() {
+  while (robot.available() && allGot < allWant) allBuf[allGot++] = (uint8_t)robot.read();
+  if (allGot >= allWant) {
+    if (allGroupe == 6) { lastExchangeMs = millis(); pollSend(101); return 0; }   // première partie reçue : on demande la seconde
+    return 1;
+  }
+  if (millis() - allSentMs >= ALL_TIMEOUT_MS) return -1;
   return 0;
 }
 
-// Si une réponse groupée est attendue, l'attend (au plus QL_TIMEOUT_MS) et la traite : appelée avant toute autre requête.
-void finishPendingQueryList() {
-  if (!qlSentMs) return;
+// Clôt la lecture en cours. r : 1 réponse complète, -1 délai dépassé. Renvoie vrai si la lecture est bonne.
+bool pollEnd(int r) {
+  allPending = false;
+  lastExchangeMs = millis();
+  if (r != 1) for (size_t i = 0; i < allGot; i++) sniffByte(allBuf[i]);   // octets inattendus : du texte du robot, peut-être
+  return pollFinish(r == 1, allBuf);
+}
+
+// Si une réponse est attendue, l'attend (au plus ALL_TIMEOUT_MS par groupe) et la traite : appelée avant toute
+// autre requête, pour ne jamais mélanger deux réponses.
+void finishPendingRead() {
+  if (!allPending) return;
   int r;
-  while ((r = qlCollect()) == 0) delay(1);
-  qlSentMs = 0;
-  pollFinish(r == 1, qlBuf);
+  while ((r = pollCollect()) == 0) delay(1);
+  pollEnd(r);
 }
 
-// Envoie une requête 149 pour la liste donnée et compte les octets revenus en 500 ms (diagnostic, touche q)
-size_t tryQueryList(const uint8_t* ids, uint8_t n, size_t expected, uint8_t* buf) {
-  finishPendingQueryList();
-  delay(INTER_QUERY_MS);
-  flushInput();
-  robot.write(OI_QUERY_LIST);
-  robot.write(n);
-  robot.write(ids, n);
+// Lecture immédiate et complète (touches b, e, k) : vrai si le robot a répondu et que la réponse est plausible.
+bool readAll() {
+  finishPendingRead();
+  pollSend(useSplitGroups ? 6 : 100);
+  int r;
+  while ((r = pollCollect()) == 0) delay(1);
+  return pollEnd(r);
+}
+
+// Touche q : essai des groupes 100, puis 6 et 101, avec les premiers octets reçus et le temps de réponse.
+void testGroups() {
+  finishPendingRead();
+  const uint8_t groupes[3] = { 100, 6, 101 };
+  const size_t  tailles[3] = { 80, 52, 28 };
+  bool complet[3] = { false, false, false };
+  for (int g = 0; g < 3; g++) {
+    waitInterQuery();
+    flushInput();
+    robot.write(OI_SENSORS);
+    robot.write(groupes[g]);
+    uint8_t buf[ALL_LEN];
+    size_t got = 0;
+    uint32_t t0 = millis(), tDone = t0;
+    while (millis() - t0 < 800 && got < tailles[g]) {
+      if (robot.available()) { buf[got++] = (uint8_t)robot.read(); tDone = millis(); }
+    }
+    lastExchangeMs = millis();
+    complet[g] = (got == tailles[g]);
+    out.printf("Groupe %u : %u octet(s) reçu(s) sur %u en %lu ms", (unsigned)groupes[g], (unsigned)got, (unsigned)tailles[g],
+               (unsigned long)((got ? tDone : millis()) - t0));
+    if (got) { out.print(F(" :")); for (size_t i = 0; i < got && i < 24; i++) out.printf(" %02X", buf[i]); if (got > 24) out.print(F(" …")); }
+    out.println();
+    if (!complet[g]) for (size_t i = 0; i < got; i++) sniffByte(buf[i]);
+    if (g == 0 && complet[0]) break;
+  }
+  if (complet[0]) { useSplitGroups = false; fails100 = 0; out.println(F("Lecture des capteurs par le groupe 100 (80 octets en une requête).")); }
+  else if (complet[1] && complet[2]) { useSplitGroups = true; out.println(F("Le groupe 100 ne répond pas en entier : lecture par les groupes 6 puis 101.")); }
+  else out.println(F("Aucun groupe ne répond en entier : liaison fermée ou robot endormi (CLEAN sur le robot, puis s)."));
+}
+
+// Touche v : écoute la ligne du robot sans rien envoyer et affiche ce qui arrive (octets et texte).
+// Un robot qui redémarre envoie quelques lignes de texte ; un robot qui parle à 19200 bauds donne des 00, E0, F8.
+void listenRobot(uint32_t dureeMs) {
+  if (driving || tourActive()) { out.println(F("Écoute refusée : les roues tournent. Arrêtez-les d'abord (5).")); return; }
+  finishPendingRead();
+  static uint8_t buf[400];
   size_t got = 0;
-  uint32_t t0 = millis(), tDone = 0;
-  while (millis() - t0 < 800 && got < expected) {
-    if (robot.available()) { buf[got++] = (uint8_t)robot.read(); tDone = millis(); }
+  uint32_t t0 = millis();
+  while (millis() - t0 < dureeMs) {
+    if (robot.available()) { uint8_t c = (uint8_t)robot.read(); sniffByte(c); if (got < sizeof(buf)) buf[got++] = c; }
+    else delay(1);
   }
-  out.printf("Query List (149) avec %u paquet(s) : %u octet(s) reçu(s) sur %u en %lu ms", (unsigned)n, (unsigned)got, (unsigned)expected,
-             (unsigned long)((got ? tDone : millis()) - t0));
-  if (got) { out.print(F(" :")); for (size_t i = 0; i < got; i++) out.printf(" %02X", buf[i]); }
-  out.println();
-  return got;
+  lastExchangeMs = millis();
+  out.printf("Écoute du robot pendant %.1f s : %u octet(s) reçu(s)%s\n", dureeMs / 1000.0f, (unsigned)got, got ? " :" : ".");
+  for (size_t i = 0; i < got && i < 64; i += 32) {       // les 64 premiers octets, en hexadécimal
+    out.print(F("  "));
+    for (size_t k = i; k < got && k < i + 32; k++) out.printf("%02X ", buf[k]);
+    out.println();
+  }
+  for (size_t i = 0; i < got; ) {                        // puis tout ce qui est lisible, ligne par ligne
+    char ligne[100];
+    size_t n = 0;
+    while (i < got && n < sizeof(ligne) - 1) {
+      uint8_t c = buf[i++];
+      if (c == '\n') break;
+      if (c == '\r') continue;
+      ligne[n++] = (c >= 0x20 && c < 0x7F) ? (char)c : '.';
+    }
+    ligne[n] = 0;
+    if (n) out.printf("  | %s\n", ligne);
+  }
 }
 
-// Touche q : le robot accepte-t-il la lecture groupée ? Liste complète, puis liste courte (tension, température, mode).
-void retryQueryList() {
-  uint8_t buf[QL_TOTAL];
-  if (tryQueryList(QL_IDS, QL_N, QL_TOTAL, buf) == QL_TOTAL) {
-    useQueryList = true;
-    out.println(F("Lecture groupée réactivée."));
-    return;
-  }
-  const uint8_t shortIds[] = { 22, 24, 35 };
-  tryQueryList(shortIds, 3, 4, buf);
-  out.println(F("Lecture groupée indisponible : on reste paquet par paquet (environ 0,6 s par cycle)."));
-}
-
+// b : les 80 octets des paquets 7 à 58, dans l'ordre de la spécification OI (numéro de chaque paquet en commentaire)
 void parseState(const uint8_t* b) {
-  size_t p = 0;
-  st.bumpsDrops = b[p]; p += 1;
-  st.buttons    = b[p]; p += 1;
-  st.charging   = b[p]; p += 1;
-  st.voltage    = u16(b + p); p += 2;
-  st.current    = i16(b + p); p += 2;
-  st.temp       = (int8_t)b[p]; p += 1;
-  st.charge     = u16(b + p); p += 2;
-  st.capacity   = u16(b + p); p += 2;
-  for (int i = 0; i < 4; i++) { st.cliff[i] = u16(b + p); p += 2; }
-  st.mode       = b[p]; p += 1;
-  st.encL       = i16(b + p); p += 2;
-  st.encR       = i16(b + p); p += 2;
-  st.lightBits  = b[p]; p += 1;
-  for (int i = 0; i < 6; i++) { st.light[i] = u16(b + p); p += 2; }
+  st.bumpsDrops  = b[0];                                             // 7  pare-chocs et roues levées
+  st.wall        = b[1];                                             // 8  mur (capteur de droite)
+  st.virtualWall = b[6];                                             // 13 mur virtuel
+  st.overcur     = b[7];                                             // 14 surintensités des moteurs
+  st.dirt        = b[8];                                             // 15 capteur de saleté
+  st.irOmni      = b[10];                                            // 17 infrarouge reçu, capteur du dessus
+  st.buttons     = b[11];                                            // 18 boutons
+  st.charging    = b[16];                                            // 21 état de charge
+  st.voltage     = u16(b + 17);                                      // 22 tension
+  st.current     = i16(b + 19);                                      // 23 courant
+  st.temp        = (int8_t)b[21];                                    // 24 température
+  st.charge      = u16(b + 22);                                      // 25 charge
+  st.capacity    = u16(b + 24);                                      // 26 capacité
+  st.wallSignal  = u16(b + 26);                                      // 27 signal du capteur de mur
+  for (int i = 0; i < 4; i++) st.cliff[i] = u16(b + 28 + 2 * i);     // 28 à 31 signaux des capteurs de vide
+  st.chargeSrc   = b[39];                                            // 34 sources de charge présentes (bit 1 : base)
+  st.mode        = b[40];                                            // 35 mode OI
+  st.encL        = i16(b + 52);                                      // 43 compteur de la roue gauche
+  st.encR        = i16(b + 54);                                      // 44 compteur de la roue droite
+  st.lightBits   = b[56];                                            // 45 capteurs optiques du pare-chocs, en bits
+  for (int i = 0; i < 6; i++) st.light[i] = u16(b + 57 + 2 * i);     // 46 à 51 leurs six signaux
+  st.irLeft      = b[69];                                            // 52 infrarouge reçu à gauche
+  st.irRight     = b[70];                                            // 53 infrarouge reçu à droite
+  st.curL        = i16(b + 71);                                      // 54 courant du moteur de la roue gauche
+  st.curR        = i16(b + 73);                                      // 55 courant du moteur de la roue droite
+  st.curBrush    = i16(b + 75);                                      // 56 courant de la brosse principale
+  st.curSide     = i16(b + 77);                                      // 57 courant de la brosse latérale
+  st.stasis      = b[79];                                            // 58 roulette avant : le robot avance-t-il ?
 }
 
 void printCsvHeader() {
-  out.println(F("csv,ms,enc_g,enc_d,pc_g,pc_d,roue_g,roue_d,vide_g,vide_avg,vide_avd,vide_d,lb_g,lb_avg,lb_cg,lb_cd,lb_avd,lb_d,mv,ma,mode,cap_deg,rot_dps,us_mm"));
+  out.println(F("csv,ms,enc_g,enc_d,pc_g,pc_d,roue_g,roue_d,vide_g,vide_avg,vide_avd,vide_d,lb_g,lb_avg,lb_cg,lb_cd,lb_avd,lb_d,mv,ma,mode,cap_deg,rot_dps,us_mm,x_mm,y_mm,cap_pos"));
 }
 
 void printCsvLine() {
-  out.printf("csv,%lu,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%d,%u,%.1f,%.1f,%d\n",
+  out.printf("csv,%lu,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%d,%u,%.1f,%.1f,%d,%.0f,%.0f,%.1f\n",
              (unsigned long)millis(), st.encL, st.encR,
              (st.bumpsDrops >> 1) & 1, st.bumpsDrops & 1, (st.bumpsDrops >> 3) & 1, (st.bumpsDrops >> 2) & 1,
              st.cliff[0], st.cliff[1], st.cliff[2], st.cliff[3],
              st.light[0], st.light[1], st.light[2], st.light[3], st.light[4], st.light[5],
-             st.voltage, st.current, st.mode, imu.yawDeg, imu.rateDps, radarFrontMm());   // us_mm : -1 inconnu, 0 rien à portée
+             st.voltage, st.current, st.mode, imuCap(), imu.rateDps, radarFrontMm(),      // us_mm : -1 inconnu, 0 rien à portée
+             poseX(), poseY(), poseCap());                                                 // position calculée (position.ino)
 }
 
 void printImu() {
@@ -488,34 +644,41 @@ void printImu() {
   out.printf("Accéléromètre (g) : X %.2f  Y %.2f  Z %.2f   | gyroscope (°/s) : X %.1f  Y %.1f  Z %.1f\n",
              imu.acc[0], imu.acc[1], imu.acc[2], imu.gyr[0], imu.gyr[1], imu.gyr[2]);
   if (imu.vertAxis >= 0) out.printf("Axe vertical : %c (vers le %s). Cap intégré : %.1f°   vitesse de rotation : %.1f °/s   (z pour remettre à zéro, robot immobile)\n",
-                                    axes[imu.vertAxis], imu.vertSign > 0 ? "haut" : "bas", imu.yawDeg, imu.rateDps);
+                                    axes[imu.vertAxis], imu.vertSign > 0 ? "haut" : "bas", imuCap(), imu.rateDps);
   else out.println(F("Axe vertical pas encore déterminé : envoyer z, robot immobile."));
 }
 
-// Fin d'un cycle de lecture : contrôle de plausibilité, mise à jour de l'état, ligne CSV éventuelle
 // Met en pause un éventuel flux continu de capteurs (opcode 148 « Stream ») et vide le tampon. Vu le 2026-11-08 :
 // le robot s'est mis à diffuser notre liste de paquets toutes les 15 ms (en-tête 0x13, 60 octets), et toutes les
 // lectures suivantes renvoyaient ces octets décalés (tension « 4924 mV », mode « 19 »...).
 void pauseStream() {
-  finishPendingQueryList();
+  finishPendingRead();
+  waitInterQuery();
   robot.write(OI_STREAM_PAUSE);
   robot.write((uint8_t)0);
   delay(40);
   flushInput();
+  lastExchangeMs = millis();
   out.println(F("Flux continu de capteurs (opcode 148) mis en pause (150, 0), tampon vidé."));
 }
 
-void pollFinish(bool ok, const uint8_t* buf) {
+// Fin d'une lecture : contrôle de plausibilité, mise à jour de l'état et de la position, ligne CSV éventuelle.
+// Renvoie vrai si la lecture est complète et plausible.
+bool pollFinish(bool ok, const uint8_t* buf) {
   static uint8_t implausible = 0;
   if (ok) {                                     // rejette les lectures polluées par des octets parasites (réveil par BRC, flux 148...)
-    uint16_t v = u16(buf + 3);                  // tension
-    int8_t   t = (int8_t)buf[7];                // température
-    if (v < 8000 || v > 22000 || buf[2] > 5 || t < -20 || t > 80 || buf[20] > 4) {   // buf[2] état de charge, buf[20] mode OI
+    uint16_t v = u16(buf + 17);                 // tension
+    int8_t   t = (int8_t)buf[21];               // température
+    if (v < 8000 || v > 22000 || buf[16] > 5 || t < -20 || t > 80 || buf[40] > 4) {   // buf[16] état de charge, buf[40] mode OI
       ok = false;
+      for (size_t i = 0; i < ALL_LEN; i++) sniffByte(buf[i]);   // 80 octets qui ne sont pas des capteurs : du texte du robot ?
       if (++implausible >= 3) {      // des octets arrivent mais n'ont pas de sens : flux 148, ou robot passé à 19200 bauds
         implausible = 0;
         pauseStream();
-        if (millis() - lastBaudRescueMs > 30000) baudRescuePending = true;   // essai à 19200 bauds fait par la boucle principale
+        // Essai à 19200 bauds (fait par la boucle principale) seulement si aucune bonne lecture n'est passée depuis 5 s :
+        // un robot qui répond juste entre deux lectures brouillées n'a pas changé de débit (vu le 2026-11-09 après un
+        // réveil par BRC : il envoie alors des octets à lui, B0 02 01 15 34, qui brouillent une lecture sur trois).
+        if (millis() - lastBaudRescueMs > 30000 && millis() - st.lastOkMs > 5000) baudRescuePending = true;
       }
     } else {
       implausible = 0;
@@ -526,48 +689,71 @@ void pollFinish(bool ok, const uint8_t* buf) {
     st.ok = true;
     st.lastOkMs = millis();
     st.failures = 0;
+    poseUpdate();                               // position du robot (position.ino)
     if (csvEnabled) printCsvLine();
   } else {
     st.failures++;
     if (st.failures >= 3) st.ok = false;
   }
+  return ok;
 }
 
-// Appelée en boucle : lit les capteurs à la cadence voulue. En lecture paquet par paquet, un seul paquet est lu
-// par passage (25 ms environ) : la page web et la console restent réactives pendant le cycle de 22 paquets.
+// Appelée en boucle : demande les capteurs à la cadence voulue et ramasse la réponse sans bloquer.
 void pollTick() {
-  static uint8_t buf[QL_TOTAL];
-  static size_t  qi = 0, qp = 0;   // lecture paquet par paquet : paquet en cours et position ; qi == 0 : aucun cycle en cours
-  uint32_t now = millis();
-
-  if (qlSentMs) {                  // réponse groupée attendue : on ramasse ce qui est arrivé, sans bloquer
-    int r = qlCollect();
+  if (allPending) {                // réponse attendue : on ramasse ce qui est arrivé
+    int r = pollCollect();
     if (r == 0) return;
-    uint32_t took = now - qlSentMs;
-    qlSentMs = 0;
     if (r == 1) {
-      if (!qlFirstAnswerMs) { qlFirstAnswerMs = took ? took : 1; out.printf("Lecture groupée (149) : réponse complète en %lu ms.\n", (unsigned long)took); }
-      pollFinish(true, qlBuf);
+      uint32_t took = millis() - allStartMs;
+      fails100 = 0;
+      bool bonne = pollEnd(1);
+      if (bonne && !allFirstAnswerMs) {
+        allFirstAnswerMs = took ? took : 1;
+        out.printf("Lecture des capteurs (%s, 80 octets) : première réponse complète en %lu ms.\n",
+                   useSplitGroups ? "groupes 6 puis 101" : "groupe 100", (unsigned long)took);
+      }
       return;
     }
-    // Délai dépassé. Le robot répond-il quand même paquet par paquet ? Alors on bascule ; sinon simple échec.
-    uint8_t b[2];
-    if (!readSensor(22, b, 2)) { pollFinish(false, qlBuf); return; }
-    useQueryList = false;
-    out.printf("Query List (149) : %u octet(s) sur %u en %lu ms, lecture paquet par paquet désormais (q pour réessayer).\n",
-               (unsigned)qlGot, (unsigned)QL_TOTAL, (unsigned long)QL_TIMEOUT_MS);
-    qp = 0;                        // et on commence tout de suite un cycle paquet par paquet
-  } else if (qi == 0) {
-    uint32_t period = (st.failures >= 3) ? POLL_BACKOFF_MS : POLL_PERIOD_MS;
-    if (now - lastPollMs < period) return;
-    lastPollMs = now;
-    if (useQueryList) { sendQueryList(); return; }
-    qp = 0;                        // début d'un cycle paquet par paquet
+    size_t got = allGot;
+    pollEnd(-1);
+    // Délai dépassé. Si le robot répond à une question simple, c'est le groupe 100 qu'il n'aime pas : après trois
+    // fois de suite, repli sur les groupes 6 et 101. La question n'est posée qu'au début d'un silence, puis une fois
+    // sur dix (elle bloque la boucle 200 ms quand le robot dort).
+    if (!useSplitGroups && (st.failures <= 3 || st.failures % 10 == 0)) {
+      uint8_t b[2];
+      if (readSensor(22, b, 2)) {
+        if (++fails100 >= 3) {
+          useSplitGroups = true;
+          out.printf("Groupe 100 : %u octet(s) sur 80 en %lu ms, trois fois de suite ; lecture par les groupes 6 puis 101 désormais (q pour réessayer).\n",
+                     (unsigned)got, (unsigned long)ALL_TIMEOUT_MS);
+        }
+      } else {
+        fails100 = 0;
+      }
+    }
+    return;
   }
-  if (!readSensor(QL_IDS[qi], buf + qp, QL_SIZES[qi])) { qi = 0; pollFinish(false, buf); return; }
-  qp += QL_SIZES[qi];
-  qi++;
-  if (qi >= QL_N) { qi = 0; pollFinish(true, buf); }
+  uint32_t now = millis();
+  uint32_t period = (st.failures >= 3) ? POLL_BACKOFF_MS : POLL_PERIOD_MS;
+  if (now - lastPollMs < period) return;
+  lastPollMs = now;
+  pollSend(useSplitGroups ? 6 : 100);
+}
+
+// Appelée par la boucle principale : signale un démarrage du robot vu par sniffByte(), puis affiche le début du
+// texte reçu 2 s après son dernier caractère.
+void sniffTick() {
+  if (textAnnounce) {
+    textAnnounce = false;
+    out.printf("Le robot envoie du texte : il vient de démarrer ou de se réveiller (fois numéro %lu). Pour reprendre la main : s, puis f.\n",
+               (unsigned long)robotBoots);
+  }
+  if (textActive && millis() - textLastMs > 2000) {
+    robotText[robotTextLen] = 0;
+    for (size_t i = 0; i < robotTextLen; i += 90) out.printf("  texte du robot : %.90s\n", robotText + i);
+    textActive = false;
+    robotTextLen = 0;
+  }
 }
 
 // ---------- Commandes robot ----------
@@ -594,6 +780,22 @@ void driveDirect(int16_t right, int16_t left) {
   driving = (right != 0 || left != 0);
   driveForward = (right > 0 && left > 0);
   lastDriveMs = millis();
+}
+
+// Les ordres de roues des touches 8, 2, 4, 6 ne partent que si le robot est en mode Safe et vient de répondre.
+// En Passive le robot n'obéit pas aux roues, et deux fois (2026-11-08 et 2026-11-09, 20 h 57) il a cessé de répondre
+// juste après des flèches envoyées dans ce mode ; la cause exacte n'est pas établie (journal_wifi.md § 18).
+// L'ordre d'arrêt (vitesses nulles), lui, part toujours : essayé en Passive le 2026-11-09, sans effet sur le robot.
+constexpr uint8_t OI_MODE_SAFE_LU = 3;   // valeur du paquet 35 lue sur ce 694 en mode Safe (décalée de +1, voir journal_tests.md)
+bool wheelsAllowed() {
+  if (st.ok && st.mode == OI_MODE_SAFE_LU && millis() - st.lastOkMs < 1500) return true;
+  static uint32_t lastMsgMs = 0;
+  if (millis() - lastMsgMs > 2000) {      // la page répète l'ordre toutes les 400 ms : un message toutes les 2 s suffit
+    lastMsgMs = millis();
+    out.println(st.ok ? F("Ordre de roues refusé : le robot n'est pas en mode Safe (touche f, ou bouton Safe de la page).")
+                      : F("Ordre de roues refusé : le robot ne répond pas (CLEAN sur le robot, puis s, puis f)."));
+  }
+  return false;
 }
 
 // Arrêt des roues : touche stop, garde-fou de 1,5 s, déconnexion d'un client ou mise à jour.
@@ -623,51 +825,38 @@ void ledDemo() {
   out.println(F("LEDs envoyées (mode Safe requis)."));
 }
 
+// Touches b, e, k : une lecture complète et fraîche (readAll), puis affichage. Plus aucune lecture paquet par paquet.
 void printBattery() {
-  uint8_t b[2];
-  if (!readSensor(22, b, 2)) { noAnswer(); return; }
-  out.printf("Tension batterie : %u mV\n", u16(b));
-  if (readSensor(23, b, 2)) out.printf("Courant : %d mA   (négatif = décharge)\n", i16(b));
-  if (readSensor(24, b, 1)) out.printf("Température : %d °C\n", (int8_t)b[0]);
-  uint16_t charge = 0;
-  if (readSensor(25, b, 2)) {
-    charge = u16(b);
-    if (readSensor(26, b, 2)) out.printf("Charge : %u / %u mAh\n", charge, u16(b));
-  }
-  if (readSensor(21, b, 1)) out.printf("État de charge : %u   (0 pas en charge, 1 reconditionnement, 2 charge à pleine puissance, 3 entretien, 4 attente, 5 défaut)\n", b[0]);
-  if (readSensor(35, b, 1)) out.printf("Mode OI lu : %u   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur ce 694 la valeur est décalée de +1)\n", b[0]);
+  if (!readAll()) { noAnswer(); return; }
+  out.printf("Tension batterie : %u mV\n", st.voltage);
+  out.printf("Courant : %d mA   (négatif = décharge)\n", st.current);
+  out.printf("Température : %d °C\n", (int)st.temp);
+  out.printf("Charge : %u / %u mAh\n", st.charge, st.capacity);
+  out.printf("État de charge : %u   (0 pas en charge, 1 reconditionnement, 2 charge à pleine puissance, 3 entretien, 4 attente, 5 défaut)\n", st.charging);
+  out.printf("Mode OI lu : %u   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur ce 694 la valeur est décalée de +1)\n", st.mode);
 }
 
 void printSensors() {
-  uint8_t b[1];
-  if (!readSensor(7, b, 1)) { noAnswer(); return; }
+  if (!readAll()) { noAnswer(); return; }
   out.printf("Pare-chocs : droit %u, gauche %u | Roue levée : droite %u, gauche %u\n",
-             b[0] & 1, (b[0] >> 1) & 1, (b[0] >> 2) & 1, (b[0] >> 3) & 1);
-  const uint8_t cliffIds[4] = { 9, 10, 11, 12 };
-  const char* cliffNames[4] = { "gauche", "avant gauche", "avant droit", "droit" };
-  out.print(F("Vide (cliff) :"));
-  for (int i = 0; i < 4; i++) {
-    if (readSensor(cliffIds[i], b, 1)) out.printf(" %s %u", cliffNames[i], b[0]);
-    else out.print(F(" ?"));
-  }
+             st.bumpsDrops & 1, (st.bumpsDrops >> 1) & 1, (st.bumpsDrops >> 2) & 1, (st.bumpsDrops >> 3) & 1);
+  out.printf("Vide (signaux) : gauche %u, avant gauche %u, avant droit %u, droit %u\n", st.cliff[0], st.cliff[1], st.cliff[2], st.cliff[3]);
+  out.print(F("Capteurs optiques du pare-chocs (G, AvG, CG, CD, AvD, D) :"));
+  for (int i = 0; i < 6; i++) out.printf(" %u", st.light[i]);
   out.println();
-  if (readSensor(45, b, 1)) {
-    out.print(F("Light bumper (G, AvG, CG, CD, AvD, D) :"));
-    for (int bit = 0; bit < 6; bit++) out.printf(" %u", (b[0] >> bit) & 1);
-    out.println();
-  }
-  if (readSensor(18, b, 1)) out.printf("Boutons : CLEAN %u, SPOT %u, DOCK %u\n", b[0] & 1, (b[0] >> 1) & 1, (b[0] >> 2) & 1);
+  out.printf("Boutons : CLEAN %u, SPOT %u, DOCK %u | mur %u (signal %u), mur virtuel %u\n",
+             st.buttons & 1, (st.buttons >> 1) & 1, (st.buttons >> 2) & 1, st.wall, st.wallSignal, st.virtualWall);
+  out.printf("Infrarouge reçu : dessus %u, gauche %u, droite %u | saleté %u | roulette avant %u | sur la base : %s\n",
+             st.irOmni, st.irLeft, st.irRight, st.dirt, st.stasis, (st.chargeSrc & 2) ? "oui" : "non");
+  out.printf("Moteurs (mA) : roue gauche %d, roue droite %d, brosse %d, brosse latérale %d | surintensités (bits) %u\n",
+             st.curL, st.curR, st.curBrush, st.curSide, st.overcur);
 }
 
-// Odométrie brute : compteurs des roues (paquets 43 et 44, signés). Le paquet 19 (distance) est faux sur ce robot.
+// Compteurs des roues (paquets 43 et 44, signés) et position calculée. Le paquet 19 (distance) est faux sur ce robot.
 void printEncoders() {
-  uint8_t b[2];
-  if (!readSensor(43, b, 2)) { noAnswer(); return; }
-  int16_t left = i16(b);
-  int16_t right = 0;
-  if (readSensor(44, b, 2)) right = i16(b);
-  out.printf("Encodeurs : gauche %d, droit %d   (508,8 pas par tour, roue de 72 mm : 1 pas = 0,445 mm)\n", left, right);
-  if (readSensor(20, b, 2)) out.printf("Angle depuis la lecture précédente : %d degrés (à vérifier, voir journal)\n", i16(b));
+  if (!readAll()) { noAnswer(); return; }
+  out.printf("Compteurs des roues : gauche %d, droit %d   (508,8 pas par tour, roue de 72 mm : 1 pas = 0,445 mm)\n", st.encL, st.encR);
+  posePrint();
 }
 
 // ---------- Test de continuité des trois fils (repris de roomba694_diag) ----------
@@ -723,31 +912,35 @@ void printInfo() {
   out.printf("Console TCP (port 23) : %s | Robot : %s (dernier contact il y a %lu ms, %s) | Roues : %s, vitesse %d mm/s | Anti-veille : %s | CSV : %s\n",
              (tcpClient && tcpClient.connected()) ? "client connecté" : "libre",
              st.ok ? "joignable" : "sans réponse", (unsigned long)(millis() - st.lastOkMs),
-             useQueryList ? "lecture groupée 149" : "lecture paquet par paquet",
+             useSplitGroups ? "lecture par les groupes 6 et 101" : "lecture par le groupe 100",
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
-  out.printf("Firmware roomba694_wifi v3, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
+  out.printf("Firmware roomba694_wifi v4, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
              __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
-  out.printf("Robot retrouvé à 19200 bauds et ramené à 115200 : %lu fois depuis le démarrage de la carte.\n", (unsigned long)baudRescues);
+  out.printf("Depuis le démarrage de la carte : robot vu redémarrer %lu fois ; retrouvé à 19200 bauds et ramené à 115200 : %lu fois.\n",
+             (unsigned long)robotBoots, (unsigned long)baudRescues);
+  posePrint();
 }
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v2 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v4 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"
-    " b  batterie / mode OI           e  pare-chocs, vide, boutons\n"
-    " k  encodeurs des roues          n  test de continuité des trois fils\n"
+    " b  batterie / mode OI           e  pare-chocs, vide, boutons, moteurs\n"
+    " k  compteurs des roues et position   0  position remise à zéro (le robot devient le point de départ)\n"
+    " n  test de continuité des trois fils\n"
     " m  jouer 3 notes (Safe)         l  LEDs (Safe)\n"
     " 8  avance   2  recule   4  tourne à gauche   6  tourne à droite   5 ou espace  stop\n"
-    "    (chaque ordre dure 1,5 s puis les roues s'arrêtent seules ; 150 mm/s)\n"
+    "    (mode Safe requis ; chaque ordre dure 1,5 s puis les roues s'arrêtent seules ; 150 mm/s au plus)\n"
     " a  anti-veille BRC toutes les 45 s (on/off)\n"
     " j  journal CSV toutes les 200 ms (on/off)   i  informations Wi-Fi et état\n"
     " g  gyroscope MPU-6050 (cap, vitesse)   z  recalibrer le gyroscope et remettre le cap à zéro (robot immobile)\n"
     " r  radar à ultrasons : arrêt -> fixe devant -> balayage (on tourne)   u  état du radar et carte des distances\n"
     " t  tour sur place : le robot tourne sur lui-même en mesurant les distances (Safe requis ; 5 ou espace pour l'arrêter)\n"
     " y  robot muet alors qu'il est allumé : essai à 19200 bauds et retour à 115200 bauds\n"
-    " q  réessayer la lecture groupée des capteurs (opcode 149) et afficher les octets reçus\n"
+    " q  essayer la lecture des capteurs (groupes 100, 6, 101) et afficher les octets reçus\n"
+    " v  écouter le robot 2 s sans rien lui envoyer (texte de démarrage, octets parasites)\n"
     " p  mettre en pause un flux continu de capteurs (opcode 150) si les lectures sont devenues incohérentes\n"
     " o  Power (extinction)           x  Stop OI (à faire en fin de session)\n"));
 }
@@ -762,9 +955,12 @@ void handle(char c) {
       setMode(OI_START, F("Start (128) -> Passive"));
       // Le robot a-t-il entendu ? Sans réponse à une question simple, il dort, ou il est passé à 19200 bauds :
       // un essai à ce débit le ramène à 115200 (voir baudRescue). Pas plus d'un essai automatique toutes les 5 s.
+      // Trois questions avant de conclure : juste après un réveil, le robot met un moment à répondre.
       uint8_t b[2];
       delay(100);
-      if (!readSensor(22, b, 2) && !driving && millis() - lastBaudRescueMs > 5000) baudRescue(true);
+      bool repond = false;
+      for (int essai = 0; essai < 3 && !repond; essai++) repond = readSensor(22, b, 2);
+      if (!repond && !driving && millis() - lastBaudRescueMs > 5000) baudRescue(true);
       break;
     }
     case 'f': setMode(OI_SAFE,  F("Safe (131)")); break;
@@ -778,11 +974,15 @@ void handle(char c) {
     case 'm': playJingle(); break;
     case 'l': ledDemo(); break;
     // Le message n'est affiché qu'au départ : la page web répète l'ordre toutes les 400 ms tant que le bouton est maintenu.
-    case '8': if (radarForwardBlocked()) break;   // obstacle devant à moins du seuil (radar à ultrasons, arrêt auto actif)
+    case '8': if (!wheelsAllowed()) break;        // mode Safe requis
+              if (radarForwardBlocked()) break;   // obstacle devant à moins du seuil (radar à ultrasons, arrêt auto actif)
               if (!driving) out.printf("Avance (%d mm/s).\n", driveSpeed);          driveDirect( driveSpeed,  driveSpeed); break;
-    case '2': if (!driving) out.printf("Recule (%d mm/s).\n", driveSpeed);          driveDirect(-driveSpeed, -driveSpeed); break;
-    case '4': if (!driving) out.printf("Tourne à gauche (%d mm/s).\n", driveSpeed); driveDirect( driveSpeed, -driveSpeed); break;
-    case '6': if (!driving) out.printf("Tourne à droite (%d mm/s).\n", driveSpeed); driveDirect(-driveSpeed,  driveSpeed); break;
+    case '2': if (!wheelsAllowed()) break;
+              if (!driving) out.printf("Recule (%d mm/s).\n", driveSpeed);          driveDirect(-driveSpeed, -driveSpeed); break;
+    case '4': if (!wheelsAllowed()) break;
+              if (!driving) out.printf("Tourne à gauche (%d mm/s).\n", driveSpeed); driveDirect( driveSpeed, -driveSpeed); break;
+    case '6': if (!wheelsAllowed()) break;
+              if (!driving) out.printf("Tourne à droite (%d mm/s).\n", driveSpeed); driveDirect(-driveSpeed,  driveSpeed); break;
     case '5': case ' ': stopWheels(); break;
     case 'a':
       keepAwake = !keepAwake;
@@ -795,7 +995,9 @@ void handle(char c) {
       else out.println(F("Journal CSV désactivé."));
       break;
     case 'i': printInfo(); break;
-    case 'q': retryQueryList(); break;
+    case 'q': testGroups(); break;
+    case 'v': listenRobot(2000); break;
+    case '0': poseReset(true); break;
     case 'g': printImu(); break;
     case 'z':
       if (imu.present) { imu.calibRequested = true; out.println(F("Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.")); }
@@ -873,6 +1075,8 @@ void setupWifi() {
   http.on("/api/scan", HTTP_GET, handleScan);
   http.on("/api/radar", HTTP_GET, handleRadar);
   http.on("/api/tour", HTTP_GET, handleTour);
+  http.on("/api/pose", HTTP_GET, handlePose);
+  http.on("/api/essai", HTTP_GET, handleEssai);
   http.on("/wifi", HTTP_GET, handleWifiGet);
   http.on("/wifi", HTTP_POST, handleWifiPost);
   http.on("/wifi/forget", HTTP_POST, handleWifiForget);
@@ -999,6 +1203,7 @@ void loop() {
   ArduinoOTA.handle();
   wifiTick();
   pollTick();
+  sniffTick();   // le robot a-t-il envoyé son texte de démarrage ?
   radarTick();   // arrêt des roues devant un obstacle, messages du radar
   tourTick();    // tour sur place : ordres de roues répétés, conditions d'arrêt
   if (baudRescuePending && !driving && !tourActive()) { baudRescuePending = false; baudRescue(true); }

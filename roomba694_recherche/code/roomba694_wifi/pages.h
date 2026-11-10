@@ -77,6 +77,17 @@ canvas{display:block;margin:10px auto 0;width:100%;max-width:320px;touch-action:
 <p class="hint">Maintenez une flèche pour rouler : les roues s'arrêtent dès que vous relâchez (et d'elles-mêmes 1,5 s après le dernier ordre). Mode Safe requis.</p>
 </div>
 
+<div class="card"><h2>Position <span id="pzst" style="text-transform:none;letter-spacing:0;color:var(--warn)"></span></h2>
+<canvas id="pc" width="320" height="320" style="border-radius:10px"></canvas>
+<div class="kv" style="margin-top:8px">
+<div>Vers l'avant (x)<b id="px">–</b></div><div>Vers la gauche (y)<b id="py">–</b></div>
+<div>Cap<b id="pcap">–</b></div><div>Chemin parcouru<b id="pdist">–</b></div>
+<div style="grid-column:1/3">Écart au point de départ<b id="pecart">–</b></div>
+</div>
+<div class="row" style="margin-top:8px"><button onclick="poseZero()">Remettre la position à zéro (0)</button></div>
+<p class="hint">Position calculée par le cerveau avec les compteurs des roues et le gyroscope. Le point blanc est le départ, le haut du dessin est l'avant du robot au départ, un carreau = <span id="pgrid">25 cm</span>. Essai : faire un carré et revenir au départ ; l'écart doit rester petit.</p>
+</div>
+
 <div class="card"><h2>Batterie et mode</h2>
 <div class="kv">
 <div>Charge<b id="pct">–</b></div><div>Mode OI<b id="mode">–</b></div>
@@ -235,8 +246,45 @@ async function refresh(){
    $('imuhint').textContent=s.imu.cal?'calibration en cours, ne bougez pas le robot…':'cap positif = rotation vers la gauche (anti-horaire), comme l\'OI ; z remet à zéro, robot immobile';}
   else{$('yaw').textContent='–';$('rate').textContent='–';$('imuhint').textContent='MPU-6050 non détecté';}
   $('ba').className=s.keep?'on':'';$('bj').className=s.csv?'on':'';
-  $('up').textContent=(s.ql?'lecture groupée des capteurs':'lecture des capteurs paquet par paquet')+' · '+s.host+'.local · dernier redémarrage : '+s.rst;
+  $('up').textContent='capteurs lus par le '+s.lecture+' · '+s.host+'.local · dernier redémarrage de la carte : '+s.rst+(s.robot_redem?' · robot vu redémarrer '+s.robot_redem+' fois':'');
+  if(s.pose){ps=s.pose;ps.ok=b.ok;syncPose();}
  }catch(e){$('dot').className='dot warn';$('sttxt').textContent='carte injoignable…';}
+}
+let ps=null,pz={gen:0,pts:[]},pbusy=false;
+async function syncPose(){
+ if((ps.gen!==pz.gen||ps.n!==pz.pts.length)&&!pbusy){pbusy=true;
+  try{const r=await (await fetch('/api/pose?gen='+pz.gen+'&from='+pz.pts.length)).json();
+   if(r.from===0)pz.pts=r.points;else if(r.from===pz.pts.length)for(const q of r.points)pz.pts.push(q);
+   pz.gen=r.gen;}catch(e){}
+  pbusy=false;}
+ drawPose();
+}
+async function poseZero(){try{await fetch('/api/pose?zero=1');}catch(e){}pz={gen:0,pts:[]};}
+function drawPose(){
+ const p=ps;if(!p)return;
+ const cap=((p.cap+180)%360+360)%360-180;
+ $('px').textContent=(p.x/10).toFixed(0)+' cm';$('py').textContent=(p.y/10).toFixed(0)+' cm';
+ $('pcap').textContent=cap.toFixed(0)+'°';$('pdist').textContent=(p.dist/1000).toFixed(2)+' m';
+ $('pecart').textContent=(Math.hypot(p.x,p.y)/10).toFixed(0)+' cm';
+ $('pzst').textContent=p.leve?'· robot soulevé : position perdue':p.leves?'· soulevé '+p.leves+' fois : à remettre à zéro':p.sauts?'· '+p.sauts+' déplacement(s) non compté(s)':!p.gyro?'· sans gyroscope':'';
+ const c=$('pc'),x=c.getContext('2d'),W=c.width,H=c.height;
+ let x0=Math.min(0,p.x),x1=Math.max(0,p.x),y0=Math.min(0,p.y),y1=Math.max(0,p.y);
+ for(const q of pz.pts){if(q[0]<x0)x0=q[0];if(q[0]>x1)x1=q[0];if(q[1]<y0)y0=q[1];if(q[1]>y1)y1=q[1];}
+ const span=Math.max(2000,x1-x0+700,y1-y0+700),s=W/span,mx=(x0+x1)/2,my=(y0+y1)/2;
+ const X=wy=>W/2-(wy-my)*s,Y=wx=>H/2-(wx-mx)*s;
+ let g=10000;for(const k of[250,500,1000,2000,5000])if(k*s>=26){g=k;break;}
+ $('pgrid').textContent=g<1000?(g/10)+' cm':(g/1000)+' m';
+ x.clearRect(0,0,W,H);x.fillStyle='#232a38';x.fillRect(0,0,W,H);
+ x.lineWidth=1;
+ for(let k=Math.ceil((mx-span/2)/g);k*g<=mx+span/2;k++){x.strokeStyle=k?'#2f3748':'#465069';x.beginPath();x.moveTo(0,Y(k*g));x.lineTo(W,Y(k*g));x.stroke();}
+ for(let k=Math.ceil((my-span/2)/g);k*g<=my+span/2;k++){x.strokeStyle=k?'#2f3748':'#465069';x.beginPath();x.moveTo(X(k*g),0);x.lineTo(X(k*g),H);x.stroke();}
+ x.strokeStyle='#4f8cff';x.lineWidth=2;x.lineJoin='round';x.beginPath();
+ pz.pts.forEach((q,k)=>{if(k)x.lineTo(X(q[1]),Y(q[0]));else x.moveTo(X(q[1]),Y(q[0]));});
+ if(pz.pts.length)x.lineTo(X(p.y),Y(p.x));x.stroke();
+ x.fillStyle='#e8eaf0';x.beginPath();x.arc(X(0),Y(0),4,0,7);x.fill();
+ const r=Math.max(5,170*s),t=p.cap*Math.PI/180,rx=X(p.y),ry=Y(p.x);
+ x.strokeStyle=p.ok?'#3ddc84':'#9aa3b5';x.lineWidth=2;x.beginPath();x.arc(rx,ry,r,0,7);x.stroke();
+ x.beginPath();x.moveTo(rx,ry);x.lineTo(rx-r*Math.sin(t),ry-r*Math.cos(t));x.stroke();
 }
 let seq=0;
 async function pollLog(){

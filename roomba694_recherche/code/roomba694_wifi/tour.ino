@@ -3,8 +3,8 @@
 // autour du robot, une mesure tous les 3° environ, sans dépendre du servo (dont la course est limitée par ses fils).
 // Un mur vu de face renvoie un écho net : dans la courbe distance / direction, chaque mur donne un creux à fond plat,
 // dont le fond est la distance du mur et le milieu sa direction (première brique de la cartographie, note H à venir).
-// Quatrième fichier du sketch : l'outil Arduino le place après radar.ino et avant web.ino.
-// Version du 2026-11-09, écrite après les premiers essais du radar ; PAS ENCORE ESSAYÉE avec le robot en mouvement.
+// Cinquième fichier du sketch : l'outil Arduino le place après position.ino et radar.ino, avant web.ino.
+// Version du 2026-11-09, écrite après les premiers essais du radar ; essayée le soir même avec le robot en mouvement.
 //
 // DÉROULEMENT : touche 't' ou /api/tour?go=1.
 //   1. Préparation (1,5 s) : capteur à 0° en mode fixe, biais du gyroscope remesuré robot immobile, cap remis à zéro.
@@ -30,7 +30,7 @@ constexpr uint32_t TOUR_PREP_MS    = 1500;     // servo en place, calibration du
 constexpr uint32_t TOUR_MAX_MS     = 30000;    // durée maximale de la rotation (380° à 30 °/s : 12,7 s)
 constexpr uint32_t TOUR_CMD_MS     = 300;      // période de répétition de l'ordre de roues
 constexpr int      TOUR_MAX_PTS    = 256;      // 380° à 3° par mesure : 127 mesures
-constexpr uint8_t  OI_MODE_SAFE_LU = 3;        // valeur du paquet 35 lue sur ce 694 en mode Safe (décalée de +1, voir journal_tests.md)
+// OI_MODE_SAFE_LU (3 : valeur lue sur ce 694 en mode Safe) est défini dans le fichier principal, avec wheelsAllowed().
 
 enum : uint8_t { TOUR_REPOS = 0, TOUR_PREPARE = 1, TOUR_TOURNE = 2, TOUR_FINI = 3, TOUR_INTERROMPU = 4 };
 
@@ -43,6 +43,7 @@ struct TourState {
   int16_t  mm[TOUR_MAX_PTS];               // distance en mm (0 = rien à portée)
   uint32_t t0 = 0, tRot = 0, tFin = 0, dernierOrdreMs = 0, lentDepuisMs = 0;
   float    tourne = 0;                     // rotation accomplie, degrés
+  float    departX = 0, departY = 0, departCap = 0;   // position du robot au début de la rotation (position.ino) : mm, mm, degrés
   int      prochainMsgDeg = 90;
   uint8_t  modeRadarAvant = 0;
   char     raison[112] = "";
@@ -127,6 +128,9 @@ void tourTick() {
       return;
     }
     tour.cap0 = imu.yawDeg;
+    tour.departX = pose.x;                 // d'où le tour est fait, pour replacer plus tard ses mesures dans la pièce (étape 3)
+    tour.departY = pose.y;
+    tour.departCap = tour.cap0 - pose.cap0;
     tour.n = 0;
     tour.tRot = now;
     tour.lentDepuisMs = now;
@@ -164,7 +168,8 @@ void tourStateJson(String& j) {
   j += b;
 }
 
-// Réponse de /api/tour : état, rotation accomplie, raison de l'arrêt et mesures [dixièmes de degré, mm]
+// Réponse de /api/tour : état, rotation accomplie, raison de l'arrêt, position du robot au départ de la rotation
+// (« depart » : x, y en mm et cap en degrés, dans le repère de position.ino) et mesures [dixièmes de degré, mm]
 void tourJson(String& j) {
   static const char* const NOMS[] = { "repos", "préparation", "rotation", "terminé", "interrompu" };
   uint16_t n = tour.n;
@@ -177,6 +182,8 @@ void tourJson(String& j) {
            (unsigned long)duree, TOUR_RATE_DPS, TOUR_TOTAL_DEG);
   j += b;
   jsonStr(j, tour.raison);
+  snprintf(b, sizeof(b), ",\"depart\":[%.0f,%.0f,%.1f]", tour.departX, tour.departY, tour.departCap);   // x, y en mm, cap en degrés
+  j += b;
   j += ",\"points\":[";
   for (uint16_t i = 0; i < n; i++) {
     char p[24];

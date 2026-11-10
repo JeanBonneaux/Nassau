@@ -13,6 +13,9 @@
 //                       angle=-80..80, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..80, ech=1..3, inv=0|1, effacer=1,
 //                       butee=10..80 (degrés de part et d'autre du centre que le servo ne dépasse jamais)
 //          /api/tour    tour sur place (tour.ino) : état et mesures [dixièmes de degré, mm] du dernier tour ; go=1 le lance, stop=1 l'arrête
+//          /api/pose    position du robot (position.ino) : x, y en mm, cap en degrés, tracé [x, y] ; zero=1 remet à zéro ;
+//                       gen et from : la page ne redemande que les points qu'elle n'a pas encore
+//          /api/essai   essais sans mouvement de l'enquête sur la liaison : b=octets à envoyer, ecoute=ms (voir handleEssai)
 //
 // Le mot de passe du réseau de la maison n'est jamais renvoyé par l'API ni affiché sur la console.
 
@@ -73,28 +76,30 @@ void handleRoot() { http.send_P(200, "text/html; charset=utf-8", PAGE_INDEX); }
 void handleState() {
   loadSavedSsid();
   String j;
-  j.reserve(1800);
+  j.reserve(2100);
   char b[720];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v3 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"ql\":%s,"
+    "{\"ms\":%lu,\"ver\":\"v4 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u},"
     "\"imu\":{\"ok\":%s,\"cal\":%s,\"yaw\":%.1f,\"rate\":%.1f,\"acc\":[%.2f,%.2f,%.2f]},",
     (unsigned long)millis(), __DATE__, __TIME__, HOSTNAME, driving ? "true" : "false", (int)driveSpeed,
-    keepAwake ? "true" : "false", csvEnabled ? "true" : "false", useQueryList ? "true" : "false",
+    keepAwake ? "true" : "false", csvEnabled ? "true" : "false", useSplitGroups ? "groupes 6 et 101" : "groupe 100",
     st.ok ? "true" : "false", (unsigned long)(millis() - st.lastOkMs), st.voltage, st.current, st.temp,
     st.charge, st.capacity, st.charging, st.mode,
     (st.bumpsDrops >> 1) & 1, st.bumpsDrops & 1, (st.bumpsDrops >> 3) & 1, (st.bumpsDrops >> 2) & 1,
     st.cliff[0], st.cliff[1], st.cliff[2], st.cliff[3], st.lightBits,
     st.light[0], st.light[1], st.light[2], st.light[3], st.light[4], st.light[5],
     st.encL, st.encR, st.buttons,
-    imu.present ? "true" : "false", imu.calibrating ? "true" : "false", imu.yawDeg, imu.rateDps,
+    imu.present ? "true" : "false", imu.calibrating ? "true" : "false", imuCap(), imu.rateDps,
     imu.acc[0], imu.acc[1], imu.acc[2]);
   j += b;
+  poseStateJson(j);    // "pose":{x, y, cap, cap_roues, dist, n, gen, pas, gyro, leve, leves, sauts}
   radarStateJson(j);   // "radar":{mode, front_mm, age, present, servo}
   tourStateJson(j);    // "tour":{etat, tourne, n}
   j += "\"bauds19200\":"; j += (unsigned long)baudRescues; j += ',';   // retours du robot de 19200 à 115200 bauds depuis le démarrage
+  j += "\"robot_redem\":"; j += (unsigned long)robotBoots; j += ',';   // redémarrages du robot vus (texte de démarrage reçu)
   j += "\"ap\":{\"ssid\":"; jsonStr(j, AP_SSID);
   j += ",\"ip\":\""; j += WiFi.softAPIP().toString(); j += "\",\"clients\":"; j += (int)WiFi.softAPgetStationNum(); j += "},";
   j += "\"rst\":"; jsonStr(j, resetReasonText()); j += ',';
@@ -107,7 +112,7 @@ void handleState() {
   http.send(200, "application/json", j);
 }
 
-const char* ALLOWED_WEB_CMDS = "?wsfchbeknml82465 ajioxgzqpruty";
+const char* ALLOWED_WEB_CMDS = "?wsfchbeknml82465 ajioxgzqpruty0v";
 
 void handleCmd() {
   String c = http.arg("c");
@@ -247,6 +252,72 @@ void handleUpdateUpload() {
     updateAuthorized = false;
     out.println(F("Mise à jour interrompue."));
   }
+}
+
+// ---------- Essais de l'enquête sur la liaison (2026-11-09) ----------
+// /api/essai?b=150,255&ecoute=1000 : envoie au robot la suite d'octets donnée (24 au plus), écoute sa réponse pendant
+// « ecoute » ms (100 à 5000) et renvoie les octets reçus. Réservé aux essais SANS MOUVEMENT : ne passent que les octets
+// qui ne peuvent être, même lus de travers par le robot, ni un ordre de roues, de moteurs ou de nettoyage, ni un
+// changement de mode ou de débit. Restent permis : les valeurs inférieures à 128, 255, et les ordres 139 (voyants),
+// 140 et 141 (notes), 142, 148, 149, 150 (capteurs). Refusé pendant que les roues tournent.
+bool essaiByteOk(long v) {
+  if (v < 0 || v > 255) return false;
+  if (v < 128 || v == 255) return true;
+  return v == 139 || v == 140 || v == 141 || v == 142 || v == 148 || v == 149 || v == 150;
+}
+
+void handleEssai() {
+  String s = http.arg("b");
+  uint8_t bytes[24];
+  size_t n = 0;
+  const char* p = s.c_str();
+  bool ok = s.length() > 0;
+  while (ok && *p) {
+    char* fin = nullptr;
+    long v = strtol(p, &fin, 10);
+    if (fin == p || !essaiByteOk(v) || n >= sizeof(bytes)) { ok = false; break; }
+    bytes[n++] = (uint8_t)v;
+    p = fin;
+    if (*p == ',') p++;
+    else if (*p) ok = false;
+  }
+  if (!ok || n == 0) { http.send(400, "text/plain; charset=utf-8", "octets refusés : b=liste de nombres séparés par des virgules, parmi les valeurs permises (voir web.ino)"); return; }
+  if (driving || tourActive()) { http.send(409, "text/plain; charset=utf-8", "refusé : les roues tournent"); return; }
+  uint32_t ecoute = http.hasArg("ecoute") ? (uint32_t)constrain(http.arg("ecoute").toInt(), 100L, 5000L) : 500;
+  finishPendingRead();
+  waitInterQuery();
+  flushInput();
+  robot.write(bytes, n);
+  static uint8_t rx[160];
+  size_t got = 0, total = 0;
+  uint32_t t0 = millis(), tPremier = 0;
+  while (millis() - t0 < ecoute) {
+    if (robot.available()) {
+      uint8_t c = (uint8_t)robot.read();
+      if (!total) tPremier = millis() - t0;
+      total++;
+      sniffByte(c);
+      if (got < sizeof(rx)) rx[got++] = c;
+    } else {
+      delay(1);
+    }
+  }
+  lastExchangeMs = millis();
+  String j;
+  j.reserve(200 + 4 * (n + got));
+  j += "{\"envoye\":[";
+  for (size_t i = 0; i < n; i++) { if (i) j += ','; j += (int)bytes[i]; }
+  j += "],\"mode_avant\":"; j += (int)st.mode;
+  j += ",\"ecoute_ms\":"; j += (unsigned long)ecoute;
+  j += ",\"recus\":"; j += (unsigned long)total;
+  j += ",\"premier_ms\":"; j += (unsigned long)tPremier;
+  j += ",\"octets\":[";
+  for (size_t i = 0; i < got; i++) { if (i) j += ','; j += (int)rx[i]; }
+  j += "]}";
+  out.printf("Essai : %u octet(s) envoyé(s) au robot (", (unsigned)n);
+  for (size_t i = 0; i < n; i++) out.printf("%s%u", i ? ", " : "", (unsigned)bytes[i]);
+  out.printf("), %lu octet(s) reçu(s) en %lu ms.\n", (unsigned long)total, (unsigned long)ecoute);
+  http.send(200, "application/json", j);
 }
 
 // ---------- Tour sur place (tour.ino) ----------

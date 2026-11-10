@@ -40,7 +40,7 @@ Conclusion : ne pas faire du capteur de distance un mauvais laser. Lui demander 
 | Étape | Contenu | État |
 |---|---|---|
 | 1 | Tour sur place : `tour.ino`, touche `t`, `/api/tour`, outil `code/outils/tour_capture.py` | **fait le 2026-11-09** : deux tours réussis, voir ci-dessous |
-| 2 | Position du robot (x, y, cap) dans le cerveau, tracée sur la page ; essai : un carré piloté à la main doit se refermer | à faire |
+| 2 | Position du robot (x, y, cap) dans le cerveau, tracée sur la page ; essai : un carré piloté à la main doit se refermer | **programmé et installé le 2026-11-09** (firmware v4, `position.ino`) ; l'essai du carré reste à faire |
 | 3 | Première carte sur le PC : l'utilisateur pilote à la main entre deux tours sur place | à faire |
 | 4 | Étalonnages automatiques (capteurs optiques, gyroscope, décalage du capteur) | à faire |
 | 5 | Suivi de mur et tour de la pièce automatique | à faire |
@@ -54,6 +54,12 @@ Deux tours sur place à un mètre d'écart, robot déplacé à la main : 381° e
 - Les paliers existent comme prévu, mais ils sont plus larges que les 20° attendus : jusqu'à 65° pour une paroi proche. Le capteur entend donc un mur bien au-delà de la face. Le milieu du palier reste utilisable comme direction du mur ; sa largeur ne l'est pas.
 - D'un tour à l'autre, la paroi de droite passe de 168 à 68 cm et le grand arc de devant de 119 à 104 cm, dans les directions prévues par le gyroscope : c'est le comportement attendu d'un déplacement d'un mètre. Non confirmé par une mesure au mètre ruban.
 - À faire avant l'étape 3 : mesurer le décalage du capteur par rapport au centre du robot, comparer un palier au mètre ruban, superposer les deux tours sur un même dessin.
+
+### Étape 2 : où en est la position (2026-11-09, 22 h)
+
+- Le cerveau calcule x, y et le cap à chaque lecture des capteurs (cinq fois par seconde) : distance d'après les compteurs des roues, direction d'après le gyroscope. La page a une carte « Position » (tracé, écart au point de départ, bouton de remise à zéro) ; `/api/pose` donne la position et le tracé ; `/api/tour` donne maintenant la position du robot au départ de chaque tour (`depart`), ce qu'il faut pour l'étape 3.
+- Vérifié sans rouler : l'affichage (faux parcours en carré dans le navigateur), et les signes du calcul, en le rejouant sur l'enregistrement du 2026-11-08 (24 m de pilotage). Sur cet enregistrement, les roues seules comptent 0,963 fois la rotation mesurée par le gyroscope et finissent à 116° de lui : le cap doit bien venir du gyroscope.
+- Pas encore vérifié : la justesse sur le sol. Essai prévu : remise à zéro, un carré d'un mètre environ piloté à la main, retour sur la marque de départ ; l'écart affiché doit rester de quelques centimètres. Un écart plus grand dira quoi régler (diamètre des roues, pas par tour, glissement dans les virages).
 
 Le LiDAR de la note F, s'il arrive, remplacera le capteur de distance dans les étapes 3 à 6 ; la position, l'enregistrement, la carte et les parcours resteront les mêmes.
 

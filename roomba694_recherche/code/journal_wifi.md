@@ -275,3 +275,67 @@ Nouvel objectif de l'utilisateur : cartographier une pièce, sans aspirer ni bro
 - **Hypothèse des redémarrages écartée** : trois envois du programme à la suite (trois redémarrages logiciels de la carte en une minute, robot allumé en mode Safe) n'ont rien changé ; le robot répond à 115200 bauds après chacun (lecture groupée complète en 8 ms) et reste en Safe. Causes restantes du passage à 19200 bauds : CLEAN gardé appuyé une dizaine de secondes, ou trois impulsions de réveil (bouton « Réveil » de la page, touche `w`). Non tranché. Les coupures brèves d'alimentation de la carte ne sont pas testées.
 - **Déclenchement automatique vu une fois** : à 20 h 59, le robot ne répondait plus (ni à 115200 ni à 19200 bauds, les trois fils vus reliés) ; `s` a lancé de lui-même l'essai à 19200 bauds, resté sans réponse : robot endormi ou éteint. Le retour automatique complet, robot réellement à 19200 bauds, n'a pas encore été observé ; le retour par `y` l'a été à 20 h 45.
 - **À noter** : entre 20 h 56 et 20 h 58, l'utilisateur a piloté le robot depuis la page (rotations à gauche, avances). L'assistant avait remis le robot en Passive à 20 h 57 (`s`), ce qui rend les flèches sans effet jusqu'au prochain `f`. Le robot a cessé de répondre vers 20 h 57 min 40 s, sans ordre de l'assistant.
+
+## 18. Enquête sur la coupure de 20 h 57, firmware v4, position du robot (2026-11-09, 21 h 05 à 22 h 10)
+
+Demande de l'utilisateur : « rien n'a bougé physiquement, mène ton enquête » ; le robot « s'est remis à fonctionner après avoir clignoté » (vidéo de 21 h 04 : anneau du bouton CLEAN qui pulse) ; puis étape 2.
+
+**Chronologie reconstituée** (journal de la carte relu dans la transcription de la session) :
+
+| Heure | Fait |
+|---|---|
+| 20 h 56 min 10 s à 58 s | trois redémarrages de la carte (trois envois du programme), robot en Safe |
+| avant 20 h 57 min 36 s | « Query List (149) : 0 octet(s) sur 38 en 600 ms, lecture paquet par paquet désormais », moins de 40 s après le démarrage |
+| 20 h 57 min 38 s | `s` envoyé par l'assistant alors que l'utilisateur pilotait (roues en mouvement) : robot en Passive ; une lecture complète réussit encore (mode 2), puis plus rien une seconde plus tard ; dans ces deux secondes, quatre « Tourne à gauche (150 mm/s) » partent de la page, puis deux « Safe » |
+| 20 h 58 min 47 s | test des fils : les trois reliés, RX2 **tenu haut par le robot** ; aucune réponse à 115200 ni à 19200 bauds |
+| 21 h 04 | vidéo : l'anneau CLEAN pulse |
+| 21 h 07 | robot joignable, mode Safe ; charge affichée 1 603 mAh, contre 1 845 mAh à 20 h 48 |
+
+**Piste « octet 7 », annoncée puis écartée.** L'ancienne lecture envoyait souvent l'octet 7 (numéro du paquet « pare-chocs »), qui est l'ordre Reset d'après la documentation du Create 2. Essais faits avec le nouveau programme, sans mouvement :
+
+| Essai | Résultat |
+|---|---|
+| liaison ouverte (Safe), « 142, 7 » | un octet `00` en retour (réponse normale), robot inchangé |
+| liaison fermée par `x`, puis 14 s de nouvelle lecture | silence, aucun redémarrage |
+| liaison fermée, « 142, 7 » | rien ; à la réouverture (`s`) les compteurs des roues sont intacts (8 577 / 6 281 puis 8 578 / 6 282) |
+| liaison ouverte (Passive), octet 7 seul | rien : robot toujours joignable, mode et compteurs inchangés |
+
+Conclusion : **sur ce 694 l'octet 7 ne provoque rien.** Les deux touches d'essai ont été retirées du programme.
+
+**Autres pistes essayées, sans mouvement, toutes négatives :**
+
+- ordre d'arrêt des roues (vitesses nulles) envoyé trois fois en Passive : aucun effet ;
+- ordre refusé dans le mauvais mode : l'ordre des voyants (139) envoyé en Passive avec les données 142, 22, 0 ne ramène aucun octet, alors que « 142, 22 » seul ramène la tension (`3B 8D`, 15 245 mV). Le robot avale donc bien les données d'un ordre qu'il refuse, il ne les lit pas comme de nouveaux ordres ;
+- retour en Passive (`s`) après 5 min 46 s d'immobilité en Safe : le robot répond encore 40 s après.
+
+**Ce qui reste non expliqué.** Le déclencheur de 20 h 57 n'est pas reproduit. Seul point commun avec l'épisode du 2026-11-08 (§ 8) : des flèches (ordres de roues non nuls) reçues par un robot en Passive. Cet essai-là demande l'accord de l'utilisateur (c'est un ordre de roues, même si le robot ne doit pas bouger en Passive) : pas fait. Entre 20 h 57 et 21 h 07 le robot est probablement passé par un arrêt complet suivi d'un redémarrage : sa charge affichée a sauté de 1 845 à 1 603 mAh en vingt minutes (une cinquantaine de mAh attendus à 143 mA), et un saut du même genre a été vu ce soir à un réveil (ci-dessous). Ce qui l'a réveillé vers 21 h 04 n'est pas établi (bouton « Réveil » de la page, CLEAN, ou le robot seul).
+
+**Faits mesurés pendant l'enquête :**
+
+- **Sommeil** : le robot s'est endormi à 21 h 45 min 05 s, cinq minutes pile après la fermeture de sa liaison (`x` à 21 h 40 min 05 s), bien qu'un `s` l'ait remis en Passive entre-temps. Endormi, il ne tient plus sa ligne TXD (RX2 lue « en l'air ») : à 20 h 58 il n'était donc pas dans ce sommeil-là.
+- **Réveil par la ligne BRC** (le test `n` suffit : son rappel bas l'emporte 20 ms sur celui du robot) : le robot envoie le texte « rtc configured: LSI », répond aux capteurs sans attendre `s`, puis émet seize fois par seconde cinq octets à lui, `B0 02 01 15 34` (c'est l'« octet parasite B0 » du § 4), qui brouillent une lecture sur trois. Il s'est rendormi 64 s plus tard, en Passive.
+- **Deux sortes de réveil** : au premier (21 h 52, après sept minutes de sommeil) compteurs et charge sont conservés (8 578 / 6 282, 1 514 mAh) ; au second (21 h 54) les compteurs repartent de zéro (4 / 6) et la charge affichée passe de 1 512 à 1 611 mAh. Le robot réestime donc sa charge quand il redémarre vraiment.
+- En Safe après un réveil par BRC, le robot reste éveillé (six minutes observées).
+- `s` (Start) ajoute un pas à chaque compteur de roue.
+
+**Défaut réel trouvé dans l'ancien programme** : l'heure d'envoi de la lecture groupée était notée « | 1 » pour ne jamais valoir zéro ; elle pouvait donc être en avance d'une milliseconde, et un passage de la boucle dans la même milliseconde calculait une attente de quatre milliards de ms : faux « délai dépassé », zéro octet, puis abandon définitif de la lecture groupée. C'est la cause probable du « non élucidé » des § 7 et § 9, et du message de 20 h 57.
+
+**Firmware v4** (« v4 Nov 9 2026 21:57:27 », 1 109 894 octets, 84 %, aucun avertissement, envoyé par Wi-Fi) :
+
+- lecture des capteurs par une seule requête, « 142, 100 » : les 80 octets des paquets 7 à 58, réponse complète en 13 à 17 ms (22 requêtes et 0,6 s par cycle auparavant). Repli prévu sur les groupes 6 puis 101 ; touche `q` pour essayer les trois. Lus en plus : capteur de mur, courants des moteurs, infrarouge, roulette avant (touche `e`) ;
+- **les flèches ne partent plus que si le robot est en mode Safe** et vient de répondre (`wheelsAllowed`) ; sinon « Ordre de roues refusé » sur la console. Vérifié en Passive : rien n'est envoyé au robot ;
+- un texte envoyé par le robot est reconnu, compté (`robot_redem` dans `/api/state`, touche `i`) et affiché ; touche `v` pour écouter la ligne deux secondes ;
+- l'essai automatique à 19200 bauds ne part plus quand de bonnes lectures passent encore ; `s` pose trois fois sa question avant de conclure que le robot est muet ;
+- `/api/essai?b=...` : envoi d'octets choisis pour les essais sans mouvement (refuse tout ordre de roues, de moteurs, de mode, de débit ou de nettoyage, même lu de travers) ;
+- le cap du gyroscope n'est plus remis à zéro en interne par `z` (seul le cap affiché l'est), pour que la position ne saute pas.
+
+**Étape 2 de la cartographie : position du robot** (`position.ino`, note H) :
+
+- à chaque lecture (200 ms), distance d'après les compteurs des deux roues, direction d'après le gyroscope, déplacement ajouté dans la direction moyenne ; repère fixé à la remise à zéro (x vers l'avant du robot, y vers sa gauche, cap positif vers la gauche) ;
+- déplacements écartés et comptés : silence de plus de 2 s avec plus de 20 pas, saut de compteur impossible ; robot soulevé compté et signalé ;
+- tracé gardé dans la carte (800 points, un tous les 25 mm, un point sur deux gardé quand la mémoire est pleine) ; `/api/pose` (et `zero=1`), touche `0`, touche `k`, trois colonnes de plus au CSV ; `/api/tour` donne la position du robot au départ de chaque tour (`depart`) ;
+- carte « Position » sur la page : tracé, point de départ, robot et son cap, x, y, chemin parcouru, écart au départ, bouton de remise à zéro. Vérifiée dans le navigateur avec un faux parcours en carré (serveur local), format téléphone ;
+- calcul rejoué sur l'enregistrement du 2026-11-08 (24 m de pilotage, une mesure par seconde) : roues et gyroscope tournent dans le même sens 39 fois sur 40, les compteurs décroissent en marche arrière, les roues seules donnent 0,963 fois la rotation du gyroscope et finissent à 116° de lui ; le gyroscope reste donc la référence du cap ;
+- **pas encore fait** : l'essai sur le sol (un carré piloté à la main qui doit se refermer), aucune mesure de la justesse en centimètres.
+
+**Leçon pour l'assistant** : ne pas changer le mode du robot (`s`, `x`) pendant que l'utilisateur pilote ; regarder d'abord `driving` et les dernières lignes de la console. Et ne pas annoncer une piste comme solide avant de l'avoir essayée.
