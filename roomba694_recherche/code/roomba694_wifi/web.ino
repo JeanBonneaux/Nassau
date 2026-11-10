@@ -106,7 +106,7 @@ void handleState() {
   http.send(200, "application/json", j);
 }
 
-const char* ALLOWED_WEB_CMDS = "?wsfchbeknml82465 ajioxgzqprut";
+const char* ALLOWED_WEB_CMDS = "?wsfchbeknml82465 ajioxgzqpruty";
 
 void handleCmd() {
   String c = http.arg("c");

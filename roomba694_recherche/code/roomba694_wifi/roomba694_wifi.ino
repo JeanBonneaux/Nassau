@@ -291,7 +291,49 @@ uint16_t u16(const uint8_t* b) { return ((uint16_t)b[0] << 8) | b[1]; }
 int16_t  i16(const uint8_t* b) { return (int16_t)u16(b); }
 
 void noAnswer() {
-  out.println(F("Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN."));
+  out.println(F("Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds)."));
+}
+
+// Touche 'y' : le robot est-il passé à 19200 bauds ? Un Roomba 600 quitte ses 115200 bauds si l'on garde CLEAN appuyé
+// une dizaine de secondes en l'éteignant (il joue alors une suite de notes descendantes), ou s'il reçoit trois impulsions
+// basses sur BRC après son allumage ; or D4 tire BRC vers le bas à chaque redémarrage de la carte. Il garde ensuite
+// 19200 bauds jusqu'au retrait de sa batterie ou jusqu'à l'ordre Baud (opcode 129). Symptômes vus le 2026-11-09 :
+// robot allumé, fils reliés, aucun ordre exécuté, et des octets reçus de la forme 00 / E0 (un bit à 19200 bauds dure
+// exactement six bits à 115200). Cette fonction parle au robot à 19200 bauds ; s'il répond, elle lui ordonne de
+// revenir à 115200 bauds (code 11), puis vérifie la liaison.
+void baudRescue() {
+  finishPendingQueryList();
+  out.println(F("Essai de la liaison à 19200 bauds (Start, puis lecture de la tension)..."));
+  robot.flush();
+  robot.updateBaudRate(19200);
+  delay(60);
+  flushInput();
+  robot.write(OI_START);
+  delay(120);
+  uint8_t b[2];
+  bool lent = readSensor(22, b, 2);
+  uint16_t mv = lent ? u16(b) : 0;
+  if (lent && mv >= 8000 && mv <= 22000) {
+    out.printf("Le robot répond à 19200 bauds : batterie %u mV. Ordre de revenir à 115200 bauds (opcode 129, code 11).\n", mv);
+    delay(INTER_QUERY_MS);
+    robot.write((uint8_t)129);
+    robot.write((uint8_t)11);
+    robot.flush();
+    delay(200);                      // la spécification demande 100 ms avant de parler au nouveau débit
+  } else if (lent) {
+    out.printf("Deux octets reçus à 19200 bauds, mais sans signification (%02X %02X) : pas de changement.\n", b[0], b[1]);
+    lent = false;
+  } else {
+    out.println(F("Pas de réponse à 19200 bauds non plus."));
+  }
+  robot.updateBaudRate(115200);
+  delay(60);
+  flushInput();
+  if (!lent) return;
+  robot.write(OI_START);
+  delay(120);
+  if (readSensor(22, b, 2)) out.printf("Liaison rétablie à 115200 bauds : batterie %u mV.\n", u16(b));
+  else out.println(F("Toujours pas de réponse à 115200 bauds après l'ordre de changement : réessayer 'y'."));
 }
 
 // ---------- État du robot, rafraîchi par la lecture périodique ----------
@@ -677,6 +719,7 @@ void printHelp() {
     " g  gyroscope MPU-6050 (cap, vitesse)   z  recalibrer le gyroscope et remettre le cap à zéro (robot immobile)\n"
     " r  radar à ultrasons : arrêt -> fixe devant -> balayage (on tourne)   u  état du radar et carte des distances\n"
     " t  tour sur place : le robot tourne sur lui-même en mesurant les distances (Safe requis ; 5 ou espace pour l'arrêter)\n"
+    " y  robot muet alors qu'il est allumé : essai à 19200 bauds et retour à 115200 bauds\n"
     " q  réessayer la lecture groupée des capteurs (opcode 149) et afficher les octets reçus\n"
     " p  mettre en pause un flux continu de capteurs (opcode 150) si les lectures sont devenues incohérentes\n"
     " o  Power (extinction)           x  Stop OI (à faire en fin de session)\n"));
@@ -727,6 +770,7 @@ void handle(char c) {
               radarCycleMode(); break;
     case 'u': radarPrintStatus(); break;
     case 't': tourStart(); break;
+    case 'y': baudRescue(); break;
     case 'o': setMode(OI_POWER, F("Power (133)")); break;
     case 'x': setMode(OI_STOP,  F("Stop (173) -> OI fermée")); break;
     default: {
