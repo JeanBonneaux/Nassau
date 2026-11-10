@@ -1,3 +1,6 @@
 # fichiers temporaires de Python (créés quand un outil en importe un autre)
 __pycache__/
 *.pyc
+
+# plan de l'appartement et dessins qui le montrent : données privées, gardées sur ce PC
+plan_lidar/

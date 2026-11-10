@@ -724,3 +724,37 @@ Sans l'ajustement de l'échelle en route, le même appartement avec un gyroscope
 **Limites à garder en tête** : le simulateur a des murs lisses, des arêtes nettes et peu de meubles ; le vrai couloir montre déjà plus d'échos épars (zone du bas de la figure 19) ; les contacts y seront plus nombreux. Une heure pour 38 m² : les limites par défaut d'`explorer3.py` (40 stations, 45 minutes, 12 trajets arrêtés) coupent avant. Le point faible connu reste le cap quand peu de murs sont longés. Et tant que le cerveau est alimenté par la batterie portable, le risque de la règle (cerveau qui s'éteint pendant un saut, robot qui garde son dernier ordre de roues) est entier : à décider avec l'utilisateur avant une exploration longue.
 
 **État en fin de séance** : cerveau toujours hors ligne à 17 h 14 ; robot endormi (`s` puis `x` à 15 h 35), là où la seconde exploration l'a laissé, sauf si l'utilisateur l'a déplacé ; rien n'a été envoyé au robot depuis.
+
+## 27. Un plan de l'appartement issu d'un LiDAR : ce que le robot a mesuré se pose dessus (2026-11-10, 17 h 20 à 17 h 50)
+
+La batterie du cerveau est en charge. En attendant, l'utilisateur envoie trois images de la même vue de dessus de son appartement, tirée d'un fichier LiDAR (1 214 × 434 pixels) : le plan seul (murs en traits sombres, meubles en gris) ; le même avec, en vert, le chemin des endroits atteignables et, en rouge, deux zones inatteignables ; le même avec un point vert sur la base. Ses questions : cela peut-il aider le système, et la carte finale ?
+
+**Le plan est une donnée privée** : les images et les dessins qui les montrent sont dans `roomba694_recherche/plan_lidar/`, que le dépôt ignore (`.gitignore`). Seuls l'outil et les chiffres ci-dessous sont enregistrés. Ne pas pousser ce dossier sans que l'utilisateur le demande.
+
+**Outil nouveau** : `research_notes/…/data_analysis/k_plan_lidar.py PLAN.png CHEMIN_DE_mesures PREFIXE --sortie DOSSIER [--base U,V --base-robot X,Y] [--trajet PREFIXE] [--zones IMAGE]`. Il cherche l'échelle, l'orientation et la position pour lesquelles la carte du robot a ses paliers sur des murs ou des meubles du plan, ses rayons libres hors des murs et ses stations sur du sol ; et pour lesquelles un trajet enregistré reste dans le sol libre, sans traverser de mur. Il écrit `PREFIXE_calage.json` (la formule qui passe des millimètres du robot aux pixels du plan) et un dessin.
+
+**Résultat avec les dix tours des deux explorations et le trajet piloté à la main à midi (27 m, § 21)** :
+
+| Source | Échelle |
+|---|---|
+| Carte du robot seule (autour de la base marquée) | 57 pixels par mètre |
+| Trajet de midi seul, sans aucun a priori sur son départ | 51 pixels par mètre |
+| Largeur des portes du plan (quatre ouvertures de 33 à 41 pixels, pour 71 à 81 cm) | 50 à 57 pixels par mètre |
+| **Les deux ensemble** | **54 pixels par mètre (18,5 mm par pixel), entre 52 et 58** |
+
+- Le plan fait donc environ 22,5 m sur 8,0 m ; le sol libre à l'intérieur environ 53 m², zones rouges comprises.
+- Soixante paliers larges de la carte du robot : 90 % tombent à moins de 10 cm d'un mur ou d'un meuble du plan (c'est le critère de l'ajustement : ce chiffre dit que l'ajustement est cohérent, pas encore que la carte est juste à 10 cm).
+- Le trajet de midi, placé sans rien lui dire, démarre à 2 m de la base, passe par les ouvertures du plan, et son repère est tourné de 52° par rapport à celui des explorations : c'est l'écart déjà estimé l'après-midi par une autre voie. Les deux calages se confirment l'un l'autre.
+- La base : marquée par l'utilisateur à 84 cm de l'endroit où la carte du robot la met. Sa position dans le repère du robot n'était qu'estimée (direction par l'infrarouge, distance par le mur), et le point est tracé à la main.
+
+**Ce que le plan apprend sur les cartes d'aujourd'hui** : ce que les sections 23 à 26 appellent « le couloir de la base » est une grande pièce double, profonde d'environ 2,9 m devant la base. Les deux parois que le robot y voit à 1,75 m l'une de l'autre seraient donc des devants de meubles, à 45 cm du mur côté base et à 70 cm du mur d'en face ; à confirmer par l'utilisateur. Les stations 6 et 7, sur le tapis, sont dans la moitié voisine de la pièce. Le capteur de distance est à une dizaine de centimètres du sol : il voit le bas des meubles, pas les murs qui sont derrière.
+
+**À quoi le plan peut servir** :
+
+1. **Juge.** C'est la vérité terrain qui manquait (rien n'avait été comparé au mètre ruban) : après chaque exploration, la carte du robot se pose sur le plan et l'erreur se lit en centimètres ; les zones vertes et rouges disent ce qu'il fallait atteindre.
+2. **Fond de la carte finale.** Un seul capteur à ultrasons ne dessinera jamais des murs aussi nets. Le robot n'a plus à découvrir l'appartement : il lui reste à se repérer sur ce plan, ce que ses distances aux murs font bien. Les pièces et les meubles peuvent y être nommés, pour « va dans telle pièce ».
+3. **Guide.** Les portes y sont : un trajet de pièce en pièce peut être préparé d'avance, au lieu de chercher les portes par leurs montants.
+
+**Limites** : l'échelle n'est connue qu'à 5 % près, soit un mètre sur la longueur de l'appartement ; une exploration plus longue la donnera à 1 % (les roues du robot mesurent les distances). Le plan montre les meubles à toutes les hauteurs, le robot ce qui est à 10 cm du sol. Les meubles bougent.
+
+**Pour l'essai de ce soir** : l'exploration autonome reste telle qu'elle est (`explorer3.py`) ; le plan sert à suivre le robot et à juger le résultat. Sol à explorer : une quarantaine de mètres carrés hors zones rouges, comme l'appartement simulé ; compter une heure, donc des limites plus larges que celles par défaut.
