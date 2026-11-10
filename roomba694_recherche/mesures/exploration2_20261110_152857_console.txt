@@ -1,0 +1,266 @@
+# exploration2_20261110_152857 — carte 192.168.18.25 — début 15:28:57.572 le 2026-11-10
+# Seconde exploration pilotee depuis le PC (explorer.py --reprise), firmware v8, tapis permis (vide_min 150), depart de la station 3 de la premiere exploration
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794342537.703	15:28:57.703	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794342537.703	15:28:57.703	Client TCP connecté : 192.168.18.6
+1794342538.612	15:28:58.612	>> j
+1794342538.663	15:28:58.663	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794342556.371	15:29:16.371	Vitesse réglée à 75 mm/s (page web).
+1794342556.730	15:29:16.730	Tourne à gauche (75 mm/s).
+1794342558.066	15:29:18.065	Roues arrêtées.
+1794342558.885	15:29:18.885	Tourne à gauche (75 mm/s).
+1794342560.201	15:29:20.200	Roues arrêtées.
+1794342561.107	15:29:21.107	Tourne à gauche (75 mm/s).
+1794342561.832	15:29:21.832	Roues arrêtées.
+1794342562.754	15:29:22.754	Tourne à droite (75 mm/s).
+1794342562.841	15:29:22.840	Roues arrêtées.
+1794342563.735	15:29:23.734	Avance (75 mm/s).
+1794342565.034	15:29:25.033	Roues arrêtées.
+1794342565.878	15:29:25.878	Avance (75 mm/s).
+1794342567.227	15:29:27.227	Roues arrêtées.
+1794342568.093	15:29:28.093	Tourne à droite (75 mm/s).
+1794342568.222	15:29:28.221	Roues arrêtées.
+1794342569.139	15:29:29.139	Avance (75 mm/s).
+1794342570.451	15:29:30.451	Roues arrêtées.
+1794342571.398	15:29:31.398	Avance (75 mm/s).
+1794342572.726	15:29:32.725	Roues arrêtées.
+1794342573.753	15:29:33.752	Avance (75 mm/s).
+1794342575.065	15:29:35.064	Roues arrêtées.
+1794342575.909	15:29:35.908	Tourne à droite (75 mm/s).
+1794342576.085	15:29:36.084	Roues arrêtées.
+1794342576.951	15:29:36.951	Avance (75 mm/s).
+1794342578.292	15:29:38.291	Roues arrêtées.
+1794342579.191	15:29:39.190	Tourne à gauche (75 mm/s).
+1794342579.520	15:29:39.520	Roues arrêtées.
+1794342580.356	15:29:40.356	Avance (75 mm/s).
+1794342581.700	15:29:41.700	Roues arrêtées.
+1794342582.683	15:29:42.683	Avance (75 mm/s).
+1794342584.033	15:29:44.032	Roues arrêtées.
+1794342584.932	15:29:44.931	Avance (75 mm/s).
+1794342586.265	15:29:46.264	Roues arrêtées.
+1794342587.148	15:29:47.148	Tourne à droite (75 mm/s).
+1794342587.322	15:29:47.321	Roues arrêtées.
+1794342588.144	15:29:48.143	Avance (75 mm/s).
+1794342589.488	15:29:49.487	Roues arrêtées.
+1794342590.346	15:29:50.345	Avance (75 mm/s).
+1794342591.658	15:29:51.658	Roues arrêtées.
+1794342592.577	15:29:52.576	Tourne à gauche (75 mm/s).
+1794342592.705	15:29:52.705	Roues arrêtées.
+1794342593.596	15:29:53.595	Avance (75 mm/s).
+1794342594.832	15:29:54.832	Roues arrêtées.
+1794342595.656	15:29:55.655	Tourne à gauche (75 mm/s).
+1794342595.810	15:29:55.810	Roues arrêtées.
+1794342596.744	15:29:56.743	Avance (75 mm/s).
+1794342598.060	15:29:58.060	Roues arrêtées.
+1794342598.958	15:29:58.957	Avance (75 mm/s).
+1794342600.284	15:30:00.283	Roues arrêtées.
+1794342601.239	15:30:01.238	Avance (75 mm/s).
+1794342602.573	15:30:02.573	Roues arrêtées.
+1794342603.430	15:30:03.430	Tourne à droite (75 mm/s).
+1794342603.582	15:30:03.581	Roues arrêtées.
+1794342604.397	15:30:04.397	Avance (75 mm/s).
+1794342605.730	15:30:05.730	Roues arrêtées.
+1794342606.603	15:30:06.603	Avance (75 mm/s).
+1794342607.924	15:30:07.924	Roues arrêtées.
+1794342608.814	15:30:08.813	Avance (75 mm/s).
+1794342610.106	15:30:10.106	Roues arrêtées.
+1794342610.948	15:30:10.947	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794342612.439	15:30:12.438	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794342616.704	15:30:16.704	Tour sur place : 90° (36 mesures).
+1794342620.898	15:30:20.898	Tour sur place : 180° (73 mesures).
+1794342624.867	15:30:24.867	Tour sur place : 270° (108 mesures).
+1794342628.942	15:30:28.941	Tour sur place : 360° (143 mesures).
+1794342629.843	15:30:29.842	Tour sur place terminé : 380° en 17.4 s, 150 mesures. Roues arrêtées.
+1794342630.427	15:30:30.427	Tourne à gauche (75 mm/s).
+1794342631.450	15:30:31.449	Roues arrêtées.
+1794342632.304	15:30:32.304	Avance (75 mm/s).
+1794342633.618	15:30:33.617	Roues arrêtées.
+1794342634.558	15:30:34.557	Avance (75 mm/s).
+1794342635.863	15:30:35.862	Roues arrêtées.
+1794342636.741	15:30:36.740	Avance (75 mm/s).
+1794342638.057	15:30:38.056	Roues arrêtées.
+1794342638.974	15:30:38.974	Tourne à droite (75 mm/s).
+1794342639.128	15:30:39.128	Roues arrêtées.
+1794342639.996	15:30:39.996	Avance (75 mm/s).
+1794342641.438	15:30:41.437	Roues arrêtées.
+1794342642.281	15:30:42.280	Avance (75 mm/s).
+1794342643.614	15:30:43.614	Roues arrêtées.
+1794342644.525	15:30:44.525	Avance (75 mm/s).
+1794342645.826	15:30:45.825	Roues arrêtées.
+1794342646.736	15:30:46.735	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794342648.234	15:30:48.233	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794342652.409	15:30:52.408	Tour sur place : 90° (39 mesures).
+1794342656.536	15:30:56.535	Tour sur place : 180° (75 mesures).
+1794342660.507	15:31:00.506	Tour sur place : 270° (109 mesures).
+1794342664.639	15:31:04.638	Tour sur place : 360° (147 mesures).
+1794342665.514	15:31:05.514	Tour sur place terminé : 380° en 17.3 s, 156 mesures. Roues arrêtées.
+1794342666.171	15:31:06.170	Tourne à droite (75 mm/s).
+1794342667.510	15:31:07.509	Roues arrêtées.
+1794342668.422	15:31:08.421	Tourne à droite (75 mm/s).
+1794342669.700	15:31:09.700	Roues arrêtées.
+1794342670.547	15:31:10.546	Tourne à droite (75 mm/s).
+1794342672.050	15:31:12.049	Roues arrêtées.
+1794342672.895	15:31:12.894	Tourne à gauche (75 mm/s).
+1794342673.774	15:31:13.773	Roues arrêtées.
+1794342674.712	15:31:14.712	Avance (75 mm/s).
+1794342676.072	15:31:16.072	Roues arrêtées.
+1794342676.933	15:31:16.933	Tourne à droite (75 mm/s).
+1794342677.074	15:31:17.074	Roues arrêtées.
+1794342678.024	15:31:18.024	Avance (75 mm/s).
+1794342679.361	15:31:19.360	Roues arrêtées.
+1794342680.252	15:31:20.251	Avance (75 mm/s).
+1794342681.605	15:31:21.604	Roues arrêtées.
+1794342682.452	15:31:22.452	Avance (75 mm/s).
+1794342683.813	15:31:23.812	Roues arrêtées.
+1794342684.648	15:31:24.648	Avance (75 mm/s).
+1794342686.010	15:31:26.009	Roues arrêtées.
+1794342686.926	15:31:26.925	Avance (75 mm/s).
+1794342688.149	15:31:28.148	Roues arrêtées.
+1794342689.103	15:31:29.103	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794342690.588	15:31:30.588	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794342694.710	15:31:34.709	Tour sur place : 90° (35 mesures).
+1794342698.437	15:31:38.436	Tour sur place : 180° (68 mesures).
+1794342702.450	15:31:42.449	Tour sur place : 270° (100 mesures).
+1794342706.160	15:31:46.160	Tour sur place : 360° (133 mesures).
+1794342706.893	15:31:46.893	Tour sur place terminé : 380° en 16.3 s, 140 mesures. Roues arrêtées.
+1794342707.746	15:31:47.745	Tourne à gauche (75 mm/s).
+1794342707.858	15:31:47.857	Roues arrêtées.
+1794342708.827	15:31:48.826	Avance (75 mm/s).
+1794342710.136	15:31:50.135	Roues arrêtées.
+1794342710.988	15:31:50.987	Avance (75 mm/s).
+1794342712.271	15:31:52.271	Roues arrêtées.
+1794342713.141	15:31:53.141	Avance (75 mm/s).
+1794342714.444	15:31:54.443	Roues arrêtées.
+1794342715.366	15:31:55.366	Avance (75 mm/s).
+1794342716.719	15:31:56.718	Roues arrêtées.
+1794342717.624	15:31:57.623	Avance (75 mm/s).
+1794342718.929	15:31:58.928	Roues arrêtées.
+1794342719.840	15:31:59.840	Avance (75 mm/s).
+1794342720.877	15:32:00.877	Roues arrêtées.
+1794342721.750	15:32:01.749	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794342723.251	15:32:03.250	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794342726.937	15:32:06.936	Tour sur place : 90° (32 mesures).
+1794342730.531	15:32:10.530	Tour sur place : 180° (63 mesures).
+1794342734.083	15:32:14.082	Tour sur place : 270° (94 mesures).
+1794342737.706	15:32:17.705	Tour sur place : 360° (127 mesures).
+1794342738.525	15:32:18.525	Tour sur place terminé : 380° en 15.3 s, 135 mesures. Roues arrêtées.
+1794342739.221	15:32:19.220	Tourne à gauche (75 mm/s).
+1794342740.526	15:32:20.525	Roues arrêtées.
+1794342741.401	15:32:21.400	Tourne à gauche (75 mm/s).
+1794342742.734	15:32:22.734	Roues arrêtées.
+1794342743.602	15:32:23.602	Tourne à gauche (75 mm/s).
+1794342744.194	15:32:24.194	Roues arrêtées.
+1794342745.063	15:32:25.062	Avance (75 mm/s).
+1794342746.412	15:32:26.412	Roues arrêtées.
+1794342747.269	15:32:27.269	Avance (75 mm/s).
+1794342748.595	15:32:28.594	Roues arrêtées.
+1794342749.465	15:32:29.465	Avance (75 mm/s).
+1794342750.813	15:32:30.813	Roues arrêtées.
+1794342751.669	15:32:31.669	Avance (75 mm/s).
+1794342752.978	15:32:32.978	Roues arrêtées.
+1794342753.799	15:32:33.798	Avance (75 mm/s).
+1794342755.105	15:32:35.105	Roues arrêtées.
+1794342756.030	15:32:36.030	Avance (75 mm/s).
+1794342757.046	15:32:37.046	Roues arrêtées.
+1794342757.907	15:32:37.907	Tourne à droite (75 mm/s).
+1794342758.596	15:32:38.595	Roues arrêtées.
+1794342759.570	15:32:39.570	Avance (75 mm/s).
+1794342760.886	15:32:40.886	Roues arrêtées.
+1794342761.770	15:32:41.769	Avance (75 mm/s).
+1794342763.090	15:32:43.089	Roues arrêtées.
+1794342763.978	15:32:43.977	Tourne à droite (75 mm/s).
+1794342764.119	15:32:44.119	Roues arrêtées.
+1794342764.983	15:32:44.983	Avance (75 mm/s).
+1794342766.280	15:32:46.280	Roues arrêtées.
+1794342767.152	15:32:47.151	Avance (75 mm/s).
+1794342768.530	15:32:48.530	Roues arrêtées.
+1794342769.466	15:32:49.465	Avance (75 mm/s).
+1794342770.793	15:32:50.792	Roues arrêtées.
+1794342771.648	15:32:51.648	Tourne à droite (75 mm/s).
+1794342771.765	15:32:51.765	Roues arrêtées.
+1794342772.590	15:32:52.590	Avance (75 mm/s).
+1794342773.930	15:32:53.929	Roues arrêtées.
+1794342774.762	15:32:54.762	Tourne à gauche (75 mm/s).
+1794342776.088	15:32:56.087	Roues arrêtées.
+1794342777.017	15:32:57.017	Tourne à gauche (75 mm/s).
+1794342778.346	15:32:58.346	Roues arrêtées.
+1794342779.194	15:32:59.193	Tourne à gauche (75 mm/s).
+1794342779.366	15:32:59.365	Roues arrêtées.
+1794342780.249	15:33:00.248	Avance (75 mm/s).
+1794342781.677	15:33:01.677	Roues arrêtées.
+1794342782.539	15:33:02.538	Avance (75 mm/s).
+1794342783.876	15:33:03.875	Roues arrêtées.
+1794342784.845	15:33:04.844	Avance (75 mm/s).
+1794342786.153	15:33:06.152	Roues arrêtées.
+1794342786.978	15:33:06.977	Avance (75 mm/s).
+1794342788.308	15:33:08.308	Roues arrêtées.
+1794342789.190	15:33:09.189	Avance (75 mm/s).
+1794342790.540	15:33:10.539	Roues arrêtées.
+1794342791.405	15:33:11.404	Avance (75 mm/s).
+1794342792.444	15:33:12.443	Roues arrêtées.
+1794342793.306	15:33:13.306	Tourne à droite (75 mm/s).
+1794342794.614	15:33:14.613	Roues arrêtées.
+1794342795.462	15:33:15.461	Tourne à droite (75 mm/s).
+1794342795.672	15:33:15.671	Roues arrêtées.
+1794342796.561	15:33:16.560	Avance (75 mm/s).
+1794342797.855	15:33:17.855	Roues arrêtées.
+1794342798.679	15:33:18.679	Tourne à droite (75 mm/s).
+1794342798.817	15:33:18.816	Roues arrêtées.
+1794342799.718	15:33:19.717	Avance (75 mm/s).
+1794342801.049	15:33:21.048	Roues arrêtées.
+1794342801.918	15:33:21.917	Avance (75 mm/s).
+1794342803.333	15:33:23.332	Roues arrêtées.
+1794342804.181	15:33:24.180	Avance (75 mm/s).
+1794342805.497	15:33:25.496	Roues arrêtées.
+1794342806.389	15:33:26.389	Avance (75 mm/s).
+1794342807.763	15:33:27.762	Roues arrêtées.
+1794342808.681	15:33:28.680	Avance (75 mm/s).
+1794342809.709	15:33:29.708	Roues arrêtées.
+1794342810.614	15:33:30.614	Tourne à droite (75 mm/s).
+1794342810.900	15:33:30.899	Roues arrêtées.
+1794342811.725	15:33:31.725	Avance (75 mm/s).
+1794342813.020	15:33:33.019	Roues arrêtées.
+1794342813.949	15:33:33.948	Avance (75 mm/s).
+1794342815.269	15:33:35.268	Roues arrêtées.
+1794342816.151	15:33:36.150	Avance (75 mm/s).
+1794342817.461	15:33:37.461	Roues arrêtées.
+1794342818.348	15:33:38.347	Tourne à droite (75 mm/s).
+1794342818.463	15:33:38.462	Roues arrêtées.
+1794342819.305	15:33:39.305	Avance (75 mm/s).
+1794342820.643	15:33:40.642	Roues arrêtées.
+1794342821.537	15:33:41.536	Avance (75 mm/s).
+1794342822.863	15:33:42.863	Roues arrêtées.
+1794342823.793	15:33:43.792	Tourne à droite (75 mm/s).
+1794342823.912	15:33:43.912	Roues arrêtées.
+1794342824.830	15:33:44.830	Avance (75 mm/s).
+1794342826.120	15:33:46.120	Roues arrêtées.
+1794342827.084	15:33:47.084	Tourne à droite (75 mm/s).
+1794342827.224	15:33:47.224	Roues arrêtées.
+1794342828.066	15:33:48.065	Avance (75 mm/s).
+1794342829.434	15:33:49.434	Roues arrêtées.
+1794342830.346	15:33:50.345	Avance (75 mm/s).
+1794342831.667	15:33:51.667	Roues arrêtées.
+1794342832.564	15:33:52.564	Avance (75 mm/s).
+1794342833.877	15:33:53.876	Roues arrêtées.
+1794342834.719	15:33:54.718	Tourne à droite (75 mm/s).
+1794342834.875	15:33:54.875	Roues arrêtées.
+1794342835.778	15:33:55.778	Avance (75 mm/s).
+1794342837.080	15:33:57.080	Roues arrêtées.
+1794342837.982	15:33:57.981	Avance (75 mm/s).
+1794342839.300	15:33:59.300	Roues arrêtées.
+1794342840.161	15:34:00.161	Avance (75 mm/s).
+1794342841.477	15:34:01.477	Roues arrêtées.
+1794342842.378	15:34:02.378	Avance (75 mm/s).
+1794342842.815	15:34:02.814	Roues arrêtées.
+1794342843.672	15:34:03.671	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794342845.169	15:34:05.168	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794342849.475	15:34:09.474	Tour sur place : 90° (39 mesures).
+1794342853.686	15:34:13.686	Tour sur place : 180° (77 mesures).
+1794342857.800	15:34:17.799	Tour sur place : 270° (113 mesures).
+1794342861.900	15:34:21.899	Tour sur place : 360° (151 mesures).
+1794342862.787	15:34:22.786	Tour sur place terminé : 380° en 17.6 s, 160 mesures. Roues arrêtées.
+1794342863.320	15:34:23.320	Roues arrêtées.
+1794342863.392	15:34:23.391	Vitesse réglée à 150 mm/s (page web).
+1794342886.111	15:34:46.111	>> j
+1794342886.123	15:34:46.122	Journal CSV désactivé.
+1794342887.142	15:34:47.142	## fin de l'enregistrement après 349.6 s

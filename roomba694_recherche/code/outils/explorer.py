@@ -15,14 +15,22 @@
 # Si un trajet échoue (refus d'un saut, alarme), le robot recule de quelques centimètres s'il a touché, revient à la
 # station d'où il partait, et cette direction n'est plus proposée.
 #
+# --reprise FICHIER_stations.json : reprend une exploration précédente faite dans le MÊME repère de position (cerveau non
+# redémarré, position non remise à zéro). Ses stations comptent comme déjà faites, ses échos comme déjà vus, et le retour
+# final passe par elles jusqu'à la station 0. Le robot doit être posé sur l'une d'elles (à 25 cm près) avant de lancer.
+#
+# --vide-min N : signal le plus bas accepté sous les capteurs de vide avant un saut. 1500 (défaut) arrête le robot devant
+# un tapis sombre ; 150 le laisse monter dessus et n'arrête plus que devant un vrai vide.
+#
 # Sécurités : celles de pilote.py (contrôles avant et pendant chaque saut) et celles du firmware (arrêt 1,5 s après le
 # dernier ordre, arrêt sur pare-chocs, arrêt automatique du capteur de distance, tour sur place avec ses propres arrêts).
 # L'exploration s'arrête au nombre de stations demandé, s'il n'y a plus de direction libre, après trois échecs, ou si la
 # batterie passe sous le seuil. Sortie du mode Safe, roue levée ou liaison perdue : arrêt immédiat, le robot reste où il est.
 #
 # Usage : python explorer.py [--stations 8] [--pas 800] [--vitesse 75] [--tour-v 30] [--interdit "x,y,rayon;..."]
-#                            [--sans-retour] -- ADRESSE PREFIXE
-# Écrit PREFIXE_stations.json (même forme que parcours_stations.py, lisible par h_carte_stations.py).
+#                            [--reprise FICHIER] [--vide-min 150] [--sans-retour] -- ADRESSE PREFIXE
+# Écrit PREFIXE_stations.json (même forme que parcours_stations.py, lisible par h_carte_stations.py) ; avec --reprise,
+# le fichier contient aussi les stations reprises, pour que la carte se calcule d'un seul coup.
 import argparse
 import json
 import math
@@ -39,26 +47,30 @@ except Exception:
 p_ = argparse.ArgumentParser()
 p_.add_argument("adresse")
 p_.add_argument("prefixe")
-p_.add_argument("--stations", type=int, default=8, help="nombre de stations au plus, celle de départ comprise")
+p_.add_argument("--stations", type=int, default=8, help="nombre de stations nouvelles au plus")
 p_.add_argument("--pas", type=float, default=800.0, help="distance entre deux stations, mm")
 p_.add_argument("--vitesse", type=int, default=75, help="réglage de vitesse des sauts (mm/s demandés)")
 p_.add_argument("--tour-v", type=int, default=30, help="vitesse de roues demandée pour les tours sur place (20 à 62 ; firmware v8)")
 p_.add_argument("--interdit", default="", help="zones interdites aux stations : x,y,rayon en mm, séparées par des points-virgules")
+p_.add_argument("--reprise", default="", help="fichier _stations.json d'une exploration précédente dans le même repère")
+p_.add_argument("--vide-min", type=float, default=1500.0, help="signal minimal des capteurs de vide avant un saut (150 : tapis permis)")
+p_.add_argument("--partir-de", default="", help="avec --reprise : nom de la station reprise d'où repartir ; le robot s'y rend d'abord par les trajets déjà faits")
 p_.add_argument("--sans-retour", action="store_true", help="ne pas revenir au point de départ à la fin")
 p_.add_argument("--batterie-min", type=int, default=1300, help="charge en mAh sous laquelle on arrête")
 a = p_.parse_args()
 
 p = Pilote(a.adresse, a.prefixe)
 interdits = [tuple(float(v) for v in z.split(",")) for z in a.interdit.split(";") if z.strip()]
-journal = {"mode": "exploration", "pas": a.pas, "vitesse": a.vitesse, "interdits": interdits, "stations": [], "sauts": [],
-           "choix": [], "echecs": [], "parents": {}, "fin": None}
+journal = {"mode": "exploration", "pas": a.pas, "vitesse": a.vitesse, "vide_min": a.vide_min, "interdits": interdits, "reprise": a.reprise,
+           "stations": [], "sauts": [], "choix": [], "echecs": [], "parents": {}, "fin": None}
 V_REELLE = a.vitesse + 21.0                      # mesuré le 2026-11-10 : réglage + 21 mm/s environ
 ROT_DPS = 2 * V_REELLE / 235.0 * 57.29578
 DX = 27.0                                        # capteur de distance en avant du centre du robot, mm
 echos = []                                       # tous les échos vus, dans le repère du cerveau : (x, y)
 parent = {}                                      # nom d'une station -> station d'où le robot y est venu
 bloques = {}                                     # nom d'une station -> directions qui ont échoué depuis elle
-ARRET_NET = ("Safe", "roue levée", "journal")    # raisons après lesquelles on ne tente plus aucun mouvement
+ARRET_NET = ("Safe", "roue levée", "journal", "vide sous")   # raisons après lesquelles on ne tente plus aucun mouvement
+nouvelles = 0                                    # stations faites pendant cette exploration
 
 
 def dire(*x):
@@ -70,6 +82,14 @@ def sauver():
         json.dump(journal, f, ensure_ascii=False)
 
 
+def noter_echos(st):
+    x0, y0, c0 = st["depart"]
+    for d10, mm in st["mesures"]:
+        if mm > 0:
+            ang = math.radians(c0 + d10 / 10.0)
+            echos.append((x0 + (mm + DX) * math.cos(ang), y0 + (mm + DX) * math.sin(ang)))
+
+
 def tourner_vers(cap_cible, tol=4.0, essais=8):
     """Sauts de rotation jusqu'au cap voulu. Le robot est rond et tourne sur place : les capteurs optiques ne bloquent pas."""
     for _ in range(essais):
@@ -79,7 +99,7 @@ def tourner_vers(cap_cible, tol=4.0, essais=8):
         err = cap_cible - l["cap_pos"]
         if abs(err) <= tol:
             return True, None
-        r = p.saut("4" if err > 0 else "6", min(1.3, max(0.10, abs(err) / ROT_DPS - 0.04)), lb_repos=5000, lb_max=5000)
+        r = p.saut("4" if err > 0 else "6", min(1.3, max(0.10, abs(err) / ROT_DPS - 0.04)), lb_repos=5000, lb_max=5000, vide_min=a.vide_min)
         r["but"] = f"rotation de {err:+.1f}°"
         journal["sauts"].append(r)
         if "refus" in r:
@@ -107,7 +127,7 @@ def aller_a(xt, yt, tolerance=30.0):
             if not ok:
                 return False, raison
             continue
-        r = p.saut("8", min(1.3, max(0.2, (d - 8) / (V_REELLE + 6))), marge_mm=min(600.0, d + 250.0))
+        r = p.saut("8", min(1.3, max(0.2, (d - 8) / (V_REELLE + 6))), marge_mm=min(600.0, d + 250.0), vide_min=a.vide_min)
         r["but"] = f"avance vers ({xt:.0f}, {yt:.0f}), reste {d:.0f} mm"
         journal["sauts"].append(r)
         if "refus" in r:
@@ -134,16 +154,12 @@ def faire_un_tour(nom):
     l1 = p.frais()
     st = {"nom": nom, "heure": time.strftime("%H:%M:%S"), "etat": t.get("texte"), "raison": t.get("raison"), "tourne": t.get("tourne"),
           "n": t.get("n"), "roues": t.get("roues"), "duree_ms": t.get("duree_ms"), "depart": t.get("depart"), "mesures": t.get("points"),
-          "avant": {k: l0[k] for k in ("x_mm", "y_mm", "cap_pos", "us_mm")} if l0 else None,
+          "avant": {k: l0[k] for k in ("x_mm", "y_mm", "cap_pos", "us_mm", "vide_g", "vide_avg", "vide_avd", "vide_d")} if l0 else None,
           "apres": {k: l1[k] for k in ("x_mm", "y_mm", "cap_pos", "us_mm")} if l1 else None}
     if t.get("etat") != 3 or (t.get("n") or 0) < 50:
         return None, f"tour arrêté : {t.get('raison')}"
     journal["stations"].append(st)
-    x0, y0, c0 = st["depart"]
-    for d10, mm in st["mesures"]:
-        if mm > 0:
-            ang = math.radians(c0 + d10 / 10.0)
-            echos.append((x0 + (mm + DX) * math.cos(ang), y0 + (mm + DX) * math.sin(ang)))
+    noter_echos(st)
     return st, None
 
 
@@ -208,21 +224,74 @@ def remonter(depuis, jusqu_a_libre):
         s = par
 
 
+# ---------------------------------------------------------------- reprise d'une exploration précédente
+numero = 0
+if a.reprise:
+    with open(a.reprise, encoding="utf-8") as f:
+        prec = json.load(f)
+    par_nom = {}
+    for s in prec["stations"]:
+        s = dict(s)
+        s["ancienne"] = True
+        if not s["nom"].isdigit():                 # un tour de retour de l'exploration précédente : gardé pour la carte
+            s["nom"] = s["nom"] + "-" + str(sum(1 for q in journal["stations"] if not q["nom"].isdigit()) + 1)
+        else:
+            numero = max(numero, int(s["nom"]) + 1)
+        journal["stations"].append(s)
+        par_nom[s["nom"]] = s
+        bloques[s["nom"]] = []
+        noter_echos(s)
+    for enfant, par in prec.get("parents", {}).items():
+        if enfant in par_nom and par in par_nom:
+            parent[enfant] = par_nom[par]
+            journal["parents"][enfant] = par
+    dire(f"reprise : {len(journal['stations'])} stations de {a.reprise}, {len(echos)} échos déjà vus ; les nouvelles stations commencent au numéro {numero}")
+
 echec_total = 0
 courant = None
 try:
-    if p.frais(attente=6) is None:
+    l = p.frais(attente=6)
+    if l is None:
         raise SystemExit("aucune ligne récente du journal : l'enregistreur tourne-t-il, le robot répond-il ?")
     p.vitesse(a.vitesse)
     time.sleep(0.3)
-    st, raison = faire_un_tour("0")
+    proche = None
+    if journal["stations"]:
+        proche = min(journal["stations"], key=lambda s: math.hypot(s["depart"][0] - l["x_mm"], s["depart"][1] - l["y_mm"]))
+        if math.hypot(proche["depart"][0] - l["x_mm"], proche["depart"][1] - l["y_mm"]) > 250:
+            raise SystemExit("reprise : le robot n'est sur aucune station de l'exploration précédente")
+        if a.partir_de:
+            cible = next((s for s in journal["stations"] if s["nom"] == a.partir_de), None)
+            if cible is None:
+                raise SystemExit("reprise : station inconnue : " + a.partir_de)
+            chaine = [cible]                      # de la station voulue jusqu'à la station 0, par les trajets déjà faits
+            while chaine[-1]["nom"] in parent:
+                chaine.append(parent[chaine[-1]["nom"]])
+            chaine.reverse()
+            # le robot doit être sur l'une des stations de cette chaîne (ou au même endroit, à 25 cm près)
+            ici = [k for k, s in enumerate(chaine) if math.hypot(s["depart"][0] - l["x_mm"], s["depart"][1] - l["y_mm"]) <= 250]
+            if not ici:
+                raise SystemExit("reprise : le robot n'est pas sur le chemin qui mène à la station " + a.partir_de)
+            for s in chaine[ici[-1] + 1:]:
+                ok, raison = aller_a(s["depart"][0], s["depart"][1], tolerance=50.0)
+                dire(f"  en route vers la station {a.partir_de} : station {s['nom']} " + ("atteinte" if ok else "NON atteinte : " + str(raison)))
+                if not ok:
+                    journal["fin"] = "trajet vers la station de reprise impossible : " + str(raison)
+                    raise SystemExit(journal["fin"])
+            proche = cible
+    nom = str(numero)
+    st, raison = faire_un_tour(nom)
     if st is None:
         raise SystemExit("premier tour impossible : " + str(raison))
-    dire(f"station 0 en ({st['depart'][0]:.0f}, {st['depart'][1]:.0f}) : tour de {st['tourne']}° en {st['duree_ms'] / 1000:.0f} s, {st['n']} mesures")
-    bloques["0"] = []
+    nouvelles += 1
+    bloques[nom] = []
+    if proche is not None:
+        parent[nom] = proche
+        journal["parents"][nom] = proche["nom"]
+    dire(f"station {nom} en ({st['depart'][0]:.0f}, {st['depart'][1]:.0f}) : tour de {st['tourne']}° en {st['duree_ms'] / 1000:.0f} s, {st['n']} mesures")
     courant = st
     while journal["fin"] is None:
-        if len(journal["stations"]) >= a.stations:
+        if nouvelles >= a.stations:
             journal["fin"] = "nombre de stations atteint"
             break
         if echec_total >= 3:
@@ -238,8 +307,8 @@ try:
             s, raison = remonter(courant, jusqu_a_libre=True)
             if s is None:
                 journal["fin"] = raison
-                if raison == "plus de direction libre":
-                    courant = journal["stations"][0]      # remonter() a ramené le robot à la station 0
+                if raison == "plus de direction libre":      # remonter() a ramené le robot à la station 0
+                    courant = next(q for q in journal["stations"] if q["nom"] not in parent)
                 else:
                     courant = None
                 break
@@ -260,7 +329,7 @@ try:
                 courant = None
                 break
             if "pare-chocs" in str(raison):
-                r = p.saut("2", 0.9, lb_repos=5000, lb_max=5000)
+                r = p.saut("2", 0.9, lb_repos=5000, lb_max=5000, vide_min=a.vide_min)
                 r["but"] = "recul après un contact"
                 journal["sauts"].append(r)
                 time.sleep(0.4)
@@ -270,16 +339,18 @@ try:
                 courant = None
                 break
             continue
-        nom = str(len(journal["stations"]))
+        nom = str(numero + nouvelles)
         st, raison = faire_un_tour(nom)
         if st is None:
             journal["fin"] = "tour impossible : " + str(raison)
             courant = None
             break
+        nouvelles += 1
         bloques[nom] = []
         parent[nom] = courant
         journal["parents"][nom] = courant["nom"]
-        dire(f"station {nom} en ({st['depart'][0]:.0f}, {st['depart'][1]:.0f}) : tour de {st['tourne']}° en {st['duree_ms'] / 1000:.0f} s, {st['n']} mesures")
+        dire(f"station {nom} en ({st['depart'][0]:.0f}, {st['depart'][1]:.0f}) : tour de {st['tourne']}° en {st['duree_ms'] / 1000:.0f} s, {st['n']} mesures"
+             + (f" ; sol sous les capteurs de vide : {[round(st['avant'][k]) for k in ('vide_g', 'vide_avg', 'vide_avd', 'vide_d')]}" if st.get("avant") else ""))
         courant = st
         sauver()
     # retour au point de départ par les trajets déjà faits, puis un dernier tour (sauf après un arrêt net)
@@ -302,4 +373,4 @@ finally:
     e = p.etat()
     dire(f"fin : {journal['fin']} | mode {e['robot']['mode']} | roues {'en marche' if e['driving'] else 'arrêtées'} | pare-chocs {e['robot']['bump']}"
          f" | position ({e['pose']['x']}, {e['pose']['y']}), cap {e['pose']['cap']}° | réflexe {e['reflexe']} | {len(journal['sauts'])} sauts,"
-         f" {len(journal['stations'])} tours, {len(journal['echecs'])} échecs | batterie {e['robot']['q']} mAh")
+         f" {nouvelles} tours nouveaux, {len(journal['echecs'])} échecs | batterie {e['robot']['q']} mAh")

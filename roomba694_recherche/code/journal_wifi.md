@@ -614,3 +614,36 @@ Demande de l'utilisateur : « v7, puis pilote toi-même et carto ». Les changem
 - **La base confirme cette dérive** : les récepteurs infrarouges avant l'ont vue au cap 68° depuis le départ, puis au cap 64° au retour, au même endroit ; l'écart de 4° est celui que donnent les murs. Avec l'infrarouge dans le journal 20 fois par seconde, la fenêtre des récepteurs avant est décrite par 11 à 12 lectures sur 21 à 25° ; le récepteur du dessus voit la base tout autour à cette distance. Les stations 1 à 3, plus loin dans le couloir, ne voient plus la base.
 
 **Ce que cette séance apprend pour la suite** : le robot sait aller seul de station en station et s'arrêter devant un sol qu'il ne connaît pas ; la carte par murs en lignes se répète d'un essai à l'autre à 2 ou 3 cm ; la position seule dérive de 1 % environ et le cap de 0,7 ° par minute, ce que deux repères fixes savent déjà corriger : les murs et la base.
+
+## 25. Seconde exploration, tapis permis : huit stations, deux sur le tapis, carte d'ensemble (2026-11-10, 15 h 28 à 15 h 36)
+
+Réponse de l'utilisateur à la question « éviter les tapis ou les traverser ? » : « Traverse-les ».
+
+**Outils modifiés** :
+
+- `pilote.py` : le seuil de sol sombre devient un réglage du saut (`vide_min`). 1 500 arrête le robot devant un tapis ; 150 n'arrête plus que devant un vrai vide.
+- `explorer.py` : `--vide-min` ; `--reprise FICHIER_stations.json` reprend une exploration faite dans le même repère de position (ses stations comptent comme déjà faites, ses échos comme déjà vus, et le retour final passe par elles) ; `--partir-de NOM` envoie d'abord le robot sur une station reprise, par les trajets déjà faits ; un refus pour vide arrête tout mouvement. Le fichier écrit contient les stations reprises et les nouvelles, pour que la carte se calcule d'un seul coup.
+- Le cerveau n'avait pas redémarré depuis la v8 et la position n'a pas été remise à zéro : les deux explorations partagent le même repère.
+
+**Déroulé** (`mesures/exploration2_20261110_152857_*`, tracé du cerveau `mesures/position_20261110_153443.*`) : réveil par `w` puis `s`, mode Safe ; trajet vers la station 3 par les stations 1 et 2 ; station 4 au même endroit que la 3 (à 4 cm) ; puis trois stations choisies par l'outil, chacune n'ayant qu'une seule direction libre :
+
+| Station | Position (mm) | Direction prise | Sol sous les capteurs de vide au départ du tour |
+|---|---|---|---|
+| 4 | (−1 753, 1 477) | — | sol principal |
+| 5 | (−2 352, 988) | 220° | 2 672, 2 673, 2 613, 2 566 : sol principal |
+| 6 | (−2 357, 1 778) | 90° | 945, 1 271, 1 511, 2 585 : **tapis** |
+| 7 | (−2 756, 2 462) | 120° | 1 031, 1 894, 1 083, 1 239 : **tapis** |
+
+Depuis la station 7, plus aucune direction ne remplissait les conditions (1,30 m libres dans un cône de ±25°) ; le robot est revenu de station en station jusqu'au départ, sans en trouver d'autre, puis a fait son tour final. 109 sauts dont 73 avances (9,24 m), **aucune alarme, aucun refus, aucun arrêt réflexe, mode Safe gardé du début à la fin**, y compris en montant sur le tapis et en en redescendant. 6 930 lignes à 19,95 par seconde, intervalle le plus long 197 ms. Fin de séance par `s` puis `x`.
+
+**Le tapis, vu par les capteurs** :
+
+- Un capteur de vide est descendu à **152** sur le tapis sans que le mode Safe ne coupe les moteurs : son seuil propre est donc plus bas. C'est le chiffre qui manquait à l'idée 4 du rapport, à un facteur près : un repère au sol peut descendre au moins jusque-là.
+- Rapport roues / gyroscope pendant les tours : **1,064 et 1,040 sur le tapis**, 0,985, 0,990 et 0,991 sur le sol principal. Le tapis se reconnaît donc aussi à ce rapport, comme l'annonçait le rapport.
+- Courant en avance (réglage 75) : batterie −294 mA sur le tapis contre −230 mA ; roues 204 et 229 mA contre 133 et 157 mA.
+
+**Carte d'ensemble** (dix tours : stations 0 à 7 et les deux tours de retour ; figure `fig17_exploration2_20261110_152857_carte.png`) : neuf parois vues d'au moins deux stations, cinq d'au moins trois, d'accord entre stations à 1,1, 1,6, 1,7, 2,4 et 2,8 cm. Le fond du couloir est maintenant vu de huit stations, jusqu'à 3,9 m, à 1,6 cm près. Du côté de la base, les parois se rangent en plusieurs lignes parallèles à quelques centimètres les unes des autres : une part vient de meubles réels, une part de la dérive ci-dessous, puisque les stations ne sont pas encore recalées entre elles.
+
+**Fermeture après les deux explorations** (15,7 m parcourus au total d'après le cerveau, 23 minutes, 10,9 tours de rotation cumulée) : le cerveau se croit à 11 mm de son départ. Les parois larges vues au départ et à la fin disent autre chose : 16,7 cm plus loin du mur du couloir, 16,0 et 13,4 cm plus près des parois d'en face, environ 1 cm le long du couloir. **L'erreur de position est donc d'environ 15 cm, en travers du couloir, soit 1 % du chemin.** L'ajustement automatique sur neuf parois donne 16 cm avec des résidus de 13 cm : il confond encore des paliers étroits, et son chiffre vaut surtout par les trois parois larges. Le cap, d'après le motif de la pièce, n'a que 1,2° d'erreur à la fin (3,8° après la première exploration) : cette mesure est moins sûre quand le robot n'est pas revenu exactement au même point. La base est vue au cap 59° au retour, contre 68° au premier passage : la somme de la dérive de cap et du déplacement de 15 cm vu à 1,2 m.
+
+**Ce que cela dit** : l'estimation du rapport (« une carte d'appartement qui tient à 10 ou 15 cm ») est atteinte sur ce trajet sans aucun recalage ; avec le recalage sur les murs, déjà mesurable, l'erreur devrait retomber à quelques centimètres. C'est le travail suivant sur le PC : ajuster ensemble toutes les stations et toutes les parois.

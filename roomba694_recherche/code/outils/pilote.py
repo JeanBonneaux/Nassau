@@ -130,15 +130,17 @@ class Pilote:
         return None
 
     # ------------------------------------------------------------ un saut
-    def saut(self, touche, duree, marge_mm=600, lb_repos=150, lb_max=400):
+    def saut(self, touche, duree, marge_mm=600, lb_repos=150, lb_max=400, vide_min=1500):
         """Envoie une touche de roues, surveille, arrête au bout de `duree` secondes (1,4 s au plus).
-        Renvoie un dictionnaire : refus éventuel, alarme éventuelle, déplacement et rotation mesurés."""
+        Renvoie un dictionnaire : refus éventuel, alarme éventuelle, déplacement et rotation mesurés.
+        vide_min : signal le plus bas accepté sous les capteurs de vide avant de partir. 1500 refuse les tapis sombres ;
+        150 ne refuse plus que le vrai vide (le 2026-11-10, un tapis à motifs donnait 700 à 2 500 sans gêner le mode Safe)."""
         duree = min(duree, 1.4)
         l0 = self.frais()
         if l0 is None:
             return {"refus": "aucune ligne récente du journal (robot muet ?)"}
         recul = (touche == "2")
-        refus = self.controle(l0, avance=(touche == "8"), marge_mm=marge_mm, lb_repos=lb_repos, recul=recul)
+        refus = self.controle(l0, avance=(touche == "8"), marge_mm=marge_mm, lb_repos=lb_repos, vide_min=vide_min, recul=recul)
         if refus:
             return {"refus": refus}
         i0 = len(self.lignes) - 1
