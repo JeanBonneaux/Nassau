@@ -1,5 +1,8 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 6 — 2026-11-10 : arrêt sur pare-chocs dans le cerveau (voir « Réflexe pare-chocs » plus bas). En mode Safe le
+    robot n'arrête pas ses roues quand son pare-chocs touche ; le cerveau le fait désormais à chaque lecture des capteurs,
+    et n'accepte ensuite que le recul tant que l'on ne s'est pas dégagé. Seul changement de cette version.
   Version 5 — 2026-11-09 (nuit) : nouvelle page de pilotage (pages.h) construite autour d'une carte vivante, et carte des
     obstacles vus par le capteur de distance tenue dans le cerveau (fichier carte.ino, /api/carte) : chaque écho est placé
     dans la pièce avec la position du robot ; vue de dessus et vue 3D sur la page.
@@ -33,7 +36,8 @@
   du côté 3V3. Détail : radar.ino et notes/G_radar_ultrason_servo.md.
 
   SÉCURITÉ : vitesse plafonnée à 150 mm/s, pas de mode Full, arrêt automatique des roues 1,5 s après chaque ordre,
-  arrêt des roues si le client TCP se déconnecte ou si une mise à jour commence. Rien n'est envoyé au robot au démarrage.
+  arrêt des roues si le client TCP se déconnecte ou si une mise à jour commence, arrêt des roues dès qu'une lecture montre
+  le pare-chocs enfoncé ou une roue levée (v6). Seul l'ordre d'arrêt des roues est envoyé au robot au démarrage.
   Toujours finir par 's' puis 'x' (en Safe/Full le robot ne se recharge pas et ne dort jamais).
 
   MOT DE PASSE : « roomba694 » par défaut (point d'accès et ArduinoOTA). Pour le changer, copier
@@ -107,6 +111,12 @@ uint32_t lastPollMs = 0;
 int16_t  driveSpeed = SPEED_MM_S;   // vitesse des touches 8/2/4/6, réglable depuis la page web (plafond SPEED_MM_S)
 uint32_t lastStopMs = 0;
 volatile bool driveForward = false;  // dernier ordre de roues = marche avant (lu par la tâche radar et par la sécurité du radar)
+bool     driveBackward = false;     // dernier ordre de roues = recul tout droit (le seul mouvement accepté pare-chocs enfoncé)
+// Réflexe pare-chocs (v6) : voir reflexCheck() et bumperBlocks()
+bool     bumpLatch = false;         // un choc a arrêté les roues : seul le recul est accepté jusqu'à un recul ou un arrêt demandé, pare-chocs relâché
+uint32_t reflexStops = 0;           // arrêts des roues décidés par le cerveau sur un choc ou une roue levée, depuis le démarrage
+uint32_t reflexRefused = 0;         // ordres d'avance ou de rotation refusés à cause du pare-chocs
+char     reflexCause[40] = "";      // cause du dernier arrêt réflexe, en clair
 volatile uint8_t staReason = 0;     // dernière cause de déconnexion du réseau de la maison (événement Wi-Fi), 0 = aucune
 volatile bool    staGotIp = false;
 
@@ -696,6 +706,7 @@ bool pollFinish(bool ok, const uint8_t* buf) {
     st.lastOkMs = millis();
     st.failures = 0;
     poseUpdate();                               // position du robot (position.ino)
+    reflexCheck();                              // pare-chocs ou roue levée pendant que les roues tournent : arrêt (v6)
     if (csvEnabled) printCsvLine();
   } else {
     st.failures++;
@@ -785,6 +796,7 @@ void driveDirect(int16_t right, int16_t left) {
   writeI16(left);
   driving = (right != 0 || left != 0);
   driveForward = (right > 0 && left > 0);
+  driveBackward = (right < 0 && left < 0);
   lastDriveMs = millis();
 }
 
@@ -814,6 +826,47 @@ void stopWheels() {
     out.println(F("Roues arrêtées."));
     lastStopMs = now;
   }
+}
+
+// ---------- Réflexe pare-chocs (v6) ----------
+// En mode Safe, le robot n'arrête pas ses roues quand son pare-chocs touche. Vu le 2026-11-10 à 11 h 42, flèche tenue
+// par l'utilisateur : pare-chocs gauche enfoncé, 0,4 s de poussée, roue gauche levée, puis retombée en Passive
+// (journal_wifi.md § 21). Le cerveau fait donc l'arrêt lui-même :
+//   - reflexCheck(), appelée à chaque lecture réussie des capteurs : pare-chocs enfoncé ou roue levée pendant que les
+//     roues tournent -> roues arrêtées. Délai : au plus une période de lecture (POLL_PERIOD_MS) ;
+//   - bumperBlocks(), appelée par les flèches avance, gauche et droite : refus tant que le pare-chocs est enfoncé, et
+//     après un arrêt réflexe tant que l'on n'a ni reculé ni demandé l'arrêt (sinon la page, qui répète l'ordre toutes
+//     les 400 ms tant que le doigt reste appuyé, renverrait le robot contre l'obstacle).
+// Le recul tout droit reste toujours accepté : c'est lui qui dégage. Le tour sur place garde son propre arrêt (tour.ino).
+// Limite : un choc plus bref que l'intervalle entre deux lectures peut passer inaperçu.
+bool bumperPressedNow() { return st.ok && (st.bumpsDrops & 0x03) && millis() - st.lastOkMs < 1500; }
+
+void reflexCheck() {
+  if (!driving || tourActive()) return;
+  const uint8_t bd = st.bumpsDrops;
+  const char* cause = nullptr;
+  if (bd & 0x0C)                         cause = (bd & 0x08) ? ((bd & 0x04) ? "deux roues levées" : "roue gauche levée") : "roue droite levée";
+  else if ((bd & 0x03) && !driveBackward) cause = ((bd & 0x03) == 0x03) ? "pare-chocs, de face" : (bd & 0x02) ? "pare-chocs, à gauche" : "pare-chocs, à droite";
+  if (!cause) return;
+  driveDirect(0, 0);                     // l'ordre part tout de suite, sans passer par l'anti-rafale de stopWheels()
+  lastStopMs = millis();
+  reflexStops++;
+  if (bd & 0x03) bumpLatch = true;
+  strlcpy(reflexCause, cause, sizeof(reflexCause));
+  out.printf("Réflexe : %s, roues arrêtées par le cerveau. Reculez pour vous dégager (flèche du bas).\n", cause);
+}
+
+// Vrai (et message, au plus un toutes les 2 s) si le pare-chocs interdit cet ordre d'avance ou de rotation.
+bool bumperBlocks() {
+  if (!bumpLatch && !bumperPressedNow()) return false;
+  static uint32_t lastMsgMs = 0;
+  reflexRefused++;
+  if (millis() - lastMsgMs > 2000) {
+    lastMsgMs = millis();
+    out.println(bumperPressedNow() ? F("Ordre refusé : le pare-chocs est enfoncé. Seul le recul est accepté (flèche du bas).")
+                                   : F("Ordre refusé après un choc : reculez d'abord (flèche du bas), ou relâchez puis reprenez."));
+  }
+  return true;
 }
 
 void playJingle() {
@@ -929,7 +982,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v5 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v6 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"
@@ -938,7 +991,8 @@ void printHelp() {
     " n  test de continuité des trois fils\n"
     " m  jouer 3 notes (Safe)         l  LEDs (Safe)\n"
     " 8  avance   2  recule   4  tourne à gauche   6  tourne à droite   5 ou espace  stop\n"
-    "    (mode Safe requis ; chaque ordre dure 1,5 s puis les roues s'arrêtent seules ; 150 mm/s au plus)\n"
+    "    (mode Safe requis ; chaque ordre dure 1,5 s puis les roues s'arrêtent seules ; 150 mm/s au plus ;\n"
+    "     pare-chocs enfoncé : roues arrêtées par le cerveau, puis seul le recul est accepté)\n"
     " a  anti-veille BRC toutes les 45 s (on/off)\n"
     " j  journal CSV toutes les 200 ms (on/off)   i  informations Wi-Fi et état\n"
     " g  gyroscope MPU-6050 (cap, vitesse)   z  recalibrer le gyroscope et remettre le cap à zéro (robot immobile)\n"
@@ -981,15 +1035,21 @@ void handle(char c) {
     case 'l': ledDemo(); break;
     // Le message n'est affiché qu'au départ : la page web répète l'ordre toutes les 400 ms tant que le bouton est maintenu.
     case '8': if (!wheelsAllowed()) break;        // mode Safe requis
+              if (bumperBlocks()) break;          // pare-chocs enfoncé, ou choc dont on ne s'est pas encore dégagé (v6)
               if (radarForwardBlocked()) break;   // obstacle devant à moins du seuil (radar à ultrasons, arrêt auto actif)
               if (!driving) out.printf("Avance (%d mm/s).\n", driveSpeed);          driveDirect( driveSpeed,  driveSpeed); break;
     case '2': if (!wheelsAllowed()) break;
+              bumpLatch = false;                  // reculer, c'est se dégager : le verrou du choc tombe
               if (!driving) out.printf("Recule (%d mm/s).\n", driveSpeed);          driveDirect(-driveSpeed, -driveSpeed); break;
     case '4': if (!wheelsAllowed()) break;
+              if (bumperBlocks()) break;
               if (!driving) out.printf("Tourne à gauche (%d mm/s).\n", driveSpeed); driveDirect( driveSpeed, -driveSpeed); break;
     case '6': if (!wheelsAllowed()) break;
+              if (bumperBlocks()) break;
               if (!driving) out.printf("Tourne à droite (%d mm/s).\n", driveSpeed); driveDirect(-driveSpeed,  driveSpeed); break;
-    case '5': case ' ': stopWheels(); break;
+    case '5': case ' ': stopWheels();
+              if (!bumperPressedNow()) bumpLatch = false;   // arrêt demandé, pare-chocs relâché : le verrou du choc tombe
+              break;
     case 'a':
       keepAwake = !keepAwake;
       lastKeepAwakeMs = millis();

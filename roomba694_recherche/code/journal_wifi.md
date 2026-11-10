@@ -454,3 +454,75 @@ bat:   min 815  sec 43  mV 16252  mA 0  rx-byte 94  mAH 2067  state 18  mode 5
 - **Sans valeur** : l'écart de 1,88 m entre l'arrivée et le départ (le robot n'est pas revenu à son point de départ).
 
 **Ce que cela change dans l'ordre de travail** : l'arrêt sur pare-chocs dans le cerveau (gain rapide 6) passe devant tout déplacement que l'assistant piloterait lui-même, le choc de 11 h 42 en donne la raison ; la tenue du cap au gyroscope devient nécessaire dès la première ligne droite décidée par le cerveau ; la roulette avant sort de la liste des signaux utiles.
+
+**Précision de l'utilisateur** (12 h 45) : les deux zones à motifs sont bien des tapis. Le choc de 11 h 42 s'est donc produit en montant sur le second tapis.
+
+## 22. L'assistant prend la main : trois tours au même endroit, firmware v6 (arrêt sur pare-chocs), sauts pilotés depuis le PC, contact avec une paroi (2026-11-10, 12 h 45 à 13 h 15)
+
+Demande de l'utilisateur après lecture du § 21 : « Continue, prends la main ». Il avait posé le robot à environ 0,8 m devant sa base, sur le sol principal. Suite annoncée et suivie : trois tours sur place, puis la v6, puis des déplacements pilotés par l'assistant. Analyse rejouable : `research_notes/Roomba 694 sensor exploitation ideas/data_analysis/g_tours_sauts_approche.py`, résultats bruts dans `results_g_tours_sauts_approche_20261110.txt`, figures 14 à 16.
+
+**Trois tours sur place au même endroit** (firmware v5, 12 h 47 à 12 h 49 ; `mesures/tour_20261110_124753`, `_124820`, `_124838`, et tous les capteurs dans `mesures/tours_20261110_124718_*`) :
+
+| Tour | Gyroscope | Roues | Rapport roues / gyroscope | Durée | Mesures |
+|---|---|---|---|---|---|
+| 1 | 382,5° | 378,7° | 0,9901 | 10,8 s | 97 |
+| 2 | 383,9° | 379,8° | 0,9893 | 10,7 s | 98 |
+| 3 | 385,8° | 381,5° | 0,9889 | 10,9 s | 98 |
+
+- **Un tour se répète.** Recalées l'une sur l'autre, les trois courbes distance / direction s'écartent de 3,7 à 4,4 cm en moyenne (critère du rapport pour reconnaître une station : moins de 5 cm). Le décalage qui les superpose le mieux vaut 23,6°, 24,8° et 49,2° d'après le motif de la pièce, contre 22,5°, 23,9° et 46,4° d'après le gyroscope.
+- **Première mesure de l'échelle du gyroscope** (idée 1 du rapport, avec le firmware existant) : le gyroscope compte 382,5° là où le motif de la pièce en donne 383,6°, soit une échelle de **0,997** (0,9963 à 0,9977 selon la paire). La méthode vaut ±1° par paire, donc ±0,3 % : le gyroscope est juste à mieux que 1 %, sans qu'on puisse encore dire mieux. Le critère du rapport (six tours d'accord à 0,5°) demandera les tours lents de plusieurs tours.
+- Rapport roues / gyroscope : **0,9895 ± 0,0006** sur ces trois tours (0,987 pendant le pilotage du matin, 0,981 dans le rapport).
+- **Le tour ne tourne pas à la vitesse demandée** : 35,6 °/s et des roues à 72 mm/s pour un ordre de ±62 mm/s. La veille, le même ordre donnait 27,8 °/s. D'où 97 mesures par tour au lieu de 122.
+
+**Infrarouge de la base pendant ces tours** (touche `e` quatre fois par seconde, soit une lecture tous les 9°) :
+
+- **Les récepteurs gauche et droit fonctionnent sur ce 694**, en mode Safe seulement : robot posé face à la base, ils lisent tous deux 168 (faisceau rouge) ; en Passive, au même endroit, ils restent à 0 pendant que le récepteur du dessus lit 168 (15 lectures). Cela répond à la question laissée ouverte par le rapport. Les deux octets ont été identiques dans les 351 lectures : un seul récepteur regardant vers l'avant, ou deux récepteurs très proches.
+- Pendant les tours, ces récepteurs avant ne voient la base que sur 10 à 23° de cap, autour de **27°** (repère du gyroscope) ; ils l'ont manquée au troisième tour, la lecture étant trop espacée. Le récepteur du dessus la voit sur 200 à 220°, centrés sur 34°, 38° et 36° : le montage posé sur le robot lui cache le reste. Le robot avait été posé face à la base au cap 24°.
+- Codes lus par le récepteur du dessus : 168 (121 fois), 172 rouge et vert (38 fois), 160 (4 fois, code absent du tableau de la spécification).
+
+**Firmware v6 : arrêt sur pare-chocs dans le cerveau** (problème 5 du rapport, gain rapide 6 ; seul changement de cette version) :
+
+- `reflexCheck()`, appelée à chaque lecture réussie des capteurs : pare-chocs enfoncé ou roue levée pendant que les roues tournent, roues arrêtées par le cerveau (sauf pare-chocs enfoncé pendant un recul tout droit, qui est la façon de se dégager) ; le tour sur place garde son propre arrêt.
+- `bumperBlocks()` : avance et rotations refusées tant que le pare-chocs est enfoncé, puis, après un arrêt réflexe, tant qu'on n'a ni reculé ni demandé l'arrêt, pare-chocs relâché. Sans ce verrou, la page, qui répète l'ordre toutes les 400 ms, renverrait le robot contre l'obstacle.
+- `/api/state` : champ `reflexe` (`arrets`, `refus`, `verrou`, `cause`). Aide de la console et numéro de version mis à jour.
+- Délai : au plus une période de lecture (200 ms), soit 3 cm à 150 mm/s. Limite connue : un choc plus bref que cet intervalle peut passer inaperçu ; la lecture 20 fois par seconde (gain rapide 2) le réduira.
+- Compilation : 1 128 890 octets (86 %), 70 608 octets de RAM, aucun avertissement. Envoi par Wi-Fi vers 12 h 58, robot immobile en mode Safe : « v6 Nov 10 2026 12:56:04 », de retour en 4 s, raison « redémarrage logiciel (mise à jour) », robot toujours en Safe, lecture par le groupe 100, aucun texte reçu du robot.
+
+**Outil `code/outils/pilote.py`** (nouveau) : des « sauts » commandés depuis le PC pendant qu'`enregistreur.py` tourne. Un saut est une seule touche de roues suivie de la touche d'arrêt, 1,4 s au plus. Contrôles avant chaque saut (mode Safe, pare-chocs, roues au sol, sol clair, capteurs optiques au repos, rien devant à moins de la marge) et pendant (arrêt immédiat sur pare-chocs, roue levée, sortie du mode Safe, capteur optique très fort). Un recul ne se fait que sur le terrain qui vient d'être parcouru : rien ne regarde derrière.
+
+**Sauts aller-retour à cinq réglages** (12 h 59 à 13 h 01, `mesures/sauts_20261110_125854_*`, 22 sauts, aucune alarme, aucun refus ; sol principal, batterie à 15,9 V) :
+
+| Réglage | En avant : roue gauche / droite | En arrière : roue gauche / droite | Rotation au gyroscope par saut arrière |
+|---|---|---|---|
+| 50 mm/s | 71,5 / 70,5 | 73,8 / 62,8 | +2,9° et +4,2° |
+| 75 | 96,4 / 97,3 | 101,8 / 91,8 | +3,1° et +3,9° |
+| 100 | 122,2 / 123,1 | 125,5 / 114,8 | +3,2° et +4,1° |
+| 125 | 144,4 / 149,4 | 151,8 / 139,7 | +4,3° et +2,9° |
+| 150 | 145,9 / 144,7 | 149,0 / 138,8 | +3,8° et +3,3° |
+
+- **La vitesse réelle n'est pas la vitesse demandée** : environ 21 mm/s de plus de 50 à 125, puis un plafond vers 146 mm/s, que le réglage 125 atteint déjà. Cela remplace l'idée des « paliers de 28,5 mm/s » du rapport : ni 71, ni 97, ni 122 n'en sont des multiples. Avec la veille (57 mm/s pour un ordre de 62) et le 2026-11-08 (142 pour 150), la vitesse réelle dépend aussi du jour, sans doute de la tension de la batterie. Le cerveau ne doit donc jamais compter sur la vitesse demandée ; il ne le fait pas, la position vient des compteurs.
+- **En marche arrière, la roue gauche tourne 10 mm/s plus vite que la droite**, à tous les réglages : le robot pivote de 3 à 4° vers la gauche par saut de 9 à 19 cm, soit +26 ° par mètre en moyenne. En marche avant sur ces sauts courts : +2,8 ° par mètre en moyenne, de −4 à +12.
+- Rotations par sauts jusqu'à un cap voulu, avec le gyroscope comme juge (avant l'approche ci-dessous) : cible atteinte à 1,2° près au plus, en un ou deux sauts, quatre fois sur quatre.
+
+**Approche d'une paroi jusqu'au contact** (13 h 03 à 13 h 07, `mesures/approche_20261110_130302_*`) : paroi choisie d'après les tours, à 0,98 m ; robot tourné face à elle, puis quatre sauts au réglage 100, puis des pas de 3 cm au réglage 50, l'arrêt automatique du capteur de distance étant suspendu le temps du contact, puis rétabli (`securite=1`, seuil 30 cm, vérifié).
+
+- **Arrêt sur pare-chocs de la v6 vérifié sur un vrai contact** : au dixième pas, les deux côtés du pare-chocs s'enfoncent ; `reflexe` passe à `arrets: 1`, cause « pare-chocs, de face », verrou posé ; le saut s'arrête à 24 mm au lieu de 31 ; courants des roues à 0, courant de la batterie au plus à −294 mA (−874 mA lors du choc du matin), mode Safe gardé. Une avance redemandée contre la paroi est refusée (`refus` 0 → 1, roues immobiles). Le recul dégage le robot et fait tomber le verrou.
+- **Position du capteur de distance sur le robot, par contact** (problème 9 du rapport, première mesure) : il lit **143 mm** quand le pare-chocs touche la paroi. Pour un rayon de 170 mm (valeur de catalogue), le devant du capteur est donc à 27 mm en avant du centre du robot, à l'épaisseur de la plinthe près. Le réglage `dx` de la carte vaut toujours 0.
+- **Le capteur de distance et les compteurs des roues sont d'accord de près** : de 418 à 159 mm, 259 mm de baisse pour 263 mm roulés (rapport 0,986).
+- **Piège vu en direct** : avant de partir, la distance lue était la même à 1 cm près en regardant 12° à droite, en face et 12° à gauche (995, 985, 1 020 mm), ce que l'assistant a pris pour une paroi plane. Pendant l'approche, la distance a d'abord baissé moins vite que le robot n'avançait (rapports 0,92, 0,97, 0,98, 0,82), puis elle est remontée de 396 à 418 mm : le capteur entendait un objet plus proche situé de côté, sorti ensuite de son faisceau. La paroi d'en face était à 1,08 m et non à 0,98 m. Une même distance sous plusieurs caps ne distingue pas un mur d'un objet ponctuel ; c'est le déplacement qui les distingue, comme l'écrit la note de recherche sur le capteur de distance.
+- **Capteurs optiques contre écart au mur** (première courbe, robot immobile à chaque pas) :
+
+| Écart pare-chocs / paroi (mm) | 275 | 239 | 207 | 175 | 144 | 110 | 75 | 45 | 16 | 0 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Centre gauche | 40 | 44 | 48 | 55 | 64 | 82 | 100 | 105 | 128 | 152 |
+| Avant gauche | 16 | 20 | 20 | 24 | 25 | 34 | 44 | 60 | 76 | 108 |
+| Centre droit | 12 | 10 | 10 | 10 | 12 | 15 | 18 | 20 | 28 | 37 |
+
+  Le signal monte jusqu'au contact, sans l'effondrement vu le 2026-11-08, et bien moins haut (152 contre 710 à 13 cm ce jour-là) : la réponse dépend de la paroi. Le centre droit répond quatre fois moins que le centre gauche. Après le recul, à 75 mm d'écart : 99 au centre gauche, contre 100 à l'aller.
+- **Erreur de l'outil, corrigée** : `pilote.py` refusait le recul tant que le pare-chocs était enfoncé (le firmware, lui, l'acceptait). Le robot est resté 78 s contre la paroi, roues à l'arrêt, avant le recul.
+
+**Quatrième tour, près de la paroi** (station B, 13 h 07, `mesures/tour_20261110_130703`) : 380° en 11,0 s, 101 mesures, à 840 mm de la station A d'après les roues et le gyroscope ; rapport roues / gyroscope 0,9899. Dans un même repère (figure 16), les échos de B tombent sur la paroi touchée (écart médian −1 mm) ; ceux de A sont 73 mm devant, pour la raison du piège ci-dessus ; la paroi de gauche est placée au même endroit par les deux stations, à 5 cm près à l'œil.
+
+**Fin de séance** à 13 h 08 : `s` puis `x`, capteur de distance éteint. Le robot reste à 22 cm de la paroi, hors de sa base ; batterie 1 856 mAh sur 2 068.
+
+**Pas fait** : tenue du cap au gyroscope, lecture 20 fois par seconde, infrarouge et courants dans le journal CSV (gains rapides 2 à 4), essai du recul pour quitter la base.

@@ -104,9 +104,14 @@ def ecrire_console(t, texte):
 
 
 def traiter_ligne(t, ligne):
-    """Une ligne de la console : rangée telle quelle, puis triée (journal CSV, réponse à la touche e)."""
+    """Une ligne de la console : triée (journal CSV, réponse à la touche e), sinon rangée telle quelle.
+    Depuis le 2026-11-10 (après-midi), les lignes « csv, » et les réponses à la touche e ne sont plus recopiées dans
+    NOM_console.txt : elles sont déjà, avec la même heure, dans NOM_capteurs.csv et NOM_e.csv (fichiers dix fois plus petits)."""
     global f_csv, f_e, e_row
-    ecrire_console(t, ligne)
+    if not (ligne.startswith("csv,") or any(r.search(ligne) for r in RE.values())):
+        ecrire_console(t, ligne)
+    else:
+        compte["console"] += 1
     if ligne.startswith("csv,ms,"):
         if f_csv is None:
             f_csv = open(base + "_capteurs.csv", "w", encoding="utf-8", newline="\n")

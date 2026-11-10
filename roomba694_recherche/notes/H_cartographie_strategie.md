@@ -18,13 +18,21 @@ Rédigé le 2026-11-09 au soir, après les premiers essais du radar sur le maté
 | 2026-11-10 | La roulette avant (paquet 58) dépend d'une roulette bicolore que le 694 n'a peut-être pas | 0 sur 154 lectures en marche avant | Signal inutilisable sur ce robot |
 | 2026-11-10 | Les codes infrarouges de la base n'ont jamais été relevés | Le récepteur du dessus lit 168 puis 164 en passant devant la base ; gauche et droite à 0 | L'axe de la base se repère en roulant ; l'essai des récepteurs gauche et droit reste à faire face à la base |
 
+| 2026-11-10 | Les récepteurs infrarouges gauche et droit : « aucune source n'établit qu'un 694 en a qui fonctionnent » | Ils lisent le faisceau de la base en mode Safe, robot face à elle, et restent à 0 en Passive ; toujours identiques entre eux ; pendant un tour ils ne voient la base que sur 10 à 23° de cap ([journal_wifi.md § 22](../code/journal_wifi.md)) | La direction de la base se lit en tournant ; il faut l'infrarouge dans le journal à 20 lectures par seconde et un tour lent pour la donner à 1 ou 2° près |
+| 2026-11-10 | Un tour refait au même endroit devrait se superposer au précédent (extrapolation : 1,3°) | Trois tours : courbes superposées à 3,7 à 4,4 cm en moyenne ; décalage d'après le motif de la pièce et d'après le gyroscope d'accord à 1° près par tour | Une station se reconnaît à sa courbe ; échelle du gyroscope 0,997 ± 0,003, première mesure |
+| 2026-11-10 | Paliers de vitesse de 28,5 mm/s | Réglages 50, 75, 100, 125, 150 : vitesses réelles 71, 97, 123, 147, 145 mm/s en avant ; en arrière la roue gauche tourne 10 mm/s plus vite que la droite | Pas de paliers ; la vitesse réelle dépasse la demande de 21 mm/s jusqu'à un plafond vers 146 ; ne jamais compter sur la vitesse demandée |
+| 2026-11-10 | Position du capteur de distance jamais mesurée (problème 9) | 143 mm lus au contact du pare-chocs avec une paroi : capteur à 27 mm en avant du centre pour un rayon de 170 mm | Première valeur pour le réglage `dx` de la carte (encore à 0) ; à confirmer à la règle |
+| 2026-11-10 | L'arrêt sur pare-chocs dans le cerveau est la condition de toute translation décidée par lui (gain rapide 6) | Firmware v6 : arrêt réflexe et verrou, vérifiés sur un vrai contact | Condition remplie ; délai encore de 200 ms au plus |
+
 ### État de l'ordre de travail du rapport
 
 | Étape du rapport | État |
 |---|---|
 | 0. Une soirée sans code nouveau | **en cours le 2026-11-10** : essai du mode Safe sur la base fait ; enregistrement pendant un pilotage fait et analysé (§ 21) ; multimètre et règle remis à plus tard par l'utilisateur ; enregistrement pendant un tour sur place, papier et ruban sous un capteur de vide, infrarouge face à la base : à faire |
-| 1. Fondations du firmware | à faire |
-| 2 à 7 | à faire |
+| 1. Fondations du firmware | **commencé le 2026-11-10** : gain rapide 6 fait pour le pare-chocs (firmware v6, vérifié sur un contact) ; restent le fil de réveil, la lecture 20 fois par seconde, l'horloge unique, les signaux déjà décodés dans le journal (infrarouge, courants), les enregistrements bruts du capteur de distance, le zéro du gyroscope, le texte « bat: » de la base |
+| 2. Séance d'étalonnage | **entamée le 2026-11-10** sans mètre ruban : vitesses réelles à cinq réglages, contact avec une paroi (position du capteur, capteurs optiques), échelle du gyroscope à ±0,3 % par trois tours ; restent les tours de plusieurs tours, le mètre ruban, le servo |
+| 3. Une pièce à partir de tours, sur le PC | **premier pas le 2026-11-10** : deux stations à 0,84 m l'une de l'autre dessinées dans un même repère (figure 16 des analyses) ; restent les murs en lignes et le carré de cinq tours |
+| 4 à 7 | à faire |
 
 ## Objectif fixé par l'utilisateur
 
