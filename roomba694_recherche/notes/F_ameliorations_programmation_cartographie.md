@@ -62,8 +62,8 @@ Dans tous les cas : laisser la prise Mini-DIN accessible, garder le robot assez 
 
 | Capteur | Prix | Alimentation | Lisible par l'ESP32 ? |
 |---|---|---|---|
-| LiDAR LDROBOT LD19 / kit D500 | 65 à 105 € [H28, M4] ; ~112 $ CA sur Amazon.ca, 79 € sur Amazon.fr [A9] | 5 V, 180 mA en rotation, 300 mA au lancement [A7], UART 230400 | oui : kaiaai/LDS v0.6.4 prend en charge le LD19, le STL-19P/D500 y est « expérimental, même protocole » [H33] |
-| LiDAR RPLIDAR C1 | 75 à 80 € [H28] ; ~95 $ CA sur Amazon.ca [A15] | 5 V, 230 mA à 10 Hz, UART 460800 | oui (kaiaai/LDS) [H33] |
+| LiDAR LDROBOT LD19 / kit D500 | 65 à 105 € [H28, M4] ; ~112 $ CA sur Amazon.ca, 79 € sur Amazon.fr [A9] ; relevé du 2026-11-09 : 111,13 $ CA, vendeur ZICZNT (B0DDKXQ23R), livraison gratuite en 3 à 6 semaines ou payante en une semaine, contenu du kit peu détaillé sur l'annonce | 5 V, 180 mA en rotation, 300 mA au lancement [A7], UART 230400 | oui : kaiaai/LDS v0.6.4 prend en charge le LD19, le STL-19P/D500 y est « expérimental, même protocole » [H33] |
+| LiDAR RPLIDAR C1 | 75 à 80 € [H28] ; ~95 $ CA sur Amazon.ca [A15] ; **relevé du 2026-11-09 sur Amazon.ca : 93,99 $ CA vendu par Waveshare et expédié par Amazon (B0CT31PH8S, livré en 4 jours, 4,8 étoiles sur 6 avis)** ; 97,06 $ chez ZICZNT (B0DDKZV8HZ, livraison en 3 à 6 semaines) ; l'annonce B0CX1N4JNZ notée la veille n'est plus disponible | 5 V, 230 mA à 10 Hz, UART 460800, deux fils de données (il faut lui envoyer l'ordre de démarrer) | oui (kaiaai/LDS) [H33] |
 | LiDAR RPLIDAR A1 | 105 à 150 € [H28 à H30] | 5 V, UART 115200 | oui ; le plus documenté sur Roomba (Perceptor, CMU) |
 | LiDAR LD14P (kit D200) | 50 à 55 € [H28] | 5 V | oui |
 | LiDAR YDLIDAR X2 | 62 € HT [H35] | 5 V | oui |
