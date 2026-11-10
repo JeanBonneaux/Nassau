@@ -374,7 +374,7 @@ static const char PAGE_UPDATE[] PROGMEM = R"=====(<!doctype html>
 </head><body><h1>Mise à jour du firmware</h1>
 <p>Fichier attendu : le <code>.bin</code> produit par <code>arduino-cli compile --export-binaries</code>
 (<code>build/esp32.esp32.esp32/roomba694_wifi.ino.bin</code>). Les roues sont arrêtées au début de l'envoi ; la carte redémarre à la fin (30 s environ).</p>
-<p>Identifiant demandé par le navigateur : <code>admin</code>, mot de passe : celui du réseau Roomba694.</p>
+<p>Sans mot de passe : l'envoi est accepté depuis cette page ou depuis un appareil du réseau, à l'adresse du robot.</p>
 <form method="post" action="/update" enctype="multipart/form-data">
 <input type="file" name="firmware" accept=".bin" required>
 <button>Envoyer et redémarrer</button></form>

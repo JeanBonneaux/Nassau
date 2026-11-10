@@ -26,8 +26,11 @@
   arrêt des roues si le client TCP se déconnecte ou si une mise à jour commence. Rien n'est envoyé au robot au démarrage.
   Toujours finir par 's' puis 'x' (en Safe/Full le robot ne se recharge pas et ne dort jamais).
 
-  MOT DE PASSE : « roomba694 » par défaut (point d'accès, pages /wifi et /update, ArduinoOTA). Pour le changer, copier
+  MOT DE PASSE : « roomba694 » par défaut (point d'accès et ArduinoOTA). Pour le changer, copier
   secrets.example.h en secrets.h (ignoré par git), modifier AP_PASS (8 caractères minimum) et recompiler.
+  La page /update n'en demande plus depuis le 2026-11-09 (décision de l'utilisateur, réseau de la maison jugé sûr) : elle
+  accepte tout envoi adressé à la carte depuis son réseau, sauf ceux venus d'une page d'un autre site (web.ino,
+  updateRequestIsLocal). Tout appareil du réseau de la maison ou du point d'accès peut donc mettre la carte à jour.
 
   PIÈGES MESURÉS SUR CE 694 (voir journal_tests.md) : au moins 15 ms entre deux requêtes capteur ; mode OI lu décalé de +1 ;
   paquet 19 (distance) faux, se fier aux encodeurs 43/44 ; après un réveil par BRC, octets parasites possibles et
@@ -789,6 +792,8 @@ void setupWifi() {
   http.on("/update", HTTP_GET, handleUpdateGet);
   http.on("/update", HTTP_POST, handleUpdateDone, handleUpdateUpload);
   http.onNotFound([]() { http.send(404, "text/plain; charset=utf-8", "Page inconnue"); });
+  static const char* HTTP_HEADERS[] = { "Origin" };   // en-tête lu par updateRequestIsLocal() (web.ino) avant d'accepter une mise à jour
+  http.collectHeaders(HTTP_HEADERS, 1);
   http.begin();
 
   tcpServer.begin();

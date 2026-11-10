@@ -3,7 +3,7 @@
 //
 // Pages :  /            tableau de bord (pilotage, capteurs, gyroscope, console)
 //          /wifi        réseau Wi-Fi de la maison : état, recherche des réseaux, enregistrement (sans redémarrage)
-//          /update      mise à jour du firmware par fichier .bin (identifiant admin, mot de passe = celui du réseau Roomba694)
+//          /update      mise à jour du firmware par fichier .bin, sans mot de passe depuis le 2026-11-09 (garde-fou : updateRequestIsLocal)
 // API :    /api/state   état complet en JSON (lu toutes les 600 ms par la page)
 //          /api/cmd?c=X envoie la touche X (mêmes touches que la console série)
 //          /api/speed?v=N  vitesse des flèches, 50 à SPEED_MM_S mm/s
@@ -41,10 +41,29 @@ void loadSavedSsid() {
 #include "pages.h"   // PAGE_INDEX, PAGE_WIFI, PAGE_UPDATE
 
 // ---------- Handlers ----------
-bool authOk() {
-  if (http.authenticate("admin", AP_PASS)) return true;
-  http.requestAuthentication();
-  return false;
+// Mise à jour du firmware SANS mot de passe : décision de l'utilisateur du 2026-11-09 (réseau de la maison jugé sûr ;
+// l'ancien mot de passe était de toute façon celui du point d'accès, connu de quiconque s'y connecte).
+// Il reste un garde-fou sans secret : la requête doit viser une adresse de la carte elle-même (en-tête Host) et ne pas
+// venir d'une page d'un autre site (en-tête Origin absent, ou identique à l'adresse visée). Un navigateur joint toujours
+// Origin à un envoi de formulaire : une page web quelconque, ouverte sur un appareil de la maison, ne peut donc pas
+// remplacer le firmware à l'insu de l'utilisateur. curl (sans Origin) et la page /update de la carte passent.
+// Conséquence assumée : tout appareil connecté au réseau de la maison ou au point d'accès peut mettre la carte à jour.
+bool updateRequestIsLocal() {
+  String full = http.hostHeader();   // « 192.168.18.25 », « roomba694.local », parfois suivi de « :80 »
+  full.toLowerCase();
+  String host = full;
+  int colon = host.indexOf(':');
+  if (colon >= 0) host.remove(colon);
+  String name = HOSTNAME;
+  name.toLowerCase();
+  bool own = host == WiFi.softAPIP().toString()
+          || (WiFi.status() == WL_CONNECTED && host == WiFi.localIP().toString())
+          || host == name || host == name + ".local";
+  if (!own) return false;
+  String origin = http.header("Origin");   // en-tête collecté grâce à http.collectHeaders() (setup du fichier principal)
+  if (!origin.length()) return true;
+  origin.toLowerCase();
+  return origin == String("http://") + full;
 }
 
 void handleRoot() { http.send_P(200, "text/html; charset=utf-8", PAGE_INDEX); }
@@ -183,17 +202,18 @@ void handleWifiForget() {
   http.send(200, "application/json", "{\"ok\":true}");
 }
 
-void handleUpdateGet() {
-  if (!authOk()) return;
-  http.send_P(200, "text/html; charset=utf-8", PAGE_UPDATE);
-}
+void handleUpdateGet() { http.send_P(200, "text/html; charset=utf-8", PAGE_UPDATE); }
 
-bool updateAuthorized = false;
+bool updateAuthorized = false;   // vrai pendant un envoi accepté par updateRequestIsLocal()
 
 void handleUpdateDone() {
-  if (!authOk()) return;
   http.sendHeader("Connection", "close");
-  if (!updateAuthorized || Update.hasError()) {
+  if (!updateAuthorized) {   // requête refusée, ou sans fichier : rien n'a été écrit en flash, la carte ne redémarre pas
+    http.send(403, "text/plain; charset=utf-8", "Mise à jour refusée : elle doit être envoyée à l'adresse de la carte, avec un fichier, et pas par une page d'un autre site.");
+    return;
+  }
+  updateAuthorized = false;
+  if (Update.hasError()) {
     http.send(200, "text/plain; charset=utf-8", "ÉCHEC de la mise à jour : voir la console. La carte redémarre avec l'ancien firmware.");
   } else {
     http.send(200, "text/plain; charset=utf-8", "Mise à jour réussie, la carte redémarre.");
@@ -205,8 +225,8 @@ void handleUpdateDone() {
 void handleUpdateUpload() {
   HTTPUpload& up = http.upload();
   if (up.status == UPLOAD_FILE_START) {
-    updateAuthorized = http.authenticate("admin", AP_PASS);   // rien n'est écrit en flash sans l'identifiant
-    if (!updateAuthorized) { out.println(F("Mise à jour refusée : identifiant manquant ou faux.")); return; }
+    updateAuthorized = updateRequestIsLocal();   // pas de mot de passe, mais rien n'est écrit en flash pour une requête venue d'ailleurs
+    if (!updateAuthorized) { out.println(F("Mise à jour refusée : requête adressée à un autre nom que la carte, ou venue d'une page d'un autre site.")); return; }
     if (driving) stopWheels();
     out.printf("Mise à jour par la page web : %s\n", up.filename.c_str());
     if (!Update.begin(UPDATE_SIZE_UNKNOWN)) Update.printError(Serial);
@@ -219,6 +239,7 @@ void handleUpdateUpload() {
     else Update.printError(Serial);
   } else if (up.status == UPLOAD_FILE_ABORTED) {
     Update.abort();
+    updateAuthorized = false;
     out.println(F("Mise à jour interrompue."));
   }
 }
