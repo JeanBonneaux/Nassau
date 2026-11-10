@@ -3,12 +3,15 @@
 # Idée (rapport « sensor exploitation ideas », idée 2) : un mur lisse renvoie l'écho de son point le plus proche, donc un
 # palier d'un tour sur place donne la distance du robot à ce mur, à un centimètre près, quelle que soit la largeur du
 # faisceau. Un mur déjà connu, revu d'une nouvelle station, dit donc où est la station le long de la normale du mur ;
-# deux murs à angle droit la fixent dans le plan, et la direction des paliers donne son cap à quelques degrés.
+# deux murs à angle droit la fixent dans le plan. La direction des paliers, elle, ne donne le cap qu'à ±5° au mieux.
 #
-# Deux usages :
-#   - en ligne (explorer3.py) : Carte.ajouter(...) à chaque tour ; la position annoncée par le cerveau (roues et
-#     gyroscope, qui dérive d'environ 1 % du chemin) est corrigée sur les murs connus avant de servir à la suite ;
-#   - après coup (i_recalage.py) : Carte.ajuster() reprend toutes les stations et tous les murs ensemble (moindres carrés).
+# Ce que le module offre :
+#   - paliers() et paliers_souples() : les paliers d'un tour (tolérance fixe, ou qui grandit avec la distance) ;
+#   - apparier() : le décalage réel entre deux tours faits presque au même endroit ; c'est ce dont explorer3.py se sert
+#     pour recaler le robot quand il repasse par une station connue ;
+#   - Carte.ajouter() : recalage d'une station, à son arrivée, sur les murs déjà connus (essayé le 2026-11-10 : ne suffit
+#     pas seul, journal_wifi.md § 26) ;
+#   - Carte.ajuster() : après coup (i_recalage.py), toutes les stations et tous les murs repris ensemble (moindres carrés).
 #
 # Repères : « odo » = celui du cerveau (x, y en mm, cap en degrés cumulés) ; « carte » = celui de la première station,
 # dans lequel les murs sont fixes. Un mur est une droite n(phi)·X = rho, phi étant la direction de sa normale vue de
@@ -51,6 +54,44 @@ def paliers(d, r):
             q = len(v) // 4
             out.append((((d[i] + d[j]) / 2) % 360.0, float(np.median(v[q:len(v) - q])) + DX, float(d[j] - d[i]), j - i + 1))
         i = j + 1
+    return out
+
+
+def paliers_souples(d, r, tol_mm=30.0, tol_rel=0.012, trous=1):
+    """Comme paliers(), pour décider ce qui est un mur pendant une exploration : la tolérance grandit avec la distance
+    (1,2 % de la distance, 30 mm au moins) et une mesure isolée qui s'écarte ou qui manque ne coupe pas le palier.
+    Un mur à 3 ou 4 m donne en vrai un palier de 35 à 45° dont les lectures bougent de quelques centimètres (tours du
+    2026-11-10) : paliers() le coupait en morceaux de moins de 15°."""
+    d, r = np.asarray(d, float), np.asarray(r, float)
+    m = d < 360.0
+    d, r = d[m], r[m]
+    n = len(d)
+    coupe = [k for k in range(n) if r[k] <= 0 or abs(r[k] - r[k - 1]) > 60]
+    k0 = coupe[0] if coupe else 0
+    d = np.r_[d[k0:], d[:k0] + 360.0]
+    r = np.r_[r[k0:], r[:k0]]
+    out, i = [], 0
+    while i < n:
+        if r[i] <= 0:
+            i += 1
+            continue
+        membres, manque, k = [i], 0, i + 1
+        while k < n and d[k] - d[k - 1] < 9:
+            med = float(np.median(r[membres]))
+            if r[k] > 0 and abs(r[k] - med) <= max(tol_mm, tol_rel * med):
+                membres.append(k)
+                manque = 0
+            else:
+                manque += 1
+                if manque > trous:
+                    break
+            k += 1
+        if len(membres) >= 4:
+            v = np.sort(r[membres])
+            q = len(v) // 4
+            out.append((((d[membres[0]] + d[membres[-1]]) / 2) % 360.0, float(np.median(v[q:len(v) - q])) + DX,
+                        float(d[membres[-1]] - d[membres[0]]), len(membres)))
+        i = membres[-1] + 1
     return out
 
 

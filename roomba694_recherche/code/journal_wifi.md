@@ -648,7 +648,7 @@ Depuis la station 7, plus aucune direction ne remplissait les conditions (1,30 m
 
 **Ce que cela dit** : l'estimation du rapport (« une carte d'appartement qui tient à 10 ou 15 cm ») est atteinte sur ce trajet sans aucun recalage ; avec le recalage sur les murs, déjà mesurable, l'erreur devrait retomber à quelques centimètres. C'est le travail suivant sur le PC : ajuster ensemble toutes les stations et toutes les parois.
 
-## 26. Recalage des stations sur les murs, sur le PC ; le gyroscope compte un peu trop peu ; le cerveau ne répond plus (2026-11-10, 15 h 40 à 16 h 15)
+## 26. Recalage des stations sur les murs, sur le PC ; le gyroscope compte un peu trop peu ; le cerveau ne répond plus ; l'exploration complète écrite et essayée en simulation (2026-11-10, 15 h 40 à 17 h 30)
 
 Demande de l'utilisateur : « Continue avec la meilleure option la plus intelligente et novatrice pour explorer intégralement. Recale puis explore encore. » Cette section couvre le recalage, fait sur le PC à partir des dix tours déjà enregistrés ; le robot n'a pas bougé.
 
@@ -684,3 +684,43 @@ Le robot tourne toujours dans le même sens pendant ses tours sur place (4 289°
 **Consommation** : 181 et 198 mA en moyenne pendant les deux explorations (16 et 19 mAh pour 5,3 et 5,8 minutes). La batterie du robot n'est pas la limite d'une exploration longue.
 
 **15 h 53 : le cerveau ne répond plus.** Ni `ping`, ni page, ni port série sur le PC ; le routeur répond. Le robot dormait depuis 15 h 35 (`s` puis `x`) : aucun ordre de roues en cours, aucun risque. Cause la plus probable : la batterie portable du cerveau s'est éteinte ou vidée ; à vérifier par l'utilisateur. Conséquences : au redémarrage, le cerveau repart d'une position à zéro, et le repère des deux explorations est perdu pour lui ; il faudra que le robot se retrouve sur sa carte par un tour sur place. Et le risque décrit dans les règles devient concret : si la batterie du cerveau lâche pendant un saut, le robot garde son dernier ordre de roues.
+
+### Suite : l'exploration complète, écrite et mise au point sans le robot (16 h 15 à 17 h 30)
+
+Le cerveau étant resté hors ligne, la seconde partie de la demande (« explore encore », « intégralement ») a été préparée sur le PC : **rien de ce qui suit n'a encore été essayé sur le robot.**
+
+**Outils nouveaux** :
+
+- `code/outils/explorer3.py` : l'exploration complète. Ce qu'elle fait de plus qu'`explorer.py` est décrit en tête du fichier ; en résumé : position tenue par le PC avec l'échelle du gyroscope, obstacles réduits à un point par palier, murs en lignes avec leurs parties tenues pour pleines, sol « déjà regardé » sur une grille de 10 cm, prochaine station choisie parmi toutes les stations d'après le sol qu'elle promet de montrer, portes repérées par leurs deux montants, station faite sur place quand un trajet est arrêté, recalage en repassant par une station connue, retour au départ par l'arbre des trajets déjà faits. Mêmes sécurités qu'`explorer.py` (sauts de `pilote.py`, réflexes du firmware) ; une requête au cerveau restée sans réponse est reprise au lieu de tout arrêter.
+- `code/outils/simulateur.py` : un robot simulé dans un appartement dessiné (trois mondes : deux pièces et une porte, un couloir en L, un appartement de cinq pièces avec des portes de 75 à 80 cm). Il imite ce que les mesures ont montré : un mur ne répond que vu de face, une arête de plus près, un coin rentrant de loin ; les capteurs optiques ne préviennent pas ; le cerveau compte trop peu de rotation ; le robot tire à gauche. Ce n'est pas un modèle fidèle : c'est un banc d'essai pour la logique. `python explorer3.py --simulation appartement -- sim PREFIXE`.
+- `code/outils/essai_explorer3.py` : lance une exploration simulée, mesure la part du sol accessible vue d'au moins une station, et dessine le résultat.
+- `carto.paliers_souples()` : paliers avec une tolérance qui grandit avec la distance, pour décider ce qui est un mur.
+- `research_notes/…/data_analysis/j_rejeu_exploration.py` : rejoue la logique « à blanc » sur des tours enregistrés (`results_j_exploration2_20261110_152857.txt`, figure `fig19_exploration2_20261110_152857_rejeu.png`).
+
+**Ce que les enregistrements et la simulation ont appris en chemin** :
+
+1. **Le servo ne peut pas regarder sur les côtés.** L'idée de départ était de tourner le capteur de distance à ±80° à chaque saut pour suivre les murs et y voir les portes. La butée du servo est à 30° sur ce montage (fils courts, réglage voulu par l'utilisateur, § 14) : idée écartée sans toucher à la butée.
+2. **Les capteurs optiques ne préviennent pas.** Dans l'approche du § 22, ils lisent 153 au plus au contact : les seuils de `pilote.py` (150 et 400) ne se déclenchent donc jamais avant le pare-chocs. Ce sont le capteur de distance, avant chaque saut, et le pare-chocs, avec l'arrêt réflexe du firmware, qui arrêtent le robot.
+3. **Un mur lointain donne un palier large mais agité.** À 3,3 et 3,9 m, les vrais tours montrent des paliers de 35 à 43° dont les lectures bougent de 3 à 6 cm ; `paliers()` (tolérance fixe de 25 mm) les coupait en morceaux de moins de 15°. Avec `paliers_souples()`, les dix tours donnent 30 paliers de 25° ou plus, au lieu de 18.
+4. **Le montant d'une porte, vu de face, ressemble à un bout de mur.** D'où trois règles : un pied de mur « franc » (palier de 25° au moins) vaut pour 2 m de mur, un pied « faible » pour 50 cm ; un pied faible disparaît si la station voit plus loin que le mur juste à côté ; deux repères (arêtes ou pieds faibles) à 60 à 130 cm l'un de l'autre sur la ligne d'un mur franc font une porte possible.
+5. **Un même objet vu de plusieurs stations donne des points décalés de 10 à 20 cm**, qui finissaient par boucher les portes sur la carte : seul le point vu du plus près est gardé, et un point que la station de départ contredit (elle lit plus loin que lui) ne compte pas.
+6. **Une direction sans écho n'est pas une direction vue.** Elle ne compte comme « regardée » que jusqu'au mur connu qu'elle longe de biais, sinon jusqu'à 90 cm.
+7. **Comparer deux tours entiers ne donne pas le cap** (essai sur les quatre paires de tours faits au même endroit) : le décalage sort bien, à 1 ou 2 cm de celui des parois, mais le cap seulement à ±3°. Ce qui donne le cap, c'est un mur longé : entre deux stations de suite qui voient le même mur, la distance à ce mur ne doit changer que de ce que dit le trajet. Une mesure seule est bruitée (±1,5° en simulation) ; toutes ensemble ajustent l'échelle du gyroscope, et tout le trajet est alors recalculé.
+
+**Essais en simulation, version finale** (échelle vraie du gyroscope simulé 1,0015 sauf mention) :
+
+| Monde | Essais | Stations | Durée simulée | Sol accessible vu | Contacts | Retour, écart au départ | Erreur de cap finale |
+|---|---|---|---|---|---|---|---|
+| Deux pièces, une porte (13,7 m²) | 6 | 10 à 15 | 10 à 21 min | 100 % | 0 à 3 | 3 à 11 cm | 0 à 2°, une fois 5,5° |
+| Couloir en L (13,3 m²) | 6 | 9 à 11 | 9 à 13 min | 100 % | 0 | 2 à 7 cm | 0 à 1,3° |
+| Appartement de cinq pièces (38,1 m²) | 6 | 39 à 42 | 50 à 63 min | 92 à 100 % | 1 à 6 | 6 à 12 cm | 1,8 à 2,8° |
+| Le même, gyroscope simulé à 1,0030 | 1 | 33 | 42 min | 96 % | 1 | 6 cm | 0,5° (échelle retrouvée : 1,0030) |
+| Le même, gyroscope simulé à 1,0000 | 1 | 41 | 63 min | 100 % | 7 | 28 cm | 3,5° (échelle retrouvée : 1,0002) |
+
+Sans l'ajustement de l'échelle en route, le même appartement avec un gyroscope à 1,0030 finissait à 30° d'erreur de cap, 16 contacts et un retour manqué : c'est ce défaut qui a fait ajouter la mesure du cap par les murs.
+
+**Rejeu sur les huit vraies stations** (figure 19) : treize lignes de murs retenues, dont celles du couloir (53,8 cm et 121 cm du départ) ; une porte possible ; 12,5 m² de sol déjà regardés ; 91 candidats. Le premier choix part de la station 7, sur le tapis, vers 100°, 70 cm plus loin, avec 2,9 m² à voir : au-delà de la zone où `explorer.py` s'était arrêté faute de 1,30 m libres.
+
+**Limites à garder en tête** : le simulateur a des murs lisses, des arêtes nettes et peu de meubles ; le vrai couloir montre déjà plus d'échos épars (zone du bas de la figure 19) ; les contacts y seront plus nombreux. Une heure pour 38 m² : les limites par défaut d'`explorer3.py` (40 stations, 45 minutes, 12 trajets arrêtés) coupent avant. Le point faible connu reste le cap quand peu de murs sont longés. Et tant que le cerveau est alimenté par la batterie portable, le risque de la règle (cerveau qui s'éteint pendant un saut, robot qui garde son dernier ordre de roues) est entier : à décider avec l'utilisateur avant une exploration longue.
+
+**État en fin de séance** : cerveau toujours hors ligne à 17 h 14 ; robot endormi (`s` puis `x` à 15 h 35), là où la seconde exploration l'a laissé, sauf si l'utilisateur l'a déplacé ; rien n'a été envoyé au robot depuis.

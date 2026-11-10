@@ -1,0 +1,3 @@
+# fichiers temporaires de Python (créés quand un outil en importe un autre)
+__pycache__/
+*.pyc
