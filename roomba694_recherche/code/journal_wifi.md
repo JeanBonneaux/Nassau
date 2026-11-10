@@ -647,3 +647,40 @@ Depuis la station 7, plus aucune direction ne remplissait les conditions (1,30 m
 **Fermeture après les deux explorations** (15,7 m parcourus au total d'après le cerveau, 23 minutes, 10,9 tours de rotation cumulée) : le cerveau se croit à 11 mm de son départ. Les parois larges vues au départ et à la fin disent autre chose : 16,7 cm plus loin du mur du couloir, 16,0 et 13,4 cm plus près des parois d'en face, environ 1 cm le long du couloir. **L'erreur de position est donc d'environ 15 cm, en travers du couloir, soit 1 % du chemin.** L'ajustement automatique sur neuf parois donne 16 cm avec des résidus de 13 cm : il confond encore des paliers étroits, et son chiffre vaut surtout par les trois parois larges. Le cap, d'après le motif de la pièce, n'a que 1,2° d'erreur à la fin (3,8° après la première exploration) : cette mesure est moins sûre quand le robot n'est pas revenu exactement au même point. La base est vue au cap 59° au retour, contre 68° au premier passage : la somme de la dérive de cap et du déplacement de 15 cm vu à 1,2 m.
 
 **Ce que cela dit** : l'estimation du rapport (« une carte d'appartement qui tient à 10 ou 15 cm ») est atteinte sur ce trajet sans aucun recalage ; avec le recalage sur les murs, déjà mesurable, l'erreur devrait retomber à quelques centimètres. C'est le travail suivant sur le PC : ajuster ensemble toutes les stations et toutes les parois.
+
+## 26. Recalage des stations sur les murs, sur le PC ; le gyroscope compte un peu trop peu ; le cerveau ne répond plus (2026-11-10, 15 h 40 à 16 h 15)
+
+Demande de l'utilisateur : « Continue avec la meilleure option la plus intelligente et novatrice pour explorer intégralement. Recale puis explore encore. » Cette section couvre le recalage, fait sur le PC à partir des dix tours déjà enregistrés ; le robot n'a pas bougé.
+
+**Outils nouveaux** :
+
+- `code/outils/carto.py` : la carte par murs en lignes, en module. Un palier large (15° au moins) tourné vers un des deux axes de la pièce est un mur ; les paliers étroits (objets, arêtes) ne servent ni à recaler ni à dessiner. `Carte.ajouter()` recale une station à son arrivée sur les murs déjà connus ; `Carte.ajuster()` reprend après coup toutes les stations et tous les murs ensemble (moindres carrés, avec les déplacements annoncés par le cerveau, la position des murs, un rappel doux vers les angles droits, et les retours au même endroit) ; `apparier()` compare deux tours faits presque au même endroit et donne le décalage réel entre les deux passages.
+- `research_notes/…/data_analysis/i_recalage.py` : compare la carte brute, le recalage station par station et l'ajustement d'ensemble (`results_i_exploration2_20261110_152857.txt`, figure `fig18_exploration2_20261110_152857_recalage.png`).
+
+**Résultats sur les dix tours des deux explorations** (stations 0 à 7 et les deux tours de retour) :
+
+| | Murs partagés | Accord entre stations | Où tombent les deux retours au départ |
+|---|---|---|---|
+| Positions du cerveau, sans correction | 5 murs, 11 paliers | 2,4 cm (le pire 4,0) | à 1 cm du départ (faux) |
+| Recalage station par station | 6 murs, 13 paliers | 0,3 cm | à 6 et 12 cm, mais dans la mauvaise direction pour le second |
+| Ajustement d'ensemble | 4 murs, 12 paliers | 0,3 cm (le pire 0,6) | **à 5,8 cm puis 16,7 cm du départ**, cap corrigé de +4,1° puis +7,7° |
+
+- **Les retours au même endroit sont la mesure la plus sûre.** Deux tours faits au même point voient les mêmes parois larges dans les mêmes directions ; la différence des distances donne le décalage, paroi par paroi. Stations 0 et premier retour : le cerveau annonce (−6, +7) mm, les parois disent (+30, +45) mm, soit 5,5 cm (3 parois d'accord). Stations 0 et second retour : (+43, +163) mm, soit 16,9 cm (4 parois). Stations 3 et 4 : 9,0 cm (2 parois). Entre les deux retours : 11,0 cm (4 parois).
+- **Le recalage station par station ne suffit pas seul.** Chaque station ne revoit qu'un ou deux murs connus, et la porte de rattachement est étroite (8 cm) pour ne pas confondre un meuble et le mur qui est derrière : quand l'erreur dépasse la porte, la station crée un mur de plus au lieu de se corriger. Les murs s'accordent alors très bien entre eux et la position est quand même fausse. C'est l'ajustement d'ensemble avec les retours qui donne la bonne réponse.
+- **La direction d'un palier n'est pas une boussole.** Le milieu d'un palier large donne la direction du mur à ±5° au mieux, et jusqu'à 40° d'erreur pour un palier étroit : essayé, écarté. Le cap se corrige par les différences de distance aux murs et par les retours.
+- Deux murs vus de trois stations au moins après ajustement : celui du couloir à 53,9 cm du départ (stations 0, 1 et les deux retours, 0,3 cm d'écart) et un mur parallèle à 118,4 cm (stations 3, 4, 5, 6, 0,4 cm).
+
+**Le gyroscope compte un peu trop peu.** En rejouant les deux explorations avec un cap multiplié par un facteur fixe, la position finale rejoint celle que donnent les murs :
+
+| Facteur appliqué au cap du cerveau | Écart à la position vraie, premier retour | second retour |
+|---|---|---|
+| 1,0000 (le cerveau tel quel) | 56 mm | 157 mm |
+| 1,0013 | 8 mm | 37 mm |
+| 1,0015 | 3 mm | 45 mm |
+| 1,0018 | 12 mm | 72 mm |
+
+Le robot tourne toujours dans le même sens pendant ses tours sur place (4 289° nets en dix tours) : une erreur d'échelle de 0,15 % y fait 6° d'erreur de cap, et c'est elle qui explique l'essentiel des 16 cm. Une dérive dans le temps explique moins bien les deux retours (écarts de 17 et 43 mm au mieux, avec 0,7° par minute de mouvement), et le cap n'a pas bougé d'un dixième de degré pendant les 12 minutes de pause entre les deux explorations. **Première valeur de l'échelle du gyroscope : 1,0015 ± 0,0005**, à confirmer par un essai de plusieurs tours sur place ; elle précise le 0,997 ± 0,003 du § 22. Le PC l'appliquera dans la prochaine exploration ; la mettre dans le firmware sera un changement à part.
+
+**Consommation** : 181 et 198 mA en moyenne pendant les deux explorations (16 et 19 mAh pour 5,3 et 5,8 minutes). La batterie du robot n'est pas la limite d'une exploration longue.
+
+**15 h 53 : le cerveau ne répond plus.** Ni `ping`, ni page, ni port série sur le PC ; le routeur répond. Le robot dormait depuis 15 h 35 (`s` puis `x`) : aucun ordre de roues en cours, aucun risque. Cause la plus probable : la batterie portable du cerveau s'est éteinte ou vidée ; à vérifier par l'utilisateur. Conséquences : au redémarrage, le cerveau repart d'une position à zéro, et le repère des deux explorations est perdu pour lui ; il faudra que le robot se retrouve sur sa carte par un tour sur place. Et le risque décrit dans les règles devient concret : si la batterie du cerveau lâche pendant un saut, le robot garde son dernier ordre de roues.
