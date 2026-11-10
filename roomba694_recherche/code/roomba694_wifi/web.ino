@@ -16,6 +16,8 @@
 //          /api/pose    position du robot (position.ino) : x, y en mm, cap en degrés, tracé [x, y] ; zero=1 remet à zéro ;
 //                       gen et from : la page ne redemande que les points qu'elle n'a pas encore
 //          /api/essai   essais sans mouvement de l'enquête sur la liaison : b=octets à envoyer, ecoute=ms (voir handleEssai)
+//          /api/carte   carte des obstacles vus par le capteur de distance (carte.ino) : points [x, y] en mm ; effacer=1 ;
+//                       dx=N décalage du capteur ; gen et from comme pour /api/pose
 //
 // Le mot de passe du réseau de la maison n'est jamais renvoyé par l'API ni affiché sur la console.
 
@@ -76,13 +78,13 @@ void handleRoot() { http.send_P(200, "text/html; charset=utf-8", PAGE_INDEX); }
 void handleState() {
   loadSavedSsid();
   String j;
-  j.reserve(2100);
-  char b[720];
+  j.reserve(2400);
+  char b[800];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v4 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
+    "{\"ms\":%lu,\"ver\":\"v5 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
-    "\"enc\":[%d,%d],\"btn\":%u},"
+    "\"enc\":[%d,%d],\"btn\":%u,\"wall\":%u,\"cur\":[%d,%d],\"base\":%s},"
     "\"imu\":{\"ok\":%s,\"cal\":%s,\"yaw\":%.1f,\"rate\":%.1f,\"acc\":[%.2f,%.2f,%.2f]},",
     (unsigned long)millis(), __DATE__, __TIME__, HOSTNAME, driving ? "true" : "false", (int)driveSpeed,
     keepAwake ? "true" : "false", csvEnabled ? "true" : "false", useSplitGroups ? "groupes 6 et 101" : "groupe 100",
@@ -91,11 +93,12 @@ void handleState() {
     (st.bumpsDrops >> 1) & 1, st.bumpsDrops & 1, (st.bumpsDrops >> 3) & 1, (st.bumpsDrops >> 2) & 1,
     st.cliff[0], st.cliff[1], st.cliff[2], st.cliff[3], st.lightBits,
     st.light[0], st.light[1], st.light[2], st.light[3], st.light[4], st.light[5],
-    st.encL, st.encR, st.buttons,
+    st.encL, st.encR, st.buttons, st.wallSignal, st.curL, st.curR, (st.chargeSrc & 2) ? "true" : "false",
     imu.present ? "true" : "false", imu.calibrating ? "true" : "false", imuCap(), imu.rateDps,
     imu.acc[0], imu.acc[1], imu.acc[2]);
   j += b;
   poseStateJson(j);    // "pose":{x, y, cap, cap_roues, dist, n, gen, pas, gyro, leve, leves, sauts}
+  carteStateJson(j);   // "carte":{total, gen, dx}
   radarStateJson(j);   // "radar":{mode, front_mm, age, present, servo}
   tourStateJson(j);    // "tour":{etat, tourne, n}
   j += "\"bauds19200\":"; j += (unsigned long)baudRescues; j += ',';   // retours du robot de 19200 à 115200 bauds depuis le démarrage

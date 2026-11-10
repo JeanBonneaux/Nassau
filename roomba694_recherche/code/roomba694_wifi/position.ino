@@ -1,8 +1,9 @@
 // position.ino — position du robot (x, y, cap) calculée dans le cerveau : étape 2 de la cartographie
-// (notes/H_cartographie_strategie.md). Deuxième fichier du sketch : l'outil Arduino le place après le fichier principal
-// et avant radar.ino.
+// (notes/H_cartographie_strategie.md). Troisième fichier du sketch : l'outil Arduino le place après le fichier principal
+// et carte.ino, avant radar.ino.
 // Version du 2026-11-09 : signes vérifiés en rejouant sur le PC l'enregistrement du 2026-11-08 (24 m de pilotage) ;
-// PAS ENCORE comparé à un parcours mesuré au sol (essai prévu : un carré piloté à la main doit se refermer).
+// premier carré piloté à la main le soir même : le tracé se referme à 4 cm sur 1,79 m (journal_wifi.md § 19), sans
+// mesure au sol pour le confirmer.
 //
 // PRINCIPE : à chaque lecture des capteurs (toutes les 200 ms), les compteurs des deux roues donnent la distance
 // parcourue depuis la lecture précédente, et le gyroscope donne la direction du robot. Chaque petit déplacement est
@@ -51,9 +52,12 @@ struct PoseState {
   uint32_t gen = 1;              // change à chaque remise à zéro et chaque fois que le tracé est éclairci
 } pose;
 
-float poseX()   { return pose.x; }
-float poseY()   { return pose.y; }
-float poseCap() { return pose.capAbs - pose.cap0; }
+float poseX()    { return pose.x; }
+float poseY()    { return pose.y; }
+float poseCap()  { return pose.capAbs - pose.cap0; }
+float poseCap0() { return pose.cap0; }
+// Position utilisable pour placer un obstacle sur la carte (carte.ino) : le robot vient de répondre et il est au sol.
+bool  poseFiable() { return pose.sync && !pose.leve && st.ok && millis() - st.lastOkMs < 1500; }
 
 // Ajoute la position actuelle au tracé. Mémoire pleine : on garde un point sur deux et le pas double.
 void poseAddPoint() {
@@ -82,7 +86,8 @@ void poseReset(bool annonce) {
   pose.pasMm = POSE_PAS_MM;
   pose.gen++;
   poseAddPoint();
-  if (annonce) out.println(F("Position remise à zéro : le robot est au point (0, 0), cap 0°, son avant donne la direction x."));
+  carteClear(false);   // les obstacles déjà rangés étaient dans l'ancien repère (carte.ino)
+  if (annonce) out.println(F("Position remise à zéro : le robot est au point (0, 0), cap 0°, son avant donne la direction x. Carte des obstacles effacée."));
 }
 
 // Appelée après chaque lecture réussie des capteurs (pollFinish, fichier principal).

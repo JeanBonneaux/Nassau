@@ -339,3 +339,33 @@ Conclusion : **sur ce 694 l'octet 7 ne provoque rien.** Les deux touches d'essai
 - **pas encore fait** : l'essai sur le sol (un carré piloté à la main qui doit se refermer), aucune mesure de la justesse en centimètres.
 
 **Leçon pour l'assistant** : ne pas changer le mode du robot (`s`, `x`) pendant que l'utilisateur pilote ; regarder d'abord `driving` et les dernières lignes de la console. Et ne pas annoncer une piste comme solide avant de l'avoir essayée.
+
+## 19. Firmware v5 : nouvelle page de pilotage, carte des obstacles, premier carré (2026-11-09, 22 h 10 à 22 h 40)
+
+Demande de l'utilisateur : repenser la page de pilotage, « beaucoup plus belle et clean », y voir la distance mesurée par le capteur et les autres capteurs, y intégrer la carte et des analyses. But final annoncé : voir le robot en 3D dans l'appartement, lui dire dans quelle pièce aller, cibler un endroit sale en traçant un carré.
+
+**Premier carré piloté à la main (essai de l'étape 2, fait par l'utilisateur avec le firmware v4)** : `mesures/position_20261109_222619.csv` et `.png`. Carré d'environ 45 cm de côté, 1,79 m parcourus, trois virages à gauche (cap 272,2° au gyroscope, 272,9° d'après les roues seules). Le tracé se referme à 38 mm de son départ, soit 2,1 % du chemin. Ce chiffre n'a de sens que si le robot est vraiment revenu sur sa marque de départ, ce qui n'est pas confirmé. Aucun déplacement écarté, robot jamais soulevé.
+
+**Carte des obstacles dans le cerveau** (`carte.ino`, `/api/carte`) : à chaque écho, la tâche du radar place l'obstacle dans la pièce avec la distance, l'angle du servo, le cap du gyroscope à l'instant du tir et la position du robot. Anneau des 1 500 derniers points ; un écho à moins de 30 mm d'un des douze derniers points n'est pas rangé de nouveau ; rien au-delà de 3 m ni quand la position n'est pas fiable (robot muet ou soulevé). Réglage `dx` pour le décalage du capteur par rapport au centre du robot (0 mm par défaut, pas encore mesuré). Remettre la position à zéro efface la carte.
+
+- Vérifié sur le matériel, robot immobile : capteur devant, 616 mm, point rangé en (616 ; 0) ; balayage ±30° par pas de 15°, points en (774 ; −447), (850 ; −228), (864 ; 231), (1102 ; 636), soit les directions −30°, −15°, +15°, +30° attendues.
+- En usage réel dix minutes plus tard (l'utilisateur tourne sur place et roule, capteur devant) : 173 points en quelques minutes ; `mesures/position_20261109_223017.*` montre des arcs et des amas cohérents entre eux. Pas encore comparé à la pièce.
+
+**Nouvelle page** (`pages.h`, 38 Ko, sans aucune ressource extérieure, thème clair ou sombre selon l'appareil) :
+
+- sur un téléphone, le premier écran contient la distance mesurée en grand, la carte et le pavé de pilotage ; le reste est replié en dessous (batterie, capteurs du robot, réglages du capteur de distance, autres commandes, console) ;
+- carte en vue de dessus ou en 3D (dessin fait par la page elle-même, on tourne autour au doigt, pincement ou molette pour approcher) : tracé du robot, obstacles vus (points, ou poteaux en 3D), robot avec son cap, rayon du capteur de distance jusqu'à l'obstacle qu'il voit, pare-chocs touché ; bouton « Suivre » ;
+- un seul bouton d'état qui change selon la situation : « Réveiller le robot » (une impulsion de réveil, puis Passive, puis Safe), « Prendre la main » (Safe), « Fin de session » (arrêt des roues, Passive, puis Stop) ; les flèches sont grisées hors mode Safe ; flèches du clavier et barre d'espace sur un ordinateur ;
+- alertes en clair, toujours avec une pastille et un texte : pare-chocs, roue soulevée, vide, obstacle sous le seuil, robot soulevé, déplacements non comptés, gyroscope absent, batterie faible ;
+- « Tour sur place », « Nouveau départ » (position et carte à zéro) et « Effacer les obstacles » sous la carte ;
+- la page ne redemande que les points nouveaux du tracé et de la carte.
+
+Vérifiée dans le navigateur avec un faux robot (serveur local qui simule une pièce, un meuble et un balayage) : téléphone 375 px et écran large, thèmes clair et sombre, vues de dessus et 3D, rotation et zoom de la vue 3D, cas « robot muet », « flèches bloquées », pare-chocs et obstacle ; aucune erreur de script, aucun débordement horizontal. Couleurs du tracé, des obstacles et du robot passées au contrôle de lisibilité pour daltoniens (toutes les paires).
+
+**Firmware** « v5 Nov 9 2026 22:25:31 », 1 127 638 octets (86 %), 70 552 octets de RAM, aucun avertissement, envoyé par Wi-Fi robot à l'arrêt (le tracé de l'utilisateur avait été enregistré avant : la mise à jour le remet à zéro). `/api/state` donne en plus la dernière mesure du capteur et sa direction, le résumé de la carte, le signal du capteur de mur, les courants des moteurs de roues.
+
+**Outil** `code/outils/position_capture.py ADRESSE [DOSSIER]` : enregistre tracé et obstacles (CSV et dessin), affiche le chemin parcouru et l'écart au départ.
+
+**Observation à creuser** : dans la minute qui a suivi le redémarrage de la carte (22 h 27), la lecture des capteurs par le groupe 100 a échoué trois fois de suite (zéro octet, alors que le robot répondait à une question simple) et une centaine d'échos ont été écartés faute de position fiable ; le programme est passé de lui-même aux groupes 6 et 101. Ensuite, plus rien : 262 lectures réussies sur 262 en 35 s, roues en mouvement ou non, capteur de distance en marche. Piste : la patte D4 tire la ligne BRC du robot vers le bas à chaque redémarrage de la carte, et le § 18 a montré qu'une impulsion sur BRC fait bavarder le robot pendant une minute (`B0 02 01 15 34`). Remède possible, à voir avec l'utilisateur : une résistance de rappel entre BRC et le 3,3 V, ou le fil de BRC sur D5.
+
+**Vers le but final** (robot visible en 3D dans l'appartement, « va dans telle pièce », zone à nettoyer tracée au doigt) : voir la suite proposée dans la note H.

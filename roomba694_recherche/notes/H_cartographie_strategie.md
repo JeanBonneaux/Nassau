@@ -40,8 +40,8 @@ Conclusion : ne pas faire du capteur de distance un mauvais laser. Lui demander 
 | Étape | Contenu | État |
 |---|---|---|
 | 1 | Tour sur place : `tour.ino`, touche `t`, `/api/tour`, outil `code/outils/tour_capture.py` | **fait le 2026-11-09** : deux tours réussis, voir ci-dessous |
-| 2 | Position du robot (x, y, cap) dans le cerveau, tracée sur la page ; essai : un carré piloté à la main doit se refermer | **programmé et installé le 2026-11-09** (firmware v4, `position.ino`) ; l'essai du carré reste à faire |
-| 3 | Première carte sur le PC : l'utilisateur pilote à la main entre deux tours sur place | à faire |
+| 2 | Position du robot (x, y, cap) dans le cerveau, tracée sur la page ; essai : un carré piloté à la main doit se refermer | **fait le 2026-11-09** (firmware v4, `position.ino`) ; premier carré : écart de 4 cm sur 1,79 m, à confirmer sur un parcours plus long |
+| 3 | Première carte : l'utilisateur pilote à la main entre deux tours sur place | **commencé le 2026-11-09** : obstacles placés par le cerveau et dessinés sur la page (firmware v5, `carte.ino`) ; reste à garder la carte et à la recaler |
 | 4 | Étalonnages automatiques (capteurs optiques, gyroscope, décalage du capteur) | à faire |
 | 5 | Suivi de mur et tour de la pièce automatique | à faire |
 | 6 | Exploration de l'intérieur, puis parcours en bandes sans les brosses, puis avec | à faire |
@@ -60,6 +60,25 @@ Deux tours sur place à un mètre d'écart, robot déplacé à la main : 381° e
 - Le cerveau calcule x, y et le cap à chaque lecture des capteurs (cinq fois par seconde) : distance d'après les compteurs des roues, direction d'après le gyroscope. La page a une carte « Position » (tracé, écart au point de départ, bouton de remise à zéro) ; `/api/pose` donne la position et le tracé ; `/api/tour` donne maintenant la position du robot au départ de chaque tour (`depart`), ce qu'il faut pour l'étape 3.
 - Vérifié sans rouler : l'affichage (faux parcours en carré dans le navigateur), et les signes du calcul, en le rejouant sur l'enregistrement du 2026-11-08 (24 m de pilotage). Sur cet enregistrement, les roues seules comptent 0,963 fois la rotation mesurée par le gyroscope et finissent à 116° de lui : le cap doit bien venir du gyroscope.
 - Pas encore vérifié : la justesse sur le sol. Essai prévu : remise à zéro, un carré d'un mètre environ piloté à la main, retour sur la marque de départ ; l'écart affiché doit rester de quelques centimètres. Un écart plus grand dira quoi régler (diamètre des roues, pas par tour, glissement dans les virages).
+
+**Premier carré (2026-11-09, 22 h 25, piloté par l'utilisateur)** : environ 45 cm de côté, 1,79 m parcourus, le tracé se referme à 4 cm de son départ (2 % du chemin), cap des roues et du gyroscope d'accord à moins d'un degré. À confirmer : le robot était-il bien revenu sur sa marque ? Fichiers `mesures/position_20261109_222619.*`.
+
+### Étape 3, premier pas : la carte des obstacles se dessine toute seule (2026-11-09, 22 h 30)
+
+Le cerveau place maintenant lui-même chaque écho du capteur de distance dans la pièce (`carte.ino`, firmware v5), et la nouvelle page de pilotage dessine le résultat autour du tracé, en vue de dessus ou en 3D. Piloter le robot capteur allumé, ou lancer un tour sur place, suffit à faire apparaître ce qui l'entoure. Ce n'est pas encore une carte de la pièce : les murs sortent en arcs épais (le capteur entend large), la position dérive sans que rien la recale, et le décalage du capteur par rapport au centre du robot n'est pas mesuré.
+
+## Vers le but final : le robot en 3D dans l'appartement, « va dans telle pièce », une zone tracée au doigt
+
+But donné par l'utilisateur le 2026-11-09 au soir. Chaque marche s'appuie sur la précédente ; les trois premières se font avec le matériel actuel.
+
+| Marche | Ce que l'utilisateur voit | Ce qu'il faut construire | État |
+|---|---|---|---|
+| A | Le robot, son tracé et les obstacles sur la page, en 3D | position, carte des obstacles, page | **fait le 2026-11-09** |
+| B | « Va là » : toucher un point de la carte, le robot y va | dans le cerveau : tourner vers le point, avancer en tenant le cap au gyroscope, s'arrêter au but, au pare-chocs ou devant un obstacle ; sur la page : le toucher de la carte | à faire ; premier déplacement décidé par le robot, donc essais courts et accord à chaque fois |
+| C | Une carte qui reste : on la retrouve le lendemain | carte gardée sur le PC ou dans le téléphone ; point zéro fixe (la base du robot) ; recalage du cap sur les murs | à faire |
+| D | Une zone tracée au doigt, le robot la parcourt en bandes | parcours en bandes dans un rectangle, puis moteurs des brosses | à faire, après B |
+| E | Des pièces qui portent un nom, « va dans la cuisine » | zones nommées sur la carte gardée, passages d'une pièce à l'autre, trajet par étapes | à faire, après C |
+| F | L'appartement en 3D avec ses murs | des murs nets : c'est le rôle du LiDAR de la note F (environ 112 $ CA), le capteur de distance actuel donne des arcs trop épais pour cela | matériel à commander |
 
 Le LiDAR de la note F, s'il arrive, remplacera le capteur de distance dans les étapes 3 à 6 ; la position, l'enregistrement, la carte et les parcours resteront les mêmes.
 

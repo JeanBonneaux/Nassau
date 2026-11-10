@@ -1,7 +1,8 @@
 // radar.ino — « radar » à ultrasons : capteur HC-SR04 monté sur un servo SG90 (modules du kit ELEGOO de l'utilisateur).
 // Troisième fichier du sketch roomba694_wifi : l'outil Arduino le concatène après roomba694_wifi.ino et avant web.ino
 // (ordre alphabétique), il voit donc tout ce que définit le fichier principal (out, prefs, stopWheels, driving...).
-// Version 3 — préparé le 2026-11-09, PAS ENCORE TESTÉ sur le matériel (voir notes/G_radar_ultrason_servo.md).
+// Version 3 — préparé le 2026-11-09, essayé sur le matériel le soir même (journal_wifi.md § 14 ; notes/G_radar_ultrason_servo.md).
+// Depuis la version 5, chaque écho est aussi placé dans la pièce par carteAdd() (carte.ino).
 // Relu et corrigé le même jour, avant tout essai : rappel interne vers la masse sur l'entrée Echo, et capteur maintenu
 // devant tant qu'une avance est demandée (voir radarForwardBlocked et radarTask).
 //
@@ -86,6 +87,9 @@ struct RadarState {
   volatile int8_t   servoDeg = 0;         // direction actuelle du capteur
   volatile int16_t  frontMm = -1;         // distance devant : > 0 mm, 0 = rien à portée, -1 = inconnue
   volatile uint32_t frontMs = 0;          // date de cette distance
+  volatile int16_t  lastMm = -1;          // dernière mesure, quelle que soit sa direction : > 0 mm, 0 = rien à portée, -1 = aucune
+  volatile int8_t   lastDeg = 0;          // direction du capteur pour cette mesure
+  volatile uint32_t lastMs = 0;           // date de cette mesure
   volatile uint32_t sweeps = 0, pings = 0, noEcho = 0, faults = 0, stops = 0, refused = 0;
   volatile int16_t  mm[RADAR_SLOTS];      // carte : > 0 distance en mm, 0 = rien à portée, -1 = jamais mesuré
   volatile uint32_t ms[RADAR_SLOTS];      // date de chaque case
@@ -232,6 +236,8 @@ void radarTask(void*) {
     }
     int16_t res = usCombine(v, n);
     if (res >= 0 && mode == RADAR_FIXED) tourSample(capTir, res);   // rangée seulement pendant un tour sur place (tour.ino)
+    if (res >= 0) { radar.lastMm = res; radar.lastDeg = (int8_t)target; radar.lastMs = millis(); }
+    if (res > 0) carteAdd(capTir, target, res);                     // obstacle placé dans la pièce (carte.ino)
     if (res < 0) {
       if (faultStreak < 255) faultStreak++;
       if (faultStreak >= 5) radar.absent = true;
@@ -397,8 +403,12 @@ void radarPrintStatus() {
 
 // Résumé pour /api/state (lu chaque seconde par monitor_wifi.py)
 void radarStateJson(String& j) {
-  char b[128];
-  snprintf(b, sizeof(b), "\"radar\":{\"mode\":%u,\"front_mm\":%d,\"age\":%lu,\"present\":%s,\"servo\":%d},",
-           (unsigned)radar.mode, (int)radar.frontMm, (unsigned long)(millis() - radar.frontMs), radar.present ? "true" : "false", (int)radar.servoDeg);
+  char b[256];
+  snprintf(b, sizeof(b), "\"radar\":{\"mode\":%u,\"front_mm\":%d,\"age\":%lu,\"present\":%s,\"absent\":%s,\"servo\":%d,"
+                         "\"mm\":%d,\"a\":%d,\"mm_age\":%lu,\"seuil\":%d,\"securite\":%s},",
+           (unsigned)radar.mode, (int)radar.frontMm, (unsigned long)(millis() - radar.frontMs), radar.present ? "true" : "false",
+           radar.absent ? "true" : "false", (int)radar.servoDeg,
+           (int)radar.lastMm, (int)radar.lastDeg, (unsigned long)(millis() - radar.lastMs),   // dernière mesure et sa direction
+           (int)radar.seuilCm, radar.securite ? "true" : "false");
   j += b;
 }

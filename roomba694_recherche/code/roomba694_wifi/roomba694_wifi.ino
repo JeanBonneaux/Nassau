@@ -1,5 +1,8 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 5 — 2026-11-09 (nuit) : nouvelle page de pilotage (pages.h) construite autour d'une carte vivante, et carte des
+    obstacles vus par le capteur de distance tenue dans le cerveau (fichier carte.ino, /api/carte) : chaque écho est placé
+    dans la pièce avec la position du robot ; vue de dessus et vue 3D sur la page.
   Version 4 — 2026-11-09 (soir) :
     - lecture des capteurs par une seule requête (142 puis 100 : paquets 7 à 58, 80 octets, réponse en 13 ms) à la place
       de la liste 149 et de la lecture paquet par paquet (22 requêtes par cycle) : voir plus bas « Lecture des capteurs » ;
@@ -118,7 +121,10 @@ int  radarFrontMm();  void radarStateJson(String& j);
 void tourStart();  void tourTick();  bool tourActive();  void tourEnd(bool ok, const char* raison);  void handleTour();
 // Position du robot (x, y, cap) : définie dans position.ino (deuxième fichier du sketch)
 void poseUpdate();  void poseReset(bool annonce);  void posePrint();  void poseStateJson(String& j);  void handlePose();
-float poseX();  float poseY();  float poseCap();
+float poseX();  float poseY();  float poseCap();  float poseCap0();  bool poseFiable();
+// Carte des obstacles vus par le capteur de distance : définie dans carte.ino (deuxième fichier du sketch)
+void carteSetup();  void carteAdd(float capAbs, int servoDeg, int16_t mm);  void carteClear(bool annonce);
+void carteStateJson(String& j);  void handleCarte();
 
 // ---------- Gyroscope et accéléromètre MPU-6050 (module GY-521, I2C) ----------
 // Câblage : VCC -> 3V3, GND -> GND, SCL -> D22 (GPIO22), SDA -> D21 (GPIO21) ; AD0, XDA, XCL, INT libres.
@@ -914,7 +920,7 @@ void printInfo() {
              st.ok ? "joignable" : "sans réponse", (unsigned long)(millis() - st.lastOkMs),
              useSplitGroups ? "lecture par les groupes 6 et 101" : "lecture par le groupe 100",
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
-  out.printf("Firmware roomba694_wifi v4, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
+  out.printf("Firmware roomba694_wifi v5, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
              __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
   out.printf("Depuis le démarrage de la carte : robot vu redémarrer %lu fois ; retrouvé à 19200 bauds et ramené à 115200 : %lu fois.\n",
              (unsigned long)robotBoots, (unsigned long)baudRescues);
@@ -923,7 +929,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v4 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v5 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"
@@ -1077,6 +1083,7 @@ void setupWifi() {
   http.on("/api/tour", HTTP_GET, handleTour);
   http.on("/api/pose", HTTP_GET, handlePose);
   http.on("/api/essai", HTTP_GET, handleEssai);
+  http.on("/api/carte", HTTP_GET, handleCarte);
   http.on("/wifi", HTTP_GET, handleWifiGet);
   http.on("/wifi", HTTP_POST, handleWifiPost);
   http.on("/wifi/forget", HTTP_POST, handleWifiForget);
@@ -1186,6 +1193,7 @@ void setup() {
   } else {
     out.println(F("Gyroscope MPU-6050 non détecté (VCC->3V3, GND, SCL->D22, SDA->D21) : fonctions g et z inactives."));
   }
+  carteSetup();   // carte des obstacles : réglage du décalage du capteur (carte.ino)
   radarSetup();   // radar à ultrasons : broches, réglages, tâche sur le second cœur ; reste en mode arrêt tant qu'on ne l'active pas
   out.println(F("Séquence conseillée : s, b (robot réveillé par CLEAN, ou par 'w' deux fois à 4 s d'intervalle)."));
 }
