@@ -2,6 +2,8 @@
 
 Rédigé le 2026-11-09 au soir, après les premiers essais du radar sur le matériel. **État : stratégie acceptée par l'utilisateur (« Commence avec 1 ») ; l'étape 1 est programmée, pas encore essayée avec le robot en mouvement.** Mots employés avec l'utilisateur : le cerveau (ESP32), le capteur de distance (HC-SR04), le servo (SG90), le gyroscope (GY-521).
 
+**Suite du 2026-11-10** : une recherche plus poussée sur ce que les capteurs actuels peuvent encore donner (revue du firmware et du câblage, analyse des enregistrements de `mesures/`, idées classées avec leur premier essai, ce qui ne marchera pas) est dans [`../reports/Roomba 694 sensor exploitation ideas.md`](../reports/Roomba%20694%20sensor%20exploitation%20ideas.md), en anglais comme la demande ; les notes de travail et les scripts d'analyse sont dans `../research_notes/`. Ce rapport revoit plusieurs résultats de la présente note à la lumière des enregistrements (le rapport roues / gyroscope de 0,963, ce que prouve le recouvrement de 20° des tours, la largeur des paliers, l'essai du carré) : le lire avant de s'appuyer sur ces chiffres. Rien de ce rapport n'a été essayé sur le robot.
+
 ## Objectif fixé par l'utilisateur
 
 Cartographier une pièce à partir des capteurs, sans aspirer ni brosser pour l'instant. Plus tard, nettoyer en se servant de la carte. Le calcul peut se faire sur un ordinateur extérieur. Il demande des idées nouvelles qui tirent le meilleur de son matériel.
