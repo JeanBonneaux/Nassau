@@ -11,11 +11,18 @@ Rédigé le 2026-11-09 au soir, après les premiers essais du radar sur le maté
 | 2026-11-10 | Sur la base alimentée, le mode Safe ne peut pas être gardé (lecture de la spécification) ; le cerveau ne pourrait donc ni quitter la base ni y monter | Mode Safe obtenu et gardé 10 s sur la base, robot à l'arrêt ; la charge s'arrête pendant ce temps ([journal_wifi.md § 20](../code/journal_wifi.md)) | Quitter la base en reculant tout droit devient un essai à faire (roues jamais essayées sur la base) |
 | 2026-11-10 | (absent du rapport) | Sur sa base, liaison fermée, le robot envoie une ligne « bat: … » par seconde ; le firmware v5 la prend pour un réveil du robot, puis pour des lectures incohérentes | Défaut de plus à corriger à l'étape 1 ; signal gratuit « je suis sur ma base » |
 
+| 2026-11-10 | Au réglage 150 le robot roule à 142,5 mm/s (5 paliers de 28,5 mm/s) | 149,5 mm/s en ligne droite, roue gauche 147,0 et roue droite 151,9 ([journal_wifi.md § 21](../code/journal_wifi.md)) | L'idée des paliers ne tient pas à ce réglage ; à mesurer à plusieurs réglages |
+| 2026-11-10 | En ligne droite, +1,33 ° par mètre vers la gauche, vus par le gyroscope seul | +9,3 ° par mètre au gyroscope, +7,7 d'après les roues (20 m, 13 avances) | Le robot tire à gauche ; une ligne droite décidée par le cerveau doit tenir son cap au gyroscope |
+| 2026-11-10 | Rapport roues / gyroscope : 0,981 sur le sol principal, 1,022 sur la zone à motifs | 0,987 et 1,014, mesurés à 5 lectures par seconde, cap et compteurs lus au même instant | Confirme que ce rapport dépend du sol |
+| 2026-11-10 | Le mode Safe n'arrête pas les roues sur un choc (lecture de la spécification) | Vu : 0,4 s de poussée, le robot grimpe sur l'obstacle, roue levée, retombée en Passive ; 2 chocs sur 2 sans préavis des capteurs | L'arrêt sur pare-chocs dans le cerveau passe en premier |
+| 2026-11-10 | La roulette avant (paquet 58) dépend d'une roulette bicolore que le 694 n'a peut-être pas | 0 sur 154 lectures en marche avant | Signal inutilisable sur ce robot |
+| 2026-11-10 | Les codes infrarouges de la base n'ont jamais été relevés | Le récepteur du dessus lit 168 puis 164 en passant devant la base ; gauche et droite à 0 | L'axe de la base se repère en roulant ; l'essai des récepteurs gauche et droit reste à faire face à la base |
+
 ### État de l'ordre de travail du rapport
 
 | Étape du rapport | État |
 |---|---|
-| 0. Une soirée sans code nouveau | **en cours le 2026-11-10** : essai du mode Safe sur la base fait ; enregistrement pendant un pilotage en cours ; multimètre et règle remis à plus tard par l'utilisateur ; papier et ruban sous un capteur de vide, infrarouge à 2 m de la base : à faire |
+| 0. Une soirée sans code nouveau | **en cours le 2026-11-10** : essai du mode Safe sur la base fait ; enregistrement pendant un pilotage fait et analysé (§ 21) ; multimètre et règle remis à plus tard par l'utilisateur ; enregistrement pendant un tour sur place, papier et ruban sous un capteur de vide, infrarouge face à la base : à faire |
 | 1. Fondations du firmware | à faire |
 | 2 à 7 | à faire |
 

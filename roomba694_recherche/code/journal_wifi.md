@@ -415,3 +415,42 @@ bat:   min 815  sec 43  mV 16252  mA 0  rx-byte 94  mAH 2067  state 18  mode 5
 - Capteur de distance : mis en mode fixe, droit devant (`/api/radar?mode=fixe&angle=0` ; le paramètre `mode` attend `off`, `fixe` ou `balayage`, un chiffre est refusé). Sur la base il lit 128 mm.
 
 **En cours à 11 h 40** : l'enregistreur tourne (`mesures/pilotage_20261110_113452_*`, 45 min au plus) en attendant le pilotage à la main de l'utilisateur, capteur de distance devant et arrêt automatique à 30 cm actif.
+
+## 21. Premier enregistrement complet pendant un pilotage (2026-11-10, 11 h 39 à 11 h 45) : le robot tire à gauche, un choc le fait grimper, la base se voit à l'infrarouge
+
+Étape 0 du rapport, gain rapide 0. Robot posé au sol par l'utilisateur, « Réveiller le robot » à 11 h 39 min 21 s, mode Safe à 11 h 39 min 24 s, pilotage au téléphone de 11 h 39 min 28 s à 11 h 44 min 25 s au réglage 150 mm/s : 22 avances (180 s), 35 rotations (56 s), un recul, **27,1 m**. Firmware v5, capteur de distance fixe devant, arrêt automatique à 30 cm actif.
+
+- **Fichiers** : `mesures/pilotage_20261110_113452_console.txt`, `_capteurs.csv` (2 023 lignes), `_e.csv` (338 lectures de la touche `e`), `_etat.jsonl` (805 lectures de `/api/state`) ; tracé et carte du cerveau : `mesures/position_20261110_114639.csv` et `.png` (444 points de tracé, 761 obstacles).
+- **Analyse** : `research_notes/Roomba 694 sensor exploitation ideas/data_analysis/f_pilotage_enregistre.py` (nouveau, rejouable : `python f_pilotage_enregistre.py ../../../mesures pilotage_20261110_113452`), résultats bruts dans `results_f_pilotage_20261110_113452.txt`, figures `fig9` à `fig13_pilotage_20261110_113452_*.png` au même endroit.
+- **Texte du robot au réveil** : « key-wakeup-any slept for 0 minutes 11 seconds 2020-05-13-1928-L r3-robot/branches/aero-sup… port:7587 CLEAN wifi-version: 3.5.62 bootloader id: 80B5 0114 4033 358… » (coupé par la console).
+
+**L'enregistrement lui-même** : 5,96 lignes par seconde (une ligne de plus à chaque touche `e`), intervalle médian 203 ms, jamais plus de 250 ms. Écart entre l'horloge du PC et celle de la carte : 222 ms d'étendue sur 340 s, dérive de 16 ppm. En mode Safe, aucune ligne abîmée détectée sur 1 999 (saut de compteur impossible ou capteur au-delà de 4 095).
+
+**Résultats, face aux chiffres du rapport** :
+
+| Sujet | Rapport (estimation ou mesure du 2026-11-08) | Mesuré ce matin |
+|---|---|---|
+| Vitesse réelle au réglage 150 | 142,3 mm/s, soit 5 paliers de 28,5 mm/s | **149,5 mm/s** (13 avances, de 147,7 à 153,2) ; en rotation 71,6 °/s au gyroscope, pour 73,1 attendus à ±150 mm/s et 69,5 à ±142,5 |
+| Roue gauche et roue droite | (non regardé) | **147,0 et 151,9 mm/s** pour le même ordre : la droite tourne 3,3 % plus vite |
+| Dérive du cap en ligne droite | +1,33 ° par mètre vers la gauche, vue par le gyroscope seul | **+9,3 ° par mètre vers la gauche au gyroscope, +7,7 d'après les roues** (20,3 m, 13 avances, de +5,1 à +11,9) ; l'écart gyroscope − roues est constant : +1,69 ± 0,18 ° par mètre |
+| Rapport roues / gyroscope en rotation | 0,981 ± 0,003 sur le sol principal ; 1,022 ± 0,005 sur la zone sombre à motifs | **0,987** sur le sol clair (6 rotations, 7,6 tours, de 0,976 à 0,990) ; **1,014** sur la zone à motifs (2,5 tours) |
+| Bruit des capteurs de vide au repos | 2,5 par capteur, 0,9 pour la différence de deux capteurs | 4,5 à 5,1 par capteur, **0,93** pour la différence avant gauche − avant droit (9 arrêts, 340 lignes) |
+| Bruit des capteurs optiques au repos | moins de 1 | 0,4 à 1,5 |
+| Capteur de distance au repos | 8 mm d'une mesure à l'autre dans un palier | 4,4 mm (valeur filtrée du journal) ; « rien à portée » sur 31 % des lignes |
+| Chocs sans préavis des capteurs optiques | 2 sur 7 | **2 sur 2** (le plus fort des six capteurs : 24 et 27 dans les deux secondes d'avant, leur niveau de repos) |
+| Roulette avant (paquet 58) | « peut-être absente sur un 694 » | **0 sur 154 lectures en marche avant** : inutilisable sur ce robot |
+| Récepteurs infrarouges gauche et droit | inconnu | 0 sur 338 lectures en mode Safe, y compris les quatre fois où le récepteur du dessus voyait la base ; non concluant tant que le robot n'a pas tourné face à la base |
+
+- **Le robot tire à gauche.** Environ 9 ° par mètre, soit un cercle de 6 m de rayon ; l'utilisateur corrigeait par de petits coups à droite. Le 2026-11-08 la dérive était sept fois plus faible et les roues ne la voyaient pas. Cause non établie (charge posée sur le robot depuis, tension de la batterie : 16,1 V ce matin, régulation de vitesse du robot). Deux conséquences : la position reste juste, puisque le cap vient du gyroscope ; mais toute ligne droite décidée par le cerveau devra tenir son cap au gyroscope. La part que les roues ne voient pas (+1,69 ° par mètre) correspond à une roue droite qui roule 0,7 % de plus par pas que la gauche (0,55 % dans le rapport), avec une part possible du zéro du gyroscope (+0,07 °/s au repos, caché par la zone morte).
+- **Les « paliers de 28,5 mm/s »** : l'idée du rapport que 150 vaut en réalité 142,5 ne tient pas ce matin. Reste à mesurer à plusieurs réglages.
+- **Le choc de 11 h 42 min 22 s, ligne par ligne** : pare-chocs gauche enfoncé à 22,09 s ; les roues continuent de pousser (courants des roues 777 et 815 mA, batterie −874 mA) ; à 22,29 s la roue gauche se lève et les capteurs de vide tombent à 79, 336 et 754, ce qui ressemble à un robot qui grimpe sur l'obstacle (à confirmer par l'utilisateur, qui l'a vu) ; à 22,56 s il est en Passive. Rien ne l'annonçait : capteurs optiques à leur niveau de repos, capteur de distance à 35 cm. Le mode Safe n'arrête pas les roues sur un choc, comme le dit le rapport (problème 5) ; ici il a fallu 0,4 s et une roue levée pour que le robot s'arrête, avec le doigt de l'utilisateur sur la flèche. Le second choc (11 h 43 min 42 s, 0,2 s) n'était pas annoncé non plus.
+- **L'arrêt automatique devant un obstacle n'a jamais joué** (compteurs `arrets` 0, `refus` 0) : la distance la plus courte lue en avançant est 349 mm.
+- **Une lecture abîmée, en Passive** (problème 10 du rapport, vu pour la première fois) : à 11 h 42 min 25 s, trois octets `B0 1E 01` se sont glissés au milieu de la réponse de 80 octets ; les compteurs des roues lus sont faux (−20 450 et 315), le capteur optique gauche vaut 11 333, qui est en fait le compteur droit. Le cerveau a écarté ce saut, puis le saut inverse de la lecture saine suivante (« 2 déplacements non comptés »), comme le rapport l'annonçait.
+- **Deux sols** : le sol principal (médiane des quatre capteurs de vide 2 634, de 2 583 à 2 657) et une zone à motifs de 4,5 m de trajet où les signaux sautent entre 800 et 2 500. Sur cette zone le courant de la batterie passe de −262 à **−338 mA** et celui des deux roues de 314 à **454 mA** : un sol qui freine. Ce que sont ces deux sols reste à demander à l'utilisateur.
+- **Courants des moteurs des roues, jamais relevés jusqu'ici** : au repos 0 et 0 ; en avance 133 mA à gauche et 182 mA à droite sur le sol principal, 232 et 277 mA sur la zone à motifs ; 777 et 815 mA pendant le choc.
+- **Infrarouge de la base, premiers codes relevés** : le récepteur du dessus a lu 168 (faisceau rouge) à 11 h 43 min 51, 52 et 54 s, puis 164 (faisceau vert) à 57 s, pendant une avance passant de 1,0 m à 0,45 m du point de départ ; rien aux secondes 53, 55 et 56. Entre la dernière lecture « rouge » et la lecture « verte », 21 cm de trajet : l'axe de la base est quelque part dans cet intervalle, qu'une lecture par seconde ne permet pas de resserrer.
+- **Arrêt et départ** : 8 mm parcourus après l'ordre d'arrêt (de 4 à 29 mm sur 13 arrêts, à ±15 mm près) ; premier pas de roue 0,16 s après l'ordre.
+- **Capteur de distance contre compteurs des roues** (deux instruments, aucune règle) : sur cinq approches de 0,7 à 1,6 m, la distance lue baisse de 1,053, 1,020, 0,937, 1,025 et 0,984 mm par millimètre roulé. Un objet de face donne 1 au plus : les deux instruments diffèrent donc de 2 à 5 % sur trois approches. Le mètre ruban dira lequel.
+- **Sans valeur** : l'écart de 1,88 m entre l'arrivée et le départ (le robot n'est pas revenu à son point de départ).
+
+**Ce que cela change dans l'ordre de travail** : l'arrêt sur pare-chocs dans le cerveau (gain rapide 6) passe devant tout déplacement que l'assistant piloterait lui-même, le choc de 11 h 42 en donne la raison ; la tenue du cap au gyroscope devient nécessaire dès la première ligne droite décidée par le cerveau ; la roulette avant sort de la liste des signaux utiles.
