@@ -94,6 +94,7 @@ void handleState() {
   j += b;
   radarStateJson(j);   // "radar":{mode, front_mm, age, present, servo}
   tourStateJson(j);    // "tour":{etat, tourne, n}
+  j += "\"bauds19200\":"; j += (unsigned long)baudRescues; j += ',';   // retours du robot de 19200 à 115200 bauds depuis le démarrage
   j += "\"ap\":{\"ssid\":"; jsonStr(j, AP_SSID);
   j += ",\"ip\":\""; j += WiFi.softAPIP().toString(); j += "\",\"clients\":"; j += (int)WiFi.softAPgetStationNum(); j += "},";
   j += "\"rst\":"; jsonStr(j, resetReasonText()); j += ',';

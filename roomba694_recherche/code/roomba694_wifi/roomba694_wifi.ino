@@ -300,10 +300,23 @@ void noAnswer() {
 // 19200 bauds jusqu'au retrait de sa batterie ou jusqu'à l'ordre Baud (opcode 129). Symptômes vus le 2026-11-09 :
 // robot allumé, fils reliés, aucun ordre exécuté, et des octets reçus de la forme 00 / E0 (un bit à 19200 bauds dure
 // exactement six bits à 115200). Cette fonction parle au robot à 19200 bauds ; s'il répond, elle lui ordonne de
-// revenir à 115200 bauds (code 11), puis vérifie la liaison.
-void baudRescue() {
+// revenir à 115200 bauds (code 11), puis vérifie la liaison. Elle est appelée par la touche 'y', et d'elle-même dans
+// deux cas (depuis le 2026-11-09, à la demande de l'utilisateur) : un Start ('s') resté sans réponse, et des octets
+// qui arrivent sans avoir de sens trois lectures de suite. Jamais pendant que les roues tournent.
+uint32_t baudRescues = 0;            // nombre de fois où le robot a été retrouvé à 19200 bauds depuis le démarrage de la carte
+uint32_t lastBaudRescueMs = 0;       // date du dernier essai (réussi ou non)
+bool     baudRescuePending = false;  // essai demandé par la lecture périodique, fait par la boucle principale
+bool     tourActive();
+
+bool baudRescue(bool automatique) {
+  if (driving || tourActive()) {
+    if (!automatique) out.println(F("Essai à 19200 bauds refusé : les roues tournent. Arrêtez-les d'abord (5)."));
+    return false;
+  }
   finishPendingQueryList();
-  out.println(F("Essai de la liaison à 19200 bauds (Start, puis lecture de la tension)..."));
+  lastBaudRescueMs = millis();
+  out.println(automatique ? F("Robot muet ou incompréhensible : essai automatique de la liaison à 19200 bauds...")
+                          : F("Essai de la liaison à 19200 bauds (Start, puis lecture de la tension)..."));
   robot.flush();
   robot.updateBaudRate(19200);
   delay(60);
@@ -319,21 +332,30 @@ void baudRescue() {
     robot.write((uint8_t)129);
     robot.write((uint8_t)11);
     robot.flush();
-    delay(200);                      // la spécification demande 100 ms avant de parler au nouveau débit
+    delay(350);                      // la spécification demande 100 ms avant de parler au nouveau débit ; marge prise le 2026-11-09
   } else if (lent) {
     out.printf("Deux octets reçus à 19200 bauds, mais sans signification (%02X %02X) : pas de changement.\n", b[0], b[1]);
     lent = false;
   } else {
-    out.println(F("Pas de réponse à 19200 bauds non plus."));
+    out.println(F("Pas de réponse à 19200 bauds non plus : le robot dort, ou un fil manque."));
   }
   robot.updateBaudRate(115200);
   delay(60);
   flushInput();
-  if (!lent) return;
-  robot.write(OI_START);
-  delay(120);
-  if (readSensor(22, b, 2)) out.printf("Liaison rétablie à 115200 bauds : batterie %u mV.\n", u16(b));
-  else out.println(F("Toujours pas de réponse à 115200 bauds après l'ordre de changement : réessayer 'y'."));
+  if (!lent) return false;
+  baudRescues++;
+  for (int essai = 0; essai < 3; essai++) {   // le premier essai juste après le changement de débit peut rester sans réponse
+    robot.write(OI_START);
+    delay(150);
+    if (readSensor(22, b, 2)) {
+      out.printf("Liaison rétablie à 115200 bauds : batterie %u mV (retour numéro %lu depuis le démarrage de la carte).\n",
+                 u16(b), (unsigned long)baudRescues);
+      return true;
+    }
+    delay(250);
+  }
+  out.println(F("Ordre envoyé, mais pas encore de réponse à 115200 bauds : la lecture périodique dira si la liaison est revenue ; sinon 'y'."));
+  return false;
 }
 
 // ---------- État du robot, rafraîchi par la lecture périodique ----------
@@ -490,7 +512,11 @@ void pollFinish(bool ok, const uint8_t* buf) {
     int8_t   t = (int8_t)buf[7];                // température
     if (v < 8000 || v > 22000 || buf[2] > 5 || t < -20 || t > 80 || buf[20] > 4) {   // buf[2] état de charge, buf[20] mode OI
       ok = false;
-      if (++implausible >= 3) { implausible = 0; pauseStream(); }   // des octets arrivent mais n'ont pas de sens : flux 148 probable
+      if (++implausible >= 3) {      // des octets arrivent mais n'ont pas de sens : flux 148, ou robot passé à 19200 bauds
+        implausible = 0;
+        pauseStream();
+        if (millis() - lastBaudRescueMs > 30000) baudRescuePending = true;   // essai à 19200 bauds fait par la boucle principale
+      }
     } else {
       implausible = 0;
     }
@@ -701,6 +727,7 @@ void printInfo() {
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
   out.printf("Firmware roomba694_wifi v3, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
              __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
+  out.printf("Robot retrouvé à 19200 bauds et ramené à 115200 : %lu fois depuis le démarrage de la carte.\n", (unsigned long)baudRescues);
 }
 
 void printHelp() {
@@ -731,7 +758,15 @@ void handle(char c) {
   switch (c) {
     case '?': printHelp(); break;
     case 'w': brcPulse(); out.println(F("Impulsion BRC envoyée.")); break;
-    case 's': setMode(OI_START, F("Start (128) -> Passive")); break;
+    case 's': {
+      setMode(OI_START, F("Start (128) -> Passive"));
+      // Le robot a-t-il entendu ? Sans réponse à une question simple, il dort, ou il est passé à 19200 bauds :
+      // un essai à ce débit le ramène à 115200 (voir baudRescue). Pas plus d'un essai automatique toutes les 5 s.
+      uint8_t b[2];
+      delay(100);
+      if (!readSensor(22, b, 2) && !driving && millis() - lastBaudRescueMs > 5000) baudRescue(true);
+      break;
+    }
     case 'f': setMode(OI_SAFE,  F("Safe (131)")); break;
     case 'c': setMode(OI_CLEAN, F("Clean (135)")); break;
     case 'h': setMode(OI_DOCK,  F("Seek Dock (143)")); break;
@@ -770,7 +805,7 @@ void handle(char c) {
               radarCycleMode(); break;
     case 'u': radarPrintStatus(); break;
     case 't': tourStart(); break;
-    case 'y': baudRescue(); break;
+    case 'y': baudRescue(false); break;
     case 'o': setMode(OI_POWER, F("Power (133)")); break;
     case 'x': setMode(OI_STOP,  F("Stop (173) -> OI fermée")); break;
     default: {
@@ -966,4 +1001,5 @@ void loop() {
   pollTick();
   radarTick();   // arrêt des roues devant un obstacle, messages du radar
   tourTick();    // tour sur place : ordres de roues répétés, conditions d'arrêt
+  if (baudRescuePending && !driving && !tourActive()) { baudRescuePending = false; baudRescue(true); }
 }

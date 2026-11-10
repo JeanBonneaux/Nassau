@@ -39,12 +39,21 @@ Conclusion : ne pas faire du capteur de distance un mauvais laser. Lui demander 
 
 | Étape | Contenu | État |
 |---|---|---|
-| 1 | Tour sur place : `tour.ino`, touche `t`, `/api/tour`, outil `code/outils/tour_capture.py` | programmé le 2026-11-09, à essayer |
+| 1 | Tour sur place : `tour.ino`, touche `t`, `/api/tour`, outil `code/outils/tour_capture.py` | **fait le 2026-11-09** : deux tours réussis, voir ci-dessous |
 | 2 | Position du robot (x, y, cap) dans le cerveau, tracée sur la page ; essai : un carré piloté à la main doit se refermer | à faire |
 | 3 | Première carte sur le PC : l'utilisateur pilote à la main entre deux tours sur place | à faire |
 | 4 | Étalonnages automatiques (capteurs optiques, gyroscope, décalage du capteur) | à faire |
 | 5 | Suivi de mur et tour de la pièce automatique | à faire |
 | 6 | Exploration de l'intérieur, puis parcours en bandes sans les brosses, puis avec | à faire |
+
+### Premiers résultats de l'étape 1 (2026-11-09, 20 h 46 et 20 h 51)
+
+Deux tours sur place à un mètre d'écart, robot déplacé à la main : 381° et 380° en 13,7 s, 122 et 124 mesures, arrêt normal. Fichiers `mesures/tour_20261109_204605.*` et `mesures/tour_20261109_205150.*`.
+
+- La fin de chaque tour retrouve son début (119 cm, puis 103 cm) : le gyroscope compte bien un tour complet.
+- Les paliers existent comme prévu, mais ils sont plus larges que les 20° attendus : jusqu'à 65° pour une paroi proche. Le capteur entend donc un mur bien au-delà de la face. Le milieu du palier reste utilisable comme direction du mur ; sa largeur ne l'est pas.
+- D'un tour à l'autre, la paroi de droite passe de 168 à 68 cm et le grand arc de devant de 119 à 104 cm, dans les directions prévues par le gyroscope : c'est le comportement attendu d'un déplacement d'un mètre. Non confirmé par une mesure au mètre ruban.
+- À faire avant l'étape 3 : mesurer le décalage du capteur par rapport au centre du robot, comparer un palier au mètre ruban, superposer les deux tours sur un même dessin.
 
 Le LiDAR de la note F, s'il arrive, remplacera le capteur de distance dans les étapes 3 à 6 ; la position, l'enregistrement, la carte et les parcours resteront les mêmes.
 
