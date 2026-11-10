@@ -369,3 +369,49 @@ Vérifiée dans le navigateur avec un faux robot (serveur local qui simule une p
 **Observation à creuser** : dans la minute qui a suivi le redémarrage de la carte (22 h 27), la lecture des capteurs par le groupe 100 a échoué trois fois de suite (zéro octet, alors que le robot répondait à une question simple) et une centaine d'échos ont été écartés faute de position fiable ; le programme est passé de lui-même aux groupes 6 et 101. Ensuite, plus rien : 262 lectures réussies sur 262 en 35 s, roues en mouvement ou non, capteur de distance en marche. Piste : la patte D4 tire la ligne BRC du robot vers le bas à chaque redémarrage de la carte, et le § 18 a montré qu'une impulsion sur BRC fait bavarder le robot pendant une minute (`B0 02 01 15 34`). Remède possible, à voir avec l'utilisateur : une résistance de rappel entre BRC et le 3,3 V, ou le fil de BRC sur D5.
 
 **Vers le but final** (robot visible en 3D dans l'appartement, « va dans telle pièce », zone à nettoyer tracée au doigt) : voir la suite proposée dans la note H.
+
+## 20. Reprise sur la branche de recherche ; robot sur sa base : le mode Safe y tient, texte « bat: », outil d'enregistrement (2026-11-10, 11 h 15 à 11 h 45)
+
+Session locale qui reprend le rapport `reports/Roomba 694 sensor exploitation ideas.md` et son ordre de travail (consigne : [PROMPT_session_locale_2.md](PROMPT_session_locale_2.md)). Branche `claude/pensive-hopper-qmvast` ; rien n'était resté non poussé sur l'ancienne branche. Objectif redit par l'utilisateur : tirer le plus possible des capteurs actuels pour voir si le robot sait se repérer et se déplacer ; la cartographie d'abord ; plus tard le diriger (« va nettoyer autour de la table de la cuisine »).
+
+**Décision de l'utilisateur sur l'étape 0** : pas de multimètre ni de règle pour l'instant (« les branchements et ce qu'on a fait hier avec la v5 sont bons »). Il préfère des essais sur le robot : un enregistrement pendant un pilotage, puis l'assistant prend la main. Ce que les vérifications sautées auraient tranché, et qui reste donc ouvert : le cerveau tire-t-il le fil de réveil vers le bas quand il redémarre (problème 1 du rapport) ; le fil de masse du diviseur de l'écho est-il posé (confirmé de vive voix seulement) ; la position du capteur de distance et des capteurs de vide sur le robot (problème 9) ; la roulette avant est-elle bicolore.
+
+**État trouvé** (11 h 16, lecture seule) : cerveau en « v5 Nov 9 2026 22:25:31 », allumé à 11 h 14 min 20 s (raison « mise sous tension »), pas relié au PC (aucun port COM), sur le réseau de la maison ; gyroscope présent. Au repos sur la base, l'accéléromètre donne −0,13 / −0,04 / 1,09 g : plaque penchée de 7° environ, ou décalage de la puce ; à regarder à l'étape 1, car un gyroscope penché compte les rotations un peu court. Outils du PC : Python 3.13 avec numpy, scipy et matplotlib, arduino-cli 1.5.1. Captures : `mesures/carte_demarrage_20261110_111649.json`, `mesures/carte_ecoute_base_20261110_111911.json`.
+
+**Le robot posé sur sa base envoie une ligne de texte par seconde** (touche `v`, qui n'envoie rien au robot) :
+
+```
+bat:   min 815  sec 43  mV 16252  mA 0  rx-byte 94  mAH 2067  state 18  mode 5
+```
+
+- « min » et « sec » comptent depuis le dernier vrai redémarrage du robot : 815 min 43 s avant 11 h 29 min 46 s, soit 21 h 54 la veille, l'heure du second réveil du § 18 (compteurs des roues repartis de zéro).
+- Le firmware v5 compte ce texte comme un réveil du robot (« Le robot envoie du texte : il vient de démarrer ou de se réveiller », `robot_redem`). Ce message, apparu trois secondes après l'allumage de la carte, **n'est donc pas un indice pour le problème 1** (fil de réveil) : piste regardée puis écartée avant d'être annoncée.
+- Après la fermeture de la liaison (`x`), le texte reprend en moins de 3 s ; 6 s plus tard le firmware affiche « Flux continu de capteurs (opcode 148) mis en pause (150, 0), tampon vidé », puis « Robot muet ou incompréhensible : essai automatique de la liaison à 19200 bauds... », puis « Pas de réponse à 19200 bauds non plus ». Il prend ce texte pour des lectures incohérentes : robot sur sa base, liaison fermée, le cerveau lui envoie donc de lui-même des octets (au plus toutes les 30 s). Vu aussi : la lecture était repliée sur « groupes 6 et 101 » avant l'essai ; la touche `q` l'a ramenée au groupe 100.
+- **À corriger à l'étape 1** (défaut absent des douze du rapport) : reconnaître les lignes « bat: », ne pas les compter comme un réveil, ne pas lancer l'essai à 19200 bauds. C'est aussi un signal gratuit : « je suis sur ma base, liaison fermée », avec tension, courant et charge.
+
+**Essai « le mode Safe tient-il sur la base alimentée ? »** (11 h 29, aucun ordre de roues ; fichiers `mesures/base_safe_20261110_112942_*`) :
+
+| Heure | Touche | Résultat |
+|---|---|---|
+| 11 h 29 min 46 s | `s` | Passive |
+| 49 s | `b` | 16 252 mV, 0 mA, 2 067 / 2 068 mAh, état de charge 4 (attente), mode lu 2 (Passive) |
+| 51 s | `e` | pare-chocs droit 1, gauche 1 ; roues levées 0, 0 ; capteurs de vide 0, 0, 0, 0 ; capteurs optiques 0 partout ; infrarouge dessus 0, gauche 0, droite 0 ; sur la base : oui |
+| 54 s | `q` | groupe 100 complet en 25 ms : `03 00 01 01 01 01 00 00 00 00 00 00 00 00 00 00 04 3F 7C 00 00 11 08 13 …` |
+| 57 s | `f` | Safe envoyé |
+| 59 s | `b` | 16 196 mV, **−72 mA**, état de charge **0** (pas en charge), **mode lu 3 (Safe)** |
+| 11 h 30 min 02 s et 05 s | `e` | comme en Passive, sauf les capteurs optiques : 1 à 3 sur quatre des six ; infrarouge toujours 0, 0, 0 ; courants des roues 0, brosse −9 mA |
+| 07 s | `s` | Passive ; l'état de charge revient à 4 en 1,5 s |
+| 12 s | `x` | liaison fermée ; le texte « bat: » reprend |
+
+- **Le mode Safe a tenu 10,0 s sur la base alimentée** : 21 lectures de `/api/state` de suite avec le mode 3, jusqu'à ce que l'assistant le quitte. Cela remplace l'affirmation du rapport (« by the specification a powered charger ends Safe mode », et la ligne « Driving off and onto the dock in Safe mode » de son tableau des désaccords) : sur ce 694 et sa base, le mode Safe s'obtient et se garde à l'arrêt. La charge s'arrête pendant ce temps (état 4 → 0, −56 à −72 mA). Non essayé : faire tourner les roues sur la base.
+- Sur la base, les quatre bits « vide » sont levés (`01 01 01 01`, signaux à 0) et les deux côtés du pare-chocs sont enfoncés. D'après la spécification, un vide n'arrête le mode Safe qu'en marche avant, ou en marche arrière en virage serré : un recul tout droit pour quitter la base reste possible sur le papier, à essayer avec l'accord de l'utilisateur. Une avance n'aurait aucun sens, et le tour sur place est refusé (pare-chocs enfoncé).
+- Les trois octets infrarouges restent à 0 sur la base, en Passive comme en Safe. Cela ne dit rien des récepteurs gauche et droit ; l'essai à 2 m devant la base reste à faire.
+- En Passive sur la base, les capteurs optiques du pare-chocs lisent 0 ; en Safe, 1 à 3.
+- La température de la batterie passe de 20 à 16 puis 19 °C en vingt secondes : inutilisable comme thermomètre, comme l'annonce le rapport.
+
+**Outil `code/outils/enregistreur.py`** (nouveau) : garde la console TCP ouverte et écrit au fil de l'eau, sur l'horloge du PC, toutes les lignes de la console (`_console.txt`), le journal CSV du firmware (`_capteurs.csv`, touche `j` lancée et arrêtée par l'outil), les réponses à la touche `e` envoyée chaque seconde (`_e.csv` : infrarouge, courants des moteurs, roulette avant, surintensités, que le CSV n'a pas) et `/api/state` deux fois par seconde (`_etat.jsonl`). Arrêt propre par un fichier `_STOP`. Il n'envoie aucune touche de roues. Rappel : le firmware arrête les roues et un tour sur place quand la console TCP se ferme.
+
+- Essai de 15 s sur la base, en Passive (`mesures/base_repos_20261110_113340_*`) : 61 lignes du journal CSV ; intervalle médian 203 ms, mais de 32 à 828 ms : première mesure de l'irrégularité de la boucle (problème 11 du rapport), ici avec la console, la touche `e` et `/api/state` en même temps. L'écart entre l'horloge du PC et celle de la carte reste dans 33 ms sur 12 s. Une lecture de `/api/state` prend 158 ms en moyenne vue du PC.
+- Capteur de distance : mis en mode fixe, droit devant (`/api/radar?mode=fixe&angle=0` ; le paramètre `mode` attend `off`, `fixe` ou `balayage`, un chiffre est refusé). Sur la base il lit 128 mm.
+
+**En cours à 11 h 40** : l'enregistreur tourne (`mesures/pilotage_20261110_113452_*`, 45 min au plus) en attendant le pilotage à la main de l'utilisateur, capteur de distance devant et arrêt automatique à 30 cm actif.

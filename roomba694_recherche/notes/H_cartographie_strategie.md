@@ -4,6 +4,21 @@ Rédigé le 2026-11-09 au soir, après les premiers essais du radar sur le maté
 
 **Suite du 2026-11-10** : une recherche plus poussée sur ce que les capteurs actuels peuvent encore donner (revue du firmware et du câblage, analyse des enregistrements de `mesures/`, idées classées avec leur premier essai, ce qui ne marchera pas) est dans [`../reports/Roomba 694 sensor exploitation ideas.md`](../reports/Roomba%20694%20sensor%20exploitation%20ideas.md), en anglais comme la demande ; les notes de travail et les scripts d'analyse sont dans `../research_notes/`. Ce rapport revoit plusieurs résultats de la présente note à la lumière des enregistrements (le rapport roues / gyroscope de 0,963, ce que prouve le recouvrement de 20° des tours, la largeur des paliers, l'essai du carré) : le lire avant de s'appuyer sur ces chiffres. Rien de ce rapport n'a été essayé sur le robot.
 
+### Ce que les mesures ont changé au rapport (tenu à jour)
+
+| Date | Affirmation du rapport | Mesure sur le robot | Conséquence |
+|---|---|---|---|
+| 2026-11-10 | Sur la base alimentée, le mode Safe ne peut pas être gardé (lecture de la spécification) ; le cerveau ne pourrait donc ni quitter la base ni y monter | Mode Safe obtenu et gardé 10 s sur la base, robot à l'arrêt ; la charge s'arrête pendant ce temps ([journal_wifi.md § 20](../code/journal_wifi.md)) | Quitter la base en reculant tout droit devient un essai à faire (roues jamais essayées sur la base) |
+| 2026-11-10 | (absent du rapport) | Sur sa base, liaison fermée, le robot envoie une ligne « bat: … » par seconde ; le firmware v5 la prend pour un réveil du robot, puis pour des lectures incohérentes | Défaut de plus à corriger à l'étape 1 ; signal gratuit « je suis sur ma base » |
+
+### État de l'ordre de travail du rapport
+
+| Étape du rapport | État |
+|---|---|
+| 0. Une soirée sans code nouveau | **en cours le 2026-11-10** : essai du mode Safe sur la base fait ; enregistrement pendant un pilotage en cours ; multimètre et règle remis à plus tard par l'utilisateur ; papier et ruban sous un capteur de vide, infrarouge à 2 m de la base : à faire |
+| 1. Fondations du firmware | à faire |
+| 2 à 7 | à faire |
+
 ## Objectif fixé par l'utilisateur
 
 Cartographier une pièce à partir des capteurs, sans aspirer ni brosser pour l'instant. Plus tard, nettoyer en se servant de la carte. Le calcul peut se faire sur un ordinateur extérieur. Il demande des idées nouvelles qui tirent le meilleur de son matériel.

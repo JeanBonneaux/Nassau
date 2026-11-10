@@ -1,0 +1,77 @@
+# base_safe_20261110_112942 — carte 192.168.18.25 — début 11:29:42.884 le 2026-11-10
+# Robot sur sa base alimentée, aucun ordre de roues : le mode Safe tient-il sur la base ? octets infrarouges en Passive puis en Safe
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794328183.023	11:29:43.023	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794328183.025	11:29:43.025	Client TCP connecté : 192.168.18.6
+1794328183.856	11:29:43.855	>> v
+1794328185.988	11:29:45.988	Écoute du robot pendant 2.0 s : 328 octet(s) reçu(s) :
+1794328186.038	11:29:46.037	  62 61 74 3A 20 20 20 6D 69 6E 20 38 31 35 20 20 73 65 63 20 34 33 20 20 6D 56 20 31 36 32 35 32 
+1794328186.078	11:29:46.078	  20 20 6D 41 20 30 20 20 72 78 2D 62 79 74 65 20 39 34 20 20 6D 41 48 20 32 30 36 37 20 20 73 74 
+1794328186.086	11:29:46.086	  | bat:   min 815  sec 43  mV 16252  mA 0  rx-byte 94  mAH 2067  state 18  mode 5  
+1794328186.102	11:29:46.102	  | bat:   min 815  sec 44  mV 16252  mA 0  rx-byte 94  mAH 2067  state 18  mode 5  
+1794328186.102	11:29:46.102	  | bat:   min 815  sec 45  mV 16252  mA 0  rx-byte 94  mAH 2067  state 18  mode 5  
+1794328186.103	11:29:46.103	  | bat:   min 815  sec 46  mV 16252  mA 0  rx-byte 94  mAH 2067  state 18  mode 5  
+1794328186.490	11:29:46.489	>> s
+1794328186.655	11:29:46.655	Envoyé : Start (128) -> Passive
+1794328189.130	11:29:49.129	>> b
+1794328189.229	11:29:49.229	Tension batterie : 16252 mV
+1794328189.229	11:29:49.229	Courant : 0 mA   (négatif = décharge)
+1794328189.229	11:29:49.229	Température : 20 °C
+1794328189.229	11:29:49.229	Charge : 2067 / 2068 mAh
+1794328189.238	11:29:49.238	État de charge : 4   (0 pas en charge, 1 reconditionnement, 2 charge à pleine puissance, 3 entretien, 4 attente, 5 défaut)
+1794328189.252	11:29:49.251	Mode OI lu : 2   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur ce 694 la valeur est décalée de +1)
+1794328191.762	11:29:51.761	>> e
+1794328191.867	11:29:51.866	Pare-chocs : droit 1, gauche 1 | Roue levée : droite 0, gauche 0
+1794328191.867	11:29:51.866	Vide (signaux) : gauche 0, avant gauche 0, avant droit 0, droit 0
+1794328191.887	11:29:51.887	Capteurs optiques du pare-chocs (G, AvG, CG, CD, AvD, D) : 0 0 0 0 0 0
+1794328191.887	11:29:51.887	Boutons : CLEAN 0, SPOT 0, DOCK 0 | mur 0 (signal 0), mur virtuel 0
+1794328191.906	11:29:51.906	Infrarouge reçu : dessus 0, gauche 0, droite 0 | saleté 0 | roulette avant 0 | sur la base : oui
+1794328191.906	11:29:51.906	Moteurs (mA) : roue gauche 0, roue droite 0, brosse 0, brosse latérale 0 | surintensités (bits) 0
+1794328194.393	11:29:54.393	>> q
+1794328194.564	11:29:54.564	Groupe 100 : 80 octet(s) reçu(s) sur 80 en 25 ms : 03 00 01 01 01 01 00 00 00 00 00 00 00 00 00 00 04 3F 7C 00 00 11 08 13 …
+1794328194.564	11:29:54.564	Lecture des capteurs par le groupe 100 (80 octets en une requête).
+1794328197.023	11:29:57.022	>> f
+1794328197.200	11:29:57.200	Envoyé : Safe (131)
+1794328199.654	11:29:59.653	>> b
+1794328199.687	11:29:59.687	Tension batterie : 16196 mV
+1794328199.687	11:29:59.687	Courant : -72 mA   (négatif = décharge)
+1794328199.687	11:29:59.687	Température : 16 °C
+1794328199.687	11:29:59.687	Charge : 2067 / 2068 mAh
+1794328199.705	11:29:59.705	État de charge : 0   (0 pas en charge, 1 reconditionnement, 2 charge à pleine puissance, 3 entretien, 4 attente, 5 défaut)
+1794328199.719	11:29:59.718	Mode OI lu : 3   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur ce 694 la valeur est décalée de +1)
+1794328202.286	11:30:02.285	>> e
+1794328202.385	11:30:02.385	Pare-chocs : droit 1, gauche 1 | Roue levée : droite 0, gauche 0
+1794328202.385	11:30:02.385	Vide (signaux) : gauche 0, avant gauche 0, avant droit 0, droit 0
+1794328202.419	11:30:02.419	Capteurs optiques du pare-chocs (G, AvG, CG, CD, AvD, D) : 1 1 0 1 1 0
+1794328202.419	11:30:02.419	Boutons : CLEAN 0, SPOT 0, DOCK 0 | mur 0 (signal 0), mur virtuel 0
+1794328202.451	11:30:02.450	Infrarouge reçu : dessus 0, gauche 0, droite 0 | saleté 0 | roulette avant 0 | sur la base : oui
+1794328202.451	11:30:02.450	Moteurs (mA) : roue gauche 0, roue droite 0, brosse -9, brosse latérale 0 | surintensités (bits) 0
+1794328204.918	11:30:04.918	>> e
+1794328205.074	11:30:05.073	Pare-chocs : droit 1, gauche 1 | Roue levée : droite 0, gauche 0
+1794328205.076	11:30:05.075	Vide (signaux) : gauche 0, avant gauche 0, avant droit 0, droit 0
+1794328205.095	11:30:05.094	Capteurs optiques du pare-chocs (G, AvG, CG, CD, AvD, D) : 1 2 0 0 1 0
+1794328205.095	11:30:05.094	Boutons : CLEAN 0, SPOT 0, DOCK 0 | mur 0 (signal 0), mur virtuel 0
+1794328205.115	11:30:05.115	Infrarouge reçu : dessus 0, gauche 0, droite 0 | saleté 0 | roulette avant 0 | sur la base : oui
+1794328205.116	11:30:05.115	Moteurs (mA) : roue gauche 0, roue droite 0, brosse -9, brosse latérale 0 | surintensités (bits) 0
+1794328207.549	11:30:07.549	>> s
+1794328207.650	11:30:07.649	Envoyé : Start (128) -> Passive
+1794328210.180	11:30:10.179	>> b
+1794328210.277	11:30:10.276	Tension batterie : 16224 mV
+1794328210.278	11:30:10.278	Courant : 0 mA   (négatif = décharge)
+1794328210.306	11:30:10.305	Température : 19 °C
+1794328210.306	11:30:10.305	Charge : 2067 / 2068 mAh
+1794328210.306	11:30:10.305	État de charge : 4   (0 pas en charge, 1 reconditionnement, 2 charge à pleine puissance, 3 entretien, 4 attente, 5 défaut)
+1794328210.306	11:30:10.305	Mode OI lu : 2   (0 Off, 1 Passive, 2 Safe, 3 Full ; sur ce 694 la valeur est décalée de +1)
+1794328212.809	11:30:12.808	>> x
+1794328213.055	11:30:13.055	Envoyé : Stop (173) -> OI fermée
+1794328215.439	11:30:15.439	>> v
+1794328217.479	11:30:17.478	Écoute du robot pendant 2.0 s : 246 octet(s) reçu(s) :
+1794328217.541	11:30:17.540	  62 61 74 3A 20 20 20 6D 69 6E 20 38 31 36 20 20 73 65 63 20 31 35 20 20 6D 56 20 31 36 32 32 34 
+1794328217.582	11:30:17.581	  20 20 6D 41 20 30 20 20 72 78 2D 62 79 74 65 20 39 34 20 20 6D 41 48 20 32 30 36 37 20 20 73 74 
+1794328217.587	11:30:17.587	  | bat:   min 816  sec 15  mV 16224  mA 0  rx-byte 94  mAH 2067  state 18  mode 5  
+1794328217.595	11:30:17.594	  | bat:   min 816  sec 16  mV 16224  mA 0  rx-byte 94  mAH 2067  state 18  mode 5  
+1794328217.598	11:30:17.597	  | bat:   min 816  sec 17  mV 16252  mA 0  rx-byte 94  mAH 2067  state 18  mode 5  
+1794328219.696	11:30:19.695	Flux continu de capteurs (opcode 148) mis en pause (150, 0), tampon vidé.
+1794328219.732	11:30:19.731	Robot muet ou incompréhensible : essai automatique de la liaison à 19200 bauds...
+1794328220.089	11:30:20.089	Pas de réponse à 19200 bauds non plus : le robot dort, ou un fil manque.
+1794328223.630	11:30:23.629	## fin de l'enregistrement après 40.7 s
