@@ -80,6 +80,7 @@ struct RadarState {
   volatile int8_t   amplitude = 60;       // demi-ouverture du balayage, degrés
   volatile int8_t   ech = 1;              // mesures par direction (1 à 3, médiane)
   volatile bool     inverse = false;      // vrai si le servo part à droite quand on lui demande la gauche (montage à l'envers)
+  volatile int8_t   butee = RADAR_SPAN_MAX;   // butée du servo, degrés de part et d'autre du centre : aucun ordre ne la dépasse (voir radarLimit)
   volatile int8_t   fixedDeg = 0;         // direction visée en mode fixe
   // État :
   volatile int8_t   servoDeg = 0;         // direction actuelle du capteur
@@ -94,6 +95,11 @@ portMUX_TYPE radarMux = portMUX_INITIALIZER_UNLOCKED;
 // lu par la tâche radar pour garder le capteur devant tant que l'on demande à avancer.
 volatile uint32_t radarFwdMs = 0;
 volatile bool     radarFwdSeen = false;
+
+// Butée du servo, en degrés de part et d'autre du centre (réglage « butee », 10 à 80, conservé en flash). Ajoutée le
+// 2026-11-09 à la demande de l'utilisateur, dont les fils du capteur sont courts : tout angle demandé y est ramené, que
+// l'ordre vienne du balayage, du mode fixe, de l'API ou du dessin touché sur la page.
+int radarLimit() { return constrain((int)radar.butee, 10, RADAR_SPAN_MAX); }
 
 // ---------- Servo SG90 par LEDC (50 Hz, 16 bits : 20 000 µs sur 65 535 pas, soit 0,3 µs de résolution) ----------
 bool servoOn = false;        // impulsions en cours
@@ -111,7 +117,8 @@ void servoRelax() {           // plus d'impulsions : le servo garde sa position 
 
 // Oriente le capteur vers deg (0 devant, positif à gauche). Renvoie l'ampleur du mouvement en degrés (pour l'attente).
 int servoGoto(int deg) {
-  deg = constrain(deg, -RADAR_SPAN_MAX, RADAR_SPAN_MAX);
+  int lim = radarLimit();
+  deg = constrain(deg, -lim, lim);   // jamais au-delà de la butée
   int moved = servoRelaxed ? 2 * RADAR_SPAN_MAX : abs(deg - (int)radar.servoDeg);
   int mech = radar.inverse ? -deg : deg;
   servoPulse((uint32_t)(SERVO_CENTER_US + mech * SERVO_US_PER_DEG));
@@ -186,8 +193,9 @@ void radarTask(void*) {
     }
     if (mode == RADAR_OFF) { vTaskDelay(pdMS_TO_TICKS(100)); continue; }
 
+    int  lim = radarLimit();
     int  pas = constrain((int)radar.pas, 5, 45);
-    int  amp = constrain((int)radar.amplitude, 5, RADAR_SPAN_MAX);
+    int  amp = constrain((int)radar.amplitude, 5, lim);                             // le balayage ne dépasse pas la butée
     // Capteur devant pendant la marche avant, et aussi tant que l'avance est demandée (bouton maintenu), même refusée :
     // sinon le balayage reprendrait dès l'arrêt automatique, la mesure « devant » vieillirait, le refus expirerait au
     // bout de 1,5 s et le robot s'approcherait de l'obstacle par à-coups.
@@ -197,12 +205,12 @@ void radarTask(void*) {
     radar.following = follow;
     bool fixed = (mode == RADAR_FIXED) || follow;
     int  target;
-    if (mode == RADAR_FIXED) target = radar.fixedDeg;
+    if (mode == RADAR_FIXED) target = constrain((int)radar.fixedDeg, -lim, lim);
     else if (follow) target = 0;
     else {
       angle = constrain(angle, -amp, amp);                                          // réglages changés en route : on reste dans la plage
       angle = ((angle + (angle >= 0 ? pas / 2 : -pas / 2)) / pas) * pas;            // et sur un multiple du pas
-      target = angle;
+      target = constrain(angle, -amp, amp);                                         // l'arrondi ne doit pas faire sortir de la plage
     }
     int moved = servoGoto(target);
     if (moved) vTaskDelay(pdMS_TO_TICKS(RADAR_SETTLE_MS + 2 * moved));           // SG90 : ~0,1 s pour 60°, puis stabilisation
@@ -259,6 +267,7 @@ void radarLoadSettings() {
   radar.amplitude = constrain(prefs.getInt("amp", 60), 5, RADAR_SPAN_MAX);
   radar.ech       = constrain(prefs.getInt("ech", 1), 1, 3);
   radar.inverse   = prefs.getBool("inv", false);
+  radar.butee     = constrain(prefs.getInt("max", RADAR_SPAN_MAX), 10, RADAR_SPAN_MAX);
   prefs.end();
 }
 
@@ -271,6 +280,7 @@ void radarSaveSettings() {
   prefs.putInt("amp", radar.amplitude);
   prefs.putInt("ech", radar.ech);
   prefs.putBool("inv", radar.inverse);
+  prefs.putInt("max", radar.butee);
   prefs.end();
 }
 
@@ -292,8 +302,11 @@ const char* radarModeName(uint8_t m) { return m == RADAR_SWEEP ? "balayage" : m 
 void radarSetMode(uint8_t m) {
   radar.mode = m;
   if (m == RADAR_FIXED)      out.printf("Radar : mode fixe, capteur vers %d° (0 = devant, positif = gauche), 10 mesures/s.\n", (int)radar.fixedDeg);
-  else if (m == RADAR_SWEEP) out.printf("Radar : balayage de -%d° à +%d° par pas de %d°%s.\n", (int)radar.amplitude, (int)radar.amplitude, (int)radar.pas,
-                                        radar.autoFront ? ", capteur devant pendant une marche avant" : "");
+  else if (m == RADAR_SWEEP) {
+    int a = min((int)radar.amplitude, radarLimit());   // amplitude réellement balayée : jamais plus que la butée
+    out.printf("Radar : balayage de -%d° à +%d° par pas de %d°%s.\n", a, a, (int)radar.pas,
+               radar.autoFront ? ", capteur devant pendant une marche avant" : "");
+  }
   else                       out.println(F("Radar : arrêt, servo recentré puis relâché."));
 }
 
@@ -362,9 +375,9 @@ void radarPrintStatus() {
   if (f > 0)       out.printf("Devant : %d cm (mesure vieille de %lu ms)\n", f / 10, (unsigned long)age);
   else if (f == 0) out.printf("Devant : rien à portée (< 4 m), mesure vieille de %lu ms\n", (unsigned long)age);
   else             out.println(F("Devant : distance inconnue"));
-  out.printf("Réglages : seuil d'arrêt %d cm, arrêt auto %s, devant en marche avant %s, pas %d°, amplitude ±%d°, %d mesure(s) par direction, servo %s\n",
-             (int)radar.seuilCm, radar.securite ? "oui" : "non", radar.autoFront ? "oui" : "non", (int)radar.pas, (int)radar.amplitude, (int)radar.ech,
-             radar.inverse ? "inversé" : "sens normal");
+  out.printf("Réglages : seuil d'arrêt %d cm, arrêt auto %s, devant en marche avant %s, pas %d°, amplitude ±%d°, butée ±%d°, %d mesure(s) par direction, servo %s\n",
+             (int)radar.seuilCm, radar.securite ? "oui" : "non", radar.autoFront ? "oui" : "non", (int)radar.pas, (int)radar.amplitude, radarLimit(),
+             (int)radar.ech, radar.inverse ? "inversé" : "sens normal");
   out.printf("Compteurs : %lu mesures, %lu sans écho, %lu sans réaction, %lu passages, %lu arrêts auto, %lu avances refusées\n",
              (unsigned long)radar.pings, (unsigned long)radar.noEcho, (unsigned long)radar.faults, (unsigned long)radar.sweeps,
              (unsigned long)radar.stops, (unsigned long)radar.refused);

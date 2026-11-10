@@ -10,7 +10,8 @@
 //          /api/log?since=N  dernières lignes de la console (journal en mémoire, voir TeeOut)
 //          /api/scan    réseaux Wi-Fi à portée (lance une recherche, puis renvoie la liste)
 //          /api/radar   radar à ultrasons (radar.ino) : état et carte polaire en JSON ; paramètres facultatifs : mode=off|fixe|balayage,
-//                       angle=-80..80, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..80, ech=1..3, inv=0|1, effacer=1
+//                       angle=-80..80, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..80, ech=1..3, inv=0|1, effacer=1,
+//                       butee=10..80 (degrés de part et d'autre du centre que le servo ne dépasse jamais)
 //
 // Le mot de passe du réseau de la maison n'est jamais renvoyé par l'API ni affiché sur la console.
 
@@ -248,7 +249,11 @@ void handleUpdateUpload() {
 // /api/radar renvoie l'état ; les paramètres facultatifs modifient d'abord les réglages (conservés en flash, sauf le mode et l'angle).
 void handleRadar() {
   bool save = false;
-  if (http.hasArg("angle")) radar.fixedDeg = (int8_t)constrain(http.arg("angle").toInt(), -RADAR_SPAN_MAX, RADAR_SPAN_MAX);
+  if (http.hasArg("butee")) {   // traitée en premier : l'angle demandé dans la même requête lui obéit déjà
+    int v = http.arg("butee").toInt();
+    if (v >= 10 && v <= RADAR_SPAN_MAX) { radar.butee = (int8_t)v; out.printf("Radar : butée du servo à %d° de chaque côté.\n", v); save = true; }
+  }
+  if (http.hasArg("angle")) radar.fixedDeg = (int8_t)constrain(http.arg("angle").toInt(), -radarLimit(), radarLimit());
   if (http.hasArg("mode")) {
     String m = http.arg("mode");
     if (m == "off" || m == "arret") radarSetMode(RADAR_OFF);
@@ -270,15 +275,15 @@ void handleRadar() {
 
   String j;
   j.reserve(1100);
-  char b[400];
+  char b[448];
   snprintf(b, sizeof(b),
     "{\"mode\":%u,\"present\":%s,\"absent\":%s,\"following\":%s,\"servo\":%d,\"front_cm\":%.1f,\"front_age\":%lu,"
-    "\"seuil\":%d,\"securite\":%s,\"auto\":%s,\"pas\":%d,\"amplitude\":%d,\"ech\":%d,\"inv\":%s,"
+    "\"seuil\":%d,\"securite\":%s,\"auto\":%s,\"pas\":%d,\"amplitude\":%d,\"butee\":%d,\"ech\":%d,\"inv\":%s,"
     "\"mesures\":%lu,\"sans_echo\":%lu,\"defauts\":%lu,\"passages\":%lu,\"arrets\":%lu,\"refus\":%lu,\"points\":[",
     (unsigned)radar.mode, radar.present ? "true" : "false", radar.absent ? "true" : "false", radar.following ? "true" : "false",
     (int)radar.servoDeg, radar.frontMm < 0 ? -1.0 : radar.frontMm / 10.0, (unsigned long)(millis() - radar.frontMs),
     (int)radar.seuilCm, radar.securite ? "true" : "false", radar.autoFront ? "true" : "false", (int)radar.pas, (int)radar.amplitude,
-    (int)radar.ech, radar.inverse ? "true" : "false",
+    radarLimit(), (int)radar.ech, radar.inverse ? "true" : "false",
     (unsigned long)radar.pings, (unsigned long)radar.noEcho, (unsigned long)radar.faults, (unsigned long)radar.sweeps,
     (unsigned long)radar.stops, (unsigned long)radar.refused);
   j += b;

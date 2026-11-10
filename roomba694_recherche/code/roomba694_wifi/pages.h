@@ -130,11 +130,14 @@ canvas{display:block;margin:10px auto 0;width:100%;max-width:320px;touch-action:
 </div>
 <div class="row" style="margin-top:8px">
 <label>pas <select id="rpas" onchange="radar('pas='+this.value)"><option>5</option><option>10</option><option>15</option><option>20</option></select>°</label>
-<label>±<select id="ramp" onchange="radar('amplitude='+this.value)"><option>30</option><option>45</option><option>60</option><option>80</option></select>°</label>
+<label>±<select id="ramp" onchange="radar('amplitude='+this.value)"><option>20</option><option>30</option><option>45</option><option>60</option><option>80</option></select>°</label>
 <label>portée <select id="rport" onchange="if(rd)drawRadar(rd)"><option>100</option><option selected>200</option><option>400</option></select> cm</label>
 <button style="flex:0 0 auto" onclick="radar('effacer=1')">Effacer</button>
 </div>
-<p class="hint">HC-SR04 sur servo SG90 : 0° = devant, positif = gauche. Touchez le dessin pour orienter le capteur (mode fixe). Les points pâlissent avec l'âge, l'arc rouge pointillé est le seuil d'arrêt, le trait bleu la direction du capteur.</p>
+<div class="row" style="margin-top:8px">
+<label>butée du servo ±<select id="rmax" onchange="radar('butee='+this.value)"><option>15</option><option>20</option><option>30</option><option>45</option><option>60</option><option>80</option></select>°</label>
+</div>
+<p class="hint">HC-SR04 sur servo SG90 : 0° = devant, positif = gauche. Touchez le dessin pour orienter le capteur (mode fixe). Les points pâlissent avec l'âge, l'arc rouge pointillé est le seuil d'arrêt, le trait bleu la direction du capteur, les deux traits orange la butée du servo.</p>
 </div>
 
 <div class="card"><h2>Gyroscope</h2>
@@ -257,7 +260,7 @@ function drawRadar(r){
  $('rfront').style.color=(fresh&&r.front_cm>0&&r.front_cm<r.seuil)?'var(--bad)':'';
  $('rservo').textContent=(r.servo>0?'+':'')+r.servo+'°';
  if(document.activeElement!==$('rseuil')){$('rseuil').value=r.seuil;$('rseuilv').textContent=r.seuil+' cm';}
- $('rsec').checked=r.securite;$('rauto').checked=r.auto;$('rinv').checked=r.inv;$('rpas').value=r.pas;$('ramp').value=r.amplitude;
+ $('rsec').checked=r.securite;$('rauto').checked=r.auto;$('rinv').checked=r.inv;$('rpas').value=r.pas;$('ramp').value=r.amplitude;$('rmax').value=r.butee;
  const c=$('rc'),x=c.getContext('2d'),W=c.width,H=c.height,cx=W/2,cy=H-16,R=H-32,port=+$('rport').value;
  x.clearRect(0,0,W,H);
  x.fillStyle='#232a38';x.beginPath();x.moveTo(cx,cy);x.arc(cx,cy,R,Math.PI,2*Math.PI);x.closePath();x.fill();
@@ -268,6 +271,7 @@ function drawRadar(r){
  for(let k=1;k<=4;k++)x.fillText(Math.round(port*k/4)+'',cx+3,cy-R*k/4+10);
  x.textAlign='center';x.fillText('gauche',28,cy+12);x.fillText('droite',W-28,cy+12);
  x.strokeStyle='rgba(255,82,82,.7)';x.setLineDash([4,3]);x.beginPath();x.arc(cx,cy,R*Math.min(1,r.seuil/port),Math.PI,2*Math.PI);x.stroke();x.setLineDash([]);
+ if(r.butee<80){x.strokeStyle='rgba(255,179,0,.75)';for(const a of[-r.butee,r.butee]){const t=a*Math.PI/180;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx-R*Math.sin(t),cy-R*Math.cos(t));x.stroke();}}
  if(r.mode){const t=r.servo*Math.PI/180;x.strokeStyle='rgba(79,140,255,.8)';x.lineWidth=2;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx-R*Math.sin(t),cy-R*Math.cos(t));x.stroke();x.lineWidth=1;}
  for(const p of r.points){const a=p[0]*Math.PI/180,cm=p[1]/10,age=p[2],al=Math.max(.2,1-age/8000);
   if(cm<=0){x.fillStyle='rgba(154,163,181,'+al+')';x.beginPath();x.arc(cx-(R-3)*Math.sin(a),cy-(R-3)*Math.cos(a),2,0,7);x.fill();continue;}
@@ -281,7 +285,7 @@ $('rseuil').addEventListener('input',()=>{$('rseuilv').textContent=$('rseuil').v
 $('rseuil').addEventListener('change',()=>radar('seuil='+$('rseuil').value));
 $('rc').addEventListener('click',e=>{const c=$('rc'),b=c.getBoundingClientRect(),sx=c.width/b.width,sy=c.height/b.height;
  const dx=(e.clientX-b.left)*sx-c.width/2,dy=(c.height-16)-(e.clientY-b.top)*sy;if(dy<5)return;
- const a=Math.max(-80,Math.min(80,Math.round(Math.atan2(-dx,dy)*180/Math.PI)));radar('mode=fixe&angle='+a);});
+ const lim=(rd&&rd.butee)||80,a=Math.max(-lim,Math.min(lim,Math.round(Math.atan2(-dx,dy)*180/Math.PI)));radar('mode=fixe&angle='+a);});
 let rt=0;setInterval(()=>{rt++;if((rd&&rd.mode)||rt%4===0)pollRadar();},500);pollRadar();
 setInterval(refresh,600);refresh();setInterval(pollLog,1000);pollLog();
 </script></body></html>
