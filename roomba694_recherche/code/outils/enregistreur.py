@@ -120,8 +120,11 @@ def traiter_ligne(t, ligne):
     if ligne.startswith("csv,"):
         if f_csv is None:     # journal déjà actif avant l'outil : en-tête du firmware v5, écrit d'office
             f_csv = open(base + "_capteurs.csv", "w", encoding="utf-8", newline="\n")
-            f_csv.write("pc_s,ms,enc_g,enc_d,pc_g,pc_d,roue_g,roue_d,vide_g,vide_avg,vide_avd,vide_d,lb_g,lb_avg,lb_cg,"
-                        "lb_cd,lb_avd,lb_d,mv,ma,mode,cap_deg,rot_dps,us_mm,x_mm,y_mm,cap_pos\n")
+            entete = ("pc_s,ms,enc_g,enc_d,pc_g,pc_d,roue_g,roue_d,vide_g,vide_avg,vide_avd,vide_d,lb_g,lb_avg,lb_cg,"
+                      "lb_cd,lb_avd,lb_d,mv,ma,mode,cap_deg,rot_dps,us_mm,x_mm,y_mm,cap_pos")
+            if ligne.count(",") >= 32:     # firmware v8 : infrarouge et courants des roues en plus
+                entete += ",ir_dessus,ir_g,ir_d,cur_g,cur_d"
+            f_csv.write(entete + "\n")
         f_csv.write(f"{t:.3f},{ligne[4:]}\n")
         f_csv.flush()
         compte["csv"] += 1

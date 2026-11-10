@@ -1,0 +1,10 @@
+# v7_repos_20261110_150504 — carte 192.168.18.25 — début 15:05:04.999 le 2026-11-10
+# Verification de la v7 robot immobile en mode Safe : lecture du robot 20 fois par seconde
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794341105.134	15:05:05.133	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794341105.134	15:05:05.133	Client TCP connecté : 192.168.18.6
+1794341106.017	15:05:06.017	>> j
+1794341106.033	15:05:06.033	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794341145.020	15:05:45.019	>> j
+1794341145.026	15:05:45.025	Journal CSV désactivé.
+1794341146.043	15:05:46.042	## fin de l'enregistrement après 41.0 s

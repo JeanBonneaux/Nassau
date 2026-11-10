@@ -1,5 +1,12 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 8 — 2026-11-10 (après-midi) : deux ajouts indépendants. (1) Cinq colonnes à la fin du journal CSV : infrarouge
+    reçu par les trois récepteurs (codes de la base) et courants des deux roues, jusque-là visibles seulement par la touche e.
+    (2) Tour sur place à vitesse réglable : /api/tour?go=1&v=NN (roues de 20 à 62 mm/s demandés, pour ce tour seulement),
+    400 mesures au plus et 45 s au plus, pour des tours lents où le capteur de distance mesure tous les 1 à 2°.
+  Version 7 — 2026-11-10 (après-midi) : le robot est lu 20 fois par seconde au lieu de 5 (POLL_PERIOD_MS de 200 à 50 ms) :
+    position tous les 7 mm, arrêt sur pare-chocs en 50 ms au plus, journal CSV à 20 lignes par seconde. Les lignes du
+    journal CSV ne sont plus recopiées dans la console de la page web (elles en chassaient les vrais messages).
   Version 6 — 2026-11-10 : arrêt sur pare-chocs dans le cerveau (voir « Réflexe pare-chocs » plus bas). En mode Safe le
     robot n'arrête pas ses roues quand son pare-chocs touche ; le cerveau le fait désormais à chaque lecture des capteurs,
     et n'accepte ensuite que le recul tant que l'on ne s'est pas dégagé. Seul changement de cette version.
@@ -84,7 +91,7 @@ constexpr uint32_t DRIVE_TIMEOUT_MS  = 1500;   // arrêt automatique des roues s
 constexpr uint32_t KEEP_AWAKE_MS     = 45000;  // période de l'impulsion BRC anti-veille (touche 'a') ; d'autres montages constatent qu'il en faut plus d'une par minute
 constexpr uint32_t ANSWER_TIMEOUT_MS = 200;    // attente maximale d'une réponse capteur
 constexpr uint32_t INTER_QUERY_MS    = 20;     // pause minimale entre deux requêtes capteur (spec : 15 ms)
-constexpr uint32_t POLL_PERIOD_MS    = 200;    // période de la lecture périodique des capteurs
+constexpr uint32_t POLL_PERIOD_MS    = 50;     // période de la lecture périodique des capteurs (200 ms jusqu'à la v6 ; le robot rafraîchit ses valeurs toutes les 15 ms)
 constexpr uint32_t POLL_BACKOFF_MS   = 2000;   // période quand le robot ne répond plus (endormi, OI fermée)
 
 // ---------- Opcodes OI utilisés ----------
@@ -270,16 +277,17 @@ void logAppend(uint8_t c) {
 
 class TeeOut : public Print {
  public:
+  bool page = true;   // faux le temps d'écrire une ligne du journal CSV : elle va à l'USB et au client TCP, pas à la console de la page (v7)
   size_t write(uint8_t c) override {
     Serial.write(c);
     if (tcpClient && tcpClient.connected()) tcpClient.write(c);
-    logAppend(c);
+    if (page) logAppend(c);
     return 1;
   }
   size_t write(const uint8_t* b, size_t n) override {
     Serial.write(b, n);
     if (tcpClient && tcpClient.connected()) tcpClient.write(b, n);
-    for (size_t i = 0; i < n; i++) logAppend(b[i]);
+    if (page) for (size_t i = 0; i < n; i++) logAppend(b[i]);
     return n;
   }
 };
@@ -639,17 +647,21 @@ void parseState(const uint8_t* b) {
 }
 
 void printCsvHeader() {
-  out.println(F("csv,ms,enc_g,enc_d,pc_g,pc_d,roue_g,roue_d,vide_g,vide_avg,vide_avd,vide_d,lb_g,lb_avg,lb_cg,lb_cd,lb_avd,lb_d,mv,ma,mode,cap_deg,rot_dps,us_mm,x_mm,y_mm,cap_pos"));
+  // v8 : cinq colonnes de plus à la fin (infrarouge reçu dessus, à gauche, à droite ; courants des moteurs des roues en mA)
+  out.println(F("csv,ms,enc_g,enc_d,pc_g,pc_d,roue_g,roue_d,vide_g,vide_avg,vide_avd,vide_d,lb_g,lb_avg,lb_cg,lb_cd,lb_avd,lb_d,mv,ma,mode,cap_deg,rot_dps,us_mm,x_mm,y_mm,cap_pos,ir_dessus,ir_g,ir_d,cur_g,cur_d"));
 }
 
 void printCsvLine() {
-  out.printf("csv,%lu,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%d,%u,%.1f,%.1f,%d,%.0f,%.0f,%.1f\n",
+  out.page = false;   // 20 lignes par seconde : pas dans la console de la page web
+  out.printf("csv,%lu,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%d,%u,%.1f,%.1f,%d,%.0f,%.0f,%.1f,%u,%u,%u,%d,%d\n",
              (unsigned long)millis(), st.encL, st.encR,
              (st.bumpsDrops >> 1) & 1, st.bumpsDrops & 1, (st.bumpsDrops >> 3) & 1, (st.bumpsDrops >> 2) & 1,
              st.cliff[0], st.cliff[1], st.cliff[2], st.cliff[3],
              st.light[0], st.light[1], st.light[2], st.light[3], st.light[4], st.light[5],
              st.voltage, st.current, st.mode, imuCap(), imu.rateDps, radarFrontMm(),      // us_mm : -1 inconnu, 0 rien à portée
-             poseX(), poseY(), poseCap());                                                 // position calculée (position.ino)
+             poseX(), poseY(), poseCap(),                                                  // position calculée (position.ino)
+             st.irOmni, st.irLeft, st.irRight, st.curL, st.curR);                          // v8 : infrarouge de la base, courants des roues
+  out.page = true;
 }
 
 void printImu() {
@@ -982,7 +994,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v6 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v8 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"
@@ -994,7 +1006,7 @@ void printHelp() {
     "    (mode Safe requis ; chaque ordre dure 1,5 s puis les roues s'arrêtent seules ; 150 mm/s au plus ;\n"
     "     pare-chocs enfoncé : roues arrêtées par le cerveau, puis seul le recul est accepté)\n"
     " a  anti-veille BRC toutes les 45 s (on/off)\n"
-    " j  journal CSV toutes les 200 ms (on/off)   i  informations Wi-Fi et état\n"
+    " j  journal CSV à chaque lecture du robot, 20 par seconde (on/off)   i  informations Wi-Fi et état\n"
     " g  gyroscope MPU-6050 (cap, vitesse)   z  recalibrer le gyroscope et remettre le cap à zéro (robot immobile)\n"
     " r  radar à ultrasons : arrêt -> fixe devant -> balayage (on tourne)   u  état du radar et carte des distances\n"
     " t  tour sur place : le robot tourne sur lui-même en mesurant les distances (Safe requis ; 5 ou espace pour l'arrêter)\n"
@@ -1057,7 +1069,7 @@ void handle(char c) {
       break;
     case 'j':
       csvEnabled = !csvEnabled;
-      if (csvEnabled) { out.println(F("Journal CSV activé (une ligne toutes les 200 ms tant que le robot répond).")); printCsvHeader(); }
+      if (csvEnabled) { out.println(F("Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).")); printCsvHeader(); }
       else out.println(F("Journal CSV désactivé."));
       break;
     case 'i': printInfo(); break;

@@ -81,7 +81,7 @@ void handleState() {
   j.reserve(2400);
   char b[800];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v6 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
+    "{\"ms\":%lu,\"ver\":\"v8 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u,\"wall\":%u,\"cur\":[%d,%d],\"base\":%s},"
@@ -331,9 +331,12 @@ void handleEssai() {
 // stop=1 l'arrête. Le lancer fait tourner le robot sur lui-même : mode Safe requis, voir les sécurités dans tour.ino.
 void handleTour() {
   if (http.hasArg("stop")) tourEnd(false, "arrêt demandé");
-  else if (http.hasArg("go")) tourStart();
+  else if (http.hasArg("go")) {
+    if (http.hasArg("v")) tourRouesDemande = (int16_t)constrain(http.arg("v").toInt(), (long)TOUR_WHEEL_MIN, (long)TOUR_WHEEL_MM_S);   // tour lent (v8)
+    tourStart();
+  }
   String j;
-  j.reserve(3700);
+  j.reserve(5400);   // jusqu'à 400 mesures de 11 caractères environ
   tourJson(j);
   http.send(200, "application/json", j);
 }

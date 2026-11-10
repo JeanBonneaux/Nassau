@@ -27,9 +27,13 @@ constexpr float    TOUR_RATE_DPS   = 30.0f;    // vitesse de rotation visée
 constexpr int16_t  TOUR_WHEEL_MM_S = 62;       // 30 °/s × 117,5 mm (demi-voie : 235 mm entre les roues du Roomba)
 constexpr float    TOUR_TOTAL_DEG  = 380.0f;   // un tour complet plus 20° de recouvrement
 constexpr uint32_t TOUR_PREP_MS    = 1500;     // servo en place, calibration du gyroscope (1 s)
-constexpr uint32_t TOUR_MAX_MS     = 30000;    // durée maximale de la rotation (380° à 30 °/s : 12,7 s)
+constexpr uint32_t TOUR_MAX_MS     = 45000;    // durée maximale de la rotation (380° à 30 °/s : 12,7 s ; un tour lent peut en prendre 30)
+constexpr int16_t  TOUR_WHEEL_MIN  = 20;       // vitesse de roues la plus basse acceptée pour un tour lent (v8)
+// Vitesse de roues demandée pour le prochain tour (v8, /api/tour?go=1&v=NN) ; elle ne vaut que pour ce tour-là.
+// Le robot ne tourne pas à la vitesse demandée (mesuré le 2026-11-10 : 72 mm/s pour 62) : c'est le gyroscope qui compte les degrés.
+int16_t tourRouesDemande = TOUR_WHEEL_MM_S;
 constexpr uint32_t TOUR_CMD_MS     = 300;      // période de répétition de l'ordre de roues
-constexpr int      TOUR_MAX_PTS    = 256;      // 380° à 3° par mesure : 127 mesures
+constexpr int      TOUR_MAX_PTS    = 400;      // 380° à 3° par mesure : 127 mesures ; un tour lent en donne 200 à 300 (256 jusqu'à la v7)
 // OI_MODE_SAFE_LU (3 : valeur lue sur ce 694 en mode Safe) est défini dans le fichier principal, avec wheelsAllowed().
 
 enum : uint8_t { TOUR_REPOS = 0, TOUR_PREPARE = 1, TOUR_TOURNE = 2, TOUR_FINI = 3, TOUR_INTERROMPU = 4 };
@@ -45,6 +49,7 @@ struct TourState {
   float    tourne = 0;                     // rotation accomplie, degrés
   float    departX = 0, departY = 0, departCap = 0;   // position du robot au début de la rotation (position.ino) : mm, mm, degrés
   int      prochainMsgDeg = 90;
+  int16_t  roues = TOUR_WHEEL_MM_S;        // vitesse de roues demandée pendant ce tour, mm/s
   uint8_t  modeRadarAvant = 0;
   char     raison[112] = "";
 } tour;
@@ -96,6 +101,8 @@ void tourStart() {
     out.printf("Tour sur place refusé : %s.\n", refus);
     return;
   }
+  tour.roues = constrain(tourRouesDemande, TOUR_WHEEL_MIN, TOUR_WHEEL_MM_S);
+  tourRouesDemande = TOUR_WHEEL_MM_S;      // la vitesse demandée ne vaut que pour un tour
   tour.modeRadarAvant = radar.mode;
   radar.fixedDeg = 0;
   radar.mode = RADAR_FIXED;               // capteur droit devant, dix mesures par seconde
@@ -136,10 +143,9 @@ void tourTick() {
     tour.lentDepuisMs = now;
     tour.etat = TOUR_TOURNE;
     tour.mesure = true;
-    driveDirect(TOUR_WHEEL_MM_S, -TOUR_WHEEL_MM_S);   // roue droite en avant, roue gauche en arrière : rotation vers la gauche
+    driveDirect(tour.roues, -tour.roues);  // roue droite en avant, roue gauche en arrière : rotation vers la gauche
     tour.dernierOrdreMs = now;
-    out.printf("Tour sur place : rotation vers la gauche à %.0f °/s (roues à %d mm/s). 5 ou espace pour arrêter.\n",
-               TOUR_RATE_DPS, (int)TOUR_WHEEL_MM_S);
+    out.printf("Tour sur place : rotation vers la gauche, roues à %d mm/s demandés. 5 ou espace pour arrêter.\n", (int)tour.roues);
     return;
   }
 
@@ -152,7 +158,7 @@ void tourTick() {
   if (vitesse > 8.0f) tour.lentDepuisMs = now;
   else if (now - tour.lentDepuisMs > 2000) { tourEnd(false, "le robot ne tourne pas (roues bloquées ?)"); return; }
   if (now - tour.dernierOrdreMs >= TOUR_CMD_MS) {
-    driveDirect(TOUR_WHEEL_MM_S, -TOUR_WHEEL_MM_S);
+    driveDirect(tour.roues, -tour.roues);
     tour.dernierOrdreMs = now;
   }
   if (tour.tourne >= tour.prochainMsgDeg) {
@@ -182,7 +188,7 @@ void tourJson(String& j) {
            (unsigned long)duree, TOUR_RATE_DPS, TOUR_TOTAL_DEG);
   j += b;
   jsonStr(j, tour.raison);
-  snprintf(b, sizeof(b), ",\"depart\":[%.0f,%.0f,%.1f]", tour.departX, tour.departY, tour.departCap);   // x, y en mm, cap en degrés
+  snprintf(b, sizeof(b), ",\"roues\":%d,\"depart\":[%.0f,%.0f,%.1f]", (int)tour.roues, tour.departX, tour.departY, tour.departCap);   // vitesse de roues demandée ; x, y en mm, cap en degrés
   j += b;
   j += ",\"points\":[";
   for (uint16_t i = 0; i < n; i++) {

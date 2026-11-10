@@ -570,3 +570,47 @@ Demande de l'utilisateur : « Carte de pièce ». Le robot n'avait pas été dé
 - **Direction de la base** : les récepteurs infrarouges avant l'ont vue aux caps 156°, 156° et 149° depuis les stations 0, 1 et 2, qui se trouvent alignées vers elle : sa direction est donc connue, pas sa distance. Les stations 3, 4 et 5 ne l'ont pas attrapée : une lecture tous les 9° est trop peu pour une fenêtre de 10 à 20°.
 
 **Limites de ce premier essai** : six stations dans un rectangle de 60 cm, soit peu de recul pour fixer la direction des murs (ajustements de −3 à +6° autour des axes) ; rien n'est comparé au mètre ruban ; les stations ne sont pas encore ajustées ensemble sur les murs ; un meuble plan est pris pour un mur.
+
+## 24. Firmware v7 (lecture 20 fois par seconde) et v8 (infrarouge et courants dans le journal, tour lent), puis exploration pilotée par l'assistant (2026-11-10, 14 h 55 à 15 h 40)
+
+Demande de l'utilisateur : « v7, puis pilote toi-même et carto ». Les changements de firmware ont été faits en deux versions, chacune compilée, envoyée par Wi-Fi robot immobile, puis vérifiée à l'arrêt avant tout mouvement.
+
+**Firmware v7** (« v7 Nov 10 2026 15:03:30 », 1 128 978 octets, 86 %) — gain rapide 2 du rapport :
+
+- `POLL_PERIOD_MS` passe de 200 à 50 ms : le robot est lu 20 fois par seconde. L'arrêt sur pare-chocs de la v6 réagit donc en 50 ms au plus (5 mm à 100 mm/s), la position est mise à jour tous les 5 à 7 mm.
+- Les lignes du journal CSV ne sont plus recopiées dans la console de la page web (elles en chassaient les vrais messages : la console ne garde que 40 lignes) ; elles vont toujours à l'USB et à la console TCP.
+- **Vérifié robot immobile, en mode Safe** (`mesures/v7_repos_20261110_150504_*`, 39 s) : 779 lignes, soit **20,0 par seconde** ; intervalle médian 47 ms, 64 ms au plus, aucun au-delà de 100 ms ; lecture restée sur le groupe 100 ; âge maximal de la dernière réponse 47 ms ; aucune valeur impossible ; mode Safe gardé. La crainte du rapport (« ce robot a déjà refusé des requêtes rapprochées ») ne s'est pas vérifiée à cette cadence.
+- Bruit au repos à cette cadence : capteurs de vide 3,7 à 4,1, capteurs optiques 0,8 à 1,9.
+
+**Firmware v8** (« v8 Nov 10 2026 15:09:20 », 1 129 622 octets, 86 %, 71 184 octets de RAM) — deux ajouts indépendants, annoncés à l'utilisateur comme tels :
+
+- **Cinq colonnes à la fin du journal CSV** (gain rapide 4, en partie) : `ir_dessus`, `ir_g`, `ir_d` (codes infrarouges de la base reçus par les trois récepteurs) et `cur_g`, `cur_d` (courants des moteurs des roues). Vérifié robot immobile : 32 colonnes, 20 lignes par seconde, `ir_dessus` à 168 (la base est en vue), courants à 0.
+- **Tour sur place à vitesse réglable** : `/api/tour?go=1&v=NN`, roues de 20 à 62 mm/s demandés, pour ce tour seulement ; 400 mesures au plus (256 avant) et 45 s au plus (30 avant). La touche `t` garde 62 mm/s.
+- `enregistreur.py` reconnaît le nouvel en-tête ; `pilote.py` : un recul n'est plus refusé pour un sol sombre (il refait le chemin déjà parcouru) et l'attente d'immobilité passe à 7 lignes.
+
+**Non fait dans ces versions**, bien qu'annoncé dans le choix proposé : la tenue du cap au gyroscope pendant une ligne droite. Le pilotage par sauts corrige le cap entre deux sauts avec le gyroscope, ce qui a suffi pour atteindre les points du carré à 5 à 17 mm près ; la tenue du cap dans le cerveau reste à faire avant de longs trajets continus.
+
+**Exploration pilotée par l'assistant** (15 h 11 à 15 h 17, firmware v8 ; `mesures/exploration_20261110_151119_*`, tracé du cerveau `mesures/position_20261110_151637.*`) :
+
+- **Outil `code/outils/explorer.py`** (nouveau) : après chaque tour sur place, il calcule la distance libre par direction, choisit la prochaine station à 80 cm dans la direction libre qui l'éloigne le plus des stations déjà faites (rien à moins de 1,30 m dans un cône de ±25°, point visé à plus de 42 cm de tout écho, zone interdite autour de la base), y va par sauts, refait un tour, et revient à la fin par les trajets déjà faits. Chaque station retient celle d'où le robot est venu.
+- **Tours lents** (`v=30`) : 380° en 16 à 17 s, soit 23 °/s (roues à 47 mm/s environ pour 30 demandés), **148 à 154 mesures par tour**, une tous les 2,5° au lieu de 3,9°.
+- **Déroulé** : station 0 au point de départ (là où le carré s'était terminé), puis stations 1, 2 et 3 choisies par l'outil dans les directions 130°, 140° et 150° : (−508, 609), (−1 101, 1 103), (−1 788, 1 498) mm. En route vers une cinquième station, à 52 cm de la station 3, le pilote a refusé d'avancer : « sol sombre ou vide sous un capteur (745) ». Les deux capteurs de vide avant lisaient 1 367 et 741, les deux de côté 2 528 et 2 516 : **l'avant du robot était au bord du tapis**. Le mode Safe n'a pas bronché.
+- **Défaut de l'outil, repris à la main** : pour revenir, `explorer.py` a demandé une rotation, que `pilote.py` a refusée pour la même raison (sol sombre) ; l'outil s'est arrêté là, robot immobile en mode Safe. L'assistant a fait reculer le robot d'un saut (112 mm, capteurs de vide de retour à 2 600), puis l'a ramené au départ par les stations 3, 2, 1 et 0, et a lancé le tour final. À corriger dans l'outil : après un refus pour sol sombre, reculer d'abord.
+- **Bilan du parcours** : 72 sauts dont 47 avances (5,60 m), aucune alarme, aucun arrêt réflexe, aucune sortie du mode Safe ; deux refus du pilote, tous deux au bord du tapis. Retour au point de départ à (−6, 7) mm d'après le cerveau. Fin de séance par `s` puis `x`.
+- **Le bord du tapis devient un repère** (idée 4 du rapport) : il se trouve sous les capteurs avant du robot quand son centre est en (−2 236, 1 747) mm, cap 151°, soit vers (−2,37 m, 1,82 m).
+
+**La carte de l'exploration** (`h_carte_stations.py`, figure 17 `fig17_exploration_20261110_151119_carte.png`, résultats `results_h_exploration_20261110_151119.txt`) :
+
+| Mur (direction de sa normale) | Position | Vu des stations | Écart-type entre stations |
+|---|---|---|---|
+| 328° (fond du couloir, derrière le départ) | 101 cm | 0, 1, 2, 3, retour | 1,4 cm |
+| 238° (le mur touché à 13 h 05) | 58 cm | 0, 1, 2, retour | 2,8 cm |
+| 58°, paroi lointaine (côté de la base) | 148 cm | 0, 3, retour | 2,4 cm |
+| 58°, paroi proche (côté de la base) | 120 cm | 0, retour | (vue du seul point de départ, à l'aller et au retour) |
+
+- Le fond du couloir est placé au même endroit, à 1,4 cm près, par cinq tours faits jusqu'à 2,4 m plus loin : la distance comptée par les roues le long du couloir tient donc à ce niveau.
+- Largeur du couloir : 120 + 57 = **177 cm** jusqu'à la paroi proche, 148 + 57 = **204 cm** jusqu'à la paroi lointaine. Le carré de 14 h donnait 175 et 207 cm, avec d'autres stations et un autre repère : les deux cartes s'accordent à 2 ou 3 cm. Toujours rien au mètre ruban.
+- **Fermeture de la boucle** (5,60 m d'avances, 4,8 tours de rotation cumulée, 6 minutes) : le cerveau se croit revenu à 9 mm de son départ ; les quatre murs vus des deux tours disent qu'il en est à **67 mm** (51 mm et 43 mm sur les deux axes), et que son cap a dérivé de **3,8°**. C'est au-delà du critère de 3 cm du rapport et dans son estimation (« 5 à 10 cm après 3 m ») : sur plusieurs mètres, la position du cerveau doit être recalée sur les murs.
+- **La base confirme cette dérive** : les récepteurs infrarouges avant l'ont vue au cap 68° depuis le départ, puis au cap 64° au retour, au même endroit ; l'écart de 4° est celui que donnent les murs. Avec l'infrarouge dans le journal 20 fois par seconde, la fenêtre des récepteurs avant est décrite par 11 à 12 lectures sur 21 à 25° ; le récepteur du dessus voit la base tout autour à cette distance. Les stations 1 à 3, plus loin dans le couloir, ne voient plus la base.
+
+**Ce que cette séance apprend pour la suite** : le robot sait aller seul de station en station et s'arrêter devant un sol qu'il ne connaît pas ; la carte par murs en lignes se répète d'un essai à l'autre à 2 ou 3 cm ; la position seule dérive de 1 % environ et le cap de 0,7 ° par minute, ce que deux repères fixes savent déjà corriger : les murs et la base.

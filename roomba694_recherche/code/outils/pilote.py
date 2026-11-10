@@ -89,7 +89,7 @@ class Pilote:
             time.sleep(0.05)
         return None
 
-    def immobile(self, attente=3.0, lignes=4):
+    def immobile(self, attente=3.0, lignes=7):     # 7 lignes : 0,35 s à 20 lignes par seconde (firmware v7), 1,4 s à 5
         """Attend que les compteurs des roues ne bougent plus sur `lignes` lignes de suite."""
         fin = time.time() + attente
         while time.time() < fin:
@@ -120,7 +120,7 @@ class Pilote:
         a = self.alarme(l, lb_max=lb_repos, recul=recul)
         if a:
             return a
-        if min(l[c] for c in VIDE) < vide_min:
+        if min(l[c] for c in VIDE) < vide_min and not recul:      # un recul refait le chemin qu'on vient de parcourir : permis
             return f"sol sombre ou vide sous un capteur ({min(l[c] for c in VIDE):.0f})"
         if avance:
             if l["us_mm"] < 0:
