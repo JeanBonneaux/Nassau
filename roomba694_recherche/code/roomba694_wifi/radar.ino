@@ -205,7 +205,7 @@ void radarTask(void*) {
     radar.following = follow;
     bool fixed = (mode == RADAR_FIXED) || follow;
     int  target;
-    if (mode == RADAR_FIXED) target = constrain((int)radar.fixedDeg, -lim, lim);
+    if (mode == RADAR_FIXED) target = tourSampling() ? 0 : constrain((int)radar.fixedDeg, -lim, lim);   // tour sur place : droit devant
     else if (follow) target = 0;
     else {
       angle = constrain(angle, -amp, amp);                                          // réglages changés en route : on reste dans la plage
@@ -219,7 +219,8 @@ void radarTask(void*) {
     uint32_t since = millis() - lastPingMs;
     if (since < period) vTaskDelay(pdMS_TO_TICKS(period - since));
 
-    int n = constrain((int)radar.ech, 1, 3);
+    int n = tourSampling() ? 1 : constrain((int)radar.ech, 1, 3);   // tour sur place : une mesure par direction, le robot tourne
+    float capTir = imu.yawDeg;                                      // cap du gyroscope à l'instant du tir
     int16_t v[3];
     for (int k = 0; k < n; k++) {
       if (k) vTaskDelay(pdMS_TO_TICKS(RADAR_PING_MS));
@@ -230,6 +231,7 @@ void radarTask(void*) {
       if (v[k] < 0)  radar.faults = radar.faults + 1;
     }
     int16_t res = usCombine(v, n);
+    if (res >= 0 && mode == RADAR_FIXED) tourSample(capTir, res);   // rangée seulement pendant un tour sur place (tour.ino)
     if (res < 0) {
       if (faultStreak < 255) faultStreak++;
       if (faultStreak >= 5) radar.absent = true;

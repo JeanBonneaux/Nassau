@@ -12,6 +12,7 @@
 //          /api/radar   radar à ultrasons (radar.ino) : état et carte polaire en JSON ; paramètres facultatifs : mode=off|fixe|balayage,
 //                       angle=-80..80, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..80, ech=1..3, inv=0|1, effacer=1,
 //                       butee=10..80 (degrés de part et d'autre du centre que le servo ne dépasse jamais)
+//          /api/tour    tour sur place (tour.ino) : état et mesures [dixièmes de degré, mm] du dernier tour ; go=1 le lance, stop=1 l'arrête
 //
 // Le mot de passe du réseau de la maison n'est jamais renvoyé par l'API ni affiché sur la console.
 
@@ -92,6 +93,7 @@ void handleState() {
     imu.acc[0], imu.acc[1], imu.acc[2]);
   j += b;
   radarStateJson(j);   // "radar":{mode, front_mm, age, present, servo}
+  tourStateJson(j);    // "tour":{etat, tourne, n}
   j += "\"ap\":{\"ssid\":"; jsonStr(j, AP_SSID);
   j += ",\"ip\":\""; j += WiFi.softAPIP().toString(); j += "\",\"clients\":"; j += (int)WiFi.softAPgetStationNum(); j += "},";
   j += "\"rst\":"; jsonStr(j, resetReasonText()); j += ',';
@@ -104,7 +106,7 @@ void handleState() {
   http.send(200, "application/json", j);
 }
 
-const char* ALLOWED_WEB_CMDS = "?wsfchbeknml82465 ajioxgzqpru";
+const char* ALLOWED_WEB_CMDS = "?wsfchbeknml82465 ajioxgzqprut";
 
 void handleCmd() {
   String c = http.arg("c");
@@ -228,6 +230,7 @@ void handleUpdateUpload() {
   if (up.status == UPLOAD_FILE_START) {
     updateAuthorized = updateRequestIsLocal();   // pas de mot de passe, mais rien n'est écrit en flash pour une requête venue d'ailleurs
     if (!updateAuthorized) { out.println(F("Mise à jour refusée : requête adressée à un autre nom que la carte, ou venue d'une page d'un autre site.")); return; }
+    tourEnd(false, "mise à jour du programme");   // sans effet si aucun tour sur place n'est en cours
     if (driving) stopWheels();
     out.printf("Mise à jour par la page web : %s\n", up.filename.c_str());
     if (!Update.begin(UPDATE_SIZE_UNKNOWN)) Update.printError(Serial);
@@ -243,6 +246,18 @@ void handleUpdateUpload() {
     updateAuthorized = false;
     out.println(F("Mise à jour interrompue."));
   }
+}
+
+// ---------- Tour sur place (tour.ino) ----------
+// /api/tour renvoie l'état et les mesures du dernier tour ; go=1 le lance (mêmes vérifications que la touche 't'),
+// stop=1 l'arrête. Le lancer fait tourner le robot sur lui-même : mode Safe requis, voir les sécurités dans tour.ino.
+void handleTour() {
+  if (http.hasArg("stop")) tourEnd(false, "arrêt demandé");
+  else if (http.hasArg("go")) tourStart();
+  String j;
+  j.reserve(3700);
+  tourJson(j);
+  http.send(200, "application/json", j);
 }
 
 // ---------- Radar à ultrasons (radar.ino) : état, carte et réglages ----------

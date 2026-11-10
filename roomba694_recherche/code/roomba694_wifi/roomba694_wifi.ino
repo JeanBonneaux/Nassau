@@ -108,6 +108,8 @@ void handleUpdateGet();  void handleUpdateDone();  void handleUpdateUpload();  v
 // Radar à ultrasons (HC-SR04 sur servo SG90) : défini dans radar.ino (troisième fichier du sketch), déclaré ici pour la boucle
 void radarSetup();  void radarTick();  bool radarForwardBlocked();  void radarCycleMode();  void radarPrintStatus();
 int  radarFrontMm();  void radarStateJson(String& j);
+// Tour sur place (rotation du robot avec mesure des distances) : défini dans tour.ino (quatrième fichier du sketch)
+void tourStart();  void tourTick();  bool tourActive();  void tourEnd(bool ok, const char* raison);  void handleTour();
 
 // ---------- Gyroscope et accéléromètre MPU-6050 (module GY-521, I2C) ----------
 // Câblage : VCC -> 3V3, GND -> GND, SCL -> D22 (GPIO22), SDA -> D21 (GPIO21) ; AD0, XDA, XCL, INT libres.
@@ -674,12 +676,15 @@ void printHelp() {
     " j  journal CSV toutes les 200 ms (on/off)   i  informations Wi-Fi et état\n"
     " g  gyroscope MPU-6050 (cap, vitesse)   z  recalibrer le gyroscope et remettre le cap à zéro (robot immobile)\n"
     " r  radar à ultrasons : arrêt -> fixe devant -> balayage (on tourne)   u  état du radar et carte des distances\n"
+    " t  tour sur place : le robot tourne sur lui-même en mesurant les distances (Safe requis ; 5 ou espace pour l'arrêter)\n"
     " q  réessayer la lecture groupée des capteurs (opcode 149) et afficher les octets reçus\n"
     " p  mettre en pause un flux continu de capteurs (opcode 150) si les lectures sont devenues incohérentes\n"
     " o  Power (extinction)           x  Stop OI (à faire en fin de session)\n"));
 }
 
 void handle(char c) {
+  // Un tour sur place en cours s'arrête dès qu'arrive une touche d'arrêt, de roues, de mode ou de recalibration.
+  if (tourActive() && strchr("5 8246sfxohcz", c) != nullptr) tourEnd(false, "arrêt demandé par une touche");
   switch (c) {
     case '?': printHelp(); break;
     case 'w': brcPulse(); out.println(F("Impulsion BRC envoyée.")); break;
@@ -718,8 +723,10 @@ void handle(char c) {
       if (imu.present) { imu.calibRequested = true; out.println(F("Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.")); }
       else out.println(F("Gyroscope non détecté."));
       break;
-    case 'r': radarCycleMode(); break;
+    case 'r': if (tourActive()) { out.println(F("Tour sur place en cours : le radar reste en mode fixe.")); break; }
+              radarCycleMode(); break;
     case 'u': radarPrintStatus(); break;
+    case 't': tourStart(); break;
     case 'o': setMode(OI_POWER, F("Power (133)")); break;
     case 'x': setMode(OI_STOP,  F("Stop (173) -> OI fermée")); break;
     default: {
@@ -786,6 +793,7 @@ void setupWifi() {
   http.on("/api/log", HTTP_GET, handleLog);
   http.on("/api/scan", HTTP_GET, handleScan);
   http.on("/api/radar", HTTP_GET, handleRadar);
+  http.on("/api/tour", HTTP_GET, handleTour);
   http.on("/wifi", HTTP_GET, handleWifiGet);
   http.on("/wifi", HTTP_POST, handleWifiPost);
   http.on("/wifi/forget", HTTP_POST, handleWifiForget);
@@ -801,7 +809,7 @@ void setupWifi() {
 
   ArduinoOTA.setHostname(HOSTNAME);
   ArduinoOTA.setPassword(AP_PASS);
-  ArduinoOTA.onStart([]() { if (driving) stopWheels(); out.println(F("Mise à jour OTA (arduino-cli) en cours...")); });
+  ArduinoOTA.onStart([]() { tourEnd(false, "mise à jour du programme"); if (driving) stopWheels(); out.println(F("Mise à jour OTA (arduino-cli) en cours...")); });
   ArduinoOTA.onEnd([]() { out.println(F("Mise à jour OTA terminée, redémarrage.")); });
   ArduinoOTA.onError([](ota_error_t e) { out.printf("Erreur OTA %u\n", (unsigned)e); });
   ArduinoOTA.begin();          // déclare aussi le nom roomba694.local (mDNS)
@@ -849,6 +857,7 @@ void tcpTick() {
   } else if (tcpWasConnected) {
     tcpWasConnected = false;
     Serial.println(F("Client TCP déconnecté."));
+    tourEnd(false, "console TCP déconnectée");   // sans effet si aucun tour sur place n'est en cours
     if (driving) stopWheels();
   }
 }
@@ -912,4 +921,5 @@ void loop() {
   wifiTick();
   pollTick();
   radarTick();   // arrêt des roues devant un obstacle, messages du radar
+  tourTick();    // tour sur place : ordres de roues répétés, conditions d'arrêt
 }
