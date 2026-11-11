@@ -1,0 +1,17 @@
+[  0.4 min]     sur le plan : recalée de (+0, +0) mm et -1.0° ; note 0.86 -> 0.92
+[  0.4 min] station 0 : 10 paliers, 4 lignes de murs, axes de la pièce 78.0°
+[  0.4 min] cibles reçues (série 1) : [(322, 212), (296, 172), (368, 91), (442, 72)]
+[  0.4 min]   vers la cible (322, 212) du plan : 4 étapes
+[  1.0 min]     sur le plan : recalée de (-38, -94) mm et -2.0° ; note 0.61 -> 0.94
+[  1.0 min] station 1 (vers une cible) en (8595, 4068) : 9 paliers
+[  1.3 min]     arrêté : avance refusée : capteur optique à 289 ; robot en (7834, 4154)
+[  1.6 min]     sur le plan : recalée de (-57, +75) mm et +0.0° ; note -0.20 -> 0.67
+[  1.6 min] station 2 (là où le robot s'est arrêté) en (7777, 4229), 12 paliers
+[  1.6 min]   vers la cible (322, 212) du plan : 8 étapes (essai 2, en contournant l'obstacle)
+[  2.3 min]     sur le plan : recalée de (+75, -113) mm et -2.0° ; note -0.30 -> 0.87
+[  2.3 min]   porte possible : 1268 mm de large vers (11086, 3221), direction 252°
+[  2.3 min] station 3 (vers une cible) en (8437, 4394) : 8 paliers
+[  2.4 min]     arrêté : avance refusée : obstacle à 330 mm devant (marge 400.0 mm) ; robot en (8393, 4511)
+[  2.5 min]   vers la cible (322, 212) du plan : 7 étapes (essai 3, en contournant l'obstacle)
+[  2.6 min]     arrêté : arrêt demandé (fichier _ARRET) ; robot en (8433, 4403)
+[  2.6 min] fin : arrêt pendant un trajet vers une cible | mode 3 | roues arrêtées | pare-chocs [0, 0] | 4 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0015), 39 sauts, 3 trajets arrêtés, 1 obstacles touchés ou vus devant | 2.9 m | batterie 1756 mAh

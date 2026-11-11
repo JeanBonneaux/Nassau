@@ -287,6 +287,11 @@ class Exploration:
                 from PIL import Image
                 Z = np.asarray(Image.open(a.plan_passe).convert("RGB")).astype(int)
                 self.plan.passe_main |= (Z[..., 1] > Z[..., 0] + 40) & (Z[..., 1] > Z[..., 2] + 40)
+            for f_ in getattr(a, "plan_roule", "").split(";"):   # trajets déjà roulés (fichiers de l_localisation_globale.py) : sol sûr
+                if f_.strip():
+                    with open(f_, encoding="utf-8") as fh:
+                        roule = json.load(fh).get("trajet", [])
+                    self.plan.ouvrir([(p[0], p[1]) for p in roule], rayon_mm=150.0)
         self.t0 = self.maintenant()
         self.j = {"mode": "exploration3", "k_gyro": a.k_gyro, "pas": list(PAS), "vitesse": a.vitesse, "vide_min": a.vide_min,
                   "interdits": self.interdits, "stations": [], "sauts": [], "choix": [], "echecs": [], "contacts": [],
@@ -337,7 +342,9 @@ class Exploration:
         un arrêt net. La cible est retirée de la liste, atteinte ou non."""
         cible = self.cibles[0]
         dernier_tour = (ici.x, ici.y)
-        for essai in (1, 2, 3):
+        essai, attentes = 0, 0
+        while essai < 3:
+            essai += 1
             l, q = self.pose()
             if l is None:
                 return None
@@ -364,7 +371,18 @@ class Exploration:
                     if l is not None:                             # l'obstacle rencontré est porté sur le plan : le prochain chemin le contourne
                         ca, sa = math.cos(math.radians(q[2])), math.sin(math.radians(q[2]))
                         d_obs = (l["us_mm"] + DX) if ("obstacle à" in str(raison) and l["us_mm"] > 0) else 220.0
-                        self.plan.fermer(*self.vers_px(q[0] + d_obs * ca, q[1] + d_obs * sa))
+                        ou, ov = self.vers_px(q[0] + d_obs * ca, q[1] + d_obs * sa)
+                        deja_roule = (0 <= int(round(ov)) < self.plan.H and 0 <= int(round(ou)) < self.plan.W
+                                      and bool(self.plan.passe[int(round(ov)), int(round(ou))]))
+                        if deja_roule and attentes < 2:
+                            # quelque chose sur un sol où le robot est déjà passé (un chat, une personne, le 2026-11-10 dans
+                            # le couloir) : on attend et on réessaie, sans le noter sur le plan ni chercher un détour
+                            attentes += 1
+                            essai -= 1
+                            self.dire(f"    quelque chose sur un passage déjà roulé ({raison}) : attente de 8 s, puis nouvel essai")
+                            self.dormir(8.0)
+                        else:
+                            self.plan.fermer(ou, ov)
                     ici, compte = self.apres_echec(ici, {"phi": phi, "genre": "cible"}, raison)
                     if ici is None:
                         return None
@@ -547,7 +565,7 @@ class Exploration:
             "avant": {k: l0[k] for k in ("x_mm", "y_mm", "cap_pos", "us_mm", "vide_g", "vide_avg", "vide_avd", "vide_d")},
             "apres": {k: l1[k] for k in ("x_mm", "y_mm", "cap_pos", "us_mm")} if l1 else None, "tapis": bool(st.tapis)})
         if self.plan is not None:
-            self.caler_sur_le_plan(st, premier=not self.noeuds)
+            self.caler_sur_le_plan(st, premier=not self.noeuds and not getattr(self.a, "depart_sur", False))
             if parent is not None and genre not in ("recalage", "retour"):
                 self.plan.ouvrir([self.vers_px(parent.x, parent.y), self.vers_px(st.x, st.y)])      # le robot vient d'y passer : c'est libre
         if genre not in ("recalage", "retour"):
@@ -1080,6 +1098,9 @@ class Exploration:
                         break
                     self.sauver()
                     continue
+                if getattr(a, "cibles_seules", False) and self.serie is not None:
+                    self.j["fin"] = "destinations faites"      # un trajet demandé, pas une exploration : on s'arrête là
+                    break
             cands = self.candidats(ici)
             if not cands and self.portees[0] > 300.0:
                 # seconde passe : on fait moins confiance aux murs (une porte a pu être prise pour un mur plein)
@@ -1165,6 +1186,9 @@ def main():
     p_.add_argument("--px-par-m", type=float, default=53.0, help="échelle du plan, pixels par mètre")
     p_.add_argument("--plan-passe", default="", help="avec --plan : la même image où un trait vert montre par où on passe (portes ouvertes aujourd'hui)")
     p_.add_argument("--depart-plan", default="", help="avec --plan : U,V,CAP, pixel du plan où est le robot et direction de son avant (degrés, 0 = droite, 90 = haut)")
+    p_.add_argument("--depart-sur", action="store_true", help="avec --plan : la position de départ est sûre à 10 cm et 5° près (premier tour cherché dans 30 cm et 10° au lieu de 60 cm et 25°)")
+    p_.add_argument("--plan-roule", default="", help="avec --plan : fichiers JSON de l_localisation_globale.py, séparés par des points-virgules ; les trajets déjà roulés y sont tenus pour du sol sûr")
+    p_.add_argument("--cibles-seules", action="store_true", help="avec --plan : s'arrêter quand les destinations données sont faites, sans explorer ensuite")
     p_.add_argument("--simulation", default="", help="nom d'un monde de simulateur.py : essai sans robot")
     p_.add_argument("--graine", type=int, default=1, help="simulation : graine du hasard")
     a = p_.parse_args()
