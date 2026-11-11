@@ -102,9 +102,11 @@ class Pilote:
 
     # ------------------------------------------------------------ contrôles
     @staticmethod
-    def alarme(l, lb_max=400, recul=False):
+    def alarme(l, lb_max=400, recul=False, vide_stop=0):
         """Raison d'arrêter tout de suite d'après une ligne du journal, ou None.
-        En recul, le pare-chocs enfoncé n'est pas une alarme : reculer est justement la façon de se dégager."""
+        En recul, le pare-chocs enfoncé n'est pas une alarme : reculer est justement la façon de se dégager.
+        vide_stop : signal des capteurs de vide sous lequel on arrête le saut. Le robot lui-même coupe ses moteurs et
+        quitte le mode Safe vers 130 à 200 (bord sombre d'un tapis, 2026-11-10 à 17 h 59) : s'arrêter à 500 l'évite."""
         if (l["pc_g"] or l["pc_d"]) and not recul:
             return "pare-chocs " + ("gauche" if l["pc_g"] else "") + (" droit" if l["pc_d"] else "")
         if l["roue_g"] or l["roue_d"]:
@@ -113,6 +115,8 @@ class Pilote:
             return f"sorti du mode Safe (mode lu {int(l['mode'])})"
         if max(l[c] for c in LB) > lb_max:
             return f"capteur optique à {max(l[c] for c in LB):.0f}"
+        if vide_stop and not recul and min(l[c] for c in VIDE) < vide_stop:
+            return f"sol sombre sous un capteur ({min(l[c] for c in VIDE):.0f})"
         return None
 
     def controle(self, l, avance, marge_mm=600, lb_repos=150, vide_min=1500, recul=False):
@@ -130,7 +134,7 @@ class Pilote:
         return None
 
     # ------------------------------------------------------------ un saut
-    def saut(self, touche, duree, marge_mm=600, lb_repos=150, lb_max=400, vide_min=1500):
+    def saut(self, touche, duree, marge_mm=600, lb_repos=150, lb_max=400, vide_min=1500, vide_stop=0):
         """Envoie une touche de roues, surveille, arrête au bout de `duree` secondes (1,4 s au plus).
         Renvoie un dictionnaire : refus éventuel, alarme éventuelle, déplacement et rotation mesurés.
         vide_min : signal le plus bas accepté sous les capteurs de vide avant de partir. 1500 refuse les tapis sombres ;
@@ -150,7 +154,7 @@ class Pilote:
         while time.time() - t_ordre < duree:
             n = self.lire()
             for l in self.lignes[len(self.lignes) - n:] if n else []:
-                alarme = self.alarme(l, lb_max=lb_max, recul=recul)
+                alarme = self.alarme(l, lb_max=lb_max, recul=recul, vide_stop=vide_stop)
                 if alarme:
                     break
             if alarme:

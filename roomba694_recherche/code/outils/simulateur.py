@@ -81,6 +81,28 @@ def monde_couloir():
 MONDES = {"appartement": monde_appartement, "deux_pieces": monde_deux_pieces, "couloir": monde_couloir}
 
 
+def dessiner_plan(monde, fichier, px_par_m=50.0, marge=40):
+    """Le plan d'un monde simulé, en image, comme celui qu'un LiDAR donnerait : murs en traits sombres, sol blanc.
+    Renvoie la fonction qui passe d'un point du monde (mm) à un pixel du plan."""
+    from PIL import Image, ImageDraw
+    x0, y0, x1, y1 = monde.etendue
+    s = px_par_m / 1000.0
+    W, H = int((x1 - x0) * s) + 2 * marge, int((y1 - y0) * s) + 2 * marge
+
+    def px(x, y):
+        return marge + (x - x0) * s, marge + (y1 - y) * s
+
+    im = Image.new("L", (W, H), 255)
+    d = ImageDraw.Draw(im)
+    for a, b in zip(monde.A, monde.B):
+        d.line([px(*a), px(*b)], fill=40, width=4)
+    for x, y, r in monde.poteaux:
+        u, v = px(x, y)
+        d.ellipse([u - 2, v - 2, u + 2, v + 2], fill=150)
+    im.save(fichier)
+    return px
+
+
 class Monde:
     def __init__(self, murs, poteaux=(), tapis=(), base=None, depart=(0.0, 0.0, 0.0), etendue=None):
         self.A = np.array([s[0] for s in murs], float)
@@ -292,7 +314,7 @@ class RobotSimule(Pilote):
         self.enc[1] += do / 0.4446
 
     # ------------------------------------------------------------ un saut, comme Pilote.saut
-    def saut(self, touche, duree, marge_mm=600, lb_repos=150, lb_max=400, vide_min=1500):
+    def saut(self, touche, duree, marge_mm=600, lb_repos=150, lb_max=400, vide_min=1500, vide_stop=0):
         duree = min(duree, 1.4)
         l0 = self._ligne()
         recul = (touche == "2")

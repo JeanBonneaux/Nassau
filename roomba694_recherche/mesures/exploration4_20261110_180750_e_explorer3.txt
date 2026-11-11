@@ -1,0 +1,33 @@
+[  0.4 min]     sur le plan : recalée de (+75, +604) mm et +20.0° ; note -0.21 -> 0.86
+[  0.4 min] station 0 : 8 paliers, 2 lignes de murs, axes de la pièce 85.5°
+[  0.4 min] cibles reçues (série 2) : [(930, 171), (672, 265), (607, 340), (247, 295), (412, 109)]
+[  0.4 min]   vers la cible (930, 171) du plan : 9 étapes
+[  0.5 min]     arrêté : avance refusée : obstacle à 254 mm devant (marge 400.0 mm) ; robot en (13983, 6474)
+[  0.5 min]   vers la cible (930, 171) du plan : 8 étapes (essai 2, en contournant l'obstacle)
+[  0.5 min]     arrêté : avance refusée : obstacle à 213 mm devant (marge 400.0 mm) ; robot en (13984, 6475)
+[  0.5 min]   vers la cible (930, 171) du plan : 9 étapes (essai 3, en contournant l'obstacle)
+[  0.8 min]     arrêté : avance refusée : obstacle à 322 mm devant (marge 341.8259374503552 mm) ; robot en (14443, 6844)
+[  1.2 min]     sur le plan : recalée de (-94, +94) mm et +3.0° ; note -0.16 -> 0.79
+[  1.2 min] station 1 (là où le robot s'est arrêté) en (14349, 6938), 9 paliers
+[  1.2 min]   cible (930, 171) laissée après trois essais
+[  1.2 min]   vers la cible (672, 265) du plan : 6 étapes
+[  1.9 min]     sur le plan : recalée de (-132, -151) mm et +3.0° ; note 0.53 -> 0.75
+[  1.9 min] station 2 (vers une cible) en (13402, 6463) : 12 paliers
+[  2.1 min]     arrêté : avance refusée : obstacle à 260 mm devant (marge 400.0 mm) ; robot en (13073, 6187)
+[  2.4 min]     sur le plan : recalée de (-113, -151) mm et +0.0° ; note 0.55 -> 0.71
+[  2.4 min] station 3 (là où le robot s'est arrêté) en (12960, 6036), 10 paliers
+[  2.4 min]   cible (672, 265) : pas de chemin dans le sol libre du plan depuis ici, cible laissée
+[  2.4 min]   cible (607, 340) : pas de chemin dans le sol libre du plan depuis ici, cible laissée
+[  2.4 min]   cible (247, 295) : pas de chemin dans le sol libre du plan depuis ici, cible laissée
+[  2.4 min]   cible (412, 109) : pas de chemin dans le sol libre du plan depuis ici, cible laissée
+[  2.4 min]   depuis la station 3 : direction 280° (vu, libre sur 162 cm), 900 mm, vers (13116, 5150), 5.8 m² à voir ; 79 candidats
+[  3.0 min]     sur le plan : recalée de (-19, +38) mm et +2.0° ; note 0.70 -> 0.77
+[  3.0 min]   porte possible : 724 mm de large vers (13471, 4221), direction 356°
+[  3.0 min] station 4 en (13099, 5209) : 14 paliers ; 12 lignes de murs
+[  3.0 min]   depuis la station 4 : direction 259° (porte), 962 mm, vers (12922, 4264), 4.1 m² à voir ; 83 candidats
+[  3.7 min]     sur le plan : recalée de (+0, -57) mm et +3.0° ; note 0.75 -> 0.77
+[  3.7 min] station 5 (devant une porte) en (12927, 4218) : 9 paliers ; 13 lignes de murs
+[  3.7 min]   depuis la station 5 : direction 340° (vu, libre sur 90 cm), 500 mm, vers (13397, 4047), 4.7 m² à voir ; 123 candidats
+[  4.3 min]     sur le plan : recalée de (+57, +57) mm et +1.0° ; note 0.73 -> 0.86
+[  4.3 min] station 6 en (13444, 4115) : 9 paliers ; 12 lignes de murs
+[  4.3 min] fin : arrêt demandé (fichier _ARRET) | mode 3 | roues arrêtées | pare-chocs [0, 0] | 7 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0015), 59 sauts, 4 trajets arrêtés, 4 obstacles touchés ou vus devant | 4.9 m | batterie 1849 mAh

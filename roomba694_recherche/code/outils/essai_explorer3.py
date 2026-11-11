@@ -52,6 +52,9 @@ def main():
     q.add_argument("--k-gyro", type=float, default=1.0015)
     q.add_argument("--k-vrai", type=float, default=1.0015, help="échelle vraie du gyroscope simulé")
     q.add_argument("--sans-dessin", action="store_true")
+    q.add_argument("--plan", action="store_true", help="donner au programme le plan du monde simulé (carte dans le repère du plan)")
+    q.add_argument("--cibles", default="", help="avec --plan : points du monde à rejoindre, x,y en mm séparés par des points-virgules")
+    q.add_argument("--erreur-depart", default="0,0,0", help="avec --plan : erreur sur la position de départ donnée au programme, dx,dy en mm et cap en degrés")
     q.add_argument("--muet", action="store_true")
     b = q.parse_args()
     monde = sim.Monde(**sim.MONDES[b.monde]())
@@ -59,6 +62,19 @@ def main():
     prefixe = os.path.join(b.dossier, f"sim_{b.monde}_{b.graine}")
     a = types.SimpleNamespace(adresse="sim", prefixe=prefixe, stations=b.stations, minutes=b.minutes, vitesse=75, tour_v=30, vide_min=150.0,
                               interdit="", k_gyro=b.k_gyro, recalage_m=b.recalage_m, echecs_max=12, batterie_min=1000, sans_retour=False)
+    a.plan, a.px_par_m, a.depart_plan = "", 50.0, ""
+    if b.plan:
+        import json as json_
+        a.plan = prefixe + "_plan.png"
+        px = sim.dessiner_plan(monde, a.plan, a.px_par_m)
+        ex_, ey_, ec_ = (float(v) for v in b.erreur_depart.split(","))
+        u, v = px(monde.depart[0] + ex_, monde.depart[1] + ey_)
+        a.depart_plan = f"{u:.1f},{v:.1f},{monde.depart[2] + ec_:.1f}"
+        if os.path.exists(prefixe + "_CIBLES.json"):
+            os.remove(prefixe + "_CIBLES.json")
+        if b.cibles:
+            with open(prefixe + "_CIBLES.json", "w", encoding="utf-8") as f:
+                json_.dump({"serie": 1, "cibles": [list(px(*(float(v) for v in c.split(",")))) for c in b.cibles.split(";")]}, f)
     ex = explorer3.Exploration(robot, a)
     if b.muet:
         ex.dire = lambda *x: None
@@ -80,10 +96,13 @@ def main():
     # position finale : vraie, et tenue par le PC ramenée dans le monde
     c0, s0 = math.cos(math.radians(monde.depart[2])), math.sin(math.radians(monde.depart[2]))
     def vers_monde(x, y):
+        if b.plan:                                               # la carte du programme est dans le repère du plan
+            u, v = ex.vers_px(x, y)
+            return monde.etendue[0] + (u - 40) / ex.plan.s, monde.etendue[3] - (v - 40) / ex.plan.s
         return monde.depart[0] + c0 * x - s0 * y, monde.depart[1] + s0 * x + c0 * y
     fx, fy = vers_monde(ex.est.X, ex.est.Y)
     err = math.hypot(fx - robot.x, fy - robot.y)
-    err_cap = ((ex.est.C + monde.depart[2] - math.degrees(robot.th) + 180) % 360) - 180
+    err_cap = ((ex.est.C + (0.0 if b.plan else monde.depart[2]) - math.degrees(robot.th) + 180) % 360) - 180
     print(f"BILAN {b.monde} graine {b.graine} : fin « {ex.j['fin']} » ; {len(ex.noeuds)} stations, {len(ex.j['recalages'])} recalages,"
           f" {len(robot.contacts)} contacts vrais, {len(ex.j['echecs'])} trajets arrêtés ; sol accessible vu : {100.0 * vues.sum() / max(1, acc.sum()):.0f} %"
           f" ({acc.sum() * pas * pas / 1e6:.1f} m²) ; {ex.est.chemin / 1000:.1f} m en {(robot.t - 1000) / 60:.0f} min ;"

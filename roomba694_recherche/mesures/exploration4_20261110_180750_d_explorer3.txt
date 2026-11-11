@@ -1,0 +1,29 @@
+[  0.4 min]     sur le plan : recalée de (-170, -57) mm et -5.0° ; note 0.80 -> 0.97
+[  0.4 min] station 0 : 13 paliers, 2 lignes de murs, axes de la pièce 85.0°
+[  0.4 min] cibles reçues (série 1) : [(672, 265), (607, 340), (930, 171), (247, 295), (412, 109)]
+[  0.4 min]   vers la cible (672, 265) du plan : 24 étapes
+[  1.1 min]     sur le plan : recalée de (+113, +19) mm et -2.0° ; note 0.66 -> 0.84
+[  1.1 min]   porte possible : 955 mm de large vers (12873, 7300), direction 87°
+[  1.1 min] station 1 (vers une cible) en (12614, 6309) : 10 paliers
+[  1.1 min]     arrêté : avance refusée : obstacle à 548 mm devant (marge 600.0 mm) ; robot en (12621, 6307)
+[  1.1 min]   vers la cible (672, 265) du plan : 23 étapes (second essai)
+[  1.1 min]     arrêté : avance refusée : obstacle à 544 mm devant (marge 600.0 mm) ; robot en (12621, 6307)
+[  1.1 min]   cible (672, 265) laissée après deux essais
+[  1.1 min]   vers la cible (607, 340) du plan : 45 étapes
+[  1.1 min]     arrêté : avance refusée : obstacle à 548 mm devant (marge 600.0 mm) ; robot en (12621, 6307)
+[  1.1 min]   vers la cible (607, 340) du plan : 45 étapes (second essai)
+[  1.1 min]     arrêté : avance refusée : obstacle à 548 mm devant (marge 600.0 mm) ; robot en (12621, 6307)
+[  1.1 min]   cible (607, 340) laissée après deux essais
+[  1.1 min]   vers la cible (930, 171) du plan : 200 étapes
+[  1.8 min]     sur le plan : recalée de (-19, +132) mm et -3.0° ; note 0.57 -> 0.80
+[  1.8 min]   porte possible : 793 mm de large vers (13743, 7185), direction 85°
+[  1.8 min]   porte possible : 695 mm de large vers (14036, 5310), direction 355°
+[  1.8 min]   porte possible : 667 mm de large vers (14141, 6503), direction 355°
+[  1.8 min]   porte possible : 1068 mm de large vers (12031, 7462), direction 85°
+[  1.8 min] station 2 (vers une cible) en (13375, 5986) : 8 paliers, sur un tapis
+[  2.2 min]     sur le plan : recalée de (-0, +0) mm et +0.0° ; note 0.77 -> 0.77
+[  2.2 min]   porte possible : 953 mm de large vers (11839, 7108), direction 175°
+[  2.2 min] station 3 (vers une cible) en (13793, 5950) : 10 paliers, sur un tapis
+[  2.6 min]     sur le plan : recalée de (-151, -113) mm et -1.0° ; note -0.28 -> 0.83
+[  2.6 min] station 4 (vers une cible) en (13876, 5900) : 7 paliers
+[  2.6 min] fin : arrêt demandé (fichier _ARRET) | mode 3 | roues arrêtées | pare-chocs [0, 0] | 5 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0015), 32 sauts, 4 trajets arrêtés, 4 obstacles touchés ou vus devant | 2.9 m | batterie 1867 mAh

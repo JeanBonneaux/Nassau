@@ -758,3 +758,79 @@ La batterie du cerveau est en charge. En attendant, l'utilisateur envoie trois i
 **Limites** : l'échelle n'est connue qu'à 5 % près, soit un mètre sur la longueur de l'appartement ; une exploration plus longue la donnera à 1 % (les roues du robot mesurent les distances). Le plan montre les meubles à toutes les hauteurs, le robot ce qui est à 10 cm du sol. Les meubles bougent.
 
 **Pour l'essai de ce soir** : l'exploration autonome reste telle qu'elle est (`explorer3.py`) ; le plan sert à suivre le robot et à juger le résultat. Sol à explorer : une quarantaine de mètres carrés hors zones rouges, comme l'appartement simulé ; compter une heure, donc des limites plus larges que celles par défaut.
+
+## 28. Le robot explore seul, d'abord sans le plan puis guidé par lui ; où il est vraiment passé ; la carte quadrillée (2026-11-10, 17 h 45 à 19 h 50)
+
+Premier essai d'`explorer3.py` sur le vrai robot, l'utilisateur à côté (« ne le limite pas, je vais le surveiller »). Sept passages, 77 tours sur place, 77 m roulés. Enregistrements : `mesures/exploration3_20261110_174457_*` (passage 1) et `mesures/exploration4_20261110_180750_*` (passages a à f : `_a_stations.json` … `_f_stations.json`, le journal de chaque passage en `_X_explorer3.txt`, un seul `_capteurs.csv` d'un seul tenant de 18 h 07 à 19 h 15), `mesures/position_20261110_180056.*` et `position_20261110_191511.*`.
+
+### Les sept passages
+
+Les cases sont celles de la carte quadrillée décrite plus bas (lettre de la ligne, numéro de la colonne, 50 cm de côté).
+
+| Passage | Heure | Tours | Où (cases) | Fin |
+|---|---|---|---|---|
+| 1 | 17 h 47 à 17 h 58 | 16 | grande pièce double de la base : de E15 à C17 devant la base, puis vers la gauche jusqu'à C7, tapis de C7 à G10 | le capteur de distance, qui dépasse du robot, heurte le dessous d'un meuble vers G9 ; l'utilisateur soulève le robot et le repose dans le couloir |
+| a | 18 h 09 à 18 h 18 | 12 | croisement du couloir, de H12 à K14, pointes jusqu'à G12 et H18 | « plus rien à voir » après dix stations, à tort (voir plus bas) ; retour au départ fait |
+| b | 18 h 21 à 18 h 28 | 12 | tout le couloir puis le bas de la pièce centrale, de J13 à H28 : 7,5 m en 6 minutes et demie | roue droite soulevée par un bord de tapis en H28 |
+| c | 18 h 33 à 18 h 47 | 17 | pièce centrale, tout le tour : F21 à J27, puis B25 à D28 | arrêt demandé par l'assistant (`_ARRET`) |
+| d | 18 h 49 à 18 h 51 | 5 | premier passage guidé par le plan : C24 à D28 | arrêt demandé |
+| e | 18 h 53 à 18 h 57 | 7 | porte des pièces de droite (C29), puis descente jusqu'à H28 | arrêt demandé |
+| f | 19 h 04 à 19 h 10 | 8 | devant la porte de K23, puis l'ouest de la pièce centrale, jusqu'à H20 | « pause » demandée par l'utilisateur |
+
+### Ce que le vrai robot a appris au programme
+
+- **Le capteur de distance dépasse** : le pare-chocs passe sous un meuble bas, la tourelle non, et aucun capteur ne le dit d'avance (17 h 59). Limite connue ; l'utilisateur préfère surveiller plutôt que d'interdire le sol proche des meubles.
+- **Un arrêt mal expliqué** : la première sortie du mode Safe a d'abord été mise sur le compte d'un bord de tapis sombre ; c'était l'utilisateur qui avait soulevé le robot. La garde ajoutée pour rien (capteurs de vide sous 500) est retirée ; les passages suivants tournent avec `--vide-min 150`.
+- **Le recalage sur une station connue donnait de fausses corrections** : 5 cm, une fois 18 cm avec deux murs seulement. Il n'est plus accepté que s'il s'appuie sur trois murs au moins, dans deux directions, et s'il ne dépasse pas trois fois la dérive attendue.
+- **« Plus rien à voir » après dix stations** (passage a) : le programme tenait pour plein un mur sur 2 m autour d'un pied franc ; dans le vrai appartement quatorze lignes de murs et de meubles ainsi prolongées se croisaient et fermaient tout. Portée ramenée à 60 cm (pied franc) et 25 cm (pied faible).
+- **Le zéro du gyroscope glisse** quand la carte chauffe : −9,76° par minute à l'arrêt, 25 minutes après la mise sous tension, une vingtaine de degrés perdus sur un passage de dix minutes. Le programme envoie maintenant `z` (étalonnage d'une seconde, robot immobile) avant chaque tour sur place.
+- **Les tapis** : 9,4 m roulés sur tapis au passage 1, 7,3 m ensuite ; un bord de tapis a soulevé une roue (H28). Tapis ou sol sombre relevés en C7 à G10, H13 à K14, D27 à H28.
+- **Sept appuis du pare-chocs** en 77 m (E7, D8 deux fois, K12, G28 deux fois, F21) : l'arrêt réflexe du firmware v6 a tenu chaque fois.
+
+### Le robot guidé par le plan (passages d, e, f)
+
+`explorer3.py --plan PLAN.png --px-par-m 53 --depart-plan U,V,CAP [--plan-passe IMAGE]` : la carte du robot est celle du plan.
+
+- `code/outils/plan.py` (nouveau) : `Plan.localiser` pose un tour sur place sur le plan (paliers sur un mur ou un meuble, rayons libres hors des murs) ; `Plan.chemin` trace un chemin dans le sol libre, au milieu des portes ; `Plan.jalons` le découpe en étapes de 45 à 90 cm ; `Plan.fermer` note un obstacle rencontré, `Plan.ouvrir` un trajet réellement roulé, `Plan.confirmer` un mur du plan vu par le robot.
+- Des destinations se donnent de l'extérieur pendant que le programme tourne : fichier `PREFIXE_CIBLES.json` (`{"serie": n, "cibles": [[u, v], …]}`, pixels du plan). Sans destination, le programme explore comme avant, dans le repère du plan. Arrêt sur place : fichier `PREFIXE_ARRET` ; retour au départ : `PREFIXE_RENTRE`. `code/outils/attendre.py` attend le tour suivant et montre la fin du journal ; `code/outils/suivi_plan.py` dessine un passage sur le plan.
+- En simulation (`essai_explorer3.py MONDE DOSSIER --plan --cibles "x,y;…"`) : destinations atteintes à 3 à 5 cm et 1° près.
+- Sur le robot : la destination « devant la porte de K23 » atteinte en trois étapes (19 h 07). Deux refus utiles : dans la porte des pièces de droite (C29), un obstacle à 21 à 32 cm, trois essais, destination abandonnée ; devant K23, une surface plane à 68 cm sur toute la largeur — la porte est fermée.
+- **Le trait vert de l'utilisateur n'est pas un relevé** : il entrait dans la pièce de K23 à travers son mur, à un mètre de la vraie porte, et le programme le tenait pour un passage sûr. Règle ajoutée : ce que le robot voit l'emporte ; un mur du plan confirmé par un tour sur place referme le passage tracé à la main.
+- **Le suivi tour par tour se trompe peu à peu** : à chaque relance, le premier tour (fenêtre large : 60 cm, 25°) a dû corriger la position laissée par le passage précédent de 60 cm et 20°, puis de 43 cm et 21°.
+
+### Le malentendu de 19 h 10, et la vérification
+
+À 19 h 09 l'utilisateur écrit que le robot « va vers la pièce en haut à droite » et qu'il est arrêté « au seuil entre la pièce en haut à droite et la grande pièce », alors que l'assistant venait d'annoncer un départ vers « la pièce en bas à gauche ». L'assistant en conclut d'abord, à tort, que le programme se croyait au mauvais endroit (la pièce centrale est presque carrée, 4,2 m sur 4,0 m : une carte peut s'y poser à l'envers) et le dit à l'utilisateur.
+
+Vérification, sans rien supposer : `research_notes/…/data_analysis/l_localisation_globale.py` (nouveau). Deux millions de positions et de caps de départ, partout sur les 53 m² de sol du plan ; chaque hypothèse avance de tour en tour avec le trajet compté par le cerveau, qui ne dépend d'aucune carte ; ne survivent que celles dont les paliers tombent sur le plan et dont le trajet ne traverse aucun mur (filtre à particules).
+
+| Recherche | Résultat |
+|---|---|
+| Passages a à f, dans le sens du temps, départ quelque part dans le couloir sous la grande pièce (seul fait donné par l'utilisateur, à 18 h 21) | 61 tours enchaînés sans un mur traversé, notes de 0,55 à 0,87, nuage resserré à ±25 cm dès la fin du couloir ; fin en H20 |
+| Les mêmes, **à rebours depuis 19 h 10, sans aucune indication** | retrouve seule le départ dans le couloir (J13, ±23 cm) et le même trajet : **1,7 cm d'écart médian** avec la recherche précédente sur les 61 tours, 10 cm au plus |
+| Les mêmes dans le sens du temps, sans indication, 40 000 hypothèses | échoue : les dix premiers tours, autour du croisement, ressemblent à plusieurs endroits, et le fil se perd au passage c. Le départ ne se devine pas d'un seul côté ; la fin, si |
+| Passage 1, dans les deux sens, sans indication | même trajet à 2,8 cm près (médiane), dans la grande pièce double, là où l'utilisateur l'avait dessiné |
+
+Résultats chiffrés : `data_analysis/results_l_*.txt`. Conclusion : **la soirée n'a qu'une façon de se poser sur le plan, et le programme était au bon endroit** — à 19 h 10 il se croyait à 27 cm de la position retrouvée. Le robot est en H20, à la sortie sud-ouest de la pièce centrale, tourné vers le couloir. Le malentendu venait des noms : « la pièce en haut à droite » n'était pas la même pièce pour l'utilisateur et pour l'assistant.
+
+Ce que la comparaison apprend en plus : pendant les passages guidés, la position tenue par le programme s'écartait de 17 cm (médiane) et jusqu'à 63 cm de la position retrouvée, et son cap de 9° (médiane) et jusqu'à 27°. Un tour sur place donne bien la position, mal le cap ; le programme corrigeait donc sa position de 5 à 13 cm à chaque station sans jamais rattraper son cap. Le filtre, lui, tire le cap de la suite des déplacements.
+
+### La carte quadrillée
+
+Pour ne plus se tromper de pièce, l'utilisateur demande une carte « avec des coordonnées assez précises, comme aux échecs », sur laquelle il dira d'où part le robot et où il doit aller.
+
+- `code/outils/grille.py` : cases de 50 cm ; une case se nomme par la lettre de sa ligne (A en haut, sans I ni O) et le numéro de sa colonne (1 à gauche) : 17 lignes, 46 colonnes. Directions : droite = cap 0°, haut = 90°, gauche = 180°, bas = 270°.
+- `code/outils/carte_grille.py PLAN.png DOSSIER --zones IMAGE --base U,V --global "F1.json;F2.json" --reperes F.json` : la vue d'ensemble et trois agrandissements où le nom de chaque case est écrit dans son coin ; par-dessus le plan, le trajet roulé, les tours sur place, les tapis, les appuis du pare-chocs, la base, le robot, les zones barrées par l'utilisateur et des remarques numérotées. Les dessins montrent le plan : ils restent dans `plan_lidar/`, hors du dépôt.
+- Sur cette carte : base en B17 ; robot en H20, tourné vers la gauche ; porte fermée en K23 ; obstacle derrière la porte en C29 ; meuble bas vers G9 ; bord de tapis qui soulève une roue en H28.
+- Parcouru ce soir : 83 cases, soit la grande pièce double, le croisement, le couloir et la pièce centrale. Pas encore vus : le bout gauche du couloir, la pièce d'en bas à gauche (K7 à Q11), la pièce derrière la porte de K23, les pièces de droite (colonnes 30 à 40).
+
+### État à la fin
+
+Robot en H20, session fermée (`5`, `s`, `x`), capteur de distance au repos, sécurité du capteur active (seuil 30 cm). Batterie du robot : 1 804 mAh. Le cerveau compte 75,7 m et « soulevé 2 fois, 1 déplacement non compté » (dont le transport par l'utilisateur vers 18 h).
+
+### Pour la suite
+
+1. L'utilisateur donne la case de départ, la direction du robot et la case objectif.
+2. Au départ, chercher la position dans la case donnée et autour, cap à 45° près, au lieu de la reprendre du passage précédent.
+3. Remplacer le suivi à une seule hypothèse par le filtre pendant que le robot roule (il tourne en quelques secondes pour toute la soirée), ou au moins corriger le cap d'après le sens des corrections de position.
+4. L'amélioration de la page du cerveau avec la carte, demandée à 17 h 50, n'est pas commencée.

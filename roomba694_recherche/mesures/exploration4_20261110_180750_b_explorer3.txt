@@ -1,0 +1,31 @@
+[  0.3 min]   porte possible : 1155 mm de large vers (-1100, -368), direction 150°
+[  0.3 min] station 0 : 11 paliers, 3 lignes de murs, axes de la pièce 59.5°
+[  0.3 min]   depuis la station 0 : direction 335° (vu, libre sur 85 cm), 500 mm, vers (453, -211), 4.4 m² à voir ; 26 candidats
+[  0.8 min] station 1 en (450, -197) : 7 paliers ; 5 lignes de murs
+[  0.8 min]   depuis la station 1 : direction 255° (vu, libre sur 117 cm), 700 mm, vers (269, -874), 6.0 m² à voir ; 30 candidats
+[  1.4 min] station 2 en (274, -860) : 9 paliers ; 6 lignes de murs
+[  1.4 min]   depuis la station 2 : direction 230° (vu, libre sur 112 cm), 700 mm, vers (-176, -1397), 5.9 m² à voir ; 29 candidats
+[  2.0 min] station 3 en (-167, -1392) : 9 paliers ; 6 lignes de murs
+[  2.0 min]   depuis la station 3 : direction 220° (vu, libre sur 133 cm), 900 mm, vers (-856, -1970), 7.5 m² à voir ; 34 candidats
+[  2.6 min] station 4 en (-845, -1969) : 11 paliers ; 7 lignes de murs
+[  2.6 min]   depuis la station 4 : direction 240° (vu, libre sur 194 cm), 900 mm, vers (-1295, -2749), 7.0 m² à voir ; 35 candidats
+[  3.2 min] station 5 en (-1271, -2750) : 10 paliers ; 8 lignes de murs
+[  3.2 min]   depuis la station 5 : direction 255° (vu, libre sur 284 cm), 700 mm, vers (-1452, -3426), 2.6 m² à voir ; 40 candidats
+[  3.8 min]   porte possible : 1136 mm de large vers (-936, -1941), direction 150°
+[  3.8 min]   porte possible : 783 mm de large vers (-1738, -3359), direction 150°
+[  3.8 min] station 6 en (-1451, -3413) : 12 paliers ; 10 lignes de murs
+[  3.8 min]   depuis la station 6 : direction 240° (vu, libre sur 166 cm), 900 mm, vers (-1901, -4193), 5.1 m² à voir ; 61 candidats
+[  4.5 min] station 7 en (-1893, -4184) : 12 paliers ; 11 lignes de murs
+[  4.5 min]   depuis la station 7 : direction 245° (vu, libre sur 141 cm), 900 mm, vers (-2274, -5000), 4.2 m² à voir ; 94 candidats
+[  5.1 min]   porte possible : 919 mm de large vers (-2218, -3929), direction 150°
+[  5.1 min] station 8 en (-2255, -4986) : 8 paliers ; 11 lignes de murs
+[  5.1 min]   depuis la station 8 : direction 215° (vu, libre sur 123 cm), 900 mm, vers (-2992, -5502), 5.5 m² à voir ; 114 candidats
+[  5.7 min] station 9 en (-2952, -5517) : 7 paliers ; 12 lignes de murs
+[  5.7 min]   depuis la station 9 : direction 230° (vu, libre sur 80 cm), 500 mm, vers (-3274, -5900), 5.1 m² à voir ; 125 candidats
+[  6.2 min] station 10 en (-3259, -5900) : 6 paliers ; 13 lignes de murs
+[  6.2 min]   depuis la station 10 : direction 275° (vu, libre sur 117 cm), 700 mm, vers (-3198, -6597), 4.4 m² à voir ; 135 candidats
+[  6.8 min]   porte possible : 971 mm de large vers (-2678, -4761), direction 150°
+[  6.8 min] station 11 en (-3244, -6566) : 10 paliers ; 16 lignes de murs
+[  6.8 min]   depuis la station 11 : direction 0° (vu, libre sur 136 cm), 900 mm, vers (-2344, -6566), 4.6 m² à voir ; 122 candidats
+[  7.0 min]     arrêté : alarme pendant une avance : roue levée ; robot en (-2997, -6598)
+[  7.0 min] fin : arrêt : alarme pendant une avance : roue levée | mode 2 | roues arrêtées | pare-chocs [0, 0] | 12 stations, 0 recalages, 7 corrections de cap (échelle du gyroscope 1.0018), 105 sauts, 1 trajets arrêtés, 0 obstacles touchés ou vus devant | 9.4 m | batterie 1936 mAh

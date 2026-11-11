@@ -39,6 +39,17 @@
 # roue levée, vide sous un capteur ou journal muet : arrêt net, le robot reste où il est. Code infrarouge 161 (champ de
 # la base) : le trajet s'arrête et l'endroit devient zone interdite.
 #
+# Avec le plan de l'appartement (--plan IMAGE --px-par-m N --depart-plan U,V,CAP ; voir plan.py) :
+#   - le repère de la carte est celui du plan ; après chaque tour sur place la station est recalée sur le plan (position
+#     et cap) : le cap ne glisse plus, la carte reste alignée, et les tours de recalage deviennent inutiles ;
+#   - on peut diriger le robot : le fichier PREFIXE_CIBLES.json, {"serie": 1, "cibles": [[u, v], ...]} en pixels du plan,
+#     lui fait rejoindre ces points l'un après l'autre par un chemin tracé dans le sol libre du plan (au milieu des
+#     portes), avec un tour sur place tous les 90 cm au plus. Un nouveau numéro de série remplace les cibles en cours.
+#     Sans cible, il explore de lui-même comme avant.
+#
+# Pour finir avant la fin : créer un fichier vide PREFIXE_RENTRE (le robot finit son étape et revient au départ) ou
+# PREFIXE_ARRET (il s'arrête où il est, à la fin du saut en cours). Bouton CLEAN du robot : arrêt immédiat.
+#
 # Usage : python explorer3.py [--stations 40] [--minutes 45] [--vitesse 75] [--vide-min 150] [--interdit "x,y,rayon;..."]
 #                             [--k-gyro 1.0015] [--recalage-m 12] [--sans-retour] -- ADRESSE PREFIXE
 #         python explorer3.py --simulation appartement [--graine 1] -- sim PREFIXE      (essai sans robot, simulateur.py)
@@ -47,6 +58,7 @@
 import argparse
 import json
 import math
+import os
 import sys
 import time
 import urllib.error
@@ -59,8 +71,8 @@ from pilote import Pilote
 DX = carto.DX
 RAYON = 170.0                      # mm, rayon du robot
 PAS = (900.0, 700.0, 500.0)        # longueurs de trajet essayées, de la plus longue à la plus courte
-GARDE = {"mur": 230.0, "arete": 230.0, "echo": 200.0, "contact": 260.0, "devant": 230.0}
-ARRET_NET = ("Safe", "roue levée", "journal", "vide sous", "capteur de distance")
+GARDE = {"mur": 230.0, "arete": 230.0, "echo": 200.0, "contact": 260.0, "devant": 230.0, "sombre": 260.0}
+ARRET_NET = ("Safe", "roue levée", "journal", "capteur de distance", "arrêt demandé")
 CASE = 100.0                       # mm, pas de la grille des endroits déjà regardés
 DEMI_GRILLE = 250                  # la grille couvre 25 m de part et d'autre du départ
 PORTEE_VUE = 1800.0                # mm : une station « regarde » le sol jusqu'à cette distance
@@ -141,6 +153,7 @@ class Station:
         self.bloques = []                                         # directions qui ont échoué depuis cette station
         self.porte = None                                         # direction de la porte, pour une station « porte »
         self.tapis = False
+        self.chemin = 0.0                                         # chemin parcouru par le robot quand il a fait cette station, mm
         self.pal = carto.paliers(self.d, self.r)                  # paliers stricts, pour comparer deux tours (carto.apparier)
         self.souples = carto.paliers_souples(self.d, self.r)      # paliers tolérants, pour décider ce qui est un mur
         self.murs_vus, self.aretes = [], []                       # remplis par Exploration.refaire_les_murs (il faut les axes)
@@ -211,7 +224,7 @@ class Mur:
         """distance signée à la ligne : négative du côté d'où le mur a été vu"""
         return self.n[0] * x + self.n[1] * y - self.rho
 
-    def calculer_pleins(self, franc=2000.0, faible=500.0):
+    def calculer_pleins(self, franc=600.0, faible=250.0):
         """Un pied franc (palier de 25° au moins) vaut pour 2 m de mur de chaque côté ; un pied faible pour 50 cm
         seulement, car une arête vue de face (le montant d'une porte) ressemble à un bout de mur. En seconde passe
         (quand il ne reste plus rien à voir), l'exploration réduit ces portées : 1 m et 25 cm."""
@@ -257,14 +270,129 @@ class Exploration:
         self.interdits = [tuple(float(v) for v in z.split(",")) for z in a.interdit.split(";") if z.strip()]
         self.portes = []                                       # portes repérées : dictionnaires
         self.echecs = 0
-        self.dernier_recalage = 0.0                            # chemin parcouru au dernier recalage, mm
+        self.dernier_recalage = 0.0                            # chemin parcouru au dernier essai de recalage, mm
+        self.dernier_fix = 0.0                                 # chemin parcouru au dernier recalage accepté, mm
         self.cap_mes = []                                      # mesures de cap par les murs : (rotation nette, erreur du cap brut, poids)
-        self.portees = (2000.0, 500.0)                         # longueur de mur tenue pour pleine autour d'un pied franc, d'un pied faible
+        # Longueur de mur tenue pour pleine autour d'un pied franc, d'un pied faible. En simulation 2 m et 50 cm allaient
+        # bien ; dans le vrai appartement (2026-11-10, 18 h 18) quatorze lignes de murs et de meubles ainsi prolongées se
+        # croisaient dans le couloir, et le programme a conclu qu'il n'y avait plus rien à voir après dix stations.
+        self.portees = (600.0, 250.0)
         self.pannes = 0                                        # requêtes au cerveau restées sans réponse
+        self.plan = None                                       # le plan de l'appartement, s'il est donné (plan.py)
+        self.cibles, self.serie = [], None                     # points du plan à rejoindre, donnés de l'extérieur
+        if getattr(a, "plan", ""):
+            import plan as plan_mod
+            self.plan = plan_mod.Plan(a.plan, a.px_par_m)
+            if getattr(a, "plan_passe", ""):                     # image du plan où l'utilisateur a tracé en vert par où on passe
+                from PIL import Image
+                Z = np.asarray(Image.open(a.plan_passe).convert("RGB")).astype(int)
+                self.plan.passe_main |= (Z[..., 1] > Z[..., 0] + 40) & (Z[..., 1] > Z[..., 2] + 40)
         self.t0 = self.maintenant()
         self.j = {"mode": "exploration3", "k_gyro": a.k_gyro, "pas": list(PAS), "vitesse": a.vitesse, "vide_min": a.vide_min,
                   "interdits": self.interdits, "stations": [], "sauts": [], "choix": [], "echecs": [], "contacts": [],
                   "recalages": [], "caps": [], "portes": [], "parents": {}, "fin": None}
+
+    # ------------------------------------------------------------ le plan de l'appartement
+    def vers_px(self, x, y):
+        return x * self.plan.s, self.plan.H - y * self.plan.s
+
+    def vers_mm(self, u, v):
+        return u / self.plan.s, (self.plan.H - v) / self.plan.s
+
+    def caler_sur_le_plan(self, st, premier=False):
+        """Recale la station qui vient d'être faite sur le plan ; corrige la position et le cap tenus par le PC."""
+        u, v = self.vers_px(st.x, st.y)
+        pal = [(psi - st.pose[2], dist, larg) for psi, dist, larg, nb, pt in st.paliers]
+        R = int(round((600.0 if premier else 300.0) * self.plan.s))
+        u1, v1, c1, note, note0 = self.plan.localiser(pal, u, v, st.pose[2], R=R, d_cap=(25.0 if premier else 10.0), retenue=(0.05 if premier else 0.25))
+        x1, y1 = self.vers_mm(u1, v1)
+        dx, dy, dc = x1 - st.x, y1 - st.y, c1 - st.pose[2]
+        info = {"station": st.nom, "note_avant": round(note0, 2), "note": round(note, 2), "dx": round(dx), "dy": round(dy), "dcap": round(dc, 1), "garde": False}
+        if note >= 0.45 and len(pal) >= 3:
+            self.est.decaler(dx, dy)
+            self.est.C += dc
+            st.reposer((x1, y1, c1))
+            self.j["stations"][-1]["pose"] = [round(x1, 1), round(y1, 1), round(c1, 2)]
+            info["garde"] = True
+            # ce que le robot voit l'emporte sur le trait tracé à la main : un mur du plan vu d'ici referme le passage
+            info["murs_confirmes"] = sum(self.plan.confirmer(*self.vers_px(x1 + (dist + DX) * math.cos(math.radians(c1 + ang)),
+                                                                           y1 + (dist + DX) * math.sin(math.radians(c1 + ang))))
+                                         for ang, dist, larg in pal)
+        self.j.setdefault("plan", []).append(info)
+        self.dire(f"    sur le plan : {'recalée de' if info['garde'] else 'pas recalée (note trop basse) ; écart proposé'} ({dx:+.0f}, {dy:+.0f}) mm et {dc:+.1f}° ; note {note0:.2f} -> {note:.2f}")
+
+    def lire_cibles(self):
+        try:
+            with open(self.a.prefixe + "_CIBLES.json", encoding="utf-8") as f:
+                J = json.load(f)
+        except (OSError, ValueError):
+            return
+        if J.get("serie") != self.serie:
+            self.serie = J.get("serie")
+            self.cibles = [tuple(float(v) for v in c[:2]) for c in J.get("cibles", [])]
+            self.dire(f"cibles reçues (série {self.serie}) : {[(round(u), round(v)) for u, v in self.cibles]}")
+
+    def vers_cible(self, ici):
+        """Rejoint la première cible par un chemin tracé sur le plan. Renvoie la station où est le robot, ou None après
+        un arrêt net. La cible est retirée de la liste, atteinte ou non."""
+        cible = self.cibles[0]
+        dernier_tour = (ici.x, ici.y)
+        for essai in (1, 2, 3):
+            l, q = self.pose()
+            if l is None:
+                return None
+            ch = self.plan.chemin(self.vers_px(q[0], q[1]), cible)
+            if ch is None:
+                self.dire(f"  cible ({cible[0]:.0f}, {cible[1]:.0f}) : pas de chemin dans le sol libre du plan depuis ici, cible laissée")
+                self.cibles.pop(0)
+                return ici
+            jalons = self.plan.jalons(ch, 900.0)[1:]
+            self.dire(f"  vers la cible ({cible[0]:.0f}, {cible[1]:.0f}) du plan : {len(jalons)} étapes" + (f" (essai {essai}, en contournant l'obstacle)" if essai > 1 else ""))
+            arrive = True
+            for ju, jv in jalons:
+                serie = self.serie
+                self.lire_cibles()
+                if self.serie != serie or self.demande():
+                    return ici                                   # nouvelles consignes : on s'arrête à cette station
+                x, y = self.vers_mm(ju, jv)
+                if math.hypot(x - ici.x, y - ici.y) < 250:
+                    continue
+                phi = math.degrees(math.atan2(y - ici.y, x - ici.x)) % 360.0
+                ok, raison = self.aller_a(x, y, connu=True)      # chemin tracé sur le plan : 40 cm libres devant suffisent
+                if not ok:
+                    l, q = self.pose()
+                    if l is not None:                             # l'obstacle rencontré est porté sur le plan : le prochain chemin le contourne
+                        ca, sa = math.cos(math.radians(q[2])), math.sin(math.radians(q[2]))
+                        d_obs = (l["us_mm"] + DX) if ("obstacle à" in str(raison) and l["us_mm"] > 0) else 220.0
+                        self.plan.fermer(*self.vers_px(q[0] + d_obs * ca, q[1] + d_obs * sa))
+                    ici, compte = self.apres_echec(ici, {"phi": phi, "genre": "cible"}, raison)
+                    if ici is None:
+                        return None
+                    self.echecs += 1 if compte else 0
+                    dernier_tour = (ici.x, ici.y)
+                    arrive = False
+                    break
+                l, q = self.pose()
+                if l is None:
+                    return None
+                dernier_jalon = (ju, jv) == tuple(jalons[-1])
+                if not dernier_jalon and math.hypot(q[0] - dernier_tour[0], q[1] - dernier_tour[1]) < 600.0:
+                    continue                                     # étape courte : pas de tour sur place ici, on enchaîne
+                st, raison = self.faire_un_tour(str(len(self.noeuds)), ici, "station")
+                if st is None:
+                    self.dire(f"  tour impossible : {raison}")
+                    return None
+                self.dire(f"station {st.nom} (vers une cible) en ({st.x:.0f}, {st.y:.0f}) : {len(st.pal)} paliers" + (", sur un tapis" if st.tapis else ""))
+                ici = st
+                dernier_tour = (st.x, st.y)
+                self.sauver()
+            if arrive:
+                self.dire(f"  cible ({cible[0]:.0f}, {cible[1]:.0f}) atteinte")
+                self.cibles.pop(0)
+                return ici
+        self.dire(f"  cible ({cible[0]:.0f}, {cible[1]:.0f}) laissée après trois essais")
+        self.cibles.pop(0)
+        return ici
 
     # ------------------------------------------------------------ petits outils
     def dire(self, *x):
@@ -275,6 +403,15 @@ class Exploration:
         self.j["portes"] = [{k: (v if not isinstance(v, tuple) else [round(q) for q in v]) for k, v in d.items() if k != "depuis"} for d in self.portes]
         with open(self.a.prefixe + "_stations.json", "w", encoding="utf-8") as f:
             json.dump(self.j, f, ensure_ascii=False)
+
+    def demande(self):
+        """Fin demandée de l'extérieur, par un fichier vide : PREFIXE_RENTRE (finir l'étape en cours puis revenir au
+        départ) ou PREFIXE_ARRET (s'arrêter sur place à la fin du saut en cours, sans revenir)."""
+        if os.path.exists(self.a.prefixe + "_ARRET"):
+            return "arrêt"
+        if os.path.exists(self.a.prefixe + "_RENTRE"):
+            return "retour"
+        return None
 
     def pose(self):
         """ligne fraîche du journal et position dans la carte ; (None, None) si le journal est muet plus de 12 s"""
@@ -325,7 +462,8 @@ class Exploration:
             err = cap_cible - q[2]
             if abs(err) <= tol:
                 return True, None
-            r = self.saut("4" if err > 0 else "6", min(1.3, max(0.10, abs(err) / self.rot_dps - 0.04)), lb_repos=5000, lb_max=5000, vide_min=self.a.vide_min)
+            r = self.saut("4" if err > 0 else "6", min(1.3, max(0.10, abs(err) / self.rot_dps - 0.04)), lb_repos=5000, lb_max=5000,
+                          vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
             r["but"] = f"rotation de {err:+.1f}°"
             self.j["sauts"].append(r)
             if "refus" in r:
@@ -340,6 +478,8 @@ class Exploration:
         """Va au point (xt, yt) de la carte par sauts. Renvoie (réussi, raison). connu : trajet déjà fait (retour par
         l'arbre) ; le capteur de distance n'y exige que 40 cm libres devant, au lieu de 60."""
         for _ in range(30):
+            if self.demande() == "arrêt":
+                return False, "arrêt demandé (fichier _ARRET)"
             l, q = self.pose()
             if l is None:
                 return False, "plus de lignes du journal"
@@ -354,7 +494,8 @@ class Exploration:
                     return False, raison
                 continue
             i0 = len(self.p.lignes)
-            r = self.saut("8", min(1.3, max(0.2, (d - 8) / (self.v_reelle + 6))), marge_mm=min(400.0 if connu else 600.0, d + 220.0), vide_min=self.a.vide_min)
+            r = self.saut("8", min(1.3, max(0.2, (d - 8) / (self.v_reelle + 6))), marge_mm=min(400.0 if connu else 600.0, d + 220.0), vide_min=self.a.vide_min,
+                          vide_stop=self.a.vide_min)
             r["but"] = f"avance vers ({xt:.0f}, {yt:.0f}), reste {d:.0f} mm"
             self.j["sauts"].append(r)
             if "refus" in r:
@@ -374,6 +515,11 @@ class Exploration:
         brut0 = (self.est.bx, self.est.by, self.est.C)
         rot0, ligne0 = self.est.rot, self.est.i
         a_k0 = self.a.k_gyro
+        # Le zéro du gyroscope glisse pendant que la carte chauffe (2026-11-10 : 10 ° par minute au repos une demi-heure
+        # après l'allumage, puis une vingtaine de degrés perdus en dix minutes d'exploration). Le robot est immobile
+        # avant chaque tour : on en profite pour refaire ce zéro (touche z, une seconde). La position ne saute pas.
+        self.lire("/api/cmd?c=z")
+        self.dormir(1.4)
         t = json.loads(self.lire(f"/api/tour?go=1&v={self.a.tour_v}"))
         if t.get("etat") not in (1, 2):
             return None, "tour refusé : " + str(t.get("raison", t.get("texte")))
@@ -391,6 +537,7 @@ class Exploration:
         st = Station(nom, q0, m[:, 0] / 10.0, m[:, 1], parent, genre, ligne=ligne0)
         sol = [l0[k] for k in ("vide_g", "vide_avg", "vide_avd", "vide_d")]
         st.tapis = min(sol) < 2000
+        st.chemin = self.est.chemin
         self.stations.append(st)
         self.j["stations"].append({
             "nom": nom, "genre": genre, "de": parent.nom if parent else None, "heure": time.strftime("%H:%M:%S"),
@@ -399,6 +546,10 @@ class Exploration:
             "pose": [round(q0[0], 1), round(q0[1], 1), round(q0[2], 2)], "depart_cerveau": t.get("depart"), "mesures": t.get("points"),
             "avant": {k: l0[k] for k in ("x_mm", "y_mm", "cap_pos", "us_mm", "vide_g", "vide_avg", "vide_avd", "vide_d")},
             "apres": {k: l1[k] for k in ("x_mm", "y_mm", "cap_pos", "us_mm")} if l1 else None, "tapis": bool(st.tapis)})
+        if self.plan is not None:
+            self.caler_sur_le_plan(st, premier=not self.noeuds)
+            if parent is not None and genre not in ("recalage", "retour"):
+                self.plan.ouvrir([self.vers_px(parent.x, parent.y), self.vers_px(st.x, st.y)])      # le robot vient d'y passer : c'est libre
         if genre not in ("recalage", "retour"):
             self.noeuds.append(st)
             if parent is not None:
@@ -406,7 +557,7 @@ class Exploration:
             self.refaire_les_murs()
             # la mesure de cap par les murs ne vaut que si le robot est parti de la station précédente juste après son
             # tour : sinon l'endroit d'où il part n'est connu qu'à quelques centimètres près, et la mesure est faussée
-            eps = self.boussole(st) if len(self.stations) >= 2 and self.stations[-2] is parent else None
+            eps = self.boussole(st) if self.plan is None and len(self.stations) >= 2 and self.stations[-2] is parent else None
             if eps is not None and abs(rot0) >= 300:
                 # Une mesure seule est bruitée (±1,5° en simulation) : on ne corrige pas le cap avec elle. Toutes les
                 # mesures servent ensemble à ajuster l'échelle du gyroscope : l'erreur du cap brut est proportionnelle à
@@ -712,8 +863,8 @@ class Exploration:
                 if classe is None:
                     continue
                 D = self.premier_mur(S, phi)
-                if (classe == "inconnu" and D < 4200) or (classe == "vu" and D < f - 250):
-                    continue                                     # rien derrière : un mur connu vu de biais, ou un écho qui a rebondi
+                if classe == "inconnu" and D < 4200:
+                    continue                                     # rien derrière : un mur connu vu de biais
                 for L in PAS:
                     if f < L + 300:
                         continue
@@ -759,22 +910,34 @@ class Exploration:
         st, raison = self.faire_un_tour(f"r{len(self.j['recalages']) + 1}-{S.nom}", S, genre)
         if st is None:
             return None, raison
+        if self.plan is not None:                                # le tour vient d'être recalé sur le plan : rien de plus à faire
+            self.dernier_recalage = self.dernier_fix = self.est.chemin
+            return st, None
         res = carto.apparier(S.pal, S.pose[2], st.pal, st.pose[2])
         note = {"station": S.nom, "tour": st.nom, "chemin_mm": round(self.est.chemin - self.dernier_recalage),
                 "croyance": [round(st.x - S.x), round(st.y - S.y)], "mesure": None, "corrige": False}
-        if res is not None and len(res[2]) >= 2 and max(q[3] for q in res[2]) >= 20.0 and math.hypot(res[0], res[1]) <= 400:
+        # Sur le robot (2026-11-10), deux tours faits au même endroit donnent un décalage faux de 5 cm, et une fois de
+        # 18 cm avec deux parois seulement : la mesure n'est donc crue que si trois parois au moins s'accordent dans
+        # deux directions, elle est refusée si elle s'écarte de plus de trois fois ce que la dérive et son propre bruit
+        # (4 cm) expliquent, et elle ne corrige la position qu'en proportion de la confiance qu'elle mérite.
+        chemin = self.est.chemin - S.chemin                      # ce que le robot a roulé depuis qu'il a fait cette station
+        self.dernier_recalage = self.est.chemin                   # prochain essai dans --recalage-m mètres, réussi ou non
+        if res is not None and len(res[2]) >= 3 and res[3] == 2 and max(q[3] for q in res[2]) >= 20.0:
             dx, dy, paires, rang = res
-            ex, ey = (S.x + dx) - st.x, (S.y + dy) - st.y            # ce qu'il faut ajouter à la position tenue par le PC
-            if rang < 2:                                            # décalage connu le long d'une seule direction
-                G = np.array([[q[0], q[1]] for q in paires])
-                u = np.linalg.svd(G, full_matrices=False)[2][0]
-                k = ex * u[0] + ey * u[1]
-                ex, ey = k * u[0], k * u[1]
-            self.est.decaler(ex, ey)
-            self.dernier_recalage = self.est.chemin
-            note.update({"mesure": [round(dx), round(dy)], "parois": len(paires), "rang": rang, "corrige": True, "correction": [round(ex), round(ey)]})
-            self.dire(f"  recalage sur la station {S.nom} : le PC se croyait à ({st.x - S.x:+.0f}, {st.y - S.y:+.0f}) mm d'elle, les parois disent"
-                      f" ({dx:+.0f}, {dy:+.0f}) mm ({len(paires)} parois" + (", une seule direction" if rang < 2 else "") + f") ; position corrigée de ({ex:+.0f}, {ey:+.0f}) mm")
+            ex, ey = (S.x + dx) - st.x, (S.y + dy) - st.y            # ce qu'il faudrait ajouter à la position tenue par le PC
+            derive = 20.0 + 0.012 * chemin
+            note.update({"mesure": [round(dx), round(dy)], "parois": len(paires), "rang": rang, "ecart_mm": round(math.hypot(ex, ey))})
+            if math.hypot(ex, ey) > 3.0 * math.hypot(derive, 40.0):
+                self.dire(f"  recalage sur la station {S.nom} : les parois disent ({dx:+.0f}, {dy:+.0f}) mm, soit {math.hypot(ex, ey):.0f} mm d'écart :"
+                          f" trop pour {chemin / 1000:.1f} m parcourus, mesure refusée, position gardée")
+            else:
+                poids = derive ** 2 / (derive ** 2 + 40.0 ** 2)
+                ex, ey = poids * ex, poids * ey
+                self.est.decaler(ex, ey)
+                self.dernier_fix = self.est.chemin
+                note.update({"corrige": True, "correction": [round(ex), round(ey)], "poids": round(poids, 2)})
+                self.dire(f"  recalage sur la station {S.nom} : le PC se croyait à ({st.x - S.x:+.0f}, {st.y - S.y:+.0f}) mm d'elle, les parois disent"
+                          f" ({dx:+.0f}, {dy:+.0f}) mm ({len(paires)} parois) ; position corrigée de ({ex:+.0f}, {ey:+.0f}) mm (poids {poids:.2f})")
         else:
             self.dire(f"  recalage sur la station {S.nom} : pas assez de parois communes, position gardée")
         self.j["recalages"].append(note)
@@ -797,10 +960,10 @@ class Exploration:
                 if "obstacle à" in str(raison) and math.hypot(q[0] - s.x, q[1] - s.y) <= 220:
                     ok = True                                    # la station est là, à moins de 22 cm, contre un obstacle
                     break
-                if "pare-chocs" in str(raison):
+                if "pare-chocs" in str(raison) or "sol sombre" in str(raison):
                     for _ in range(2):
                         r = self.saut("2", 0.9, lb_repos=5000, lb_max=5000, vide_min=self.a.vide_min)
-                        r["but"] = "recul après un contact"
+                        r["but"] = "recul après un contact ou un bord sombre"
                         self.j["sauts"].append(r)
                         self.dormir(0.4)
                 if essai == 2:
@@ -816,7 +979,7 @@ class Exploration:
                 if st is None:
                     return ici, f"trajet vers la station {s.nom} impossible ({raison}), puis tour de recalage impossible ({r3})"
             ici = s
-            if self.est.chemin - self.dernier_recalage >= self.a.recalage_m * 1000.0:
+            if self.plan is None and self.est.chemin - self.dernier_recalage >= self.a.recalage_m * 1000.0:
                 st, raison = self.recaler(s)
                 if st is None:
                     return ici, "tour de recalage impossible : " + str(raison)
@@ -841,6 +1004,17 @@ class Exploration:
             for _ in range(2):                                    # 17 cm : assez pour tourner, et pour revenir ici plus tard sans alerter le capteur
                 r = self.saut("2", 0.9, lb_repos=5000, lb_max=5000, vide_min=self.a.vide_min)
                 r["but"] = "recul après un contact"
+                self.j["sauts"].append(r)
+                self.dormir(0.4)
+            l, q = self.pose()
+            if l is None:
+                return None, True
+        elif "sol sombre" in str(raison):
+            # bord sombre (tapis) : le robot le prendrait pour un vide et quitterait le mode Safe ; c'est un obstacle
+            self.contacts.append((q[0] + 180 * ca, q[1] + 180 * sa, "sombre"))
+            for _ in range(2):
+                r = self.saut("2", 0.9, lb_repos=5000, lb_max=5000, vide_min=self.a.vide_min)
+                r["but"] = "recul après un bord sombre"
                 self.j["sauts"].append(r)
                 self.dormir(0.4)
             l, q = self.pose()
@@ -872,6 +1046,10 @@ class Exploration:
             raise SystemExit("aucune ligne récente du journal : l'enregistreur tourne-t-il, le robot répond-il ?")
         self.p.vitesse(a.vitesse)
         self.dormir(0.3)
+        if self.plan is not None:                                # la carte est celle du plan : le robot y est posé d'après --depart-plan
+            u, v, cap = (float(x) for x in a.depart_plan.split(","))
+            self.est.X, self.est.Y = self.vers_mm(u, v)
+            self.est.bx, self.est.by, self.est.C = self.est.X, self.est.Y, cap
         ici, raison = self.faire_un_tour("0", None, "départ")
         if ici is None:
             raise SystemExit("premier tour impossible : " + str(raison))
@@ -886,13 +1064,27 @@ class Exploration:
                 self.j["fin"] = f"{self.echecs} trajets arrêtés"
             elif json.loads(self.lire("/api/state"))["robot"]["q"] < a.batterie_min:
                 self.j["fin"] = "batterie basse"
+            if self.demande() == "arrêt":
+                self.j["fin"] = "arrêt demandé (fichier _ARRET)"
+                ici = None
+            elif self.demande() == "retour":
+                self.j["fin"] = "retour demandé (fichier _RENTRE)"
             if self.j["fin"]:
                 break
+            if self.plan is not None:
+                self.lire_cibles()
+                if self.cibles:
+                    ici = self.vers_cible(ici)
+                    if ici is None:
+                        self.j["fin"] = "arrêt pendant un trajet vers une cible"
+                        break
+                    self.sauver()
+                    continue
             cands = self.candidats(ici)
-            if not cands and self.portees[0] > 1000.0:
+            if not cands and self.portees[0] > 300.0:
                 # seconde passe : on fait moins confiance aux murs (une porte a pu être prise pour un mur plein)
-                self.portees = (1000.0, 250.0)
-                self.dire("plus rien à voir avec des murs tenus pour pleins sur 2 m : seconde passe, pleins sur 1 m seulement")
+                self.portees = (300.0, 150.0)
+                self.dire("plus rien à voir avec des murs tenus pour pleins sur 60 cm : seconde passe, pleins sur 30 cm seulement")
                 self.refaire_les_murs()
                 cands = self.candidats(ici)
             if not cands:
@@ -962,13 +1154,17 @@ def main():
     p_.add_argument("--minutes", type=float, default=45.0, help="durée au plus, minutes")
     p_.add_argument("--vitesse", type=int, default=75, help="réglage de vitesse des sauts (mm/s demandés)")
     p_.add_argument("--tour-v", type=int, default=30, help="vitesse de roues des tours sur place (20 à 62)")
-    p_.add_argument("--vide-min", type=float, default=150.0, help="signal minimal des capteurs de vide avant un saut (150 : tapis permis ; 1500 : arrêt devant un tapis)")
+    p_.add_argument("--vide-min", type=float, default=500.0, help="signal des capteurs de vide sous lequel le robot n'avance pas et s'arrête (500 : tapis permis, bords sombres évités ; 1500 : arrêt devant tout tapis)")
     p_.add_argument("--interdit", default="", help="zones interdites : x,y,rayon en mm dans le repère du départ, séparées par des points-virgules")
     p_.add_argument("--k-gyro", type=float, default=1.0015, help="échelle du gyroscope : rotation vraie / rotation comptée par le cerveau")
     p_.add_argument("--recalage-m", type=float, default=12.0, help="mètres parcourus entre deux recalages sur une station connue")
     p_.add_argument("--echecs-max", type=int, default=12, help="nombre de trajets arrêtés sans station au bout avant d'abandonner")
     p_.add_argument("--batterie-min", type=int, default=1000, help="charge en mAh sous laquelle on rentre")
     p_.add_argument("--sans-retour", action="store_true", help="ne pas revenir au point de départ à la fin")
+    p_.add_argument("--plan", default="", help="image du plan de l'appartement (plan.py) : carte dans le repère du plan, recalage sur le plan, cibles")
+    p_.add_argument("--px-par-m", type=float, default=53.0, help="échelle du plan, pixels par mètre")
+    p_.add_argument("--plan-passe", default="", help="avec --plan : la même image où un trait vert montre par où on passe (portes ouvertes aujourd'hui)")
+    p_.add_argument("--depart-plan", default="", help="avec --plan : U,V,CAP, pixel du plan où est le robot et direction de son avant (degrés, 0 = droite, 90 = haut)")
     p_.add_argument("--simulation", default="", help="nom d'un monde de simulateur.py : essai sans robot")
     p_.add_argument("--graine", type=int, default=1, help="simulation : graine du hasard")
     a = p_.parse_args()

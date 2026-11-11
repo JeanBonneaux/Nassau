@@ -1,0 +1,1939 @@
+# exploration4_20261110_180750 — carte 192.168.18.25 — début 18:07:50.378 le 2026-11-10
+# explorer3.py, reprise apres l'arret de 17 h 59 (robot souleve par l'utilisateur, capteur de distance heurte sous un meuble) ; carte neuve, sans limite, l'utilisateur surveille
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794352070.470	18:07:50.470	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794352070.470	18:07:50.470	Client TCP connecté : 192.168.18.6
+1794352071.366	18:07:51.365	>> j
+1794352071.381	18:07:51.380	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794352088.190	18:08:08.189	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794352122.299	18:08:42.298	Envoyé : Safe (131)
+1794352123.635	18:08:43.634	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794352142.622	18:09:02.622	Vitesse réglée à 75 mm/s (page web).
+1794352142.950	18:09:02.949	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352144.470	18:09:04.469	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352148.556	18:09:08.555	Tour sur place : 90° (38 mesures).
+1794352152.423	18:09:12.422	Tour sur place : 180° (74 mesures).
+1794352156.357	18:09:16.356	Tour sur place : 270° (109 mesures).
+1794352160.346	18:09:20.345	Tour sur place : 360° (146 mesures).
+1794352161.217	18:09:21.216	Tour sur place terminé : 380° en 16.8 s, 154 mesures. Roues arrêtées.
+1794352161.874	18:09:21.874	Tourne à droite (75 mm/s).
+1794352163.211	18:09:23.210	Roues arrêtées.
+1794352164.122	18:09:24.121	Tourne à droite (75 mm/s).
+1794352165.482	18:09:25.481	Roues arrêtées.
+1794352166.367	18:09:26.367	Tourne à droite (75 mm/s).
+1794352166.546	18:09:26.545	Roues arrêtées.
+1794352167.378	18:09:27.378	Avance (75 mm/s).
+1794352168.764	18:09:28.763	Roues arrêtées.
+1794352169.631	18:09:29.630	Tourne à droite (75 mm/s).
+1794352169.782	18:09:29.781	Roues arrêtées.
+1794352170.634	18:09:30.633	Avance (75 mm/s).
+1794352171.953	18:09:31.953	Roues arrêtées.
+1794352172.812	18:09:32.812	Tourne à droite (75 mm/s).
+1794352174.119	18:09:34.118	Roues arrêtées.
+1794352174.982	18:09:34.982	Tourne à droite (75 mm/s).
+1794352176.324	18:09:36.323	Roues arrêtées.
+1794352177.130	18:09:37.130	Tourne à droite (75 mm/s).
+1794352178.328	18:09:38.327	Roues arrêtées.
+1794352179.336	18:09:39.335	Tourne à droite (75 mm/s).
+1794352179.471	18:09:39.470	Roues arrêtées.
+1794352180.325	18:09:40.325	Avance (75 mm/s).
+1794352181.686	18:09:41.685	Roues arrêtées.
+1794352182.573	18:09:42.572	Avance (75 mm/s).
+1794352183.848	18:09:43.847	Roues arrêtées.
+1794352184.871	18:09:44.871	Avance (75 mm/s).
+1794352186.200	18:09:46.199	Roues arrêtées.
+1794352187.033	18:09:47.033	Avance (75 mm/s).
+1794352188.403	18:09:48.402	Roues arrêtées.
+1794352189.299	18:09:49.298	Avance (75 mm/s).
+1794352190.659	18:09:50.659	Roues arrêtées.
+1794352191.570	18:09:51.569	Tourne à droite (75 mm/s).
+1794352191.672	18:09:51.672	Roues arrêtées.
+1794352192.647	18:09:52.647	Avance (75 mm/s).
+1794352193.978	18:09:53.977	Roues arrêtées.
+1794352194.824	18:09:54.823	Avance (75 mm/s).
+1794352196.172	18:09:56.171	Roues arrêtées.
+1794352197.025	18:09:57.024	Avance (75 mm/s).
+1794352198.337	18:09:58.337	Roues arrêtées.
+1794352199.202	18:09:59.201	Avance (75 mm/s).
+1794352200.368	18:10:00.367	Roues arrêtées.
+1794352201.271	18:10:01.271	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352202.776	18:10:02.776	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352206.817	18:10:06.816	Tour sur place : 90° (38 mesures).
+1794352210.781	18:10:10.780	Tour sur place : 180° (75 mesures).
+1794352214.724	18:10:14.723	Tour sur place : 270° (111 mesures).
+1794352218.720	18:10:18.720	Tour sur place : 360° (146 mesures).
+1794352219.651	18:10:19.651	Tour sur place terminé : 380° en 16.9 s, 155 mesures. Roues arrêtées.
+1794352220.345	18:10:20.345	Tourne à gauche (75 mm/s).
+1794352221.653	18:10:21.652	Roues arrêtées.
+1794352222.587	18:10:22.586	Tourne à gauche (75 mm/s).
+1794352223.939	18:10:23.939	Roues arrêtées.
+1794352224.810	18:10:24.810	Tourne à gauche (75 mm/s).
+1794352225.475	18:10:25.475	Roues arrêtées.
+1794352226.293	18:10:26.293	Avance (75 mm/s).
+1794352227.628	18:10:27.628	Roues arrêtées.
+1794352228.580	18:10:28.580	Avance (75 mm/s).
+1794352229.883	18:10:29.882	Roues arrêtées.
+1794352230.898	18:10:30.897	Avance (75 mm/s).
+1794352232.168	18:10:32.168	Roues arrêtées.
+1794352232.995	18:10:32.995	Tourne à droite (75 mm/s).
+1794352233.143	18:10:33.142	Roues arrêtées.
+1794352234.062	18:10:34.061	Avance (75 mm/s).
+1794352235.353	18:10:35.353	Roues arrêtées.
+1794352236.230	18:10:36.230	Avance (75 mm/s).
+1794352237.573	18:10:37.572	Roues arrêtées.
+1794352238.512	18:10:38.512	Avance (75 mm/s).
+1794352239.797	18:10:39.797	Roues arrêtées.
+1794352240.638	18:10:40.637	Avance (75 mm/s).
+1794352241.898	18:10:41.898	Roues arrêtées.
+1794352243.752	18:10:43.752	Tourne à gauche (75 mm/s).
+1794352243.773	18:10:43.772	Roues arrêtées.
+1794352244.177	18:10:44.176	Tourne à gauche (75 mm/s).
+1794352245.071	18:10:45.070	Roues arrêtées.
+1794352245.927	18:10:45.926	Avance (75 mm/s).
+1794352247.240	18:10:47.239	Roues arrêtées.
+1794352248.105	18:10:48.105	Avance (75 mm/s).
+1794352249.421	18:10:49.421	Roues arrêtées.
+1794352250.311	18:10:50.310	Tourne à droite (75 mm/s).
+1794352250.445	18:10:50.445	Roues arrêtées.
+1794352251.399	18:10:51.398	Avance (75 mm/s).
+1794352252.759	18:10:52.759	Roues arrêtées.
+1794352253.692	18:10:53.691	Avance (75 mm/s).
+1794352255.012	18:10:55.011	Roues arrêtées.
+1794352255.894	18:10:55.893	Avance (75 mm/s).
+1794352257.214	18:10:57.213	Roues arrêtées.
+1794352258.094	18:10:58.094	Avance (75 mm/s).
+1794352259.403	18:10:59.402	Roues arrêtées.
+1794352260.343	18:11:00.342	Tourne à gauche (75 mm/s).
+1794352260.475	18:11:00.475	Roues arrêtées.
+1794352261.513	18:11:01.512	Avance (75 mm/s).
+1794352262.770	18:11:02.769	Roues arrêtées.
+1794352263.650	18:11:03.649	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352265.117	18:11:05.117	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352269.363	18:11:09.363	Tour sur place : 90° (41 mesures).
+1794352273.391	18:11:13.391	Tour sur place : 180° (77 mesures).
+1794352277.489	18:11:17.489	Tour sur place : 270° (116 mesures).
+1794352281.424	18:11:21.423	Tour sur place : 360° (151 mesures).
+1794352282.256	18:11:22.256	Tour sur place terminé : 380° en 17.1 s, 159 mesures. Roues arrêtées.
+1794352282.831	18:11:22.831	Tourne à droite (75 mm/s).
+1794352284.163	18:11:24.163	Roues arrêtées.
+1794352285.080	18:11:25.079	Tourne à droite (75 mm/s).
+1794352285.211	18:11:25.210	Roues arrêtées.
+1794352286.086	18:11:26.086	Avance (75 mm/s).
+1794352287.396	18:11:27.395	Roues arrêtées.
+1794352288.199	18:11:28.199	Avance (75 mm/s).
+1794352289.540	18:11:29.539	Roues arrêtées.
+1794352290.334	18:11:30.333	Tourne à droite (75 mm/s).
+1794352290.462	18:11:30.462	Roues arrêtées.
+1794352291.299	18:11:31.299	Avance (75 mm/s).
+1794352292.624	18:11:32.623	Roues arrêtées.
+1794352293.520	18:11:33.520	Avance (75 mm/s).
+1794352294.555	18:11:34.554	Roues arrêtées.
+1794352295.431	18:11:35.431	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352296.931	18:11:36.931	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352301.191	18:11:41.190	Tour sur place : 90° (39 mesures).
+1794352305.186	18:11:45.185	Tour sur place : 180° (77 mesures).
+1794352309.252	18:11:49.251	Tour sur place : 270° (112 mesures).
+1794352313.181	18:11:53.181	Tour sur place : 360° (149 mesures).
+1794352314.096	18:11:54.096	Tour sur place terminé : 380° en 17.1 s, 157 mesures. Roues arrêtées.
+1794352314.715	18:11:54.715	Tourne à gauche (75 mm/s).
+1794352314.908	18:11:54.907	Roues arrêtées.
+1794352315.743	18:11:55.743	Avance (75 mm/s).
+1794352317.058	18:11:57.057	Roues arrêtées.
+1794352317.915	18:11:57.914	Avance (75 mm/s).
+1794352319.222	18:11:59.222	Roues arrêtées.
+1794352320.087	18:12:00.086	Avance (75 mm/s).
+1794352321.396	18:12:01.396	Roues arrêtées.
+1794352322.261	18:12:02.260	Tourne à droite (75 mm/s).
+1794352322.342	18:12:02.342	Roues arrêtées.
+1794352322.694	18:12:02.693	Avance (75 mm/s).
+1794352323.994	18:12:03.993	Roues arrêtées.
+1794352324.846	18:12:04.845	Avance (75 mm/s).
+1794352326.165	18:12:06.165	Roues arrêtées.
+1794352327.024	18:12:07.023	Avance (75 mm/s).
+1794352327.614	18:12:07.614	Roues arrêtées.
+1794352328.421	18:12:08.420	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352329.919	18:12:09.919	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352333.955	18:12:13.955	Tour sur place : 90° (37 mesures).
+1794352338.008	18:12:18.008	Tour sur place : 180° (73 mesures).
+1794352341.961	18:12:21.961	Tour sur place : 270° (108 mesures).
+1794352346.181	18:12:26.180	Tour sur place : 360° (146 mesures).
+1794352347.117	18:12:27.116	Tour sur place terminé : 380° en 17.2 s, 154 mesures. Roues arrêtées.
+1794352347.831	18:12:27.830	Tourne à droite (75 mm/s).
+1794352348.356	18:12:28.355	Roues arrêtées.
+1794352349.197	18:12:29.196	Tourne à droite (75 mm/s).
+1794352349.323	18:12:29.323	Roues arrêtées.
+1794352350.189	18:12:30.189	Avance (75 mm/s).
+1794352351.547	18:12:31.547	Roues arrêtées.
+1794352352.408	18:12:32.407	Avance (75 mm/s).
+1794352353.818	18:12:33.817	Roues arrêtées.
+1794352354.667	18:12:34.667	Tourne à gauche (75 mm/s).
+1794352354.692	18:12:34.691	Roues arrêtées.
+1794352355.494	18:12:35.494	Avance (75 mm/s).
+1794352356.835	18:12:36.835	Roues arrêtées.
+1794352357.661	18:12:37.660	Avance (75 mm/s).
+1794352358.648	18:12:38.647	Roues arrêtées.
+1794352359.580	18:12:39.579	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352361.041	18:12:41.040	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352365.217	18:12:45.216	Tour sur place : 90° (36 mesures).
+1794352369.167	18:12:49.167	Tour sur place : 180° (73 mesures).
+1794352373.296	18:12:53.296	Tour sur place : 270° (111 mesures).
+1794352377.171	18:12:57.170	Tour sur place : 360° (145 mesures).
+1794352378.051	18:12:58.051	Tour sur place terminé : 380° en 17.0 s, 152 mesures. Roues arrêtées.
+1794352378.653	18:12:58.652	Tourne à gauche (75 mm/s).
+1794352379.981	18:12:59.981	Roues arrêtées.
+1794352380.849	18:13:00.848	Tourne à gauche (75 mm/s).
+1794352382.152	18:13:02.152	Roues arrêtées.
+1794352383.024	18:13:03.024	Tourne à gauche (75 mm/s).
+1794352383.640	18:13:03.640	Roues arrêtées.
+1794352384.455	18:13:04.454	Avance (75 mm/s).
+1794352385.770	18:13:05.769	Roues arrêtées.
+1794352386.651	18:13:06.650	Avance (75 mm/s).
+1794352387.966	18:13:07.966	Roues arrêtées.
+1794352388.971	18:13:08.970	Avance (75 mm/s).
+1794352390.233	18:13:10.233	Roues arrêtées.
+1794352391.053	18:13:11.053	Avance (75 mm/s).
+1794352392.027	18:13:12.026	Roues arrêtées.
+1794352392.907	18:13:12.906	Avance (75 mm/s).
+1794352394.236	18:13:14.235	Roues arrêtées.
+1794352395.064	18:13:15.063	Avance (75 mm/s).
+1794352396.378	18:13:16.378	Roues arrêtées.
+1794352397.327	18:13:17.327	Tourne à gauche (75 mm/s).
+1794352397.404	18:13:17.404	Roues arrêtées.
+1794352398.290	18:13:18.289	Avance (75 mm/s).
+1794352399.613	18:13:19.612	Roues arrêtées.
+1794352400.432	18:13:20.431	Avance (75 mm/s).
+1794352401.753	18:13:21.752	Roues arrêtées.
+1794352402.736	18:13:22.736	Tourne à droite (75 mm/s).
+1794352402.946	18:13:22.945	Roues arrêtées.
+1794352403.690	18:13:23.690	Avance (75 mm/s).
+1794352405.083	18:13:25.083	Roues arrêtées.
+1794352405.851	18:13:25.850	Tourne à droite (75 mm/s).
+1794352406.074	18:13:26.074	Roues arrêtées.
+1794352406.893	18:13:26.893	Avance (75 mm/s).
+1794352407.466	18:13:27.465	Roues arrêtées.
+1794352408.302	18:13:28.301	Tourne à droite (75 mm/s).
+1794352408.863	18:13:28.862	Roues arrêtées.
+1794352409.742	18:13:29.742	Avance (75 mm/s).
+1794352411.040	18:13:31.040	Roues arrêtées.
+1794352412.002	18:13:32.001	Avance (75 mm/s).
+1794352413.246	18:13:33.245	Roues arrêtées.
+1794352414.111	18:13:34.110	Tourne à droite (75 mm/s).
+1794352414.254	18:13:34.254	Roues arrêtées.
+1794352415.136	18:13:35.135	Avance (75 mm/s).
+1794352416.442	18:13:36.442	Roues arrêtées.
+1794352417.331	18:13:37.331	Avance (75 mm/s).
+1794352418.346	18:13:38.346	Roues arrêtées.
+1794352419.266	18:13:39.266	Tourne à gauche (75 mm/s).
+1794352420.176	18:13:40.175	Roues arrêtées.
+1794352421.009	18:13:41.009	Avance (75 mm/s).
+1794352422.348	18:13:42.347	Roues arrêtées.
+1794352423.172	18:13:43.171	Avance (75 mm/s).
+1794352424.511	18:13:44.511	Roues arrêtées.
+1794352425.349	18:13:45.348	Avance (75 mm/s).
+1794352426.652	18:13:46.651	Roues arrêtées.
+1794352427.529	18:13:47.529	Tourne à droite (75 mm/s).
+1794352427.672	18:13:47.671	Roues arrêtées.
+1794352428.493	18:13:48.493	Avance (75 mm/s).
+1794352429.839	18:13:49.838	Roues arrêtées.
+1794352430.771	18:13:50.771	Avance (75 mm/s).
+1794352432.084	18:13:52.083	Roues arrêtées.
+1794352432.947	18:13:52.947	Tourne à droite (75 mm/s).
+1794352433.087	18:13:53.086	Roues arrêtées.
+1794352433.898	18:13:53.898	Avance (75 mm/s).
+1794352435.247	18:13:55.246	Roues arrêtées.
+1794352436.076	18:13:56.075	Avance (75 mm/s).
+1794352437.237	18:13:57.236	Roues arrêtées.
+1794352438.125	18:13:58.124	Tourne à gauche (75 mm/s).
+1794352439.443	18:13:59.443	Roues arrêtées.
+1794352440.413	18:14:00.413	Tourne à gauche (75 mm/s).
+1794352441.291	18:14:01.291	Roues arrêtées.
+1794352442.214	18:14:02.213	Avance (75 mm/s).
+1794352443.537	18:14:03.537	Roues arrêtées.
+1794352444.400	18:14:04.400	Avance (75 mm/s).
+1794352445.739	18:14:05.738	Roues arrêtées.
+1794352446.551	18:14:06.551	Avance (75 mm/s).
+1794352447.857	18:14:07.857	Roues arrêtées.
+1794352448.721	18:14:08.720	Avance (75 mm/s).
+1794352450.238	18:14:10.238	Roues arrêtées.
+1794352451.010	18:14:11.009	Tourne à droite (75 mm/s).
+1794352451.124	18:14:11.124	Roues arrêtées.
+1794352452.013	18:14:12.013	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352453.510	18:14:13.509	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352457.306	18:14:17.305	Tour sur place : 90° (36 mesures).
+1794352461.070	18:14:21.069	Tour sur place : 180° (69 mesures).
+1794352464.597	18:14:24.597	Tour sur place : 270° (101 mesures).
+1794352468.309	18:14:28.308	Tour sur place : 360° (136 mesures).
+1794352469.095	18:14:29.094	Tour sur place terminé : 380° en 15.6 s, 144 mesures. Roues arrêtées.
+1794352469.812	18:14:29.811	Tourne à gauche (75 mm/s).
+1794352471.110	18:14:31.109	Roues arrêtées.
+1794352471.993	18:14:31.993	Tourne à gauche (75 mm/s).
+1794352473.299	18:14:33.298	Roues arrêtées.
+1794352474.221	18:14:34.220	Tourne à gauche (75 mm/s).
+1794352474.891	18:14:34.890	Roues arrêtées.
+1794352475.835	18:14:35.834	Avance (75 mm/s).
+1794352477.147	18:14:37.147	Roues arrêtées.
+1794352477.983	18:14:37.983	Avance (75 mm/s).
+1794352479.313	18:14:39.312	Roues arrêtées.
+1794352480.149	18:14:40.149	Avance (75 mm/s).
+1794352481.441	18:14:41.440	Roues arrêtées.
+1794352482.248	18:14:42.247	Avance (75 mm/s).
+1794352483.477	18:14:43.476	Roues arrêtées.
+1794352484.286	18:14:44.285	Tourne à gauche (75 mm/s).
+1794352485.581	18:14:45.580	Roues arrêtées.
+1794352486.381	18:14:46.380	Avance (75 mm/s).
+1794352487.743	18:14:47.742	Roues arrêtées.
+1794352488.573	18:14:48.572	Tourne à droite (75 mm/s).
+1794352489.882	18:14:49.881	Roues arrêtées.
+1794352490.691	18:14:50.691	Tourne à droite (75 mm/s).
+1794352491.986	18:14:51.986	Roues arrêtées.
+1794352492.791	18:14:52.791	Tourne à droite (75 mm/s).
+1794352494.074	18:14:54.073	Roues arrêtées.
+1794352494.943	18:14:54.942	Tourne à droite (75 mm/s).
+1794352495.114	18:14:55.114	Roues arrêtées.
+1794352496.016	18:14:56.015	Avance (75 mm/s).
+1794352497.235	18:14:57.235	Roues arrêtées.
+1794352498.187	18:14:58.187	Tourne à gauche (75 mm/s).
+1794352499.496	18:14:59.495	Roues arrêtées.
+1794352500.310	18:15:00.310	Tourne à gauche (75 mm/s).
+1794352501.634	18:15:01.634	Roues arrêtées.
+1794352502.429	18:15:02.429	Tourne à gauche (75 mm/s).
+1794352503.223	18:15:03.223	Roues arrêtées.
+1794352504.057	18:15:04.057	Avance (75 mm/s).
+1794352505.387	18:15:05.386	Roues arrêtées.
+1794352506.301	18:15:06.300	Avance (75 mm/s).
+1794352507.598	18:15:07.598	Roues arrêtées.
+1794352508.509	18:15:08.509	Tourne à droite (75 mm/s).
+1794352508.632	18:15:08.631	Roues arrêtées.
+1794352509.499	18:15:09.498	Tourne à droite (75 mm/s).
+1794352510.805	18:15:10.804	Roues arrêtées.
+1794352511.642	18:15:11.641	Tourne à droite (75 mm/s).
+1794352512.974	18:15:12.974	Roues arrêtées.
+1794352513.806	18:15:13.806	Tourne à droite (75 mm/s).
+1794352514.949	18:15:14.949	Roues arrêtées.
+1794352515.740	18:15:15.739	Tourne à droite (75 mm/s).
+1794352515.880	18:15:15.879	Roues arrêtées.
+1794352516.748	18:15:16.747	Avance (75 mm/s).
+1794352518.051	18:15:18.050	Roues arrêtées.
+1794352518.981	18:15:18.981	Avance (75 mm/s).
+1794352520.282	18:15:20.281	Roues arrêtées.
+1794352521.234	18:15:21.234	Tourne à gauche (75 mm/s).
+1794352522.551	18:15:22.551	Roues arrêtées.
+1794352523.454	18:15:23.454	Tourne à gauche (75 mm/s).
+1794352524.702	18:15:24.701	Roues arrêtées.
+1794352525.565	18:15:25.565	Tourne à gauche (75 mm/s).
+1794352525.735	18:15:25.734	Roues arrêtées.
+1794352526.685	18:15:26.684	Avance (75 mm/s).
+1794352527.974	18:15:27.974	Roues arrêtées.
+1794352528.837	18:15:28.837	Avance (75 mm/s).
+1794352530.158	18:15:30.158	Roues arrêtées.
+1794352531.039	18:15:31.039	Avance (75 mm/s).
+1794352532.333	18:15:32.333	Roues arrêtées.
+1794352533.209	18:15:33.208	Tourne à droite (75 mm/s).
+1794352533.412	18:15:33.411	Roues arrêtées.
+1794352534.247	18:15:34.246	Avance (75 mm/s).
+1794352535.209	18:15:35.209	Roues arrêtées.
+1794352536.086	18:15:36.085	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352537.590	18:15:37.589	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352541.645	18:15:41.644	Tour sur place : 90° (38 mesures).
+1794352545.575	18:15:45.574	Tour sur place : 180° (74 mesures).
+1794352549.596	18:15:49.596	Tour sur place : 270° (110 mesures).
+1794352553.629	18:15:53.628	Tour sur place : 360° (148 mesures).
+1794352554.494	18:15:54.494	Tour sur place terminé : 380° en 16.9 s, 156 mesures. Roues arrêtées.
+1794352555.110	18:15:55.110	Tourne à droite (75 mm/s).
+1794352555.791	18:15:55.790	Roues arrêtées.
+1794352556.643	18:15:56.642	Tourne à droite (75 mm/s).
+1794352556.784	18:15:56.783	Roues arrêtées.
+1794352557.660	18:15:57.660	Avance (75 mm/s).
+1794352558.982	18:15:58.982	Roues arrêtées.
+1794352559.915	18:15:59.915	Avance (75 mm/s).
+1794352561.240	18:16:01.240	Roues arrêtées.
+1794352562.092	18:16:02.091	Avance (75 mm/s).
+1794352563.456	18:16:03.455	Roues arrêtées.
+1794352564.251	18:16:04.251	Avance (75 mm/s).
+1794352565.599	18:16:05.598	Roues arrêtées.
+1794352566.415	18:16:06.414	Tourne à droite (75 mm/s).
+1794352566.508	18:16:06.508	Roues arrêtées.
+1794352567.382	18:16:07.382	Avance (75 mm/s).
+1794352568.695	18:16:08.695	Roues arrêtées.
+1794352569.551	18:16:09.550	Avance (75 mm/s).
+1794352570.886	18:16:10.886	Roues arrêtées.
+1794352571.755	18:16:11.755	Tourne à droite (75 mm/s).
+1794352571.892	18:16:11.892	Roues arrêtées.
+1794352572.782	18:16:12.782	Avance (75 mm/s).
+1794352574.004	18:16:14.003	Roues arrêtées.
+1794352574.820	18:16:14.820	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352576.330	18:16:16.329	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352580.498	18:16:20.498	Tour sur place : 90° (38 mesures).
+1794352584.502	18:16:24.501	Tour sur place : 180° (75 mesures).
+1794352588.555	18:16:28.555	Tour sur place : 270° (113 mesures).
+1794352592.488	18:16:32.488	Tour sur place : 360° (151 mesures).
+1794352593.351	18:16:33.350	Tour sur place terminé : 380° en 17.0 s, 159 mesures. Roues arrêtées.
+1794352593.962	18:16:33.961	Tourne à gauche (75 mm/s).
+1794352595.286	18:16:35.285	Roues arrêtées.
+1794352596.130	18:16:36.130	Tourne à gauche (75 mm/s).
+1794352597.459	18:16:37.459	Roues arrêtées.
+1794352598.268	18:16:38.267	Tourne à gauche (75 mm/s).
+1794352599.046	18:16:39.045	Roues arrêtées.
+1794352599.964	18:16:39.964	Avance (75 mm/s).
+1794352601.285	18:16:41.285	Roues arrêtées.
+1794352602.145	18:16:42.145	Avance (75 mm/s).
+1794352603.524	18:16:43.523	Roues arrêtées.
+1794352604.332	18:16:44.332	Avance (75 mm/s).
+1794352605.659	18:16:45.658	Roues arrêtées.
+1794352606.466	18:16:46.466	Avance (75 mm/s).
+1794352607.782	18:16:47.782	Roues arrêtées.
+1794352608.637	18:16:48.636	Avance (75 mm/s).
+1794352609.967	18:16:49.967	Roues arrêtées.
+1794352610.805	18:16:50.805	Avance (75 mm/s).
+1794352612.131	18:16:52.130	Roues arrêtées.
+1794352613.046	18:16:53.046	Tourne à droite (75 mm/s).
+1794352613.271	18:16:53.270	Roues arrêtées.
+1794352614.052	18:16:54.051	Avance (75 mm/s).
+1794352615.025	18:16:55.024	Roues arrêtées.
+1794352615.891	18:16:55.890	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352617.426	18:16:57.425	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352621.314	18:17:01.313	Tour sur place : 90° (35 mesures).
+1794352625.259	18:17:05.258	Tour sur place : 180° (72 mesures).
+1794352629.165	18:17:09.165	Tour sur place : 270° (108 mesures).
+1794352633.005	18:17:13.004	Tour sur place : 360° (143 mesures).
+1794352633.827	18:17:13.827	Tour sur place terminé : 380° en 16.4 s, 151 mesures. Roues arrêtées.
+1794352634.462	18:17:14.461	Tourne à droite (75 mm/s).
+1794352634.667	18:17:14.667	Roues arrêtées.
+1794352635.486	18:17:15.486	Avance (75 mm/s).
+1794352636.783	18:17:16.782	Roues arrêtées.
+1794352637.695	18:17:17.694	Avance (75 mm/s).
+1794352639.026	18:17:19.025	Roues arrêtées.
+1794352639.890	18:17:19.890	Tourne à droite (75 mm/s).
+1794352640.071	18:17:20.071	Roues arrêtées.
+1794352640.927	18:17:20.926	Avance (75 mm/s).
+1794352642.246	18:17:22.246	Roues arrêtées.
+1794352643.044	18:17:23.043	Avance (75 mm/s).
+1794352643.676	18:17:23.675	Roues arrêtées.
+1794352644.558	18:17:24.557	Tourne à droite (75 mm/s).
+1794352645.678	18:17:25.678	Roues arrêtées.
+1794352646.550	18:17:26.549	Avance (75 mm/s).
+1794352647.880	18:17:27.880	Roues arrêtées.
+1794352648.788	18:17:28.788	Tourne à droite (75 mm/s).
+1794352648.929	18:17:28.928	Roues arrêtées.
+1794352649.823	18:17:29.823	Avance (75 mm/s).
+1794352651.127	18:17:31.126	Roues arrêtées.
+1794352652.009	18:17:32.008	Avance (75 mm/s).
+1794352653.321	18:17:33.321	Roues arrêtées.
+1794352654.122	18:17:34.121	Avance (75 mm/s).
+1794352655.043	18:17:35.042	Roues arrêtées.
+1794352655.043	18:17:35.042	Radar : obstacle à 29 cm devant, roues arrêtées (seuil 30 cm).
+1794352655.868	18:17:35.868	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352657.367	18:17:37.367	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352661.132	18:17:41.132	Tour sur place : 90° (36 mesures).
+1794352664.834	18:17:44.834	Tour sur place : 180° (69 mesures).
+1794352668.456	18:17:48.455	Tour sur place : 270° (102 mesures).
+1794352672.151	18:17:52.151	Tour sur place : 360° (137 mesures).
+1794352673.011	18:17:53.010	Tour sur place terminé : 380° en 15.6 s, 146 mesures. Roues arrêtées.
+1794352673.692	18:17:53.692	Tourne à droite (75 mm/s).
+1794352675.011	18:17:55.011	Roues arrêtées.
+1794352675.879	18:17:55.879	Tourne à droite (75 mm/s).
+1794352677.111	18:17:57.111	Roues arrêtées.
+1794352678.021	18:17:58.020	Avance (75 mm/s).
+1794352679.333	18:17:59.333	Roues arrêtées.
+1794352680.189	18:18:00.188	Tourne à droite (75 mm/s).
+1794352680.351	18:18:00.350	Roues arrêtées.
+1794352681.213	18:18:01.213	Avance (75 mm/s).
+1794352682.509	18:18:02.508	Roues arrêtées.
+1794352683.308	18:18:03.307	Avance (75 mm/s).
+1794352684.335	18:18:04.335	Réflexe : pare-chocs, à gauche, roues arrêtées par le cerveau. Reculez pour vous dégager (flèche du bas).
+1794352684.939	18:18:04.938	Recule (75 mm/s).
+1794352685.878	18:18:05.877	Roues arrêtées.
+1794352686.798	18:18:06.797	Recule (75 mm/s).
+1794352687.726	18:18:07.726	Roues arrêtées.
+1794352688.636	18:18:08.636	Tourne à droite (75 mm/s).
+1794352690.001	18:18:10.001	Roues arrêtées.
+1794352690.853	18:18:10.852	Tourne à droite (75 mm/s).
+1794352692.179	18:18:12.178	Roues arrêtées.
+1794352693.050	18:18:13.049	Tourne à droite (75 mm/s).
+1794352694.140	18:18:14.139	Roues arrêtées.
+1794352695.005	18:18:15.004	Avance (75 mm/s).
+1794352696.336	18:18:16.335	Roues arrêtées.
+1794352697.297	18:18:17.296	Tourne à gauche (75 mm/s).
+1794352698.636	18:18:18.636	Roues arrêtées.
+1794352699.527	18:18:19.527	Tourne à gauche (75 mm/s).
+1794352699.902	18:18:19.902	Roues arrêtées.
+1794352700.717	18:18:20.716	Avance (75 mm/s).
+1794352702.000	18:18:22.000	Roues arrêtées.
+1794352702.790	18:18:22.790	Avance (75 mm/s).
+1794352704.105	18:18:24.104	Roues arrêtées.
+1794352705.018	18:18:25.017	Avance (75 mm/s).
+1794352706.311	18:18:26.310	Roues arrêtées.
+1794352707.172	18:18:27.172	Avance (75 mm/s).
+1794352707.802	18:18:27.802	Roues arrêtées.
+1794352708.641	18:18:28.641	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352710.138	18:18:30.137	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352713.924	18:18:33.923	Tour sur place : 90° (35 mesures).
+1794352717.605	18:18:37.605	Tour sur place : 180° (69 mesures).
+1794352721.286	18:18:41.285	Tour sur place : 270° (104 mesures).
+1794352724.965	18:18:44.964	Tour sur place : 360° (138 mesures).
+1794352725.826	18:18:45.826	Tour sur place terminé : 380° en 15.7 s, 146 mesures. Roues arrêtées.
+1794352726.333	18:18:46.333	Roues arrêtées.
+1794352726.375	18:18:46.374	Vitesse réglée à 150 mm/s (page web).
+1794352891.145	18:21:31.145	Vitesse réglée à 75 mm/s (page web).
+1794352891.492	18:21:31.492	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352892.985	18:21:32.984	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352896.822	18:21:36.821	Tour sur place : 90° (35 mesures).
+1794352900.569	18:21:40.568	Tour sur place : 180° (70 mesures).
+1794352904.136	18:21:44.135	Tour sur place : 270° (103 mesures).
+1794352907.841	18:21:47.840	Tour sur place : 360° (137 mesures).
+1794352908.678	18:21:48.677	Tour sur place terminé : 380° en 15.7 s, 145 mesures. Roues arrêtées.
+1794352909.261	18:21:49.261	Tourne à droite (75 mm/s).
+1794352910.278	18:21:50.277	Roues arrêtées.
+1794352911.090	18:21:51.089	Avance (75 mm/s).
+1794352912.392	18:21:52.392	Roues arrêtées.
+1794352913.277	18:21:53.276	Avance (75 mm/s).
+1794352914.575	18:21:54.575	Roues arrêtées.
+1794352915.454	18:21:55.454	Tourne à droite (75 mm/s).
+1794352915.581	18:21:55.581	Roues arrêtées.
+1794352916.458	18:21:56.457	Avance (75 mm/s).
+1794352917.756	18:21:57.755	Roues arrêtées.
+1794352918.612	18:21:58.611	Avance (75 mm/s).
+1794352919.532	18:21:59.532	Roues arrêtées.
+1794352920.376	18:22:00.376	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352921.884	18:22:01.884	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352926.066	18:22:06.066	Tour sur place : 90° (39 mesures).
+1794352930.121	18:22:10.121	Tour sur place : 180° (75 mesures).
+1794352934.134	18:22:14.133	Tour sur place : 270° (111 mesures).
+1794352938.194	18:22:18.194	Tour sur place : 360° (149 mesures).
+1794352939.082	18:22:19.082	Tour sur place terminé : 380° en 17.2 s, 158 mesures. Roues arrêtées.
+1794352939.788	18:22:19.787	Tourne à droite (75 mm/s).
+1794352941.134	18:22:21.133	Roues arrêtées.
+1794352941.996	18:22:21.995	Tourne à droite (75 mm/s).
+1794352942.896	18:22:22.896	Roues arrêtées.
+1794352943.734	18:22:23.734	Avance (75 mm/s).
+1794352945.086	18:22:25.085	Roues arrêtées.
+1794352945.870	18:22:25.869	Tourne à droite (75 mm/s).
+1794352946.002	18:22:26.002	Roues arrêtées.
+1794352946.872	18:22:26.871	Avance (75 mm/s).
+1794352948.223	18:22:28.222	Roues arrêtées.
+1794352949.046	18:22:29.045	Avance (75 mm/s).
+1794352950.344	18:22:30.343	Roues arrêtées.
+1794352951.208	18:22:31.208	Avance (75 mm/s).
+1794352952.537	18:22:32.536	Roues arrêtées.
+1794352953.326	18:22:33.326	Tourne à droite (75 mm/s).
+1794352953.501	18:22:33.501	Roues arrêtées.
+1794352954.337	18:22:34.336	Avance (75 mm/s).
+1794352955.659	18:22:35.658	Roues arrêtées.
+1794352956.480	18:22:36.480	Avance (75 mm/s).
+1794352956.900	18:22:36.900	Roues arrêtées.
+1794352957.752	18:22:37.751	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352959.274	18:22:39.273	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352963.305	18:22:43.305	Tour sur place : 90° (38 mesures).
+1794352967.163	18:22:47.162	Tour sur place : 180° (74 mesures).
+1794352971.156	18:22:51.156	Tour sur place : 270° (110 mesures).
+1794352975.130	18:22:55.129	Tour sur place : 360° (146 mesures).
+1794352975.975	18:22:55.974	Tour sur place terminé : 380° en 16.7 s, 154 mesures. Roues arrêtées.
+1794352976.556	18:22:56.555	Tourne à droite (75 mm/s).
+1794352977.531	18:22:57.531	Roues arrêtées.
+1794352978.399	18:22:58.399	Avance (75 mm/s).
+1794352979.733	18:22:59.732	Roues arrêtées.
+1794352980.586	18:23:00.586	Avance (75 mm/s).
+1794352981.911	18:23:01.911	Roues arrêtées.
+1794352982.700	18:23:02.699	Avance (75 mm/s).
+1794352984.038	18:23:04.038	Roues arrêtées.
+1794352984.828	18:23:04.827	Tourne à droite (75 mm/s).
+1794352984.991	18:23:04.990	Roues arrêtées.
+1794352985.909	18:23:05.908	Avance (75 mm/s).
+1794352987.205	18:23:07.205	Roues arrêtées.
+1794352988.080	18:23:08.079	Avance (75 mm/s).
+1794352989.385	18:23:09.385	Roues arrêtées.
+1794352990.251	18:23:10.251	Avance (75 mm/s).
+1794352990.720	18:23:10.719	Roues arrêtées.
+1794352991.581	18:23:11.581	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794352993.085	18:23:13.085	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794352997.201	18:23:17.201	Tour sur place : 90° (39 mesures).
+1794353001.357	18:23:21.356	Tour sur place : 180° (77 mesures).
+1794353005.413	18:23:25.412	Tour sur place : 270° (113 mesures).
+1794353009.566	18:23:29.565	Tour sur place : 360° (152 mesures).
+1794353010.441	18:23:30.440	Tour sur place terminé : 380° en 17.4 s, 160 mesures. Roues arrêtées.
+1794353010.988	18:23:30.988	Tourne à droite (75 mm/s).
+1794353011.664	18:23:31.663	Roues arrêtées.
+1794353012.474	18:23:32.474	Tourne à droite (75 mm/s).
+1794353012.577	18:23:32.576	Roues arrêtées.
+1794353013.422	18:23:33.421	Avance (75 mm/s).
+1794353014.770	18:23:34.769	Roues arrêtées.
+1794353015.619	18:23:35.619	Avance (75 mm/s).
+1794353016.950	18:23:36.950	Roues arrêtées.
+1794353017.830	18:23:37.830	Avance (75 mm/s).
+1794353019.133	18:23:39.133	Roues arrêtées.
+1794353019.989	18:23:39.988	Avance (75 mm/s).
+1794353021.311	18:23:41.310	Roues arrêtées.
+1794353022.177	18:23:42.177	Avance (75 mm/s).
+1794353023.498	18:23:43.497	Roues arrêtées.
+1794353024.375	18:23:44.375	Tourne à droite (75 mm/s).
+1794353024.480	18:23:44.479	Roues arrêtées.
+1794353025.300	18:23:45.300	Avance (75 mm/s).
+1794353026.616	18:23:46.615	Roues arrêtées.
+1794353027.508	18:23:47.508	Avance (75 mm/s).
+1794353028.612	18:23:48.611	Roues arrêtées.
+1794353029.432	18:23:49.431	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353030.932	18:23:50.932	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353035.024	18:23:55.023	Tour sur place : 90° (35 mesures).
+1794353039.065	18:23:59.065	Tour sur place : 180° (73 mesures).
+1794353043.128	18:24:03.127	Tour sur place : 270° (110 mesures).
+1794353047.191	18:24:07.190	Tour sur place : 360° (149 mesures).
+1794353048.044	18:24:08.043	Tour sur place terminé : 380° en 17.1 s, 157 mesures. Roues arrêtées.
+1794353048.586	18:24:08.585	Avance (75 mm/s).
+1794353049.906	18:24:09.906	Roues arrêtées.
+1794353050.786	18:24:10.785	Avance (75 mm/s).
+1794353052.082	18:24:12.081	Roues arrêtées.
+1794353052.919	18:24:12.918	Tourne à droite (75 mm/s).
+1794353053.026	18:24:13.026	Roues arrêtées.
+1794353053.871	18:24:13.870	Avance (75 mm/s).
+1794353055.189	18:24:15.189	Roues arrêtées.
+1794353056.064	18:24:16.063	Avance (75 mm/s).
+1794353057.371	18:24:17.370	Roues arrêtées.
+1794353058.244	18:24:18.244	Tourne à droite (75 mm/s).
+1794353058.350	18:24:18.349	Roues arrêtées.
+1794353059.166	18:24:19.165	Avance (75 mm/s).
+1794353060.470	18:24:20.469	Roues arrêtées.
+1794353061.332	18:24:21.332	Avance (75 mm/s).
+1794353062.654	18:24:22.653	Roues arrêtées.
+1794353063.472	18:24:23.471	Avance (75 mm/s).
+1794353064.650	18:24:24.649	Roues arrêtées.
+1794353065.514	18:24:25.514	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353067.014	18:24:27.013	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353071.022	18:24:31.022	Tour sur place : 90° (34 mesures).
+1794353075.015	18:24:35.014	Tour sur place : 180° (71 mesures).
+1794353079.066	18:24:39.066	Tour sur place : 270° (109 mesures).
+1794353083.046	18:24:43.045	Tour sur place : 360° (144 mesures).
+1794353083.966	18:24:43.966	Tour sur place terminé : 380° en 17.0 s, 152 mesures. Roues arrêtées.
+1794353084.582	18:24:44.582	Tourne à droite (75 mm/s).
+1794353084.707	18:24:44.707	Roues arrêtées.
+1794353085.631	18:24:45.630	Avance (75 mm/s).
+1794353086.935	18:24:46.934	Roues arrêtées.
+1794353087.756	18:24:47.755	Tourne à droite (75 mm/s).
+1794353087.860	18:24:47.860	Roues arrêtées.
+1794353088.681	18:24:48.681	Avance (75 mm/s).
+1794353089.994	18:24:49.994	Roues arrêtées.
+1794353090.875	18:24:50.874	Tourne à droite (75 mm/s).
+1794353090.978	18:24:50.977	Roues arrêtées.
+1794353091.851	18:24:51.850	Avance (75 mm/s).
+1794353093.186	18:24:53.186	Roues arrêtées.
+1794353094.001	18:24:54.001	Avance (75 mm/s).
+1794353095.332	18:24:55.332	Roues arrêtées.
+1794353096.140	18:24:56.139	Avance (75 mm/s).
+1794353097.490	18:24:57.489	Roues arrêtées.
+1794353098.309	18:24:58.309	Tourne à gauche (75 mm/s).
+1794353098.452	18:24:58.452	Roues arrêtées.
+1794353099.331	18:24:59.330	Avance (75 mm/s).
+1794353099.793	18:24:59.793	Roues arrêtées.
+1794353100.658	18:25:00.657	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353102.165	18:25:02.165	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353106.293	18:25:06.293	Tour sur place : 90° (36 mesures).
+1794353110.397	18:25:10.396	Tour sur place : 180° (74 mesures).
+1794353114.507	18:25:14.506	Tour sur place : 270° (113 mesures).
+1794353118.565	18:25:18.565	Tour sur place : 360° (149 mesures).
+1794353119.500	18:25:19.500	Tour sur place terminé : 380° en 17.3 s, 157 mesures. Roues arrêtées.
+1794353120.124	18:25:20.123	Tourne à droite (75 mm/s).
+1794353121.066	18:25:21.066	Roues arrêtées.
+1794353121.876	18:25:21.876	Avance (75 mm/s).
+1794353123.200	18:25:23.200	Roues arrêtées.
+1794353124.068	18:25:24.067	Avance (75 mm/s).
+1794353125.387	18:25:25.386	Roues arrêtées.
+1794353126.244	18:25:26.243	Tourne à droite (75 mm/s).
+1794353126.371	18:25:26.371	Roues arrêtées.
+1794353127.242	18:25:27.241	Avance (75 mm/s).
+1794353128.534	18:25:28.533	Roues arrêtées.
+1794353129.423	18:25:29.422	Avance (75 mm/s).
+1794353130.702	18:25:30.702	Roues arrêtées.
+1794353131.670	18:25:31.670	Avance (75 mm/s).
+1794353132.954	18:25:32.953	Roues arrêtées.
+1794353133.776	18:25:33.776	Avance (75 mm/s).
+1794353135.068	18:25:35.067	Roues arrêtées.
+1794353135.933	18:25:35.933	Tourne à droite (75 mm/s).
+1794353136.032	18:25:36.032	Roues arrêtées.
+1794353136.846	18:25:36.845	Avance (75 mm/s).
+1794353138.084	18:25:38.084	Roues arrêtées.
+1794353139.018	18:25:39.017	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353140.521	18:25:40.521	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353144.839	18:25:44.838	Tour sur place : 90° (39 mesures).
+1794353148.836	18:25:48.836	Tour sur place : 180° (73 mesures).
+1794353152.857	18:25:52.857	Tour sur place : 270° (108 mesures).
+1794353156.958	18:25:56.957	Tour sur place : 360° (146 mesures).
+1794353157.864	18:25:57.863	Tour sur place terminé : 380° en 17.4 s, 154 mesures. Roues arrêtées.
+1794353158.518	18:25:58.518	Tourne à droite (75 mm/s).
+1794353158.817	18:25:58.816	Roues arrêtées.
+1794353159.650	18:25:59.649	Avance (75 mm/s).
+1794353160.944	18:26:00.944	Roues arrêtées.
+1794353161.820	18:26:01.820	Avance (75 mm/s).
+1794353163.129	18:26:03.129	Roues arrêtées.
+1794353163.933	18:26:03.933	Tourne à droite (75 mm/s).
+1794353164.074	18:26:04.073	Roues arrêtées.
+1794353164.884	18:26:04.883	Avance (75 mm/s).
+1794353166.225	18:26:06.225	Roues arrêtées.
+1794353167.085	18:26:07.085	Avance (75 mm/s).
+1794353168.387	18:26:08.386	Roues arrêtées.
+1794353169.296	18:26:09.296	Avance (75 mm/s).
+1794353170.548	18:26:10.548	Roues arrêtées.
+1794353171.425	18:26:11.425	Avance (75 mm/s).
+1794353172.739	18:26:12.738	Roues arrêtées.
+1794353173.540	18:26:13.539	Tourne à droite (75 mm/s).
+1794353173.699	18:26:13.699	Roues arrêtées.
+1794353174.587	18:26:14.586	Avance (75 mm/s).
+1794353175.899	18:26:15.899	Roues arrêtées.
+1794353176.734	18:26:16.734	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353178.227	18:26:18.226	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353182.467	18:26:22.466	Tour sur place : 90° (39 mesures).
+1794353186.573	18:26:26.573	Tour sur place : 180° (74 mesures).
+1794353190.713	18:26:30.712	Tour sur place : 270° (112 mesures).
+1794353194.871	18:26:34.870	Tour sur place : 360° (150 mesures).
+1794353195.749	18:26:35.749	Tour sur place terminé : 380° en 17.5 s, 158 mesures. Roues arrêtées.
+1794353196.387	18:26:36.387	Tourne à droite (75 mm/s).
+1794353197.365	18:26:37.365	Roues arrêtées.
+1794353198.187	18:26:38.187	Avance (75 mm/s).
+1794353199.477	18:26:39.476	Roues arrêtées.
+1794353200.372	18:26:40.372	Tourne à droite (75 mm/s).
+1794353200.515	18:26:40.514	Roues arrêtées.
+1794353201.421	18:26:41.420	Avance (75 mm/s).
+1794353202.741	18:26:42.741	Roues arrêtées.
+1794353203.659	18:26:43.659	Avance (75 mm/s).
+1794353204.944	18:26:44.944	Roues arrêtées.
+1794353205.866	18:26:45.866	Avance (75 mm/s).
+1794353207.186	18:26:47.186	Roues arrêtées.
+1794353208.058	18:26:48.058	Avance (75 mm/s).
+1794353209.348	18:26:49.347	Roues arrêtées.
+1794353210.186	18:26:50.185	Tourne à droite (75 mm/s).
+1794353210.289	18:26:50.289	Roues arrêtées.
+1794353211.100	18:26:51.100	Avance (75 mm/s).
+1794353212.432	18:26:52.432	Roues arrêtées.
+1794353213.305	18:26:53.304	Avance (75 mm/s).
+1794353214.646	18:26:54.645	Roues arrêtées.
+1794353215.453	18:26:55.453	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353216.944	18:26:56.944	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353221.150	18:27:01.150	Tour sur place : 90° (38 mesures).
+1794353225.271	18:27:05.271	Tour sur place : 180° (73 mesures).
+1794353229.290	18:27:09.289	Tour sur place : 270° (109 mesures).
+1794353233.309	18:27:13.309	Tour sur place : 360° (147 mesures).
+1794353234.214	18:27:14.213	Tour sur place terminé : 380° en 17.3 s, 155 mesures. Roues arrêtées.
+1794353234.886	18:27:14.886	Tourne à droite (75 mm/s).
+1794353234.993	18:27:14.993	Roues arrêtées.
+1794353235.832	18:27:15.832	Avance (75 mm/s).
+1794353237.176	18:27:17.175	Roues arrêtées.
+1794353237.989	18:27:17.989	Avance (75 mm/s).
+1794353239.321	18:27:19.321	Roues arrêtées.
+1794353240.213	18:27:20.212	Tourne à droite (75 mm/s).
+1794353240.323	18:27:20.322	Roues arrêtées.
+1794353241.132	18:27:21.131	Avance (75 mm/s).
+1794353242.468	18:27:22.468	Roues arrêtées.
+1794353243.316	18:27:23.316	Avance (75 mm/s).
+1794353244.338	18:27:24.338	Roues arrêtées.
+1794353245.188	18:27:25.187	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353246.683	18:27:26.683	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353250.911	18:27:30.910	Tour sur place : 90° (38 mesures).
+1794353254.867	18:27:34.867	Tour sur place : 180° (71 mesures).
+1794353258.818	18:27:38.818	Tour sur place : 270° (108 mesures).
+1794353262.750	18:27:42.749	Tour sur place : 360° (145 mesures).
+1794353263.571	18:27:43.571	Tour sur place terminé : 380° en 16.9 s, 153 mesures. Roues arrêtées.
+1794353264.286	18:27:44.285	Tourne à gauche (75 mm/s).
+1794353264.707	18:27:44.706	Roues arrêtées.
+1794353265.635	18:27:45.634	Avance (75 mm/s).
+1794353266.967	18:27:46.967	Roues arrêtées.
+1794353267.829	18:27:47.829	Avance (75 mm/s).
+1794353269.204	18:27:49.203	Roues arrêtées.
+1794353270.143	18:27:50.142	Tourne à droite (75 mm/s).
+1794353270.275	18:27:50.274	Roues arrêtées.
+1794353271.109	18:27:51.109	Avance (75 mm/s).
+1794353272.418	18:27:52.418	Roues arrêtées.
+1794353273.286	18:27:53.286	Avance (75 mm/s).
+1794353274.658	18:27:54.657	Roues arrêtées.
+1794353275.459	18:27:55.458	Tourne à droite (75 mm/s).
+1794353275.590	18:27:55.590	Roues arrêtées.
+1794353276.519	18:27:56.519	Avance (75 mm/s).
+1794353277.816	18:27:57.815	Roues arrêtées.
+1794353278.707	18:27:58.706	Avance (75 mm/s).
+1794353279.085	18:27:59.084	Roues arrêtées.
+1794353279.944	18:27:59.944	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353281.439	18:28:01.439	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353285.470	18:28:05.470	Tour sur place : 90° (37 mesures).
+1794353289.312	18:28:09.312	Tour sur place : 180° (69 mesures).
+1794353293.162	18:28:13.162	Tour sur place : 270° (106 mesures).
+1794353297.128	18:28:17.128	Tour sur place : 360° (143 mesures).
+1794353298.028	18:28:18.027	Tour sur place terminé : 380° en 16.6 s, 151 mesures. Roues arrêtées.
+1794353298.786	18:28:18.785	Tourne à gauche (75 mm/s).
+1794353300.064	18:28:20.063	Roues arrêtées.
+1794353300.899	18:28:20.898	Tourne à gauche (75 mm/s).
+1794353301.013	18:28:21.012	Roues arrêtées.
+1794353301.878	18:28:21.878	Avance (75 mm/s).
+1794353303.198	18:28:23.198	Roues arrêtées.
+1794353304.883	18:28:24.883	Tourne à gauche (75 mm/s).
+1794353305.401	18:28:25.400	Roues arrêtées.
+1794353306.509	18:28:26.508	Tourne à gauche (75 mm/s).
+1794353306.773	18:28:26.773	Roues arrêtées.
+1794353307.606	18:28:27.605	Tourne à gauche (75 mm/s).
+1794353307.705	18:28:27.704	Roues arrêtées.
+1794353308.727	18:28:28.726	Avance (75 mm/s).
+1794353309.543	18:28:29.542	Réflexe : roue droite levée, roues arrêtées par le cerveau. Reculez pour vous dégager (flèche du bas).
+1794353310.192	18:28:30.192	Vitesse réglée à 150 mm/s (page web).
+1794353590.182	18:33:10.182	Envoyé : Start (128) -> Passive
+1794353599.984	18:33:19.983	Envoyé : Safe (131)
+1794353601.362	18:33:21.361	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794353612.214	18:33:32.213	Vitesse réglée à 75 mm/s (page web).
+1794353612.552	18:33:32.551	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794353613.980	18:33:33.980	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353615.520	18:33:35.519	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353619.516	18:33:39.516	Tour sur place : 90° (35 mesures).
+1794353623.507	18:33:43.506	Tour sur place : 180° (73 mesures).
+1794353627.524	18:33:47.524	Tour sur place : 270° (110 mesures).
+1794353631.602	18:33:51.601	Tour sur place : 360° (148 mesures).
+1794353632.504	18:33:52.503	Tour sur place terminé : 380° en 17.0 s, 156 mesures. Roues arrêtées.
+1794353633.040	18:33:53.039	Tourne à gauche (75 mm/s).
+1794353634.141	18:33:54.140	Roues arrêtées.
+1794353634.953	18:33:54.952	Avance (75 mm/s).
+1794353636.278	18:33:56.278	Roues arrêtées.
+1794353637.152	18:33:57.152	Avance (75 mm/s).
+1794353638.460	18:33:58.459	Roues arrêtées.
+1794353639.275	18:33:59.274	Avance (75 mm/s).
+1794353640.618	18:34:00.617	Roues arrêtées.
+1794353641.479	18:34:01.479	Tourne à droite (75 mm/s).
+1794353641.576	18:34:01.576	Roues arrêtées.
+1794353642.486	18:34:02.485	Avance (75 mm/s).
+1794353643.808	18:34:03.808	Roues arrêtées.
+1794353644.609	18:34:04.609	Avance (75 mm/s).
+1794353645.937	18:34:05.936	Roues arrêtées.
+1794353646.784	18:34:06.784	Avance (75 mm/s).
+1794353648.119	18:34:08.119	Roues arrêtées.
+1794353648.975	18:34:08.974	Avance (75 mm/s).
+1794353650.210	18:34:10.209	Roues arrêtées.
+1794353651.052	18:34:11.051	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794353652.487	18:34:12.486	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353653.992	18:34:13.991	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353658.196	18:34:18.195	Tour sur place : 90° (39 mesures).
+1794353662.200	18:34:22.200	Tour sur place : 180° (76 mesures).
+1794353666.315	18:34:26.315	Tour sur place : 270° (113 mesures).
+1794353670.485	18:34:30.485	Tour sur place : 360° (149 mesures).
+1794353671.399	18:34:31.398	Tour sur place terminé : 380° en 17.4 s, 157 mesures. Roues arrêtées.
+1794353672.046	18:34:32.046	Avance (75 mm/s).
+1794353673.357	18:34:33.357	Roues arrêtées.
+1794353674.239	18:34:34.239	Tourne à droite (75 mm/s).
+1794353674.359	18:34:34.359	Roues arrêtées.
+1794353675.178	18:34:35.177	Avance (75 mm/s).
+1794353676.461	18:34:36.461	Roues arrêtées.
+1794353677.304	18:34:37.304	Avance (75 mm/s).
+1794353678.634	18:34:38.634	Roues arrêtées.
+1794353679.439	18:34:39.438	Tourne à droite (75 mm/s).
+1794353679.602	18:34:39.602	Roues arrêtées.
+1794353680.475	18:34:40.475	Avance (75 mm/s).
+1794353681.781	18:34:41.781	Roues arrêtées.
+1794353682.634	18:34:42.633	Avance (75 mm/s).
+1794353684.004	18:34:44.004	Roues arrêtées.
+1794353684.869	18:34:44.868	Avance (75 mm/s).
+1794353685.435	18:34:45.435	Roues arrêtées.
+1794353686.298	18:34:46.297	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794353687.759	18:34:47.759	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353689.259	18:34:49.259	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353693.512	18:34:53.511	Tour sur place : 90° (40 mesures).
+1794353697.502	18:34:57.502	Tour sur place : 180° (77 mesures).
+1794353701.552	18:35:01.551	Tour sur place : 270° (112 mesures).
+1794353705.586	18:35:05.585	Tour sur place : 360° (148 mesures).
+1794353706.503	18:35:06.503	Tour sur place terminé : 380° en 17.2 s, 156 mesures. Roues arrêtées.
+1794353707.077	18:35:07.077	Tourne à droite (75 mm/s).
+1794353708.038	18:35:08.037	Roues arrêtées.
+1794353708.960	18:35:08.960	Avance (75 mm/s).
+1794353710.275	18:35:10.275	Roues arrêtées.
+1794353711.199	18:35:11.199	Tourne à droite (75 mm/s).
+1794353711.302	18:35:11.301	Roues arrêtées.
+1794353712.176	18:35:12.175	Avance (75 mm/s).
+1794353713.519	18:35:13.518	Roues arrêtées.
+1794353714.404	18:35:14.404	Avance (75 mm/s).
+1794353715.700	18:35:15.700	Roues arrêtées.
+1794353716.564	18:35:16.564	Avance (75 mm/s).
+1794353717.869	18:35:17.869	Roues arrêtées.
+1794353718.747	18:35:18.746	Tourne à droite (75 mm/s).
+1794353718.848	18:35:18.848	Roues arrêtées.
+1794353719.763	18:35:19.762	Avance (75 mm/s).
+1794353721.182	18:35:21.181	Roues arrêtées.
+1794353721.928	18:35:21.928	Avance (75 mm/s).
+1794353723.254	18:35:23.254	Roues arrêtées.
+1794353724.118	18:35:24.118	Tourne à droite (75 mm/s).
+1794353724.269	18:35:24.269	Roues arrêtées.
+1794353725.129	18:35:25.129	Avance (75 mm/s).
+1794353726.457	18:35:26.457	Roues arrêtées.
+1794353727.249	18:35:27.248	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794353728.672	18:35:28.672	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353730.175	18:35:30.174	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353734.378	18:35:34.378	Tour sur place : 90° (40 mesures).
+1794353738.498	18:35:38.497	Tour sur place : 180° (79 mesures).
+1794353742.550	18:35:42.549	Tour sur place : 270° (114 mesures).
+1794353746.520	18:35:46.520	Tour sur place : 360° (148 mesures).
+1794353747.434	18:35:47.434	Tour sur place terminé : 380° en 17.3 s, 157 mesures. Roues arrêtées.
+1794353748.082	18:35:48.081	Tourne à droite (75 mm/s).
+1794353749.395	18:35:49.394	Roues arrêtées.
+1794353750.290	18:35:50.289	Tourne à droite (75 mm/s).
+1794353751.503	18:35:51.503	Roues arrêtées.
+1794353752.341	18:35:52.340	Tourne à droite (75 mm/s).
+1794353752.463	18:35:52.462	Roues arrêtées.
+1794353753.313	18:35:53.312	Avance (75 mm/s).
+1794353754.630	18:35:54.629	Roues arrêtées.
+1794353755.436	18:35:55.435	Avance (75 mm/s).
+1794353756.738	18:35:56.737	Roues arrêtées.
+1794353757.664	18:35:57.664	Avance (75 mm/s).
+1794353758.955	18:35:58.954	Roues arrêtées.
+1794353759.802	18:35:59.802	Tourne à droite (75 mm/s).
+1794353759.936	18:35:59.935	Roues arrêtées.
+1794353760.798	18:36:00.798	Avance (75 mm/s).
+1794353762.118	18:36:02.117	Roues arrêtées.
+1794353762.920	18:36:02.920	Avance (75 mm/s).
+1794353764.220	18:36:04.219	Roues arrêtées.
+1794353765.074	18:36:05.074	Avance (75 mm/s).
+1794353766.400	18:36:06.399	Roues arrêtées.
+1794353767.256	18:36:07.255	Avance (75 mm/s).
+1794353768.609	18:36:08.609	Roues arrêtées.
+1794353769.570	18:36:09.569	Tourne à droite (75 mm/s).
+1794353769.671	18:36:09.671	Roues arrêtées.
+1794353770.526	18:36:10.526	Avance (75 mm/s).
+1794353771.853	18:36:11.853	Roues arrêtées.
+1794353772.716	18:36:12.715	Tourne à droite (75 mm/s).
+1794353772.876	18:36:12.875	Roues arrêtées.
+1794353773.689	18:36:13.689	Avance (75 mm/s).
+1794353774.356	18:36:14.355	Roues arrêtées.
+1794353775.206	18:36:15.205	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794353776.625	18:36:16.624	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353778.129	18:36:18.128	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353782.424	18:36:22.423	Tour sur place : 90° (37 mesures).
+1794353786.560	18:36:26.560	Tour sur place : 180° (74 mesures).
+1794353790.511	18:36:30.510	Tour sur place : 270° (109 mesures).
+1794353794.535	18:36:34.535	Tour sur place : 360° (146 mesures).
+1794353795.372	18:36:35.372	Tour sur place terminé : 380° en 17.2 s, 154 mesures. Roues arrêtées.
+1794353795.984	18:36:35.984	Tourne à gauche (75 mm/s).
+1794353797.235	18:36:37.235	Roues arrêtées.
+1794353798.079	18:36:38.078	Avance (75 mm/s).
+1794353799.398	18:36:39.398	Roues arrêtées.
+1794353800.277	18:36:40.276	Avance (75 mm/s).
+1794353801.587	18:36:41.586	Roues arrêtées.
+1794353802.403	18:36:42.403	Tourne à droite (75 mm/s).
+1794353802.504	18:36:42.503	Roues arrêtées.
+1794353803.429	18:36:43.428	Avance (75 mm/s).
+1794353804.769	18:36:44.769	Roues arrêtées.
+1794353805.572	18:36:45.572	Avance (75 mm/s).
+1794353806.881	18:36:46.880	Roues arrêtées.
+1794353807.732	18:36:47.731	Avance (75 mm/s).
+1794353809.067	18:36:49.066	Roues arrêtées.
+1794353809.881	18:36:49.881	Tourne à droite (75 mm/s).
+1794353810.015	18:36:50.015	Roues arrêtées.
+1794353810.844	18:36:50.843	Avance (75 mm/s).
+1794353812.164	18:36:52.163	Roues arrêtées.
+1794353813.029	18:36:53.029	Avance (75 mm/s).
+1794353814.194	18:36:54.194	Roues arrêtées.
+1794353815.040	18:36:55.039	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794353816.497	18:36:56.496	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353817.984	18:36:57.983	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353822.227	18:37:02.226	Tour sur place : 90° (39 mesures).
+1794353826.286	18:37:06.285	Tour sur place : 180° (75 mesures).
+1794353830.333	18:37:10.332	Tour sur place : 270° (111 mesures).
+1794353834.420	18:37:14.419	Tour sur place : 360° (149 mesures).
+1794353835.276	18:37:15.276	Tour sur place terminé : 380° en 17.3 s, 157 mesures. Roues arrêtées.
+1794353835.955	18:37:15.954	Tourne à droite (75 mm/s).
+1794353837.289	18:37:17.288	Roues arrêtées.
+1794353838.112	18:37:18.112	Tourne à droite (75 mm/s).
+1794353839.423	18:37:19.423	Roues arrêtées.
+1794353840.304	18:37:20.303	Tourne à droite (75 mm/s).
+1794353840.955	18:37:20.954	Roues arrêtées.
+1794353841.765	18:37:21.765	Avance (75 mm/s).
+1794353843.079	18:37:23.079	Roues arrêtées.
+1794353843.904	18:37:23.903	Avance (75 mm/s).
+1794353845.229	18:37:25.229	Roues arrêtées.
+1794353846.062	18:37:26.062	Tourne à droite (75 mm/s).
+1794353846.199	18:37:26.199	Roues arrêtées.
+1794353847.080	18:37:27.079	Tourne à droite (75 mm/s).
+1794353848.404	18:37:28.404	Roues arrêtées.
+1794353849.270	18:37:29.269	Tourne à droite (75 mm/s).
+1794353850.609	18:37:30.608	Roues arrêtées.
+1794353851.468	18:37:31.467	Tourne à droite (75 mm/s).
+1794353852.643	18:37:32.642	Roues arrêtées.
+1794353853.556	18:37:33.556	Avance (75 mm/s).
+1794353854.849	18:37:34.849	Roues arrêtées.
+1794353855.720	18:37:35.720	Tourne à droite (75 mm/s).
+1794353855.817	18:37:35.817	Roues arrêtées.
+1794353856.699	18:37:36.699	Avance (75 mm/s).
+1794353857.973	18:37:37.973	Roues arrêtées.
+1794353858.979	18:37:38.979	Tourne à gauche (75 mm/s).
+1794353860.264	18:37:40.263	Roues arrêtées.
+1794353861.136	18:37:41.135	Tourne à gauche (75 mm/s).
+1794353862.545	18:37:42.544	Roues arrêtées.
+1794353863.303	18:37:43.302	Avance (75 mm/s).
+1794353864.620	18:37:44.619	Roues arrêtées.
+1794353865.498	18:37:45.497	Avance (75 mm/s).
+1794353866.818	18:37:46.817	Roues arrêtées.
+1794353867.634	18:37:47.633	Avance (75 mm/s).
+1794353868.923	18:37:48.922	Roues arrêtées.
+1794353869.758	18:37:49.757	Avance (75 mm/s).
+1794353871.078	18:37:51.077	Roues arrêtées.
+1794353871.952	18:37:51.951	Tourne à droite (75 mm/s).
+1794353872.084	18:37:52.083	Roues arrêtées.
+1794353872.928	18:37:52.927	Avance (75 mm/s).
+1794353874.203	18:37:54.203	Roues arrêtées.
+1794353875.022	18:37:55.022	Tourne à gauche (75 mm/s).
+1794353875.137	18:37:55.137	Roues arrêtées.
+1794353876.000	18:37:56.000	Avance (75 mm/s).
+1794353877.361	18:37:57.360	Roues arrêtées.
+1794353878.240	18:37:58.239	Avance (75 mm/s).
+1794353879.311	18:37:59.311	Roues arrêtées.
+1794353880.306	18:38:00.306	Tourne à gauche (75 mm/s).
+1794353881.416	18:38:01.416	Roues arrêtées.
+1794353882.247	18:38:02.247	Tourne à gauche (75 mm/s).
+1794353882.380	18:38:02.379	Roues arrêtées.
+1794353883.204	18:38:03.203	Avance (75 mm/s).
+1794353884.534	18:38:04.533	Roues arrêtées.
+1794353885.430	18:38:05.430	Avance (75 mm/s).
+1794353886.396	18:38:06.396	Roues arrêtées.
+1794353886.396	18:38:06.396	Radar : obstacle à 22 cm devant, roues arrêtées (seuil 30 cm).
+1794353887.259	18:38:07.259	Tourne à droite (75 mm/s).
+1794353888.571	18:38:08.570	Roues arrêtées.
+1794353889.407	18:38:09.406	Tourne à droite (75 mm/s).
+1794353890.724	18:38:10.724	Roues arrêtées.
+1794353891.598	18:38:11.597	Tourne à droite (75 mm/s).
+1794353892.802	18:38:12.801	Roues arrêtées.
+1794353893.667	18:38:13.667	Avance (75 mm/s).
+1794353894.920	18:38:14.920	Roues arrêtées.
+1794353895.818	18:38:15.817	Avance (75 mm/s).
+1794353896.724	18:38:16.723	Roues arrêtées.
+1794353897.711	18:38:17.711	Tourne à droite (75 mm/s).
+1794353898.295	18:38:18.294	Roues arrêtées.
+1794353899.179	18:38:19.179	Avance (75 mm/s).
+1794353900.601	18:38:20.601	Roues arrêtées.
+1794353901.466	18:38:21.466	Avance (75 mm/s).
+1794353902.769	18:38:22.769	Roues arrêtées.
+1794353903.615	18:38:23.615	Tourne à droite (75 mm/s).
+1794353903.751	18:38:23.750	Roues arrêtées.
+1794353904.624	18:38:24.624	Avance (75 mm/s).
+1794353905.955	18:38:25.955	Roues arrêtées.
+1794353906.834	18:38:26.833	Avance (75 mm/s).
+1794353908.192	18:38:28.191	Roues arrêtées.
+1794353909.035	18:38:29.034	Tourne à gauche (75 mm/s).
+1794353909.145	18:38:29.144	Roues arrêtées.
+1794353909.999	18:38:29.998	Avance (75 mm/s).
+1794353911.312	18:38:31.311	Roues arrêtées.
+1794353912.212	18:38:32.211	Avance (75 mm/s).
+1794353913.522	18:38:33.521	Roues arrêtées.
+1794353914.327	18:38:34.327	Avance (75 mm/s).
+1794353915.634	18:38:35.633	Roues arrêtées.
+1794353916.527	18:38:36.526	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794353917.958	18:38:37.958	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353919.457	18:38:39.456	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353923.830	18:38:43.830	Tour sur place : 90° (40 mesures).
+1794353928.183	18:38:48.182	Tour sur place : 180° (78 mesures).
+1794353932.531	18:38:52.530	Tour sur place : 270° (115 mesures).
+1794353936.874	18:38:56.873	Tour sur place : 360° (155 mesures).
+1794353937.860	18:38:57.859	Tour sur place terminé : 380° en 18.4 s, 164 mesures. Roues arrêtées.
+1794353938.543	18:38:58.543	Tourne à droite (75 mm/s).
+1794353939.835	18:38:59.834	Roues arrêtées.
+1794353940.757	18:39:00.757	Tourne à droite (75 mm/s).
+1794353941.709	18:39:01.709	Roues arrêtées.
+1794353942.520	18:39:02.519	Tourne à droite (75 mm/s).
+1794353942.623	18:39:02.622	Roues arrêtées.
+1794353943.475	18:39:03.475	Avance (75 mm/s).
+1794353944.839	18:39:04.839	Roues arrêtées.
+1794353945.702	18:39:05.702	Avance (75 mm/s).
+1794353947.004	18:39:07.003	Roues arrêtées.
+1794353947.862	18:39:07.862	Avance (75 mm/s).
+1794353949.184	18:39:09.183	Roues arrêtées.
+1794353950.033	18:39:10.032	Avance (75 mm/s).
+1794353951.367	18:39:11.367	Roues arrêtées.
+1794353952.234	18:39:12.234	Avance (75 mm/s).
+1794353953.551	18:39:13.550	Roues arrêtées.
+1794353954.403	18:39:14.403	Avance (75 mm/s).
+1794353955.713	18:39:15.713	Roues arrêtées.
+1794353956.527	18:39:16.526	Tourne à droite (75 mm/s).
+1794353956.621	18:39:16.621	Roues arrêtées.
+1794353957.488	18:39:17.488	Avance (75 mm/s).
+1794353958.668	18:39:18.667	Roues arrêtées.
+1794353959.472	18:39:19.471	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794353960.927	18:39:20.926	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794353962.421	18:39:22.420	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794353966.721	18:39:26.721	Tour sur place : 90° (41 mesures).
+1794353970.776	18:39:30.776	Tour sur place : 180° (78 mesures).
+1794353974.915	18:39:34.914	Tour sur place : 270° (115 mesures).
+1794353978.948	18:39:38.948	Tour sur place : 360° (150 mesures).
+1794353979.870	18:39:39.869	Tour sur place terminé : 380° en 17.4 s, 158 mesures. Roues arrêtées.
+1794353980.613	18:39:40.612	Tourne à gauche (75 mm/s).
+1794353981.945	18:39:41.944	Roues arrêtées.
+1794353982.795	18:39:42.795	Tourne à gauche (75 mm/s).
+1794353984.155	18:39:44.154	Roues arrêtées.
+1794353984.972	18:39:44.972	Tourne à gauche (75 mm/s).
+1794353985.582	18:39:45.581	Roues arrêtées.
+1794353986.401	18:39:46.401	Avance (75 mm/s).
+1794353987.746	18:39:47.745	Roues arrêtées.
+1794353988.560	18:39:48.560	Avance (75 mm/s).
+1794353989.874	18:39:49.873	Roues arrêtées.
+1794353990.764	18:39:50.764	Avance (75 mm/s).
+1794353992.064	18:39:52.063	Roues arrêtées.
+1794353992.928	18:39:52.928	Tourne à droite (75 mm/s).
+1794353993.041	18:39:53.040	Roues arrêtées.
+1794353993.919	18:39:53.918	Avance (75 mm/s).
+1794353995.231	18:39:55.231	Roues arrêtées.
+1794353996.157	18:39:56.156	Avance (75 mm/s).
+1794353997.488	18:39:57.487	Roues arrêtées.
+1794353998.331	18:39:58.331	Tourne à droite (75 mm/s).
+1794353998.461	18:39:58.461	Roues arrêtées.
+1794353999.300	18:39:59.300	Avance (75 mm/s).
+1794354000.578	18:40:00.577	Roues arrêtées.
+1794354001.416	18:40:01.416	Tourne à droite (75 mm/s).
+1794354001.577	18:40:01.577	Roues arrêtées.
+1794354002.390	18:40:02.389	Avance (75 mm/s).
+1794354003.631	18:40:03.630	Roues arrêtées.
+1794354004.501	18:40:04.500	Tourne à gauche (75 mm/s).
+1794354005.814	18:40:05.813	Roues arrêtées.
+1794354006.659	18:40:06.659	Tourne à gauche (75 mm/s).
+1794354007.124	18:40:07.124	Roues arrêtées.
+1794354007.992	18:40:07.992	Avance (75 mm/s).
+1794354009.302	18:40:09.302	Roues arrêtées.
+1794354010.099	18:40:10.098	Avance (75 mm/s).
+1794354011.416	18:40:11.415	Roues arrêtées.
+1794354012.230	18:40:12.229	Avance (75 mm/s).
+1794354013.520	18:40:13.519	Roues arrêtées.
+1794354014.323	18:40:14.323	Avance (75 mm/s).
+1794354015.651	18:40:15.650	Roues arrêtées.
+1794354016.503	18:40:16.503	Avance (75 mm/s).
+1794354017.822	18:40:17.821	Roues arrêtées.
+1794354018.726	18:40:18.725	Tourne à droite (75 mm/s).
+1794354018.819	18:40:18.819	Roues arrêtées.
+1794354019.687	18:40:19.687	Avance (75 mm/s).
+1794354021.018	18:40:21.017	Roues arrêtées.
+1794354021.828	18:40:21.827	Avance (75 mm/s).
+1794354022.880	18:40:22.879	Roues arrêtées.
+1794354023.698	18:40:23.697	Tourne à droite (75 mm/s).
+1794354024.975	18:40:24.974	Roues arrêtées.
+1794354025.776	18:40:25.775	Tourne à droite (75 mm/s).
+1794354026.749	18:40:26.749	Roues arrêtées.
+1794354027.614	18:40:27.613	Avance (75 mm/s).
+1794354028.923	18:40:28.923	Roues arrêtées.
+1794354029.769	18:40:29.769	Tourne à droite (75 mm/s).
+1794354029.914	18:40:29.914	Roues arrêtées.
+1794354030.792	18:40:30.791	Avance (75 mm/s).
+1794354032.070	18:40:32.070	Roues arrêtées.
+1794354032.879	18:40:32.878	Avance (75 mm/s).
+1794354034.218	18:40:34.217	Roues arrêtées.
+1794354035.094	18:40:35.094	Avance (75 mm/s).
+1794354036.364	18:40:36.363	Roues arrêtées.
+1794354037.235	18:40:37.235	Avance (75 mm/s).
+1794354038.520	18:40:38.520	Roues arrêtées.
+1794354039.344	18:40:39.343	Avance (75 mm/s).
+1794354040.690	18:40:40.689	Roues arrêtées.
+1794354041.499	18:40:41.499	Avance (75 mm/s).
+1794354042.812	18:40:42.811	Roues arrêtées.
+1794354043.708	18:40:43.708	Avance (75 mm/s).
+1794354044.075	18:40:44.075	Roues arrêtées.
+1794354044.077	18:40:44.076	Radar : obstacle à 26 cm devant, roues arrêtées (seuil 30 cm).
+1794354045.341	18:40:45.341	Avance (75 mm/s).
+1794354046.645	18:40:46.644	Roues arrêtées.
+1794354047.504	18:40:47.503	Tourne à gauche (75 mm/s).
+1794354048.847	18:40:48.846	Roues arrêtées.
+1794354049.707	18:40:49.706	Tourne à gauche (75 mm/s).
+1794354050.269	18:40:50.269	Roues arrêtées.
+1794354051.132	18:40:51.132	Avance (75 mm/s).
+1794354052.469	18:40:52.468	Roues arrêtées.
+1794354053.322	18:40:53.321	Avance (75 mm/s).
+1794354054.647	18:40:54.647	Roues arrêtées.
+1794354055.493	18:40:55.493	Avance (75 mm/s).
+1794354056.836	18:40:56.835	Roues arrêtées.
+1794354057.768	18:40:57.767	Tourne à droite (75 mm/s).
+1794354057.881	18:40:57.880	Roues arrêtées.
+1794354058.739	18:40:58.738	Avance (75 mm/s).
+1794354060.082	18:41:00.081	Roues arrêtées.
+1794354060.912	18:41:00.912	Tourne à droite (75 mm/s).
+1794354061.002	18:41:01.002	Roues arrêtées.
+1794354061.333	18:41:01.332	Avance (75 mm/s).
+1794354062.674	18:41:02.673	Roues arrêtées.
+1794354063.525	18:41:03.524	Avance (75 mm/s).
+1794354064.853	18:41:04.853	Roues arrêtées.
+1794354065.641	18:41:05.640	Avance (75 mm/s).
+1794354066.606	18:41:06.606	Roues arrêtées.
+1794354067.456	18:41:07.456	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354068.878	18:41:08.878	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354070.394	18:41:10.393	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354074.571	18:41:14.570	Tour sur place : 90° (37 mesures).
+1794354078.833	18:41:18.833	Tour sur place : 180° (74 mesures).
+1794354082.976	18:41:22.975	Tour sur place : 270° (113 mesures).
+1794354087.111	18:41:27.110	Tour sur place : 360° (150 mesures).
+1794354088.016	18:41:28.015	Tour sur place terminé : 380° en 17.6 s, 158 mesures. Roues arrêtées.
+1794354088.620	18:41:28.619	Avance (75 mm/s).
+1794354089.923	18:41:29.922	Roues arrêtées.
+1794354090.797	18:41:30.797	Tourne à droite (75 mm/s).
+1794354090.906	18:41:30.906	Roues arrêtées.
+1794354091.795	18:41:31.794	Avance (75 mm/s).
+1794354093.102	18:41:33.102	Roues arrêtées.
+1794354093.954	18:41:33.953	Avance (75 mm/s).
+1794354095.278	18:41:35.278	Roues arrêtées.
+1794354096.102	18:41:36.102	Avance (75 mm/s).
+1794354097.404	18:41:37.403	Roues arrêtées.
+1794354098.219	18:41:38.219	Avance (75 mm/s).
+1794354099.248	18:41:39.248	Roues arrêtées.
+1794354100.046	18:41:40.046	Tourne à droite (75 mm/s).
+1794354100.226	18:41:40.226	Roues arrêtées.
+1794354101.076	18:41:41.076	Avance (75 mm/s).
+1794354102.384	18:41:42.383	Roues arrêtées.
+1794354103.230	18:41:43.230	Avance (75 mm/s).
+1794354104.543	18:41:44.542	Roues arrêtées.
+1794354105.414	18:41:45.414	Avance (75 mm/s).
+1794354106.702	18:41:46.701	Roues arrêtées.
+1794354107.525	18:41:47.525	Avance (75 mm/s).
+1794354108.821	18:41:48.820	Roues arrêtées.
+1794354109.680	18:41:49.679	Tourne à droite (75 mm/s).
+1794354109.781	18:41:49.780	Roues arrêtées.
+1794354110.647	18:41:50.647	Avance (75 mm/s).
+1794354111.963	18:41:51.962	Roues arrêtées.
+1794354112.759	18:41:52.758	Avance (75 mm/s).
+1794354114.087	18:41:54.087	Roues arrêtées.
+1794354114.960	18:41:54.960	Tourne à droite (75 mm/s).
+1794354115.073	18:41:55.073	Roues arrêtées.
+1794354115.880	18:41:55.880	Avance (75 mm/s).
+1794354117.212	18:41:57.212	Roues arrêtées.
+1794354118.129	18:41:58.128	Tourne à gauche (75 mm/s).
+1794354119.449	18:41:59.448	Roues arrêtées.
+1794354120.298	18:42:00.298	Tourne à gauche (75 mm/s).
+1794354121.627	18:42:01.627	Roues arrêtées.
+1794354122.493	18:42:02.493	Tourne à gauche (75 mm/s).
+1794354122.921	18:42:02.921	Roues arrêtées.
+1794354123.786	18:42:03.785	Avance (75 mm/s).
+1794354125.092	18:42:05.092	Roues arrêtées.
+1794354125.943	18:42:05.943	Avance (75 mm/s).
+1794354127.269	18:42:07.269	Roues arrêtées.
+1794354128.175	18:42:08.174	Avance (75 mm/s).
+1794354129.491	18:42:09.490	Roues arrêtées.
+1794354130.308	18:42:10.308	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354131.744	18:42:11.744	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354133.236	18:42:13.235	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354137.325	18:42:17.325	Tour sur place : 90° (35 mesures).
+1794354141.187	18:42:21.186	Tour sur place : 180° (71 mesures).
+1794354145.089	18:42:25.088	Tour sur place : 270° (107 mesures).
+1794354149.132	18:42:29.131	Tour sur place : 360° (142 mesures).
+1794354150.034	18:42:30.033	Tour sur place terminé : 380° en 16.8 s, 149 mesures. Roues arrêtées.
+1794354150.672	18:42:30.672	Tourne à droite (75 mm/s).
+1794354152.022	18:42:32.021	Roues arrêtées.
+1794354152.895	18:42:32.895	Tourne à droite (75 mm/s).
+1794354153.334	18:42:33.333	Roues arrêtées.
+1794354154.190	18:42:34.190	Tourne à droite (75 mm/s).
+1794354154.330	18:42:34.330	Roues arrêtées.
+1794354155.317	18:42:35.316	Avance (75 mm/s).
+1794354156.623	18:42:36.623	Roues arrêtées.
+1794354157.533	18:42:37.533	Tourne à droite (75 mm/s).
+1794354157.675	18:42:37.675	Roues arrêtées.
+1794354158.564	18:42:38.563	Avance (75 mm/s).
+1794354159.832	18:42:39.832	Roues arrêtées.
+1794354160.749	18:42:40.749	Avance (75 mm/s).
+1794354162.058	18:42:42.057	Roues arrêtées.
+1794354162.929	18:42:42.928	Avance (75 mm/s).
+1794354164.022	18:42:44.022	Roues arrêtées.
+1794354164.833	18:42:44.832	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354166.277	18:42:46.277	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354167.773	18:42:47.773	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354172.006	18:42:52.006	Tour sur place : 90° (39 mesures).
+1794354176.227	18:42:56.226	Tour sur place : 180° (76 mesures).
+1794354180.266	18:43:00.265	Tour sur place : 270° (113 mesures).
+1794354184.401	18:43:04.400	Tour sur place : 360° (148 mesures).
+1794354185.304	18:43:05.303	Tour sur place terminé : 380° en 17.5 s, 156 mesures. Roues arrêtées.
+1794354186.012	18:43:06.012	Tourne à droite (75 mm/s).
+1794354187.342	18:43:07.341	Roues arrêtées.
+1794354188.200	18:43:08.199	Tourne à droite (75 mm/s).
+1794354188.868	18:43:08.868	Roues arrêtées.
+1794354189.758	18:43:09.757	Avance (75 mm/s).
+1794354191.123	18:43:11.123	Roues arrêtées.
+1794354192.052	18:43:12.052	Tourne à droite (75 mm/s).
+1794354192.152	18:43:12.151	Roues arrêtées.
+1794354193.088	18:43:13.087	Avance (75 mm/s).
+1794354194.395	18:43:14.395	Roues arrêtées.
+1794354195.252	18:43:15.252	Avance (75 mm/s).
+1794354196.527	18:43:16.526	Roues arrêtées.
+1794354197.444	18:43:17.443	Avance (75 mm/s).
+1794354198.755	18:43:18.754	Roues arrêtées.
+1794354199.639	18:43:19.638	Tourne à gauche (75 mm/s).
+1794354200.312	18:43:20.312	Roues arrêtées.
+1794354206.247	18:43:26.247	Roues arrêtées.
+1794354206.595	18:43:26.595	Tourne à gauche (75 mm/s).
+1794354206.784	18:43:26.783	Roues arrêtées.
+1794354207.654	18:43:27.653	Avance (75 mm/s).
+1794354208.979	18:43:28.979	Roues arrêtées.
+1794354210.010	18:43:30.009	Tourne à gauche (75 mm/s).
+1794354211.348	18:43:31.347	Roues arrêtées.
+1794354212.168	18:43:32.167	Tourne à gauche (75 mm/s).
+1794354213.109	18:43:33.108	Roues arrêtées.
+1794354213.995	18:43:33.995	Tourne à gauche (75 mm/s).
+1794354214.243	18:43:34.243	Roues arrêtées.
+1794354215.159	18:43:35.159	Avance (75 mm/s).
+1794354215.600	18:43:35.600	Roues arrêtées.
+1794354216.390	18:43:36.389	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354217.819	18:43:37.818	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354219.319	18:43:39.318	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354223.539	18:43:43.539	Tour sur place : 90° (38 mesures).
+1794354227.607	18:43:47.607	Tour sur place : 180° (74 mesures).
+1794354231.665	18:43:51.664	Tour sur place : 270° (111 mesures).
+1794354235.697	18:43:55.697	Tour sur place : 360° (146 mesures).
+1794354236.678	18:43:56.678	Tour sur place terminé : 380° en 17.4 s, 154 mesures. Roues arrêtées.
+1794354237.407	18:43:57.406	Tourne à droite (75 mm/s).
+1794354238.743	18:43:58.742	Roues arrêtées.
+1794354239.680	18:43:59.679	Tourne à droite (75 mm/s).
+1794354240.272	18:44:00.272	Roues arrêtées.
+1794354241.168	18:44:01.167	Avance (75 mm/s).
+1794354242.526	18:44:02.526	Roues arrêtées.
+1794354243.399	18:44:03.398	Tourne à droite (75 mm/s).
+1794354243.498	18:44:03.497	Roues arrêtées.
+1794354244.353	18:44:04.352	Avance (75 mm/s).
+1794354245.647	18:44:05.647	Roues arrêtées.
+1794354246.495	18:44:06.494	Tourne à droite (75 mm/s).
+1794354246.619	18:44:06.619	Roues arrêtées.
+1794354247.555	18:44:07.554	Avance (75 mm/s).
+1794354248.840	18:44:08.839	Roues arrêtées.
+1794354249.698	18:44:09.698	Avance (75 mm/s).
+1794354251.006	18:44:11.006	Roues arrêtées.
+1794354251.856	18:44:11.855	Avance (75 mm/s).
+1794354253.209	18:44:13.209	Roues arrêtées.
+1794354254.074	18:44:14.073	Avance (75 mm/s).
+1794354255.384	18:44:15.383	Roues arrêtées.
+1794354256.254	18:44:16.254	Avance (75 mm/s).
+1794354257.343	18:44:17.343	Roues arrêtées.
+1794354258.230	18:44:18.230	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354259.660	18:44:19.659	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354261.167	18:44:21.166	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354265.309	18:44:25.309	Tour sur place : 90° (37 mesures).
+1794354269.552	18:44:29.552	Tour sur place : 180° (74 mesures).
+1794354273.471	18:44:33.470	Tour sur place : 270° (110 mesures).
+1794354277.417	18:44:37.416	Tour sur place : 360° (146 mesures).
+1794354278.319	18:44:38.318	Tour sur place terminé : 380° en 17.2 s, 155 mesures. Roues arrêtées.
+1794354279.125	18:44:39.124	Tourne à droite (75 mm/s).
+1794354279.973	18:44:39.972	Roues arrêtées.
+1794354280.836	18:44:40.835	Tourne à droite (75 mm/s).
+1794354280.959	18:44:40.959	Roues arrêtées.
+1794354281.807	18:44:41.806	Avance (75 mm/s).
+1794354283.134	18:44:43.133	Roues arrêtées.
+1794354283.949	18:44:43.948	Avance (75 mm/s).
+1794354285.284	18:44:45.283	Roues arrêtées.
+1794354286.122	18:44:46.121	Tourne à droite (75 mm/s).
+1794354286.239	18:44:46.238	Roues arrêtées.
+1794354287.068	18:44:47.067	Avance (75 mm/s).
+1794354288.372	18:44:48.372	Roues arrêtées.
+1794354289.252	18:44:49.251	Avance (75 mm/s).
+1794354290.586	18:44:50.586	Roues arrêtées.
+1794354291.452	18:44:51.452	Avance (75 mm/s).
+1794354292.774	18:44:52.774	Roues arrêtées.
+1794354293.623	18:44:53.622	Avance (75 mm/s).
+1794354293.902	18:44:53.901	Roues arrêtées.
+1794354294.773	18:44:54.772	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354296.243	18:44:56.242	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354297.721	18:44:57.720	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354302.076	18:45:02.075	Tour sur place : 90° (41 mesures).
+1794354306.242	18:45:06.241	Tour sur place : 180° (77 mesures).
+1794354310.492	18:45:10.491	Tour sur place : 270° (116 mesures).
+1794354314.732	18:45:14.732	Tour sur place : 360° (155 mesures).
+1794354315.638	18:45:15.637	Tour sur place terminé : 380° en 17.9 s, 164 mesures. Roues arrêtées.
+1794354316.403	18:45:16.402	Tourne à gauche (75 mm/s).
+1794354317.718	18:45:17.718	Roues arrêtées.
+1794354318.597	18:45:18.597	Tourne à gauche (75 mm/s).
+1794354319.258	18:45:19.257	Roues arrêtées.
+1794354320.132	18:45:20.131	Avance (75 mm/s).
+1794354321.406	18:45:21.406	Roues arrêtées.
+1794354322.277	18:45:22.276	Avance (75 mm/s).
+1794354323.655	18:45:23.655	Roues arrêtées.
+1794354324.516	18:45:24.515	Avance (75 mm/s).
+1794354325.836	18:45:25.835	Roues arrêtées.
+1794354326.640	18:45:26.639	Avance (75 mm/s).
+1794354327.965	18:45:27.964	Roues arrêtées.
+1794354328.890	18:45:28.889	Avance (75 mm/s).
+1794354330.202	18:45:30.202	Roues arrêtées.
+1794354331.054	18:45:31.053	Avance (75 mm/s).
+1794354332.380	18:45:32.380	Roues arrêtées.
+1794354333.252	18:45:33.252	Avance (75 mm/s).
+1794354334.553	18:45:34.552	Roues arrêtées.
+1794354335.408	18:45:35.407	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354336.846	18:45:36.846	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354338.352	18:45:38.351	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354342.604	18:45:42.604	Tour sur place : 90° (38 mesures).
+1794354346.670	18:45:46.669	Tour sur place : 180° (74 mesures).
+1794354350.725	18:45:50.724	Tour sur place : 270° (112 mesures).
+1794354354.759	18:45:54.759	Tour sur place : 360° (149 mesures).
+1794354355.682	18:45:55.681	Tour sur place terminé : 380° en 17.3 s, 157 mesures. Roues arrêtées.
+1794354356.454	18:45:56.454	Tourne à droite (75 mm/s).
+1794354357.682	18:45:57.681	Roues arrêtées.
+1794354358.479	18:45:58.479	Tourne à droite (75 mm/s).
+1794354358.615	18:45:58.614	Roues arrêtées.
+1794354359.416	18:45:59.416	Avance (75 mm/s).
+1794354360.748	18:46:00.747	Roues arrêtées.
+1794354361.660	18:46:01.660	Tourne à gauche (75 mm/s).
+1794354362.977	18:46:02.977	Roues arrêtées.
+1794354363.767	18:46:03.767	Tourne à gauche (75 mm/s).
+1794354365.094	18:46:05.094	Roues arrêtées.
+1794354365.960	18:46:05.959	Tourne à gauche (75 mm/s).
+1794354367.070	18:46:07.069	Roues arrêtées.
+1794354367.884	18:46:07.884	Tourne à gauche (75 mm/s).
+1794354368.018	18:46:08.017	Roues arrêtées.
+1794354368.879	18:46:08.879	Avance (75 mm/s).
+1794354370.112	18:46:10.111	Roues arrêtées.
+1794354371.195	18:46:11.195	Tourne à droite (75 mm/s).
+1794354372.497	18:46:12.496	Roues arrêtées.
+1794354373.360	18:46:13.359	Tourne à droite (75 mm/s).
+1794354374.674	18:46:14.673	Roues arrêtées.
+1794354375.487	18:46:15.486	Tourne à droite (75 mm/s).
+1794354376.492	18:46:16.491	Roues arrêtées.
+1794354377.430	18:46:17.430	Avance (75 mm/s).
+1794354378.728	18:46:18.727	Roues arrêtées.
+1794354379.580	18:46:19.580	Avance (75 mm/s).
+1794354380.886	18:46:20.885	Roues arrêtées.
+1794354381.774	18:46:21.773	Tourne à droite (75 mm/s).
+1794354381.848	18:46:21.847	Roues arrêtées.
+1794354382.715	18:46:22.715	Avance (75 mm/s).
+1794354384.046	18:46:24.045	Roues arrêtées.
+1794354384.858	18:46:24.857	Avance (75 mm/s).
+1794354386.174	18:46:26.173	Roues arrêtées.
+1794354387.045	18:46:27.044	Avance (75 mm/s).
+1794354388.368	18:46:28.367	Roues arrêtées.
+1794354389.268	18:46:29.268	Tourne à droite (75 mm/s).
+1794354389.336	18:46:29.335	Roues arrêtées.
+1794354389.694	18:46:29.694	Avance (75 mm/s).
+1794354390.973	18:46:30.973	Roues arrêtées.
+1794354391.797	18:46:31.796	Avance (75 mm/s).
+1794354392.977	18:46:32.977	Roues arrêtées.
+1794354393.783	18:46:33.782	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354395.211	18:46:35.211	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354396.709	18:46:36.709	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354400.939	18:46:40.938	Tour sur place : 90° (37 mesures).
+1794354405.185	18:46:45.184	Tour sur place : 180° (74 mesures).
+1794354409.451	18:46:49.450	Tour sur place : 270° (113 mesures).
+1794354413.710	18:46:53.709	Tour sur place : 360° (154 mesures).
+1794354414.642	18:46:54.642	Tour sur place terminé : 380° en 17.9 s, 163 mesures. Roues arrêtées.
+1794354415.437	18:46:55.436	Tourne à gauche (75 mm/s).
+1794354416.744	18:46:56.743	Roues arrêtées.
+1794354417.613	18:46:57.612	Tourne à gauche (75 mm/s).
+1794354417.820	18:46:57.819	Roues arrêtées.
+1794354418.561	18:46:58.561	Avance (75 mm/s).
+1794354419.896	18:46:59.895	Roues arrêtées.
+1794354420.838	18:47:00.838	Avance (75 mm/s).
+1794354422.159	18:47:02.159	Roues arrêtées.
+1794354422.967	18:47:02.966	Avance (75 mm/s).
+1794354424.286	18:47:04.285	Roues arrêtées.
+1794354425.087	18:47:05.086	Tourne à gauche (75 mm/s).
+1794354425.215	18:47:05.215	Roues arrêtées.
+1794354426.090	18:47:06.089	Avance (75 mm/s).
+1794354427.207	18:47:07.206	Roues arrêtées.
+1794354428.036	18:47:08.035	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354429.464	18:47:09.463	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354430.965	18:47:10.965	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354435.383	18:47:15.383	Tour sur place : 90° (39 mesures).
+1794354439.597	18:47:19.597	Tour sur place : 180° (78 mesures).
+1794354443.742	18:47:23.741	Tour sur place : 270° (117 mesures).
+1794354447.904	18:47:27.903	Tour sur place : 360° (154 mesures).
+1794354448.779	18:47:28.778	Tour sur place terminé : 380° en 17.8 s, 162 mesures. Roues arrêtées.
+1794354449.560	18:47:29.559	Tourne à droite (75 mm/s).
+1794354450.858	18:47:30.857	Roues arrêtées.
+1794354451.773	18:47:31.773	Tourne à droite (75 mm/s).
+1794354451.858	18:47:31.857	Roues arrêtées.
+1794354452.698	18:47:32.698	Avance (75 mm/s).
+1794354454.018	18:47:34.017	Roues arrêtées.
+1794354454.876	18:47:34.876	Tourne à droite (75 mm/s).
+1794354454.988	18:47:34.988	Roues arrêtées.
+1794354455.947	18:47:35.946	Avance (75 mm/s).
+1794354457.203	18:47:37.203	Roues arrêtées.
+1794354458.133	18:47:38.133	Vitesse réglée à 150 mm/s (page web).
+1794354536.912	18:48:56.911	Vitesse réglée à 75 mm/s (page web).
+1794354537.265	18:48:57.264	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354538.682	18:48:58.681	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354540.186	18:49:00.186	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354544.635	18:49:04.635	Tour sur place : 90° (40 mesures).
+1794354548.819	18:49:08.818	Tour sur place : 180° (77 mesures).
+1794354552.889	18:49:12.888	Tour sur place : 270° (115 mesures).
+1794354557.001	18:49:17.000	Tour sur place : 360° (152 mesures).
+1794354557.931	18:49:17.931	Tour sur place terminé : 380° en 17.7 s, 160 mesures. Roues arrêtées.
+1794354558.654	18:49:18.654	Tourne à gauche (75 mm/s).
+1794354559.954	18:49:19.953	Roues arrêtées.
+1794354560.823	18:49:20.823	Tourne à gauche (75 mm/s).
+1794354561.769	18:49:21.769	Roues arrêtées.
+1794354562.672	18:49:22.671	Avance (75 mm/s).
+1794354563.995	18:49:23.994	Roues arrêtées.
+1794354564.819	18:49:24.819	Avance (75 mm/s).
+1794354566.137	18:49:26.136	Roues arrêtées.
+1794354566.925	18:49:26.925	Avance (75 mm/s).
+1794354568.248	18:49:28.248	Roues arrêtées.
+1794354569.109	18:49:29.108	Avance (75 mm/s).
+1794354570.444	18:49:30.443	Roues arrêtées.
+1794354571.419	18:49:31.418	Tourne à droite (75 mm/s).
+1794354571.553	18:49:31.552	Roues arrêtées.
+1794354572.476	18:49:32.476	Avance (75 mm/s).
+1794354573.769	18:49:33.768	Roues arrêtées.
+1794354574.685	18:49:34.684	Avance (75 mm/s).
+1794354575.994	18:49:35.993	Roues arrêtées.
+1794354576.844	18:49:36.844	Avance (75 mm/s).
+1794354578.152	18:49:38.152	Roues arrêtées.
+1794354578.987	18:49:38.986	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354580.411	18:49:40.410	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354581.912	18:49:41.911	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354586.000	18:49:46.000	Tour sur place : 90° (37 mesures).
+1794354590.046	18:49:50.045	Tour sur place : 180° (74 mesures).
+1794354594.127	18:49:54.127	Tour sur place : 270° (111 mesures).
+1794354598.248	18:49:58.248	Tour sur place : 360° (149 mesures).
+1794354599.201	18:49:59.200	Tour sur place terminé : 380° en 17.3 s, 157 mesures. Roues arrêtées.
+1794354599.767	18:49:59.766	Tourne à droite (75 mm/s).
+1794354601.096	18:50:01.095	Roues arrêtées.
+1794354601.894	18:50:01.893	Tourne à droite (75 mm/s).
+1794354602.299	18:50:02.298	Roues arrêtées.
+1794354603.959	18:50:03.958	Tourne à gauche (75 mm/s).
+1794354605.063	18:50:05.063	Roues arrêtées.
+1794354605.918	18:50:05.917	Avance (75 mm/s).
+1794354607.261	18:50:07.260	Roues arrêtées.
+1794354608.117	18:50:08.117	Avance (75 mm/s).
+1794354609.448	18:50:09.447	Roues arrêtées.
+1794354610.344	18:50:10.343	Avance (75 mm/s).
+1794354611.680	18:50:11.679	Roues arrêtées.
+1794354612.536	18:50:12.536	Avance (75 mm/s).
+1794354613.868	18:50:13.867	Roues arrêtées.
+1794354614.669	18:50:14.669	Tourne à droite (75 mm/s).
+1794354614.766	18:50:14.765	Roues arrêtées.
+1794354615.622	18:50:15.621	Avance (75 mm/s).
+1794354616.935	18:50:16.935	Roues arrêtées.
+1794354617.782	18:50:17.782	Avance (75 mm/s).
+1794354619.089	18:50:19.088	Roues arrêtées.
+1794354619.931	18:50:19.931	Tourne à droite (75 mm/s).
+1794354620.086	18:50:20.086	Roues arrêtées.
+1794354620.954	18:50:20.953	Avance (75 mm/s).
+1794354622.226	18:50:22.226	Roues arrêtées.
+1794354623.133	18:50:23.132	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354624.551	18:50:24.550	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354626.061	18:50:26.061	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354630.064	18:50:30.064	Tour sur place : 90° (37 mesures).
+1794354634.045	18:50:34.044	Tour sur place : 180° (73 mesures).
+1794354638.160	18:50:38.160	Tour sur place : 270° (110 mesures).
+1794354642.107	18:50:42.107	Tour sur place : 360° (146 mesures).
+1794354642.884	18:50:42.883	Tour sur place terminé : 380° en 16.8 s, 153 mesures. Roues arrêtées.
+1794354643.511	18:50:43.510	Tourne à gauche (75 mm/s).
+1794354643.604	18:50:43.603	Roues arrêtées.
+1794354643.951	18:50:43.950	Avance (75 mm/s).
+1794354645.306	18:50:45.305	Roues arrêtées.
+1794354646.163	18:50:46.163	Avance (75 mm/s).
+1794354647.507	18:50:47.507	Roues arrêtées.
+1794354648.350	18:50:48.350	Avance (75 mm/s).
+1794354649.696	18:50:49.696	Roues arrêtées.
+1794354650.568	18:50:50.567	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354652.027	18:50:52.026	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354653.504	18:50:53.504	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354657.688	18:50:57.688	Tour sur place : 90° (39 mesures).
+1794354661.411	18:51:01.411	Tour sur place : 180° (71 mesures).
+1794354665.304	18:51:05.303	Tour sur place : 270° (107 mesures).
+1794354669.095	18:51:09.095	Tour sur place : 360° (143 mesures).
+1794354669.912	18:51:09.911	Tour sur place terminé : 380° en 16.4 s, 150 mesures. Roues arrêtées.
+1794354670.492	18:51:10.491	Avance (75 mm/s).
+1794354671.817	18:51:11.817	Roues arrêtées.
+1794354672.675	18:51:12.674	Avance (75 mm/s).
+1794354673.865	18:51:13.865	Roues arrêtées.
+1794354674.734	18:51:14.734	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354676.168	18:51:16.167	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354677.665	18:51:17.664	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354681.867	18:51:21.867	Tour sur place : 90° (39 mesures).
+1794354685.822	18:51:25.821	Tour sur place : 180° (73 mesures).
+1794354689.682	18:51:29.681	Tour sur place : 270° (108 mesures).
+1794354693.744	18:51:33.744	Tour sur place : 360° (145 mesures).
+1794354694.633	18:51:34.633	Tour sur place terminé : 380° en 17.0 s, 153 mesures. Roues arrêtées.
+1794354695.227	18:51:35.227	Roues arrêtées.
+1794354695.279	18:51:35.279	Vitesse réglée à 150 mm/s (page web).
+1794354788.049	18:53:08.049	Vitesse réglée à 75 mm/s (page web).
+1794354788.401	18:53:08.401	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354789.818	18:53:09.817	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354791.318	18:53:11.317	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354795.558	18:53:15.557	Tour sur place : 90° (39 mesures).
+1794354799.539	18:53:19.539	Tour sur place : 180° (71 mesures).
+1794354803.422	18:53:23.422	Tour sur place : 270° (108 mesures).
+1794354807.336	18:53:27.336	Tour sur place : 360° (144 mesures).
+1794354808.254	18:53:28.254	Tour sur place terminé : 380° en 16.9 s, 152 mesures. Roues arrêtées.
+1794354809.038	18:53:29.037	Tourne à gauche (75 mm/s).
+1794354810.353	18:53:30.352	Roues arrêtées.
+1794354811.154	18:53:31.154	Tourne à gauche (75 mm/s).
+1794354812.541	18:53:32.540	Roues arrêtées.
+1794354813.462	18:53:33.462	Tourne à gauche (75 mm/s).
+1794354814.064	18:53:34.064	Roues arrêtées.
+1794354814.944	18:53:34.943	Tourne à gauche (75 mm/s).
+1794354815.635	18:53:35.635	Roues arrêtées.
+1794354816.599	18:53:36.598	Tourne à gauche (75 mm/s).
+1794354817.907	18:53:37.907	Roues arrêtées.
+1794354818.803	18:53:38.802	Tourne à gauche (75 mm/s).
+1794354820.111	18:53:40.111	Roues arrêtées.
+1794354820.984	18:53:40.983	Tourne à gauche (75 mm/s).
+1794354821.148	18:53:41.148	Roues arrêtées.
+1794354822.052	18:53:42.052	Avance (75 mm/s).
+1794354823.376	18:53:43.375	Roues arrêtées.
+1794354824.180	18:53:44.180	Avance (75 mm/s).
+1794354825.510	18:53:45.509	Roues arrêtées.
+1794354826.434	18:53:46.433	Tourne à gauche (75 mm/s).
+1794354826.795	18:53:46.794	Roues arrêtées.
+1794354827.704	18:53:47.703	Avance (75 mm/s).
+1794354829.026	18:53:49.025	Roues arrêtées.
+1794354830.110	18:53:50.109	Tourne à gauche (75 mm/s).
+1794354830.935	18:53:50.934	Roues arrêtées.
+1794354831.867	18:53:51.866	Tourne à gauche (75 mm/s).
+1794354832.102	18:53:52.101	Roues arrêtées.
+1794354832.978	18:53:52.977	Avance (75 mm/s).
+1794354834.309	18:53:54.308	Roues arrêtées.
+1794354835.237	18:53:55.236	Tourne à gauche (75 mm/s).
+1794354836.190	18:53:56.190	Roues arrêtées.
+1794354837.085	18:53:57.084	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354838.505	18:53:58.505	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354840.006	18:54:00.006	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354844.021	18:54:04.021	Tour sur place : 90° (37 mesures).
+1794354848.029	18:54:08.029	Tour sur place : 180° (71 mesures).
+1794354852.160	18:54:12.159	Tour sur place : 270° (110 mesures).
+1794354856.202	18:54:16.201	Tour sur place : 360° (148 mesures).
+1794354857.074	18:54:17.074	Tour sur place terminé : 380° en 17.1 s, 156 mesures. Roues arrêtées.
+1794354857.756	18:54:17.756	Tourne à gauche (75 mm/s).
+1794354859.088	18:54:19.087	Roues arrêtées.
+1794354859.893	18:54:19.893	Tourne à gauche (75 mm/s).
+1794354860.708	18:54:20.708	Roues arrêtées.
+1794354861.571	18:54:21.571	Avance (75 mm/s).
+1794354862.891	18:54:22.890	Roues arrêtées.
+1794354863.743	18:54:23.742	Avance (75 mm/s).
+1794354865.095	18:54:25.095	Roues arrêtées.
+1794354865.953	18:54:25.953	Avance (75 mm/s).
+1794354869.709	18:54:29.708	Roues arrêtées.
+1794354869.709	18:54:29.708	Roues arrêtées.
+1794354870.466	18:54:30.465	Avance (75 mm/s).
+1794354871.781	18:54:31.780	Roues arrêtées.
+1794354872.679	18:54:32.679	Tourne à droite (75 mm/s).
+1794354872.813	18:54:32.812	Roues arrêtées.
+1794354873.743	18:54:33.743	Avance (75 mm/s).
+1794354875.048	18:54:35.048	Roues arrêtées.
+1794354875.930	18:54:35.930	Avance (75 mm/s).
+1794354877.274	18:54:37.273	Roues arrêtées.
+1794354878.140	18:54:38.140	Avance (75 mm/s).
+1794354879.057	18:54:39.057	Roues arrêtées.
+1794354879.923	18:54:39.923	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354881.362	18:54:41.362	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354882.865	18:54:42.865	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354887.023	18:54:47.023	Tour sur place : 90° (38 mesures).
+1794354891.011	18:54:51.011	Tour sur place : 180° (75 mesures).
+1794354895.009	18:54:55.009	Tour sur place : 270° (111 mesures).
+1794354899.080	18:54:59.080	Tour sur place : 360° (147 mesures).
+1794354899.992	18:54:59.991	Tour sur place terminé : 380° en 17.1 s, 155 mesures. Roues arrêtées.
+1794354900.549	18:55:00.548	Tourne à droite (75 mm/s).
+1794354900.743	18:55:00.742	Roues arrêtées.
+1794354901.809	18:55:01.809	Avance (75 mm/s).
+1794354903.126	18:55:03.125	Roues arrêtées.
+1794354903.972	18:55:03.972	Avance (75 mm/s).
+1794354905.331	18:55:05.331	Roues arrêtées.
+1794354906.204	18:55:06.203	Tourne à droite (75 mm/s).
+1794354906.325	18:55:06.325	Roues arrêtées.
+1794354907.231	18:55:07.230	Avance (75 mm/s).
+1794354908.504	18:55:08.504	Roues arrêtées.
+1794354909.362	18:55:09.362	Avance (75 mm/s).
+1794354910.186	18:55:10.185	Roues arrêtées.
+1794354910.186	18:55:10.185	Radar : obstacle à 28 cm devant, roues arrêtées (seuil 30 cm).
+1794354910.977	18:55:10.977	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354912.401	18:55:12.400	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354913.908	18:55:13.908	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354918.193	18:55:18.192	Tour sur place : 90° (38 mesures).
+1794354922.400	18:55:22.400	Tour sur place : 180° (77 mesures).
+1794354926.454	18:55:26.453	Tour sur place : 270° (113 mesures).
+1794354930.571	18:55:30.571	Tour sur place : 360° (151 mesures).
+1794354931.468	18:55:31.468	Tour sur place terminé : 380° en 17.6 s, 159 mesures. Roues arrêtées.
+1794354932.450	18:55:32.449	Tourne à gauche (75 mm/s).
+1794354933.294	18:55:33.294	Roues arrêtées.
+1794354934.156	18:55:34.156	Avance (75 mm/s).
+1794354935.465	18:55:35.465	Roues arrêtées.
+1794354936.307	18:55:36.307	Avance (75 mm/s).
+1794354937.630	18:55:37.630	Roues arrêtées.
+1794354938.487	18:55:38.486	Avance (75 mm/s).
+1794354939.799	18:55:39.798	Roues arrêtées.
+1794354940.591	18:55:40.590	Avance (75 mm/s).
+1794354941.892	18:55:41.891	Roues arrêtées.
+1794354942.733	18:55:42.733	Avance (75 mm/s).
+1794354944.101	18:55:44.100	Roues arrêtées.
+1794354944.955	18:55:44.955	Avance (75 mm/s).
+1794354946.277	18:55:46.277	Roues arrêtées.
+1794354947.199	18:55:47.198	Avance (75 mm/s).
+1794354948.493	18:55:48.492	Roues arrêtées.
+1794354949.397	18:55:49.397	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354950.822	18:55:50.822	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354952.322	18:55:52.321	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354956.528	18:55:56.528	Tour sur place : 90° (39 mesures).
+1794354960.459	18:56:00.458	Tour sur place : 180° (74 mesures).
+1794354964.565	18:56:04.564	Tour sur place : 270° (112 mesures).
+1794354968.629	18:56:08.629	Tour sur place : 360° (148 mesures).
+1794354969.585	18:56:09.585	Tour sur place terminé : 380° en 17.3 s, 157 mesures. Roues arrêtées.
+1794354970.224	18:56:10.224	Tourne à droite (75 mm/s).
+1794354971.224	18:56:11.224	Roues arrêtées.
+1794354972.017	18:56:12.016	Avance (75 mm/s).
+1794354973.360	18:56:13.359	Roues arrêtées.
+1794354974.148	18:56:14.148	Avance (75 mm/s).
+1794354975.465	18:56:15.464	Roues arrêtées.
+1794354976.316	18:56:16.316	Avance (75 mm/s).
+1794354977.669	18:56:17.668	Roues arrêtées.
+1794354978.471	18:56:18.470	Avance (75 mm/s).
+1794354979.786	18:56:19.786	Roues arrêtées.
+1794354980.665	18:56:20.665	Tourne à droite (75 mm/s).
+1794354980.799	18:56:20.798	Roues arrêtées.
+1794354981.604	18:56:21.603	Avance (75 mm/s).
+1794354982.927	18:56:22.926	Roues arrêtées.
+1794354983.787	18:56:23.786	Avance (75 mm/s).
+1794354985.107	18:56:25.107	Roues arrêtées.
+1794354985.955	18:56:25.955	Avance (75 mm/s).
+1794354987.300	18:56:27.299	Roues arrêtées.
+1794354988.175	18:56:28.175	Tourne à droite (75 mm/s).
+1794354988.344	18:56:28.344	Roues arrêtées.
+1794354989.246	18:56:29.246	Avance (75 mm/s).
+1794354989.988	18:56:29.987	Roues arrêtées.
+1794354990.847	18:56:30.847	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794354992.272	18:56:32.272	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794354993.772	18:56:33.771	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794354998.064	18:56:38.063	Tour sur place : 90° (40 mesures).
+1794355002.350	18:56:42.350	Tour sur place : 180° (79 mesures).
+1794355006.675	18:56:46.674	Tour sur place : 270° (116 mesures).
+1794355010.848	18:56:50.847	Tour sur place : 360° (153 mesures).
+1794355011.716	18:56:51.716	Tour sur place terminé : 380° en 17.9 s, 161 mesures. Roues arrêtées.
+1794355012.416	18:56:52.416	Tourne à gauche (75 mm/s).
+1794355013.691	18:56:53.690	Roues arrêtées.
+1794355014.536	18:56:54.536	Avance (75 mm/s).
+1794355015.860	18:56:55.860	Roues arrêtées.
+1794355016.713	18:56:56.713	Avance (75 mm/s).
+1794355018.058	18:56:58.058	Roues arrêtées.
+1794355019.018	18:56:59.017	Avance (75 mm/s).
+1794355020.352	18:57:00.352	Roues arrêtées.
+1794355021.164	18:57:01.163	Avance (75 mm/s).
+1794355022.153	18:57:02.153	Roues arrêtées.
+1794355022.992	18:57:02.992	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794355024.409	18:57:04.408	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794355025.908	18:57:05.907	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794355030.177	18:57:10.177	Tour sur place : 90° (40 mesures).
+1794355034.323	18:57:14.322	Tour sur place : 180° (76 mesures).
+1794355038.507	18:57:18.507	Tour sur place : 270° (113 mesures).
+1794355042.751	18:57:22.750	Tour sur place : 360° (154 mesures).
+1794355043.704	18:57:23.704	Tour sur place terminé : 380° en 17.8 s, 163 mesures. Roues arrêtées.
+1794355044.277	18:57:24.277	Roues arrêtées.
+1794355044.307	18:57:24.306	Vitesse réglée à 150 mm/s (page web).
+1794355468.672	19:04:28.671	Vitesse réglée à 75 mm/s (page web).
+1794355469.034	19:04:29.033	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794355470.450	19:04:30.449	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794355471.951	19:04:31.950	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794355476.427	19:04:36.426	Tour sur place : 90° (42 mesures).
+1794355480.669	19:04:40.669	Tour sur place : 180° (78 mesures).
+1794355484.938	19:04:44.937	Tour sur place : 270° (118 mesures).
+1794355489.219	19:04:49.218	Tour sur place : 360° (158 mesures).
+1794355490.117	19:04:50.117	Tour sur place terminé : 380° en 18.2 s, 167 mesures. Roues arrêtées.
+1794355490.781	19:04:50.781	Tourne à gauche (75 mm/s).
+1794355492.126	19:04:52.126	Roues arrêtées.
+1794355492.995	19:04:52.994	Tourne à gauche (75 mm/s).
+1794355494.314	19:04:54.313	Roues arrêtées.
+1794355495.290	19:04:55.289	Tourne à gauche (75 mm/s).
+1794355495.360	19:04:55.359	Roues arrêtées.
+1794355496.226	19:04:56.226	Avance (75 mm/s).
+1794355497.566	19:04:57.566	Roues arrêtées.
+1794355498.367	19:04:58.366	Avance (75 mm/s).
+1794355499.693	19:04:59.692	Roues arrêtées.
+1794355500.527	19:05:00.526	Avance (75 mm/s).
+1794355501.830	19:05:01.829	Roues arrêtées.
+1794355502.647	19:05:02.647	Tourne à droite (75 mm/s).
+1794355502.744	19:05:02.744	Roues arrêtées.
+1794355503.636	19:05:03.636	Avance (75 mm/s).
+1794355504.963	19:05:04.963	Roues arrêtées.
+1794355505.827	19:05:05.826	Avance (75 mm/s).
+1794355507.126	19:05:07.126	Roues arrêtées.
+1794355507.992	19:05:07.992	Avance (75 mm/s).
+1794355509.319	19:05:09.319	Roues arrêtées.
+1794355510.177	19:05:10.176	Tourne à droite (75 mm/s).
+1794355510.275	19:05:10.274	Roues arrêtées.
+1794355511.212	19:05:11.211	Avance (75 mm/s).
+1794355512.521	19:05:12.520	Roues arrêtées.
+1794355513.433	19:05:13.432	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794355514.873	19:05:14.873	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794355516.374	19:05:16.373	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794355520.690	19:05:20.690	Tour sur place : 90° (38 mesures).
+1794355524.911	19:05:24.910	Tour sur place : 180° (77 mesures).
+1794355529.044	19:05:29.044	Tour sur place : 270° (113 mesures).
+1794355533.308	19:05:33.308	Tour sur place : 360° (150 mesures).
+1794355534.305	19:05:34.304	Tour sur place terminé : 380° en 17.9 s, 158 mesures. Roues arrêtées.
+1794355534.865	19:05:34.864	Tourne à droite (75 mm/s).
+1794355535.153	19:05:35.152	Roues arrêtées.
+1794355535.972	19:05:35.972	Avance (75 mm/s).
+1794355537.298	19:05:37.297	Roues arrêtées.
+1794355538.099	19:05:38.098	Avance (75 mm/s).
+1794355539.402	19:05:39.401	Roues arrêtées.
+1794355540.284	19:05:40.284	Tourne à droite (75 mm/s).
+1794355540.388	19:05:40.387	Roues arrêtées.
+1794355541.259	19:05:41.259	Avance (75 mm/s).
+1794355542.568	19:05:42.568	Roues arrêtées.
+1794355543.371	19:05:43.370	Avance (75 mm/s).
+1794355544.712	19:05:44.711	Roues arrêtées.
+1794355545.519	19:05:45.518	Avance (75 mm/s).
+1794355546.835	19:05:46.835	Roues arrêtées.
+1794355547.685	19:05:47.684	Avance (75 mm/s).
+1794355549.010	19:05:49.009	Roues arrêtées.
+1794355549.879	19:05:49.879	Tourne à droite (75 mm/s).
+1794355550.021	19:05:50.020	Roues arrêtées.
+1794355550.862	19:05:50.861	Avance (75 mm/s).
+1794355552.188	19:05:52.187	Roues arrêtées.
+1794355553.069	19:05:53.068	Avance (75 mm/s).
+1794355553.994	19:05:53.994	Roues arrêtées.
+1794355554.924	19:05:54.924	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794355556.350	19:05:56.350	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794355557.867	19:05:57.866	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794355562.211	19:06:02.210	Tour sur place : 90° (39 mesures).
+1794355566.402	19:06:06.401	Tour sur place : 180° (77 mesures).
+1794355570.489	19:06:10.488	Tour sur place : 270° (113 mesures).
+1794355574.688	19:06:14.687	Tour sur place : 360° (151 mesures).
+1794355575.599	19:06:15.598	Tour sur place terminé : 380° en 17.8 s, 159 mesures. Roues arrêtées.
+1794355576.192	19:06:16.192	Tourne à gauche (75 mm/s).
+1794355576.723	19:06:16.722	Roues arrêtées.
+1794355577.512	19:06:17.512	Avance (75 mm/s).
+1794355578.846	19:06:18.846	Roues arrêtées.
+1794355579.765	19:06:19.764	Avance (75 mm/s).
+1794355581.105	19:06:21.105	Roues arrêtées.
+1794355581.964	19:06:21.963	Avance (75 mm/s).
+1794355583.290	19:06:23.289	Roues arrêtées.
+1794355584.100	19:06:24.100	Avance (75 mm/s).
+1794355585.385	19:06:25.385	Roues arrêtées.
+1794355586.264	19:06:26.264	Tourne à droite (75 mm/s).
+1794355586.395	19:06:26.394	Roues arrêtées.
+1794355587.249	19:06:27.248	Avance (75 mm/s).
+1794355588.584	19:06:28.583	Roues arrêtées.
+1794355589.389	19:06:29.389	Avance (75 mm/s).
+1794355589.771	19:06:29.770	Roues arrêtées.
+1794355590.570	19:06:30.570	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794355592.019	19:06:32.018	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794355593.502	19:06:33.502	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794355597.922	19:06:37.922	Tour sur place : 90° (41 mesures).
+1794355602.154	19:06:42.154	Tour sur place : 180° (78 mesures).
+1794355606.526	19:06:46.526	Tour sur place : 270° (118 mesures).
+1794355610.814	19:06:50.814	Tour sur place : 360° (154 mesures).
+1794355611.764	19:06:51.764	Tour sur place terminé : 380° en 18.3 s, 163 mesures. Roues arrêtées.
+1794355612.382	19:06:52.381	Tourne à droite (75 mm/s).
+1794355613.714	19:06:53.713	Roues arrêtées.
+1794355614.566	19:06:54.566	Tourne à droite (75 mm/s).
+1794355615.876	19:06:55.876	Roues arrêtées.
+1794355616.739	19:06:56.739	Tourne à droite (75 mm/s).
+1794355616.903	19:06:56.902	Roues arrêtées.
+1794355617.764	19:06:57.763	Avance (75 mm/s).
+1794355619.090	19:06:59.089	Roues arrêtées.
+1794355620.021	19:07:00.021	Avance (75 mm/s).
+1794355621.310	19:07:01.310	Roues arrêtées.
+1794355622.185	19:07:02.185	Avance (75 mm/s).
+1794355623.490	19:07:03.489	Roues arrêtées.
+1794355624.374	19:07:04.373	Tourne à droite (75 mm/s).
+1794355624.487	19:07:04.487	Roues arrêtées.
+1794355625.323	19:07:05.322	Avance (75 mm/s).
+1794355626.615	19:07:06.614	Roues arrêtées.
+1794355627.490	19:07:07.490	Avance (75 mm/s).
+1794355628.825	19:07:08.824	Roues arrêtées.
+1794355629.685	19:07:09.685	Avance (75 mm/s).
+1794355630.294	19:07:10.293	Roues arrêtées.
+1794355631.180	19:07:11.179	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794355632.602	19:07:12.601	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794355634.104	19:07:14.103	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794355638.449	19:07:18.448	Tour sur place : 90° (39 mesures).
+1794355642.697	19:07:22.696	Tour sur place : 180° (77 mesures).
+1794355646.887	19:07:26.887	Tour sur place : 270° (115 mesures).
+1794355650.954	19:07:30.954	Tour sur place : 360° (152 mesures).
+1794355651.874	19:07:31.874	Tour sur place terminé : 380° en 17.8 s, 160 mesures. Roues arrêtées.
+1794355656.714	19:07:36.713	Avance (75 mm/s).
+1794355658.016	19:07:38.016	Roues arrêtées.
+1794355658.835	19:07:38.835	Avance (75 mm/s).
+1794355660.173	19:07:40.172	Roues arrêtées.
+1794355660.978	19:07:40.977	Avance (75 mm/s).
+1794355662.321	19:07:42.321	Roues arrêtées.
+1794355663.184	19:07:43.183	Tourne à droite (75 mm/s).
+1794355663.313	19:07:43.312	Roues arrêtées.
+1794355664.182	19:07:44.182	Avance (75 mm/s).
+1794355665.506	19:07:45.506	Roues arrêtées.
+1794355666.333	19:07:46.332	Avance (75 mm/s).
+1794355667.666	19:07:47.665	Roues arrêtées.
+1794355668.523	19:07:48.523	Avance (75 mm/s).
+1794355669.175	19:07:49.175	Roues arrêtées.
+1794355670.014	19:07:50.013	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794355671.436	19:07:51.436	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794355672.950	19:07:52.949	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794355677.078	19:07:57.078	Tour sur place : 90° (38 mesures).
+1794355681.148	19:08:01.148	Tour sur place : 180° (74 mesures).
+1794355685.168	19:08:05.168	Tour sur place : 270° (110 mesures).
+1794355689.208	19:08:09.207	Tour sur place : 360° (146 mesures).
+1794355690.157	19:08:10.157	Tour sur place terminé : 380° en 17.2 s, 154 mesures. Roues arrêtées.
+1794355690.902	19:08:10.901	Tourne à droite (75 mm/s).
+1794355691.533	19:08:11.532	Roues arrêtées.
+1794355692.326	19:08:12.326	Tourne à droite (75 mm/s).
+1794355692.438	19:08:12.438	Roues arrêtées.
+1794355693.310	19:08:13.309	Avance (75 mm/s).
+1794355694.649	19:08:14.648	Roues arrêtées.
+1794355695.522	19:08:15.521	Avance (75 mm/s).
+1794355696.843	19:08:16.842	Roues arrêtées.
+1794355697.706	19:08:17.705	Avance (75 mm/s).
+1794355698.501	19:08:18.500	Réflexe : pare-chocs, à gauche, roues arrêtées par le cerveau. Reculez pour vous dégager (flèche du bas).
+1794355699.194	19:08:19.193	Recule (75 mm/s).
+1794355700.077	19:08:20.077	Roues arrêtées.
+1794355701.047	19:08:21.046	Recule (75 mm/s).
+1794355701.946	19:08:21.945	Roues arrêtées.
+1794355702.929	19:08:22.929	Tourne à gauche (75 mm/s).
+1794355704.218	19:08:24.217	Roues arrêtées.
+1794355705.118	19:08:25.118	Tourne à gauche (75 mm/s).
+1794355706.405	19:08:26.405	Roues arrêtées.
+1794355707.333	19:08:27.333	Tourne à gauche (75 mm/s).
+1794355708.430	19:08:28.430	Roues arrêtées.
+1794355709.249	19:08:29.248	Avance (75 mm/s).
+1794355710.564	19:08:30.564	Roues arrêtées.
+1794355711.605	19:08:31.605	Tourne à droite (75 mm/s).
+1794355712.334	19:08:32.333	Roues arrêtées.
+1794355713.183	19:08:33.182	Avance (75 mm/s).
+1794355714.508	19:08:34.507	Roues arrêtées.
+1794355715.378	19:08:35.377	Tourne à droite (75 mm/s).
+1794355715.494	19:08:35.493	Roues arrêtées.
+1794355716.314	19:08:36.314	Avance (75 mm/s).
+1794355717.628	19:08:37.628	Roues arrêtées.
+1794355718.523	19:08:38.523	Avance (75 mm/s).
+1794355719.808	19:08:39.808	Roues arrêtées.
+1794355720.673	19:08:40.672	Avance (75 mm/s).
+1794355722.035	19:08:42.034	Roues arrêtées.
+1794355722.872	19:08:42.872	Tourne à droite (75 mm/s).
+1794355722.997	19:08:42.997	Roues arrêtées.
+1794355723.914	19:08:43.913	Avance (75 mm/s).
+1794355725.256	19:08:45.255	Roues arrêtées.
+1794355726.071	19:08:46.070	Avance (75 mm/s).
+1794355727.397	19:08:47.396	Roues arrêtées.
+1794355728.323	19:08:48.323	Avance (75 mm/s).
+1794355729.567	19:08:49.567	Roues arrêtées.
+1794355730.507	19:08:50.507	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794355731.925	19:08:51.924	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794355733.427	19:08:53.427	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794355737.756	19:08:57.755	Tour sur place : 90° (40 mesures).
+1794355742.002	19:09:02.002	Tour sur place : 180° (76 mesures).
+1794355746.213	19:09:06.213	Tour sur place : 270° (114 mesures).
+1794355750.530	19:09:10.529	Tour sur place : 360° (153 mesures).
+1794355751.435	19:09:11.434	Tour sur place terminé : 380° en 18.0 s, 162 mesures. Roues arrêtées.
+1794355752.024	19:09:12.023	Tourne à droite (75 mm/s).
+1794355753.349	19:09:13.348	Roues arrêtées.
+1794355754.214	19:09:14.214	Tourne à droite (75 mm/s).
+1794355754.937	19:09:14.937	Roues arrêtées.
+1794355755.889	19:09:15.889	Avance (75 mm/s).
+1794355757.180	19:09:17.180	Roues arrêtées.
+1794355758.133	19:09:18.133	Tourne à droite (75 mm/s).
+1794355758.225	19:09:18.224	Roues arrêtées.
+1794355759.083	19:09:19.082	Avance (75 mm/s).
+1794355760.413	19:09:20.413	Roues arrêtées.
+1794355761.233	19:09:21.233	Avance (75 mm/s).
+1794355762.537	19:09:22.537	Roues arrêtées.
+1794355763.898	19:09:23.897	Avance (75 mm/s).
+1794355765.222	19:09:25.221	Roues arrêtées.
+1794355766.017	19:09:26.017	Tourne à droite (75 mm/s).
+1794355766.154	19:09:26.153	Roues arrêtées.
+1794355767.008	19:09:27.007	Avance (75 mm/s).
+1794355768.328	19:09:28.327	Roues arrêtées.
+1794355769.173	19:09:29.173	Avance (75 mm/s).
+1794355770.549	19:09:30.548	Roues arrêtées.
+1794355771.359	19:09:31.359	Avance (75 mm/s).
+1794355772.684	19:09:32.684	Roues arrêtées.
+1794355773.536	19:09:33.535	Avance (75 mm/s).
+1794355774.803	19:09:34.802	Roues arrêtées.
+1794355775.716	19:09:35.716	Calibration du gyroscope pendant 1 s : ne pas bouger le robot. Cap remis à zéro.
+1794355777.139	19:09:37.138	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794355778.645	19:09:38.645	Tour sur place : rotation vers la gauche, roues à 30 mm/s demandés. 5 ou espace pour arrêter.
+1794355782.995	19:09:42.994	Tour sur place : 90° (40 mesures).
+1794355787.287	19:09:47.286	Tour sur place : 180° (77 mesures).
+1794355791.543	19:09:51.543	Tour sur place : 270° (115 mesures).
+1794355795.717	19:09:55.716	Tour sur place : 360° (154 mesures).
+1794355796.687	19:09:56.686	Tour sur place terminé : 380° en 18.0 s, 162 mesures. Roues arrêtées.
+1794355797.230	19:09:57.230	Tourne à droite (75 mm/s).
+1794355797.659	19:09:57.659	Roues arrêtées.
+1794355798.514	19:09:58.514	Avance (75 mm/s).
+1794355799.858	19:09:59.857	Roues arrêtées.
+1794355800.735	19:10:00.734	Vitesse réglée à 150 mm/s (page web).
+1794356096.709	19:14:56.708	Roues arrêtées.
+1794356097.578	19:14:57.578	Envoyé : Start (128) -> Passive
+1794356098.633	19:14:58.633	Envoyé : Stop (173) -> OI fermée
+1794356099.711	19:14:59.711	Radar : arrêt, servo recentré puis relâché.
+1794356100.937	19:15:00.937	>> j
+1794356101.035	19:15:01.034	Journal CSV désactivé.
+1794356102.038	19:15:02.037	## fin de l'enregistrement après 4031.7 s

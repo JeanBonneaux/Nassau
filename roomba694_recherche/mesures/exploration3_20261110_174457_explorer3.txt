@@ -1,0 +1,44 @@
+[  0.3 min] station 0 : 7 paliers, 2 lignes de murs, axes de la pièce 43.5°
+[  0.3 min]   depuis la station 0 : direction 90° (vu, libre sur 124 cm), 900 mm, vers (0, 900), 4.5 m² à voir ; 45 candidats
+[  1.0 min] station 1 en (-8, 893) : 14 paliers ; 5 lignes de murs
+[  1.0 min]   depuis la station 1 : direction 195° (vu, libre sur 125 cm), 900 mm, vers (-878, 660), 4.1 m² à voir ; 61 candidats
+[  1.6 min] station 2 en (-872, 657) : 10 paliers ; 6 lignes de murs
+[  1.6 min]   depuis la station 2 : direction 180° (vu, libre sur 120 cm), 900 mm, vers (-1772, 657), 6.5 m² à voir ; 61 candidats
+[  1.7 min]     arrêté : avance refusée : obstacle à 129 mm devant (marge 600.0 mm) ; robot en (-1254, 646)
+[  2.0 min]   depuis la station 2 : direction 200° (vu, libre sur 88 cm), 500 mm, vers (-1342, 486), 3.1 m² à voir ; 56 candidats
+[  2.5 min]   porte possible : 757 mm de large vers (-628, -858), direction 224°
+[  2.5 min] station 3 en (-1331, 487) : 13 paliers ; 6 lignes de murs
+[  2.8 min]   depuis la station 2 : direction 299° (porte), 1300 mm, vers (-232, -476), 2.0 m² à voir ; 56 candidats
+[  3.6 min]   porte possible : 913 mm de large vers (194, -1709), direction 224°
+[  3.6 min] station 4 (devant une porte) en (-233, -468) : 10 paliers ; 6 lignes de murs
+[  3.6 min]   depuis la station 4 : direction 314° (porte), 1190 mm, vers (590, -1327), 3.1 m² à voir ; 73 candidats
+[  4.3 min] station 5 (devant une porte) en (582, -1325) : 6 paliers ; 7 lignes de murs
+[  4.3 min]   depuis la station 5 : direction 350° (vu, libre sur 114 cm), 700 mm, vers (1271, -1446), 4.7 m² à voir ; 133 candidats
+[  4.8 min] station 6 en (1264, -1443) : 9 paliers ; 9 lignes de murs
+[  4.8 min]   depuis la station 6 : direction 0° (vu, libre sur 150 cm), 900 mm, vers (2164, -1443), 4.8 m² à voir ; 161 candidats
+[  5.4 min] station 7 en (2174, -1395) : 8 paliers ; 11 lignes de murs
+[  5.4 min]   depuis la station 7 : direction 225° (vu, libre sur 235 cm), 900 mm, vers (1537, -2032), 3.2 m² à voir ; 139 candidats
+[  6.1 min]   porte possible : 760 mm de large vers (1921, -279), direction 44°
+[  6.1 min] station 8 en (1542, -2027) : 7 paliers, sur un tapis ; 11 lignes de murs
+[  6.1 min]   depuis la station 8 : direction 310° (vu, libre sur 91 cm), 500 mm, vers (1863, -2410), 4.0 m² à voir ; 155 candidats
+[  6.6 min]   porte possible : 1202 mm de large vers (1487, -4021), direction 224°
+[  6.6 min] station 9 en (1861, -2403) : 5 paliers, sur un tapis ; 13 lignes de murs
+[  6.6 min]   depuis la station 9 : direction 271° (porte), 1236 mm, vers (1883, -3639), 4.7 m² à voir ; 170 candidats
+[  6.8 min]     arrêté : alarme pendant une avance : pare-chocs gauche ; robot en (1874, -2919)
+[  7.1 min]   depuis la station 9 : direction 250° (vu, libre sur 139 cm), 900 mm, vers (1553, -3249), 3.0 m² à voir ; 163 candidats
+[  7.7 min] station 10 en (1558, -3244) : 7 paliers, sur un tapis ; 15 lignes de murs
+[  7.7 min]   depuis la station 10 : direction 270° (vu, libre sur 88 cm), 500 mm, vers (1558, -3744), 1.6 m² à voir ; 156 candidats
+[  8.2 min]   porte possible : 704 mm de large vers (282, -2596), direction 224°
+[  8.2 min]   porte possible : 625 mm de large vers (743, -3074), direction 224°
+[  8.2 min] station 11 en (1566, -3736) : 7 paliers, sur un tapis ; 16 lignes de murs
+[  8.7 min]   recalage sur la station 10 : le PC se croyait à (-3, -8) mm d'elle, les parois disent (+47, -59) mm (3 parois) ; position corrigée de (+50, -51) mm
+[  8.7 min]   depuis la station 10 : direction 127° (porte), 693 mm, vers (1139, -2692), 2.0 m² à voir ; 152 candidats
+[  9.2 min]   porte possible : 1154 mm de large vers (-223, -2686), direction 224°
+[  9.2 min] station 12 (devant une porte) en (1134, -2703) : 10 paliers, sur un tapis ; 19 lignes de murs
+[  9.8 min]   trajet vers la station 9 arrêté (alarme pendant une avance : pare-chocs  droit) : retour à la station 10, recalage, puis second essai
+[ 10.0 min]   recalage sur la station 10 : le PC se croyait à (+1, +57) mm d'elle, les parois disent (+149, -54) mm (2 parois) ; position corrigée de (+148, -111) mm
+[ 10.3 min]   trajet vers la station 9 impossible : alarme pendant une avance : pare-chocs  droit
+[ 10.9 min]   trajet vers la station 7 arrêté (alarme pendant une avance : capteur optique à 408) : retour à la station 8, recalage, puis second essai
+[ 11.3 min]   recalage sur la station 8 : pas assez de parois communes, position gardée
+[ 11.6 min]   trajet vers la station 7 impossible : rotation refusée : sorti du mode Safe (mode lu 2)
+[ 11.7 min] fin : arrêt : trajet vers la station 7 impossible : rotation refusée : sorti du mode Safe (mode lu 2) | mode 2 | roues arrêtées | pare-chocs [0, 0] | 13 stations, 3 recalages, 2 corrections de cap (échelle du gyroscope 1.0019), 213 sauts, 2 trajets arrêtés, 2 obstacles touchés ou vus devant | 17.4 m | batterie 2017 mAh
