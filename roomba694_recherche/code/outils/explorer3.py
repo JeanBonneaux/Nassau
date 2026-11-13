@@ -599,13 +599,15 @@ class Exploration:
             # s'arrêter tous les 40 cm pour se redresser. La dérive est mesurée sur les avances précédentes.
             derive = getattr(self, "derive", 0.0) if (fluide and not getattr(self.a, "sans_visee", False)) else 0.0
             # Firmware v10 : le cerveau tient le cap lui-même et sait le changer en roulant. Plus de visée à côté, et le
-            # robot ne s'arrête pour pivoter que si le point est à plus de 35° de son axe.
+            # robot ne s'arrête pour pivoter que si le point est à plus de 15° de son axe. Avec 35° (jusqu'au 2026-11-13),
+            # un virage de 22° pris en roulant a décalé le robot de 6 à 9 cm dans la porte H12 : contact avec un montant
+            # (journal_wifi.md § 36) ; et l'arrivée à côté du point demandait ensuite une rotation de plus (§ 35).
             cerveau = fluide and self.p.sait_mouv()
             if cerveau:
                 derive = 0.0
             a_cote = max(-4.0, min(4.0, 0.5 * derive * max(0.0, d_trait)))      # 4° au plus : le capteur de distance doit continuer de regarder le chemin
             err = ecart(math.degrees(math.atan2(dy, dx)) - a_cote - q[2])
-            if abs(err) > ((35.0 if d > 250 else 12.0) if cerveau else (4.0 if d > 120 else 8.0)):
+            if abs(err) > ((15.0 if d > 250 else 12.0) if cerveau else (4.0 if d > 120 else 8.0)):
                 ok, raison = self.tourner_vers(q[2] + err)
                 if not ok:
                     return False, raison

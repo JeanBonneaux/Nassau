@@ -186,6 +186,10 @@ class Pilote:
                 raison = f"obstacle à {seg[-1]['us_mm']:.0f} mm devant"
             elif "arrêt demandé" not in dit:
                 alarme = dit                                    # arrêt décidé par le cerveau : pare-chocs, roue, mode Safe, robot bloqué
+                if "pare-chocs" in dit:                         # le cerveau ne dit pas de quel côté : le journal le sait
+                    g, d = any(l["pc_g"] for l in seg), any(l["pc_d"] for l in seg)
+                    if g or d:                                  # même texte que Pilote.alarme : le contact est noté du bon côté
+                        alarme = "pare-chocs " + ("gauche" if g else "") + (" droit" if d else "")
         return {"duree_ordre": round(t_stop - t0, 2), "alarme": alarme, "raison": raison or dit,
                 "avance_mm": round(math.hypot(seg[-1]["x_mm"] - seg[0]["x_mm"], seg[-1]["y_mm"] - seg[0]["y_mm"]), 1),
                 "rot_gyro": round(seg[-1]["cap_pos"] - seg[0]["cap_pos"], 2), "us_avant": seg[0]["us_mm"], "us_apres": seg[-1]["us_mm"],

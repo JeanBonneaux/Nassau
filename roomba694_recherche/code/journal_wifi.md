@@ -1072,3 +1072,39 @@ Le matin (firmware v9, avance pilotée par le PC), le cap tournait de 8,6° par 
 **Non vérifié** : ce qui se passe si le Wi-Fi se coupe pendant un mouvement ; les arrêts sur roue soulevée, sortie du mode Safe, durée maximale et robot bloqué (aucun ne s'est produit).
 
 **État à la fin** : firmware v10 sur la carte ; robot en C17, pixel (443, 61), cap 98°, face à sa base et à 65 cm d'elle ; session fermée (`5`, `s`, `x`) à 12 h 29, capteur de distance au repos (sécurité active, seuil 30 cm), vitesse remise à 150, batterie 1 752 mAh.
+
+## 36. « Amène le robot en K9 » : la porte H12, un passage de 47 cm, une zone jamais vue (2026-11-13, 12 h 42 à 13 h 10)
+
+Demande de l'utilisateur : « amène le robot en K9 ». Robot en C17 devant sa base (inchangé depuis le § 35), firmware v10. Enregistrements : `mesures/exploration9_20261113_124811_*` (`_a_` : jusqu'à la porte ; `_b_` : la porte ; `_c_` : point d'observation ; `_essai_tours.json` : tour final), `mesures/position_20261113_131023.*`. Carte : `plan_lidar/carte_grille_20261113_k9*.png` (hors dépôt).
+
+**Préparation.** K9 est sous le mur de la grande pièce, à l'ouest de la porte H12 : zone jamais explorée, mais sur le trait vert de l'utilisateur. Le chemin du planificateur (7,2 m, 8 étapes) suit ce trait, qui rase le montant ouest de la porte puis la pointe d'un élément en biais : j'ai donné mes propres points de passage, au milieu de la porte et au large de la pointe.
+
+**De C17 à la porte** (`explorer3.py`, options du § 35) : C17 → D14 (pixel (368, 97)) → E12 → G12, 3,8 m en 1,6 min, 4 tours sur place, aucun contact. Le balayage fait en G12 concorde avec le plan : l'ouverture de la porte est vue entre les caps 280° et 300° (2,26 m), là où le plan la prédit depuis la position du filtre ; le meuble bas de G9 est à 1,2 m à l'ouest.
+
+**La porte H12** (100 mm/s demandés) : contact du pare-chocs gauche dans l'ouverture à 12 h 52 min 57, à 114 mm/s ; arrêt en 6 mm ; recul immédiat (correctif du § 35 : 0,84 s d'appui au lieu de 8,8 s à midi), tour sur place, second essai réussi. Cause : le robot est parti avec 22° d'écart de cap, pris en roulant ; le virage l'a décalé vers l'est et son côté gauche a touché le montant est. Le plan montre là un liseré gris que j'avais négligé : l'ouverture libre est plus étroite que ses traits sombres (68 cm) ne le font croire, et son milieu est vers u = 305 plutôt que 308.
+
+- Corrigé dans `explorer3.py` : quand le cerveau conduit, le robot pivote d'abord dès que l'écart de cap dépasse 15° (35° avant) ; en simulation, 63 à 68 mm/s, comme avant.
+- Corrigé dans `Pilote._mouvement` : le côté du contact est lu dans le journal (le cerveau dit seulement « pare-chocs touché », et ce contact avait été noté droit devant).
+
+**Le passage vers l'ouest.** Balayage depuis le sud de la porte, puis regards cap par cap, robot à l'arrêt, depuis deux points (nouvel outil `outils/passage.py`).
+
+- Le battant de la porte H12 est ouvert à angle droit vers le sud. Son chant ne renvoie un écho que dans l'axe du capteur (caps 172° à 179°, à 44 cm) : le tour sur place ne l'avait attrapé qu'une fois sur cent mesures.
+- Le bout du mur d'en face se voit de 205° à 241°, à 64 cm.
+- Entre les deux : 47 cm (45 à 52 selon l'incertitude), pour un robot de 34 cm. Le « point » isolé que le plan montre en J11 est sans doute ce chant ; le chemin du planificateur passait dessus.
+
+Franchissement : robot placé à l'estime dans l'axe (2,2 m libres droit devant, bords à 23 cm de part et d'autre), puis 98 cm en ligne droite à 50 mm/s demandés (72 réels) : aucun contact, capteurs optiques à 60 au plus.
+
+**Arrivée.** À 27 cm du but, contact du pare-chocs droit (13 h 05, 94 mm/s, arrêt en 4 mm, appui de 0,14 s : l'objet a cédé ou le robot a rebondi ; capteur optique avant droit à 373 juste avant) : un coin de meuble ou un pied de chaise à la limite de J10 et K10. Recul de 12 cm, regards au capteur, contournement par le sud-ouest en deux avances (24 et 21 cm). Tour sur place final : objets fins à 18 à 20 cm du centre du robot au nord et à l'ouest-nord-ouest (2 à 3 cm de sa coque), un autre à 25 cm au sud-sud-ouest, une grande surface à 70 cm à l'ouest. Je n'ai pas avancé davantage.
+
+**Où est le robot.** À l'estime depuis le dernier calage : pixel (234, 256). Le filtre, sur le tour final : pixel (240, 251), case K10 à 3 cm près, note 0,52, étalement 38 cm (les objets proches ne sont pas sur le plan). Les obstacles vus ou touchés à l'ouest de la porte (bout du mur, chant du battant, coin de meuble) sont tous 5 à 10 pixels plus au nord sur le plan que là où l'estime les place. Position retenue : pixel (236, 251), **en K9, à 5 cm de la limite avec K10**, à 10 cm près. Aucun autre juge que les capteurs du robot.
+
+**Ce que ces mesures remplacent ou apprennent.**
+
+- § 29, « porte H12 passée » (deux fois le 10, sans contact) : cela ne disait rien de la marge. L'ouverture libre fait moins de 70 cm et un virage pris en roulant suffit à toucher un montant.
+- Le plan n'est pas fiable à 10 cm près pour ce qui bouge (battant, chaise) ni pour les meubles bas ou à pieds : la zone grise de J7 à J10 laisse passer le capteur de distance jusqu'au mur (1,05 m), et son coin arrête le pare-chocs.
+- Le trait vert ne doit pas l'emporter sur la distance aux murs : `Plan.chemin` donne au trait le coût du sol libre même contre un mur. À corriger, pas fait.
+- Un chant de porte est presque invisible au tour sur place : avant un passage étroit, regarder cap par cap, à l'arrêt.
+
+**Non fait, non vérifié** : le retour ; `passage.py` suit la position à l'estime et ne connaît pas le plan ; le seuil de 15° n'a tourné qu'en simulation.
+
+**État à la fin** : robot en K9 (pixel (236, 251)), cap 193° (vers la gauche), immobile entre des objets fins ; session fermée (`5`, `s`, `x`) à 13 h 10, capteur de distance au repos, vitesse 150, batterie 1 685 mAh ; 8,3 m parcourus depuis C17, mode Safe jamais quitté, sol clair partout (signal le plus bas : 2 453). Pour revenir : le même passage en sens inverse (se remettre dans l'axe à l'estime, regarder, passer), puis la porte H12 en visant u = 305, robot aligné avant d'avancer.
