@@ -56,6 +56,7 @@ float poseX()    { return pose.x; }
 float poseY()    { return pose.y; }
 float poseCap()  { return pose.capAbs - pose.cap0; }
 float poseCap0() { return pose.cap0; }
+float poseDist() { return pose.dist; }   // chemin parcouru depuis la remise à zéro, mm (v10 : sert à mouv.ino)
 // Position utilisable pour placer un obstacle sur la carte (carte.ino) : le robot vient de répondre et il est au sol.
 bool  poseFiable() { return pose.sync && !pose.leve && st.ok && millis() - st.lastOkMs < 1500; }
 

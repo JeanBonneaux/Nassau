@@ -1,5 +1,11 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 10 — 2026-11-13 : mouvements exécutés par le cerveau (fichier mouv.ino, /api/mouv) : « avance de tant » en
+    tenant le cap au gyroscope, les deux roues commandées séparément, et « tourne de tant » ; départ progressif,
+    ralentissement avant le but, arrêt par le cerveau. Les sécurités sont celles des flèches et du tour sur place :
+    mode Safe, pare-chocs et roue levée (réflexe v6, inchangé), arrêt du capteur de distance (inchangé), touches
+    d'arrêt, durées maximales. Rien d'autre ne change ; les flèches, le tour sur place et le garde-fou de 1,5 s restent
+    tels quels. /api/state gagne « mouv ».
   Version 9 — 2026-11-13 : le gyroscope seulement, deux retouches liées (journal_wifi.md § 31 et § 33).
     (1) La zone morte de 0,3 °/s ne sert plus qu'à l'arrêt : tant qu'un ordre de roues est en cours, et une demi-seconde
     après, toute rotation mesurée entre dans le cap. Le robot dévie lentement en roulant (5 à 13° par mètre mesurés le
@@ -146,6 +152,8 @@ void radarSetup();  void radarTick();  bool radarForwardBlocked();  void radarCy
 int  radarFrontMm();  void radarStateJson(String& j);
 // Tour sur place (rotation du robot avec mesure des distances) : défini dans tour.ino (quatrième fichier du sketch)
 void tourStart();  void tourTick();  bool tourActive();  void tourEnd(bool ok, const char* raison);  void handleTour();
+void jsonStr(String& j, const char* s);   // défini plus bas ; mouv.ino s'en sert avant
+void mouvStart(bool rotation, float but, int v, float capRel);  void mouvTick();  bool mouvActive();  void mouvEnd(bool ok, const char* raison);  void handleMouv();  void mouvStateJson(String& j);  float poseDist();   // v10 : mouv.ino
 // Position du robot (x, y, cap) : définie dans position.ino (deuxième fichier du sketch)
 void poseUpdate();  void poseReset(bool annonce);  void posePrint();  void poseStateJson(String& j);  void handlePose();
 float poseX();  float poseY();  float poseCap();  float poseCap0();  bool poseFiable();
@@ -1016,7 +1024,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v9 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v10 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"
@@ -1042,6 +1050,7 @@ void printHelp() {
 void handle(char c) {
   // Un tour sur place en cours s'arrête dès qu'arrive une touche d'arrêt, de roues, de mode ou de recalibration.
   if (tourActive() && strchr("5 8246sfxohcz", c) != nullptr) tourEnd(false, "arrêt demandé par une touche");
+  if (mouvActive() && strchr("5 8246sfxohczt", c) != nullptr) mouvEnd(false, "arrêt demandé par une touche");   // v10
   switch (c) {
     case '?': printHelp(); break;
     case 'w': brcPulse(); out.println(F("Impulsion BRC envoyée.")); break;
@@ -1175,6 +1184,7 @@ void setupWifi() {
   http.on("/api/scan", HTTP_GET, handleScan);
   http.on("/api/radar", HTTP_GET, handleRadar);
   http.on("/api/tour", HTTP_GET, handleTour);
+  http.on("/api/mouv", HTTP_GET, handleMouv);   // v10 : avance et rotation exécutées par le cerveau (mouv.ino)
   http.on("/api/pose", HTTP_GET, handlePose);
   http.on("/api/essai", HTTP_GET, handleEssai);
   http.on("/api/carte", HTTP_GET, handleCarte);
@@ -1308,5 +1318,6 @@ void loop() {
   sniffTick();   // le robot a-t-il envoyé son texte de démarrage ?
   radarTick();   // arrêt des roues devant un obstacle, messages du radar
   tourTick();    // tour sur place : ordres de roues répétés, conditions d'arrêt
+  mouvTick();    // v10 : avance ou rotation exécutée par le cerveau (mouv.ino)
   if (baudRescuePending && !driving && !tourActive()) { baudRescuePending = false; baudRescue(true); }
 }

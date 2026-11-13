@@ -13,6 +13,7 @@
 //                       angle=-80..80, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..80, ech=1..3, inv=0|1, effacer=1,
 //                       butee=10..80 (degrés de part et d'autre du centre que le servo ne dépasse jamais)
 //          /api/tour    tour sur place (tour.ino) : état et mesures [dixièmes de degré, mm] du dernier tour ; go=1 le lance, stop=1 l'arrête
+//          /api/mouv    v10 : avance (av=MM, v=, cap=) ou rotation (rot=DEG) exécutée par le cerveau, stop=1 ; voir mouv.ino
 //          /api/pose    position du robot (position.ino) : x, y en mm, cap en degrés, tracé [x, y] ; zero=1 remet à zéro ;
 //                       gen et from : la page ne redemande que les points qu'elle n'a pas encore
 //          /api/essai   essais sans mouvement de l'enquête sur la liaison : b=octets à envoyer, ecoute=ms (voir handleEssai)
@@ -81,7 +82,7 @@ void handleState() {
   j.reserve(2400);
   char b[800];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v9 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
+    "{\"ms\":%lu,\"ver\":\"v10 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u,\"wall\":%u,\"cur\":[%d,%d],\"base\":%s},"
@@ -102,6 +103,7 @@ void handleState() {
   carteStateJson(j);   // "carte":{total, gen, dx}
   radarStateJson(j);   // "radar":{mode, front_mm, age, present, servo}
   tourStateJson(j);    // "tour":{etat, tourne, n}
+  mouvStateJson(j);    // "mouv":{etat, n, fait_mm, fait_deg} (v10)
   // réflexe pare-chocs (v6) : arrêts décidés par le cerveau, ordres refusés, verrou après un choc, cause du dernier arrêt
   j += "\"reflexe\":{\"arrets\":"; j += (unsigned long)reflexStops; j += ",\"refus\":"; j += (unsigned long)reflexRefused;
   j += ",\"verrou\":"; j += bumpLatch ? "true" : "false"; j += ",\"cause\":"; jsonStr(j, reflexCause); j += "},";
