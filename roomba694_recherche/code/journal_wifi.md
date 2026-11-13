@@ -1178,3 +1178,34 @@ Message de l'utilisateur : « il était je ne sais pas, K9, K10, peut-être entr
 **À faire, pas fait** : tenir le cap par le gyroscope avec une correction lente ; une petite avance de rattrapage après le tour d'arrivée ; rendre les repères de deux endroits cohérents entre eux par le trajet compté ; replacer la base sur le plan par un passage devant elle et s'aligner sur le couloir « rouge et vert » ; donner à `explorer3.py` la méthode de `passage.py` pour les passages étroits.
 
 **État à la fin** : robot en C17, pixel (437, 68), cap 66°, devant sa base ; session fermée (`5`, `s`, `x`) à 14 h 05, capteur de distance au repos, vitesse 150, batterie 1 613 mAh.
+
+## 39. La base mesurée par ses faisceaux : elle est en B16, et le robot aligné sur son axe (2026-11-13, 14 h 22 à 14 h 30)
+
+Accord de l'utilisateur : « Oui, la base » (mesurer la base par ses faisceaux et aligner le robot sur son axe). Enregistrements : `mesures/exploration12_20261113_142305_*`, `mesures/position_20261113_143035.*`. Carte : `plan_lidar/carte_grille_20261113_base*.png` (hors dépôt). Nouvel outil : `outils/balise_base.py`.
+
+**Ce que disaient déjà les données du matin**, robot juste glissé hors de sa base et tourné vers elle (début de `exploration6`, relu cap par cap) :
+
+- les deux récepteurs avant ne voient la base que si le robot lui fait face, à 20° près ;
+- le récepteur du dessus voit sur 240° (rien quand la base est à plus de 120° du nez) ; à cet endroit il lisait « rouge » tant que le robot était tourné vers la droite ou de moins de 30° vers la gauche, puis « rouge et vert » de 30° à 120° vers la gauche : en tournant, le récepteur (à l'avant du robot) se déplace de côté et traverse les faisceaux. Un code n'arrive que sur une ligne sur deux environ.
+
+**La méthode** (`balise_base.py`, un tour sur place) : le milieu des caps où les récepteurs avant voient la base donne sa direction ; les caps où le récepteur du dessus passe de rouge à « les deux », puis à vert, donnent de combien l'axe de la base est à gauche ou à droite du centre du robot. Face à la base, le rouge est à droite et le vert à gauche.
+
+**Les trois tours.**
+
+| Robot au pixel | Récepteurs avant | Récepteur du dessus | Conclusion |
+|---|---|---|---|
+| (423, 65), là où l'axe aurait dû passer si la base était en B17 | rien | rouge seulement, et seulement quand le récepteur est du côté ouest du robot | bord extérieur du faisceau rouge : la base et son axe sont plus à l'ouest |
+| (409, 75) | base vue à ±20° autour du cap 89° | rouge jusqu'à +10°, les deux de +12° à +49°, vert au-delà | axe à gauche du robot, d'une soixantaine de millimètres |
+| (405, 75), après 75 mm vers la gauche | base vue à ±27° autour du cap 90°, surtout « les deux » | rouge jusqu'à −20°, les deux de −18° à +5°, vert de +5° à +40° | axe à 15 mm à droite du robot : aligné |
+
+- Vérification à l'arrêt, robot tourné vers le cap 90° : **les trois récepteurs lisent « rouge et vert »** (37 lignes sur 82, le reste sans code).
+- Le déplacement de 75 mm a fait passer l'écart mesuré de +72 à −16 mm avec un récepteur supposé à 150 mm du centre : il est donc à 126 mm du centre, et les écarts vrais étaient +61 puis −14 mm. Le couloir « rouge et vert » fait 5 à 7 cm de large à 85 cm de la base.
+- Capteur de distance dans l'axe : 878 mm, soit le mur à 905 mm du centre, là où le plan le montre (v = 27 à 28). La base est trop basse pour lui. Depuis (409, 75) il voyait quelque chose à 52 cm vers le cap 89° : un objet près de l'axe, côté droit, à 38 cm du mur (pot ou pied de table ; position à 10 cm près, le faisceau du capteur est large).
+
+**Où est la base.** Son axe est la droite u = 405 du plan (à 2 pixels près), elle regarde vers le bas (cap 270° à 3° près), adossée au mur du haut : pixel (405, 33), **case B16**. Cela remplace la position tenue depuis le 10 (B17, pixel (442, 27), centre de la marque de l'utilisateur) : 70 cm trop à l'est. Tout ce que ce journal appelle « C17, devant la base » depuis le § 32 était donc 60 à 70 cm à côté de son axe ; c'est pour cela qu'aucun faisceau n'y était reçu (le faisceau rouge s'arrête vers u = 420 à cette hauteur). `--base-plan` devient `405,33`.
+
+**Ce que cela apporte.** Un tour sur place à moins de 2 m de la base, dans ses faisceaux, donne la direction de la base à 3° près et l'écart à son axe à 1 ou 2 cm près, sans le plan : un repère fixe pour recaler le robot et pour l'accoster. Pas encore branché sur le filtre ni sur `explorer3.py`.
+
+**Non fait** : l'accostage (avancer sur la base, ou l'ordre « rentre à la base » du robot, touche `h`) ; le champ proche (code 161) n'a pas été revu.
+
+**État à la fin** : robot en C16, pixel (405, 75), cap 90°, **dans l'axe de sa base à 1 ou 2 cm près, tourné vers elle, le pare-chocs à 60 cm d'elle environ** ; session fermée (`5`, `s`, `x`) à 14 h 30, capteur de distance au repos, vitesse 150, batterie 1 585 mAh.
