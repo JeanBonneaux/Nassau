@@ -278,6 +278,7 @@ class Exploration:
         self.noeuds = []                                       # stations de l'arbre (pas les tours de recalage)
         self.murs, self.axe = [], None
         self.contacts = []                                     # (x, y, genre)
+        self.touches_voies = 0                                 # nombre de contacts au dernier tour sur place (voies gardées : sans contact)
         self.interdits = [tuple(float(v) for v in z.split(",")) for z in a.interdit.split(";") if z.strip()]
         self.portes = []                                       # portes repérées : dictionnaires
         self.echecs = 0
@@ -298,13 +299,17 @@ class Exploration:
                 from PIL import Image
                 Z = np.asarray(Image.open(a.plan_passe).convert("RGB")).astype(int)
                 self.plan.passe_main |= (Z[..., 1] > Z[..., 0] + 40) & (Z[..., 1] > Z[..., 2] + 40)
-            for f_ in getattr(a, "plan_roule", "").split(";"):   # trajets déjà roulés (fichiers de l_localisation_globale.py) : sol sûr
+            for f_ in getattr(a, "plan_roule", "").split(";"):   # trajets déjà roulés : sol sûr
                 if f_.strip():
                     with open(f_, encoding="utf-8") as fh:
-                        roule = json.load(fh).get("trajet", [])
+                        J_ = json.load(fh)
+                    # Deux sortes de fichiers : ceux de l_localisation_globale.py (« trajet » : une seule ligne brisée) et
+                    # les fichiers de tours d'explorer3.py lui-même (« voies » : une ligne brisée par trajet roulé sans
+                    # contact entre deux tours), pour revenir par où l'on vient d'aller (journal_wifi.md § 41).
                     # Une voie étroite (6 cm de part et d'autre) : le robot est passé LÀ, pas 15 cm à côté. Avec 15 cm
                     # (jusqu'au 2026-11-13) le chemin pouvait longer le bord de la bande, contre un montant de porte.
-                    self.plan.ouvrir([(p[0], p[1]) for p in roule], rayon_mm=VOIE)
+                    for roule in ([J_["trajet"]] if J_.get("trajet") else []) + list(J_.get("voies", [])):
+                        self.plan.ouvrir([(p[0], p[1]) for p in roule], rayon_mm=VOIE)
             if getattr(a, "reperes", ""):
                 import reperes as reperes_mod
                 self.reperes = reperes_mod.Reperes(a.reperes)
@@ -731,10 +736,16 @@ class Exploration:
                 # droite d'un tour à l'autre : il a pu contourner quelque chose). La correction que le tour vient
                 # d'apporter est répartie le long de la trace.
                 tr = self.est.trace[getattr(parent, "i_trace", 0):i_av + 1]
+                n_touches = sum(1 for c in self.contacts if c[2] == "contact")
                 if len(tr) >= 2:
                     ex, ey = st.x - tr[-1][0], st.y - tr[-1][1]
                     pts = [self.vers_px(x + ex * k / (len(tr) - 1), y + ey * k / (len(tr) - 1)) for k, (x, y) in enumerate(tr)]
                     self.plan.ouvrir(pts, rayon_mm=VOIE)
+                    # La voie est gardée dans le fichier des tours, pour un passage suivant (--plan-roule), si le robot
+                    # n'a rien touché en la roulant : une voie est un sol où il est passé sans contact.
+                    if n_touches == self.touches_voies:
+                        self.j.setdefault("voies", []).append([[round(float(u), 1), round(float(v), 1)] for u, v in pts])
+                self.touches_voies = n_touches
             st.i_trace = len(self.est.trace) - 1                 # le recalage a ajouté la position corrigée à la trace
         if genre not in ("recalage", "retour"):
             self.noeuds.append(st)

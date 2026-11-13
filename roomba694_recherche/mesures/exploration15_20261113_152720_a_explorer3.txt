@@ -1,0 +1,23 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (300, 171), cap 108°
+[  0.3 min]     filtre : position corrigée de (-55, +16) mm et +1.2° ; note 0.52, étalement 130 mm et 7.4°, gyroscope × 1.0045
+[  0.3 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.3 min] station 0 : 6 paliers, 5 lignes de murs, axes de la pièce 4.0°
+[  0.3 min] cibles reçues (série 1) : [(313, 119), (370, 117), (405, 80)]
+[  0.3 min]   vers la cible (313, 119) du plan : 2 étapes
+[  0.8 min]     filtre : position corrigée de (-90, -97) mm et +5.3° ; note 0.60, étalement 220 mm et 7.8°, gyroscope × 1.0047
+[  0.8 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.8 min] station 1 (vers une cible) en (5813, 5841) : 8 paliers
+[  0.8 min]   cible (313, 119) atteinte
+[  0.8 min]   vers la cible (370, 117) du plan : 2 étapes
+[  0.9 min]     arrêté : alarme pendant une avance : pare-chocs  droit ; robot en (6008, 5861)
+[  1.0 min]   vers la cible (370, 117) du plan : 3 étapes (essai 2, en contournant l'obstacle)
+[  1.7 min]     filtre : position corrigée de (+66, -138) mm et -3.1° ; note 0.81, étalement 253 mm et 6.4°, gyroscope × 1.0045
+[  1.7 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  1.7 min] station 2 (vers une cible) en (7041, 5845) : 6 paliers
+[  1.7 min]   cible (370, 117) atteinte
+[  1.7 min]   vers la cible (405, 80) du plan : 2 étapes
+[  2.2 min]     filtre : position corrigée de (+18, -16) mm et -0.2° ; note 0.70, étalement 276 mm et 6.8°, gyroscope × 1.0045
+[  2.2 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  2.2 min] station 3 (vers une cible) en (7657, 6660) : 11 paliers
+[  2.2 min]   cible (405, 80) atteinte
+[  2.2 min] fin : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 4 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 19 sauts, 1 trajets arrêtés, 1 obstacles touchés ou vus devant | 4.1 m | batterie 1548 mAh

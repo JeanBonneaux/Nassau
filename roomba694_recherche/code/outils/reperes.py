@@ -14,6 +14,9 @@
 #
 # Fabrication : python reperes.py SORTIE.json FICHIER_stations.json [FICHIER_stations.json ...] [--sans NOM,NOM]
 # Ne sont écrits que les tours confirmés : deux voisins au moins, position corrigée de 12 cm au plus.
+#   --tout : garder aussi les tours sans voisin, pour refaire en sens inverse un trajet qu'on vient de faire. Essayé le
+#            2026-11-13 (journal_wifi.md § 41) : aucun de ces tours seuls n'a servi au retour, parce qu'un repère seul
+#            doit être comparé sur quatre parois (classe Reperes) et que les tours du retour n'en partageaient que trois.
 #   --sans : tours à laisser de côté (étiquettes affichées par le programme), par exemple ceux faits pendant que
 #            quelque chose d'inhabituel était là
 import json
@@ -122,12 +125,15 @@ def main():
         i = argv.index("--sans")
         sans = tuple(argv[i + 1].split(","))
         del argv[i:i + 2]
+    tout = "--tout" in argv              # garder aussi les tours sans voisin (pour refaire en sens inverse un trajet tout juste fait)
+    if tout:
+        argv.remove("--tout")
     if len(argv) < 2:
-        sys.exit("usage : python reperes.py SORTIE.json FICHIER_stations.json [...] [--sans NOM,NOM]")
+        sys.exit("usage : python reperes.py SORTIE.json FICHIER_stations.json [...] [--sans NOM,NOM] [--tout]")
     T, paires = construire(argv[1:], sans)
     # Ne sont gardés que les tours confirmés : comparés à deux voisins au moins, et dont la position n'a pas dû être
     # corrigée de plus de 12 cm (au-delà, le tour ou ses voisins sont douteux : mieux vaut ne pas se caler dessus).
-    gardes = [t for t in T if t["voisins"] >= 2 and t["corrige"] <= 120]
+    gardes = [t for t in T if (t["voisins"] >= 2 and t["corrige"] <= 120) or tout]
     with open(argv[0], "w", encoding="utf-8") as f:
         json.dump({"reperes": [{"nom": t["nom"], "x": round(t["x"], 1), "y": round(t["y"], 1), "c": round(t["c"], 2), "pal": t["pal"],
                                 "corrige_mm": t["corrige"], "voisins": t["voisins"]} for t in gardes]}, f, ensure_ascii=False)

@@ -38,6 +38,11 @@ class Plan:
         self.passe = np.zeros((self.H, self.W), bool)                            # là où le robot est déjà passé : libre, quoi que dise le plan
         self.ferme = np.zeros((self.H, self.W), bool)                            # obstacles rencontrés par le robot
         self.passe_main = np.zeros((self.H, self.W), bool)                       # passages tracés à la main sur le plan : indicatifs
+        # Un pas hors des voies déjà roulées coûte ce nombre de pas sur une voie : le chemin repasse où le robot est déjà
+        # passé tant que le détour ne triple pas la distance. Le 2026-11-13 (journal_wifi.md § 41), sans cette préférence,
+        # le chemin du retour coupait de 10 cm un virage de l'aller dans la pièce centrale : le sol y est blanc sur le
+        # plan, mais un objet que ni le capteur de distance ni les capteurs optiques ne voient borde le passage (5 contacts).
+        self.hors_voie = 3.0
 
     def confirmer(self, u, v, pres_mm=80.0, rayon_mm=160.0):
         """Le robot voit quelque chose à cet endroit. Si le plan y montre un mur (à 8 cm près), ce mur est bien là
@@ -128,7 +133,7 @@ class Plan:
         g = garde_mm * self.s
         sombre = (255.0 - self.G) / 255.0
         proche = 4.0 * np.clip((3.0 * g - self.D_mur) / (2.0 * g), 0.0, 1.0)      # près d'un mur : plus cher
-        cout = 1.0 + 300.0 * sombre ** 3 + proche
+        cout = self.hors_voie * (1.0 + 300.0 * sombre ** 3 + proche)
         cout[self.D_mur < 0.6 * g] = 1e6
         cout[self.passe] = 1.0                                   # là où le robot a roulé : libre, quoi que dise le plan
         # Le trait tracé à la main ouvre un passage (même à travers un trait sombre : porte fermée le jour du relevé),
@@ -136,7 +141,7 @@ class Plan:
         # 2026-11-13 le trait valait du sol libre partout, et le chemin le suivait jusque contre un montant de porte et
         # sur le chant d'un battant (journal_wifi.md § 36).
         main = self.passe_main & ~self.passe
-        cout[main] = 1.0 + proche[main]
+        cout[main] = self.hors_voie * (1.0 + proche[main])
         cout[self.ferme] = 1e6
         a, b = (int(round(depart[1])), int(round(depart[0]))), (int(round(arrivee[1])), int(round(arrivee[0])))
         # Le robot est là où il est : autour de lui, tout est franchissable, même si le plan ou un obstacle noté tout près
@@ -168,10 +173,18 @@ class Plan:
             return []
         out, i = [chemin[0]], 0
         pas, mini = pas_mm * self.s, mini_mm * self.s
+        # Longueur de chemin hors des voies déjà roulées, cumulée le long du chemin : une ligne droite entre deux points
+        # du chemin n'est prise que si elle n'ajoute pas de trajet hors voie (6 cm de tolérance). Là où le chemin suit
+        # une voie, la ligne droite ne coupe donc plus les virages de cette voie ; ailleurs rien ne change.
+        hv = [0.0]
+        for (u0, v0), (u1, v1) in zip(chemin, chemin[1:]):
+            dehors = not (self.passe[int(v0), int(u0)] and self.passe[int(v1), int(u1)])
+            hv.append(hv[-1] + (math.hypot(u1 - u0, v1 - v0) if dehors else 0.0))
         while i < len(chemin) - 1:
             j = None
             for k in range(len(chemin) - 1, i, -1):
-                if math.hypot(chemin[k][0] - chemin[i][0], chemin[k][1] - chemin[i][1]) <= pas and self._visible(chemin[i], chemin[k]):
+                if (math.hypot(chemin[k][0] - chemin[i][0], chemin[k][1] - chemin[i][1]) <= pas and self._visible(chemin[i], chemin[k])
+                        and self._hors_voie(chemin[i], chemin[k]) <= hv[k] - hv[i] + 60.0 * self.s):
                     j = k
                     break
             if j is None or (j < len(chemin) - 1 and math.hypot(chemin[j][0] - chemin[i][0], chemin[j][1] - chemin[i][1]) < mini):
@@ -183,6 +196,13 @@ class Plan:
             i = j
         return out
 
+    def _hors_voie(self, a, b):
+        """longueur du segment a-b qui n'est pas sur une voie déjà roulée, en pixels"""
+        d = math.hypot(b[0] - a[0], b[1] - a[1])
+        n = int(max(2, d))
+        us, vs = np.linspace(a[0], b[0], n).round().astype(int), np.linspace(a[1], b[1], n).round().astype(int)
+        return float((~self.passe[vs, us]).sum()) * d / n
+
     def _visible(self, a, b):
         """Le segment a-b laisse au centre du robot 17 cm (son rayon) jusqu'au premier trait sombre ; là où le robot est
         déjà passé, tout est tenu pour libre ; sous le trait tracé à la main, le segment peut traverser un trait sombre
@@ -190,6 +210,8 @@ class Plan:
         frôler un montant de porte (journal_wifi.md § 36 et § 38)."""
         n = int(max(2, math.hypot(b[0] - a[0], b[1] - a[1])))
         us, vs = np.linspace(a[0], b[0], n).round().astype(int), np.linspace(a[1], b[1], n).round().astype(int)
+        if self.ferme[vs, us].any():                                 # un obstacle trouvé par le robot : jamais de raccourci dessus
+            return False
         pres = (self.D_mur[vs, us] < 170.0 * self.s) & ~self.passe[vs, us]
         if not pres.any():
             return True

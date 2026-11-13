@@ -1,0 +1,43 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (684, 170), cap 242°
+[  0.3 min]     filtre : position corrigée de (-11, -25) mm et +0.1° ; note 0.60, étalement 150 mm et 6.9°, gyroscope × 1.0045
+[  0.3 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.3 min] station 0 : 8 paliers, 3 lignes de murs, axes de la pièce 82.5°
+[  0.3 min] cibles reçues (série 1) : [(609, 212), (515, 221), (397, 214), (306, 215)]
+[  0.3 min]   vers la cible (609, 212) du plan : 2 étapes
+[  0.9 min]     filtre : position corrigée de (+50, -290) mm et +3.3° ; note 0.80, étalement 294 mm et 7.2°, gyroscope × 1.0046
+[  0.9 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.9 min] station 1 (vers une cible) en (11525, 3927) : 5 paliers
+[  0.9 min]   cible (609, 212) atteinte
+[  0.9 min]   vers la cible (515, 221) du plan : 3 étapes
+[  1.0 min]     arrêté : alarme pendant une avance : pare-chocs gauche ; robot en (11100, 4001)
+[  1.2 min]   vers la cible (515, 221) du plan : 3 étapes (essai 2, en contournant l'obstacle)
+[  1.6 min]     quelque chose sur un passage déjà roulé (alarme pendant une avance : capteur optique à 432) : attente de 8 s, puis nouvel essai
+[  1.7 min]     arrêté : alarme pendant une avance : capteur optique à 432 ; robot en (10078, 4182)
+[  2.0 min]     filtre : position corrigée de (+30, -93) mm et +1.1° ; note 0.39, étalement 441 mm et 7.9°, gyroscope × 1.0047
+[  2.0 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  2.0 min] station 2 (là où le robot s'est arrêté) en (10107, 4089), 7 paliers
+[  2.0 min]   vers la cible (515, 221) du plan : 1 étapes (essai 2, en contournant l'obstacle)
+[  2.1 min]     quelque chose sur un passage déjà roulé (avance refusée : capteur optique à 348) : attente de 8 s, puis nouvel essai
+[  2.2 min]     arrêté : avance refusée : capteur optique à 348 ; robot en (10108, 4089)
+[  2.2 min]   vers la cible (515, 221) du plan : 1 étapes (essai 2, en contournant l'obstacle)
+[  2.2 min]     arrêté : avance refusée : capteur optique à 349 ; robot en (10108, 4089)
+[  2.2 min]   vers la cible (515, 221) du plan : 3 étapes (essai 3, en contournant l'obstacle)
+[  2.5 min]   liaison : avance interrompue (<urlopen error timed out>)
+[  2.5 min]     arrêté : avance refusée : capteur optique à 204 ; robot en (9689, 4209)
+[  2.8 min]     filtre : position corrigée de (-31, -158) mm et +4.0° ; note 0.60, étalement 335 mm et 7.5°, gyroscope × 1.0049
+[  2.8 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  2.8 min]   porte possible : 694 mm de large vers (9390, 3512), direction 174°
+[  2.8 min]   porte possible : 895 mm de large vers (8555, 4783), direction 84°
+[  2.8 min] station 3 (là où le robot s'est arrêté) en (9658, 4051), 7 paliers
+[  2.8 min]   cible (515, 221) laissée après trois essais
+[  2.8 min]   vers la cible (397, 214) du plan : 5 étapes
+[  3.6 min]     filtre : position corrigée de (-118, -109) mm et +1.2° ; note 0.81, étalement 346 mm et 4.6°, gyroscope × 1.0049
+[  3.6 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  3.6 min] station 4 (vers une cible) en (7471, 4034) : 8 paliers
+[  3.6 min]   cible (397, 214) atteinte
+[  3.6 min]   vers la cible (306, 215) du plan : 2 étapes
+[  4.2 min]     filtre : position corrigée de (+99, -33) mm et +0.9° ; note 0.63, étalement 297 mm et 6.2°, gyroscope × 1.0050
+[  4.2 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  4.2 min] station 5 (vers une cible) en (5871, 4058) : 5 paliers
+[  4.2 min]   cible (306, 215) atteinte
+[  4.2 min] fin : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 6 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 31 sauts, 5 trajets arrêtés, 1 obstacles touchés ou vus devant | 9.0 m | batterie 1585 mAh

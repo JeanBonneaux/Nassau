@@ -1,0 +1,38 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (728, 75), cap 156°
+[  0.3 min]     filtre : position corrigée de (-3, -25) mm et -0.4° ; note 0.74, étalement 144 mm et 6.0°, gyroscope × 1.0045
+[  0.3 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.3 min] station 0 : 8 paliers, 3 lignes de murs, axes de la pièce 59.0°
+[  0.3 min] cibles reçues (série 1) : [(687, 165), (609, 212), (515, 221), (397, 214), (306, 215)]
+[  0.3 min]   vers la cible (687, 165) du plan : 3 étapes
+[  0.5 min]     contact sur un passage déjà roulé (avance refusée : pare-chocs  droit) : recul tout de suite, puis nouvel essai
+[  0.5 min]     arrêté : avance refusée : pare-chocs  droit ; robot en (13505, 6086)
+[  0.8 min]     filtre : position corrigée de (-46, -40) mm et -0.6° ; note 0.69, étalement 185 mm et 6.7°, gyroscope × 1.0045
+[  0.8 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.8 min]   porte possible : 622 mm de large vers (12203, 7479), direction 99°
+[  0.8 min] station 1 (là où le robot s'est arrêté) en (13547, 6292), 8 paliers
+[  0.8 min]   vers la cible (687, 165) du plan : 2 étapes
+[  0.9 min]     quelque chose sur un passage déjà roulé (avance refusée : obstacle à 369 mm devant (marge 400.0 mm)) : attente de 8 s, puis nouvel essai
+[  1.0 min]     arrêté : avance refusée : obstacle à 369 mm devant (marge 400.0 mm) ; robot en (13468, 6034)
+[  1.2 min]   vers la cible (687, 165) du plan : 2 étapes
+[  1.4 min]     arrêté : alarme pendant une avance : pare-chocs  droit ; robot en (13458, 6004)
+[  1.4 min]   vers la cible (687, 165) du plan : 2 étapes (essai 2, en contournant l'obstacle)
+[  1.5 min]     arrêté : avance refusée : obstacle à 131 mm devant (marge 400.0 mm) ; robot en (13416, 6152)
+[  1.7 min]   vers la cible (687, 165) du plan : 3 étapes (essai 3, en contournant l'obstacle)
+[  1.9 min]     arrêté : alarme pendant une avance : pare-chocs gauche ; robot en (13091, 6048)
+[  2.1 min]   cible (687, 165) laissée après trois essais
+[  2.1 min]   vers la cible (609, 212) du plan : 6 étapes
+[  2.4 min]     arrêté : alarme pendant une avance : pare-chocs  droit ; robot en (13061, 6208)
+[  2.6 min]   vers la cible (609, 212) du plan : 6 étapes (essai 2, en contournant l'obstacle)
+[  2.8 min]     arrêté : avance refusée : capteur optique à 188 ; robot en (13042, 6325)
+[  3.1 min]     filtre : position corrigée de (-157, -82) mm et -1.8° ; note 0.90, étalement 324 mm et 7.9°, gyroscope × 1.0044
+[  3.1 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  3.1 min]   porte possible : 941 mm de large vers (11416, 7452), direction 96°
+[  3.1 min]   porte possible : 620 mm de large vers (10641, 7363), direction 96°
+[  3.1 min] station 2 (là où le robot s'est arrêté) en (12885, 6244), 10 paliers
+[  3.1 min]   vers la cible (609, 212) du plan : 6 étapes (essai 3, en contournant l'obstacle)
+[  3.2 min]     arrêté : alarme pendant une avance : pare-chocs gauche ; robot en (12841, 6233)
+[  3.3 min]   cible (609, 212) laissée après trois essais
+[  3.3 min]   vers la cible (515, 221) du plan : 7 étapes
+[  3.4 min]     arrêté : avance refusée : obstacle à 152 mm devant (marge 400.0 mm) ; robot en (12659, 6298)
+[  3.5 min]     retour à la station 2 impossible : avance refusée : capteur optique à 455
+[  3.5 min] fin : arrêt pendant un trajet vers une cible | mode 3 | roues arrêtées | pare-chocs [0, 0] | 3 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 53 sauts, 9 trajets arrêtés, 8 obstacles touchés ou vus devant | 6.2 m | batterie 1638 mAh
