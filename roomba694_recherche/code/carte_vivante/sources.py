@@ -14,11 +14,12 @@ import bisect
 import datetime
 import glob
 import json
+import math
 import os
 import re
 import time
 
-from suivi import C_, K_GYRO, MS_, T_, X_, Y_, LecteurCsv, Suivi
+from suivi import ANGLES_OPTIQUES, C_, K_GYRO, MS_, RAYON, T_, X_, Y_, LecteurCsv
 
 RE_MIN = re.compile(r"^\[\s*([\d.]+) min\]\s?(.*)$")
 RE_DEPART = re.compile(r"localisation : filtre à \d+ hypothèses autour du pixel \((-?[\d.]+), (-?[\d.]+)\), cap (-?[\d.]+)")
@@ -533,3 +534,88 @@ class Rejeu:
         k = bisect.bisect_right([e["t"] for e in self.etats], T) - 1 if self.etats else -1
         if k >= 0:
             su.etat = self.etats[k]
+
+
+MOIS = ("janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc.")
+VERSION_MEMOIRE = 1                     # à augmenter quand le calcul des positions change : les anciens résultats sont refaits
+
+
+class Memoire:
+    """Ce que le robot a touché ou frôlé pendant les enregistrements passés, placé sur le plan : la carte le garde d'un
+    essai à l'autre. Seuls comptent les endroits situés par un tour sur place jugé par le filtre (avant le 2026-11-13 le
+    calage dérivait de plusieurs dizaines de centimètres). Les résultats sont gardés dans un fichier hors dépôt, à côté
+    du plan : un enregistrement terminé n'est calculé qu'une fois."""
+
+    def __init__(self, dossier, fabrique, fichier):
+        self.dossier, self.fabrique, self.fichier = dossier, fabrique, fichier
+
+    def _un(self, prefixe):
+        su = self.fabrique()
+        su.ajouter_lignes(lire_csv(prefixe + "_capteurs.csv"))
+        se = Seance(prefixe, su)
+        se.lire(su.R, su.Tt)
+        su.poser(se.faits()["ancres"])
+        B = su.bornes
+
+        def sur(i):
+            """la ligne i est-elle entre deux bornes dont l'une est un tour jugé par le filtre ?"""
+            k = 0
+            while k < len(B) and B[k]["i"] <= i:
+                k += 1
+            return any(b is not None and b["type"] == "ancre" and b["src"] == "filtre" for b in (B[k - 1] if k else None, B[k] if k < len(B) else None))
+
+        contacts, proches = [], []
+        for i, cote in su.contacts:
+            P = su.pose_ligne(i)
+            if P is not None and sur(i):
+                ang = math.radians(P[2] + {"gauche": 50.0, "droit": -50.0}.get(cote, 0.0))
+                u, v = su.px(P[0] + 200.0 * math.cos(ang), P[1] + 200.0 * math.sin(ang))
+                d = datetime.datetime.fromtimestamp(su.Tt[i])
+                contacts.append([u, v, cote, f"{d.day} {MOIS[d.month - 1]}, {d.hour} h {d.minute:02d}"])
+        for i, q, val in su.proches:
+            P = su.pose_ligne(i)
+            if P is not None and sur(i):
+                ang = math.radians(P[2] + ANGLES_OPTIQUES[q])
+                proches.append(list(su.px(P[0] + (RAYON + 40.0) * math.cos(ang), P[1] + (RAYON + 40.0) * math.sin(ang))))
+        return {"contacts": contacts, "proches": proches}
+
+    def calculer(self, avant):
+        """l'objet « anciens » : contacts et objets frôlés des enregistrements plus anciens que le préfixe donné"""
+        try:
+            with open(self.fichier, encoding="utf-8") as f:
+                cache = json.load(f)
+            if cache.get("version") != VERSION_MEMOIRE:
+                cache = {}
+        except (OSError, ValueError):
+            cache = {}
+        garde = cache.get("enregistrements", {})
+        L = []
+        for c in glob.glob(os.path.join(glob.escape(self.dossier), "*_capteurs.csv")):
+            m = RE_NOM.search(c)
+            if m:
+                L.append((m[1] + m[2], c[:-len("_capteurs.csv")]))
+        L.sort()
+        cle_avant = next((k for k, p in L if p == avant), None)
+        contacts, proches, change = [], [], False
+        for k, p in L:
+            if cle_avant is not None and k >= cle_avant:
+                break
+            nom = os.path.basename(p)
+            try:
+                sig = [os.path.getsize(p + "_capteurs.csv")] + sorted([os.path.basename(f), os.path.getsize(f)] for f in glob.glob(glob.escape(p) + "*.json"))
+                if garde.get(nom, {}).get("sig") != sig:
+                    garde[nom] = dict(self._un(p), sig=sig)
+                    change = True
+            except (OSError, ValueError, KeyError, IndexError, TypeError):
+                continue
+            contacts.extend(garde[nom]["contacts"])
+            proches.extend(garde[nom]["proches"])
+        if change:
+            try:
+                os.makedirs(os.path.dirname(self.fichier), exist_ok=True)
+                with open(self.fichier + ".tmp", "w", encoding="utf-8") as f:
+                    json.dump({"version": VERSION_MEMOIRE, "enregistrements": garde}, f, ensure_ascii=False)
+                os.replace(self.fichier + ".tmp", self.fichier)
+            except OSError:
+                pass
+        return {"contacts": contacts, "proches": proches}

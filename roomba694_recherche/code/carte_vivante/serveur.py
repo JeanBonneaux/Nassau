@@ -117,6 +117,29 @@ def boucle():
         time.sleep(max(0.01, 0.1 - (time.time() - t)))
 
 
+MEMOIRE = sources.Memoire(a.mesures, lambda: suivi_mod.Suivi(a.px_par_m, W, H), os.path.join(RACINE, "plan_lidar", "carte_vivante", "memoire_obstacles.json"))
+
+
+def memoire():
+    """Dans un fil à part, au lancement puis à chaque nouvel enregistrement : ce que le robot a touché ou frôlé lors des
+    essais précédents est remis sur la carte (le premier calcul prend quelques secondes, les suivants sont gardés)."""
+    faite = None
+    while True:
+        with verrou:
+            e, prefixe = SOURCE.epoque, SOURCE.prefixe
+        if prefixe and (e, prefixe) != faite:
+            try:
+                anciens = MEMOIRE.calculer(prefixe)
+                with verrou:
+                    if SOURCE.epoque == e:
+                        SOURCE.suivi.fixer("anciens", anciens)
+                        faite = (e, prefixe)
+            except Exception as err:
+                print(datetime.datetime.now().strftime("%H:%M:%S"), "mémoire des obstacles non calculée :", type(err).__name__, err, flush=True)
+                faite = (e, prefixe)
+        time.sleep(1.0)
+
+
 def reponse_suite(e_client, v_client):
     with verrou:
         su = SOURCE.suivi
@@ -153,6 +176,9 @@ HOTES = adresses_locales()
 CSP = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'"
 
 
+PIXEL = bytes.fromhex("47494638396101000100800000000000ffffff21f90401000000002c00000000010001000002024401003b")
+
+
 class Page(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     server_version = "CarteVivante"
@@ -184,6 +210,9 @@ class Page(BaseHTTPRequestHandler):
                     return self.envoyer(200, "text/html; charset=utf-8", f.read())
             if u.path == "/plan.png":
                 return self.envoyer(200, "image/png", PLAN, cache="private, max-age=3600")
+            if u.path == "/api/attendre":                         # pour capture.py : une image d'un pixel, rendue après N secondes
+                time.sleep(max(0.0, min(20.0, float(q.get("s", ["3"])[0]))))
+                return self.envoyer(200, "image/gif", PIXEL)
             if u.path == "/api/suite":
                 return self.envoyer(200, "application/json; charset=utf-8", reponse_suite(int(q.get("e", ["-1"])[0]), int(q.get("v", ["0"])[0])))
             if u.path == "/api/rejeu" and SOURCE.mode == "rejeu":
@@ -202,6 +231,7 @@ class Page(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     threading.Thread(target=boucle, daemon=True).start()
+    threading.Thread(target=memoire, daemon=True).start()
     hote = "0.0.0.0" if a.ouvert else "127.0.0.1"
     srv = ThreadingHTTPServer((hote, a.port), Page)
     srv.daemon_threads = True

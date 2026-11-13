@@ -111,6 +111,7 @@
       <svg viewBox="0 0 26 14"><path d="M8 2 L18 12 M18 2 L8 12" stroke="#d03b3b" stroke-width="2.6"/></svg><span>contact du pare-chocs</span>
       <svg viewBox="0 0 26 14"><circle cx="6" cy="7" r="1.6" fill="#0d8f8f"/><circle cx="13" cy="5" r="1.6" fill="#0d8f8f"/><circle cx="20" cy="8" r="1.6" fill="#0d8f8f"/></svg><span>échos du capteur de distance (ce qu'il a vu devant lui)</span>
       <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="3" fill="#eb6834" stroke="#fff"/><circle cx="13" cy="7" r="5.5" fill="none" stroke="#eb6834"/></svg><span>objet frôlé (capteurs optiques du pare-chocs)</span>
+      <svg viewBox="0 0 26 14"><path d="M9 3 L17 11 M17 3 L9 11" stroke="rgba(208,59,59,.6)" stroke-width="2"/></svg><span>en plus pâle : contact ou objet frôlé lors d'un essai précédent</span>
       <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="5" fill="none" stroke="#1a8f4c" stroke-width="2"/><circle cx="13" cy="7" r="1.6" fill="#1a8f4c"/></svg><span>destination ; pleine une fois atteinte</span>
       <svg viewBox="0 0 26 14"><rect x="8" y="2" width="10" height="10" fill="#1a8f4c"/></svg><span>base de recharge</span>
       <svg viewBox="0 0 26 14"><rect x="2" y="2" width="22" height="10" fill="rgba(208,59,59,.12)" stroke="rgba(208,59,59,.75)"/></svg><span>pièces inaccessibles (ton dessin)</span>
@@ -194,12 +195,15 @@ function taille() {
   const r = cv.getBoundingClientRect();
   dpr = Math.min(window.devicePixelRatio || 1, 3);
   Wc = Math.max(50, r.width); Hc = Math.max(50, r.height);
-  cv.width = Math.round(Wc * dpr); cv.height = Math.round(Hc * dpr);
+  const w = Math.round(Wc * dpr), h = Math.round(Hc * dpr);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }      // changer la taille efface le dessin
   mesure = true;
   if (vue.pret && vue.suivre && vue.zAuto) vue.z = zSuivi();      // l'écran a changé de taille : l'agrandissement suit
-  sale = true;
+  // redessiné tout de suite : sinon la carte resterait vide jusqu'à l'image suivante
+  if (decor) cadre(performance.now(), true); else sale = true;
 }
 new ResizeObserver(taille).observe(cv);
+window.addEventListener('load', taille);
 
 // ------------------------------------------------------------ doigts et souris
 const doigts = new Map();
@@ -252,6 +256,8 @@ function toucher(x, y) {
     if (k.startsWith('cal/') && !o.muet) essai(o.u, o.v, titreCalage(o), texteCalage(o));
     else if (k.startsWith('ct/')) essai(o.u, o.v, 'Contact du pare-chocs, ' + hm(o.h), (o.cote === 'devant' ? 'De face' : 'Côté ' + o.cote) + ', robot en ' + o.case + '. Le point marque l\'endroit touché, à 20 cm du centre du robot.');
   }
+  for (const p of (O.get('anciens') || { contacts: [] }).contacts)
+    essai(p[0], p[1], 'Contact lors d\'un essai précédent', 'Le ' + p[3] + ', ' + (p[2] === 'devant' ? 'de face' : 'côté ' + p[2]) + ', en ' + nomCase(p[0], p[1]) + '.');
   for (const c of O.get('cibles') || []) essai(c.u, c.v, 'Destination ' + c.case, 'État : ' + c.etat + '.');
   if (decor && decor.base) essai(decor.base[0], decor.base[1], 'Base de recharge', 'Case ' + nomCase(decor.base[0], decor.base[1]) + '.');
   if (aff.ok && robot && robot.connu) essai(aff.u, aff.v, 'Robot en ' + robot.case, texteRobot());
@@ -342,6 +348,15 @@ function dessiner(maintenant) {
       const a = p[2] * Math.PI / 180, d = (p[3] + 27) * s;
       ctx.fillRect(p[0] + d * Math.cos(a) - pt / 2, p[1] - d * Math.sin(a) - pt / 2, pt, pt);
     }
+  }
+  // ce que les essais précédents ont touché ou frôlé : en plus pâle
+  const anciens = O.get('anciens');
+  if (anciens) {
+    ctx.fillStyle = 'rgba(235,104,52,.45)';
+    for (const p of anciens.proches) { ctx.beginPath(); ctx.arc(p[0], p[1], 2 * e, 0, 6.3); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(208,59,59,.6)'; ctx.lineWidth = 2 * e; ctx.beginPath();
+    for (const p of anciens.contacts) { ctx.moveTo(p[0] - 4.5 * e, p[1] - 4.5 * e); ctx.lineTo(p[0] + 4.5 * e, p[1] + 4.5 * e); ctx.moveTo(p[0] + 4.5 * e, p[1] - 4.5 * e); ctx.lineTo(p[0] - 4.5 * e, p[1] + 4.5 * e); }
+    ctx.stroke();
   }
   // objets frôlés par les capteurs optiques du pare-chocs
   for (const p of O.get('proches') || []) {
@@ -518,8 +533,8 @@ function dessiner(maintenant) {
 
 // ------------------------------------------------------------ l'animation
 let tPrec = 0;
-function image(t) {
-  const dt = Math.min(0.2, (t - tPrec) / 1000); tPrec = t;
+function cadre(t, force) {
+  const dt = Math.min(0.2, Math.max(0, (t - tPrec) / 1000)); tPrec = t;
   let mouvement = false;
   if (robot && robot.connu) {
     if (!aff.ok || Math.hypot(robot.u - aff.u, robot.v - aff.v) > 120) { aff.u = robot.u; aff.v = robot.v; aff.cap = robot.cap; aff.ok = true; mouvement = true; }
@@ -541,8 +556,10 @@ function image(t) {
     vue.z = zMin(); vue.cx = decor.W / 2; vue.cy = decor.H / 2; vue.attente = true; sale = true;
   }
   const vivant = anim || (robot && robot.act === 'tour') || (O.get('cibles') || []).some(q => q.etat === 'en cours');
-  if (sale || mouvement || (vivant && t - dernierDessin > 50)) { sale = false; dernierDessin = t; dessiner(t); }
-  requestAnimationFrame(image);
+  if (sale || mouvement || force || (vivant && t - dernierDessin > 50)) { sale = false; dernierDessin = t; dessiner(t); }
+}
+function image(t) {
+  try { cadre(t, false); } finally { requestAnimationFrame(image); }       // une image ratée n'arrête pas les suivantes
 }
 requestAnimationFrame(image);
 
@@ -655,6 +672,9 @@ async function sonder() {
     premiere = false;
     majTexte(); majRejeu();
     sale = true;
+    // si le navigateur ne donne plus d'images (onglet en arrière-plan, écran en veille partielle), la carte est
+    // quand même redessinée à chaque sondage
+    if (performance.now() - dernierDessin > 600) cadre(performance.now(), true);
   } catch (err) {
     panne = true; delai = 1500; majTexte();
   }
