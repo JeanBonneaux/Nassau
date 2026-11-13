@@ -38,7 +38,10 @@ p_.add_argument("--global", dest="glob", default="")
 p_.add_argument("--reperes", default="")
 p_.add_argument("--nom", default="carte_grille")
 p_.add_argument("--robot-heure", default="")
+p_.add_argument("--robot-texte", default="", help="étiquette du robot sur la carte et dans la légende, à la place de « robot (HEURE) »")
 a = p_.parse_args()
+ETIQ_ROBOT = a.robot_texte or ("robot" + (f" ({a.robot_heure})" if a.robot_heure else ""))
+LEG_ROBOT = a.robot_texte or ("robot" + (f" à {a.robot_heure}" if a.robot_heure else ""))
 PL = plan_mod.Plan(a.plan, a.px_par_m)
 GR = grille_mod.Grille(a.px_par_m, PL.W, PL.H)
 c, s = GR.c, PL.s
@@ -138,7 +141,7 @@ def dessiner(fichier, col0, col1, k, dans_cases, titre):
         t = math.radians(robot[2])
         ax.annotate("", xy=(robot[0] + 2.1 * r * math.cos(t), robot[1] - 2.1 * r * math.sin(t)), xytext=(robot[0], robot[1]),
                     arrowprops=dict(arrowstyle="-|>", color=ENCRE, lw=1.6 * e), zorder=10)
-        ax.text(robot[0], robot[1] + r + 3, "robot" + (f" ({a.robot_heure})" if a.robot_heure else ""), ha="center", va="top", fontsize=9 + 2 * (k > 2.6), color=ENCRE, zorder=10,
+        ax.text(robot[0], robot[1] + r + 3, ETIQ_ROBOT, ha="center", va="top", fontsize=9 + 2 * (k > 2.6), color=ENCRE, zorder=10,
                 bbox=dict(boxstyle="round,pad=0.15", fc=SURF, ec="none", alpha=0.85))
     for n_, rp in enumerate(reperes, 1):
         if not u0 + 4 <= rp["u"] <= u1 - 4:                      # hors du cadre de cet agrandissement
@@ -154,7 +157,7 @@ def dessiner(fichier, col0, col1, k, dans_cases, titre):
         y = ly0 + 6.0 + pas / 2
         x = lx0 + 10.0
         lignes = [("trait", f"trajet roulé par le robot ({metres:.0f} m)"), ("rond", f"tours sur place ({n_tours})"), ("tapis", "tapis ou sol sombre sous le robot"),
-                  ("croix", "obstacle touché (pare-chocs)"), ("base", "base de recharge"), ("robot", "robot" + (f" à {a.robot_heure}" if a.robot_heure else "")),
+                  ("croix", "obstacle touché (pare-chocs)"), ("base", "base de recharge"), ("robot", LEG_ROBOT),
                   ("zone", "pièces inaccessibles (ton dessin)")]
         for genre, texte in lignes:
             if genre == "trait":
@@ -184,14 +187,17 @@ def dessiner(fichier, col0, col1, k, dans_cases, titre):
             ax.text(bx + 14 * dx, by + 11.5 * dy, mot, ha=ha, va=va, fontsize=fl - 1, color=DOUX, zorder=21)
         # les remarques numérotées
         x2 = lx0 + 212.0
-        y = ly0 + 6.0 + pas / 2
+        # interligne des remarques : celui de la légende si elles tiennent, plus serré sinon
+        n_lignes = sum(len(rp["texte"].split("\n")) for rp in reperes) + 0.45 * len(reperes)
+        pas_r = min(pas * 0.82, (ly1 - ly0 - 10.0) / max(1.0, n_lignes))
+        y = ly0 + 5.0 + pas_r / 2
         for n_, rp in enumerate(reperes, 1):
             ax.plot(x2 + 6, y, "o", color=ENCRE, ms=12 * e, mfc=SURF, mew=1.2, zorder=21)
             ax.text(x2 + 6, y, str(n_), ha="center", va="center", fontsize=8 * e, color=ENCRE, fontweight="bold", zorder=22)
             lignes_t = rp["texte"].split("\n")
             for q, lt in enumerate(lignes_t):
-                ax.text(x2 + 17, y + q * pas * 0.82, lt, ha="left", va="center", fontsize=fl - 0.5, color=ENCRE, zorder=21)
-            y += pas * (0.82 * len(lignes_t) + 0.42)
+                ax.text(x2 + 17, y + q * pas_r, lt, ha="left", va="center", fontsize=fl - 0.5, color=ENCRE, zorder=21)
+            y += pas_r * (len(lignes_t) + 0.45)
     ax.set_xlim(u0, u1)
     ax.set_ylim(PL.H, 0)
     ax.set_xticks([])
