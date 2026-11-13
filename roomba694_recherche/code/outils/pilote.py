@@ -15,6 +15,7 @@
 # Ce module n'envoie rien tout seul : c'est le script qui l'utilise qui décide des sauts.
 import json
 import os
+import math
 import time
 import urllib.request
 
@@ -132,6 +133,71 @@ class Pilote:
             if 0 < l["us_mm"] < marge_mm:
                 return f"obstacle à {l['us_mm']:.0f} mm devant (marge {marge_mm} mm)"
         return None
+
+    # ------------------------------------------------------------ une avance d'un seul tenant
+    def avance(self, dist_mm, marge_mm=400, cap_tol=5.0, lb_repos=150, lb_max=400, vide_min=1500, vide_stop=0, duree_max=25.0):
+        """Avance de dist_mm au plus, sans s'arrêter tous les 12 cm comme saut() : l'ordre « 8 » est redonné toutes les
+        0,5 s (le firmware arrête les roues de lui-même 1,5 s après le dernier ordre) et chaque ligne du journal est
+        surveillée. S'arrête à la distance, sur une alarme, quand le cap a tourné de plus de cap_tol degrés (le robot
+        tire d'un côté : à réorienter), ou quand le capteur de distance voit quelque chose à moins de marge_mm.
+        Le 2026-11-10 le robot passait la moitié de son temps à l'arrêt entre deux sauts (journal § 31).
+        Renvoie le même dictionnaire que saut(), avec « raison » en plus."""
+        l0 = self.frais()
+        if l0 is None:
+            return {"refus": "aucune ligne récente du journal (robot muet ?)"}
+        refus = self.controle(l0, avance=True, marge_mm=min(marge_mm, dist_mm + 220.0), lb_repos=lb_repos, vide_min=vide_min)
+        if refus:
+            return {"refus": refus}
+        i0 = len(self.lignes) - 1
+        t0 = t_ordre = time.time()
+        self.touche("8")
+        alarme = raison = None
+        vu = i0
+        t_ligne = time.time()                                   # dernière fois qu'une ligne du journal est arrivée
+        avant = l0
+        while not (alarme or raison):
+            if self.lire():
+                t_ligne = time.time()
+            for l in self.lignes[vu + 1:]:
+                alarme = self.alarme(l, lb_max=lb_max, vide_stop=vide_stop)
+                if alarme:
+                    break
+                fait = math.hypot(l["x_mm"] - l0["x_mm"], l["y_mm"] - l0["y_mm"])
+                # le robot roule encore pendant que la ligne arrive au PC et que l'ordre d'arrêt repart : on anticipe
+                dt_l = max(0.02, (l["ms"] - avant["ms"]) / 1000.0)
+                v_inst = min(200.0, math.hypot(l["x_mm"] - avant["x_mm"], l["y_mm"] - avant["y_mm"]) / dt_l)
+                retard = min(0.6, max(0.0, time.time() - l["pc_s"])) + 0.08
+                avant = l
+                if fait + v_inst * retard >= dist_mm:
+                    raison = "distance"
+                elif abs(l["cap_pos"] - l0["cap_pos"]) > cap_tol:
+                    raison = "cap"
+                elif 0 < l["us_mm"] < min(marge_mm, dist_mm - fait + 220.0):
+                    raison = f"obstacle à {l['us_mm']:.0f} mm devant"
+                if raison:
+                    break
+            vu = len(self.lignes) - 1
+            if alarme or raison:
+                break
+            if time.time() - t0 > duree_max:
+                raison = "durée"
+            elif time.time() - t_ligne > 1.0:                   # plus de journal : le PC ne voit plus rien, on s'arrête
+                raison = "journal muet"
+            elif time.time() - t_ordre > 0.5:
+                self.touche("8")
+                t_ordre = time.time()
+            else:
+                time.sleep(0.02)
+        t_stop = time.time()
+        self.touche("5")
+        self.immobile()
+        self.lire()
+        seg = self.lignes[i0:]
+        return {"touche": "8", "duree_ordre": round(t_stop - t0, 2), "alarme": alarme, "raison": raison,
+                "avance_mm": round(math.hypot(seg[-1]["x_mm"] - seg[0]["x_mm"], seg[-1]["y_mm"] - seg[0]["y_mm"]), 1),
+                "rot_gyro": round(seg[-1]["cap_pos"] - seg[0]["cap_pos"], 2), "us_avant": seg[0]["us_mm"], "us_apres": seg[-1]["us_mm"],
+                "lb_max": max(max(l[c] for c in LB) for l in seg), "vide_min": min(min(l[c] for c in VIDE) for l in seg),
+                "lignes": len(seg), "t0": seg[0]["pc_s"], "t1": seg[-1]["pc_s"]}
 
     # ------------------------------------------------------------ un saut
     def saut(self, touche, duree, marge_mm=600, lb_repos=150, lb_max=400, vide_min=1500, vide_stop=0):

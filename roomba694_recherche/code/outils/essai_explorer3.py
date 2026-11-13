@@ -56,12 +56,21 @@ def main():
     q.add_argument("--cibles", default="", help="avec --plan : points du monde à rejoindre, x,y en mm séparés par des points-virgules")
     q.add_argument("--erreur-depart", default="0,0,0", help="avec --plan : erreur sur la position de départ donnée au programme, dx,dy en mm et cap en degrés")
     q.add_argument("--muet", action="store_true")
+    q.add_argument("--fluide", action="store_true", help="avances d'un seul tenant")
+    q.add_argument("--sans-filtre", action="store_true", help="avec --plan : ancien recalage à une seule hypothèse")
+    q.add_argument("--vitesse", type=int, default=75)
+    q.add_argument("--tour-v", type=int, default=30)
+    q.add_argument("--tour-tous-les", type=float, default=600.0)
+    q.add_argument("--sans-z", action="store_true")
+    q.add_argument("--cibles-seules", action="store_true")
     b = q.parse_args()
     monde = sim.Monde(**sim.MONDES[b.monde]())
     robot = sim.RobotSimule(monde, graine=b.graine, echelle_gyro=b.k_vrai)
     prefixe = os.path.join(b.dossier, f"sim_{b.monde}_{b.graine}")
-    a = types.SimpleNamespace(adresse="sim", prefixe=prefixe, stations=b.stations, minutes=b.minutes, vitesse=75, tour_v=30, vide_min=150.0,
-                              interdit="", k_gyro=b.k_gyro, recalage_m=b.recalage_m, echecs_max=12, batterie_min=1000, sans_retour=False)
+    robot.reglage = b.vitesse
+    a = types.SimpleNamespace(adresse="sim", prefixe=prefixe, stations=b.stations, minutes=b.minutes, vitesse=b.vitesse, tour_v=b.tour_v, vide_min=150.0,
+                              interdit="", k_gyro=b.k_gyro, recalage_m=b.recalage_m, echecs_max=12, batterie_min=1000, sans_retour=b.cibles_seules,
+                              fluide=b.fluide, sans_filtre=b.sans_filtre, tour_tous_les=b.tour_tous_les, sans_z=b.sans_z, cibles_seules=b.cibles_seules, filtre_n=6000)
     a.plan, a.px_par_m, a.depart_plan = "", 50.0, ""
     if b.plan:
         import json as json_
@@ -102,6 +111,15 @@ def main():
         return monde.depart[0] + c0 * x - s0 * y, monde.depart[1] + s0 * x + c0 * y
     fx, fy = vers_monde(ex.est.X, ex.est.Y)
     err = math.hypot(fx - robot.x, fy - robot.y)
+    # erreur de position à chaque tour sur place : place tenue par le programme après le tour, contre la place vraie
+    e_tours = []
+    for st_j, vrai in zip(ex.j["stations"], robot.tours_vrais):
+        if "pose" in st_j:
+            wx, wy = vers_monde(st_j["pose"][0], st_j["pose"][1])
+            e_tours.append(math.hypot(wx - vrai[0], wy - vrai[1]))
+    if e_tours:
+        print(f"TOURS {b.monde} graine {b.graine} : {len(e_tours)} tours sur place ; erreur de position après un tour : médiane {np.median(e_tours):.0f} mm, pire {max(e_tours):.0f} mm ;"
+              f" {ex.est.chemin / 1000:.1f} m en {(robot.t - 1000) / 60:.1f} min, soit {ex.est.chemin / max(1.0, robot.t - 1000):.0f} mm/s en moyenne")
     err_cap = ((ex.est.C + (0.0 if b.plan else monde.depart[2]) - math.degrees(robot.th) + 180) % 360) - 180
     print(f"BILAN {b.monde} graine {b.graine} : fin « {ex.j['fin']} » ; {len(ex.noeuds)} stations, {len(ex.j['recalages'])} recalages,"
           f" {len(robot.contacts)} contacts vrais, {len(ex.j['echecs'])} trajets arrêtés ; sol accessible vu : {100.0 * vues.sum() / max(1, acc.sum()):.0f} %"

@@ -864,3 +864,76 @@ L'utilisateur demande « la carte actuelle ». Le cerveau ne répond pas ce jour
 - **Une limite de la recherche** : elle a fait glisser le départ de 43 cm le long du couloir, (526, 215) au lieu de (503, 213) pourtant bien connu. La fin, elle, est tenue par la porte et par la pièce.
 - **Contrôle à l'œil des deux derniers tours**, dessinés aux deux places possibles : à la place donnée par la recherche, le dernier tour tombe sur le flanc d'un meuble, sur la face du mur et sur le pan coupé à droite de la porte ; à la place que tenait le programme, il ne tombe sur rien. Le robot est donc bien juste après la porte, en F11 ; le programme se croyait 55 cm plus loin.
 - **Carte** : `carte_grille.py` reçoit `--robot-texte` (étiquette libre du robot, ici « robot (10 nov., 20 h 25) ») et serre l'interligne des remarques quand elles sont nombreuses. Sur la carte du jour : 76 m de trajet, 88 tours sur place, cinq remarques (la cinquième : l'arrêt de 20 h 13 en J16). Images dans `plan_lidar/` (`carte_grille_20261113.png` et `_1`, `_2`, `_3`), hors du dépôt.
+
+## 31. Leçons des passages du 10, nouvelle localisation rejouée sur les enregistrements, conduite d'un seul tenant en simulation (2026-11-13, sans le robot)
+
+Demande de l'utilisateur : améliorer le robot — plus de vitesse, une conduite plus fluide, et d'abord une localisation précise, « l'objectif principal » — en tirant les leçons des passages précédents. Le robot repartira de sa base ; il rebranchera le cerveau quand tout sera prêt. Tout ce qui suit est fait sur les enregistrements du 10 novembre et en simulation ; **rien n'a encore tourné sur le robot** et le firmware n'a pas changé (v8).
+
+### Où passait le temps
+
+| Enregistrement | Durée en mode Safe | Distance | Vitesse moyenne | En avance | En rotation sur place | À l'arrêt |
+|---|---|---|---|---|---|---|
+| Passage 1 (grande pièce) | 14,0 min | 17,5 m | 21 mm/s | 28 % du temps, à 75 mm/s | 34 % | 38 % |
+| Passages a à f | 61,8 min | 59,8 m | 16 mm/s | 22 %, à 72 mm/s | 27 % (69 tours) | 51 % |
+| Trajet H20 → F11 | 16,4 min | 7,7 m | 8 mm/s | 12 % | 18 % | 70 % (dont les pauses) |
+
+Le robot avançait par sauts de 1,3 s, soit 12 à 15 cm, s'arrêtait, relisait sa position, repartait ; et il faisait un tour complet (17 s) tous les 60 à 90 cm. Il ne roulait qu'un quart du temps, à la moitié de la vitesse permise.
+
+### Pourquoi le cap glissait
+
+Mesuré sur les 75 trajets entre deux tours dont la position de référence est connue (§ 28) :
+
+- **Le gyroscope du cerveau compte trop peu.** Le soir du 10, il manque 111° sur 23 024° comptés : il faut multiplier par **1,0045**, et non 1,0015 (§ 26, estimé sur deux retours). Par passage : de 1,0010 à 1,0072. Chaque tour sur place de 380° ajoutait donc plus d'un degré d'erreur ; avec un tour tous les 60 cm, le cap du programme glissait de 6 à 7° en six stations.
+- **Sa zone morte cache les rotations lentes.** `roomba694_wifi.ino` n'ajoute rien au cap sous 0,3 °/s, contre la dérive au repos. Or le robot dévie lentement en roulant : sur 14 % des lignes où il roule, le gyroscope se tait pendant que les roues tournent.
+- **Entre deux tours, le trajet compté est bon** : sur 39 avances droites de plus de 50 cm, la direction suivie s'écarte du cap de 1,4° (médiane, écart-type 2,2°) et la distance de 0,8 %. Le capteur de distance est donc bien dans l'axe du robot, et les roues mesurent bien les distances.
+- **Une seule hypothèse ne se rattrape pas.** Le recalage du 10 (`caler_sur_le_plan`, fenêtre de 30 cm et 10°) ne pouvait corriger le cap que de 1 ou 2° par tour.
+
+### Deux pistes essayées et écartées
+
+- Juger chaque lecture du capteur de distance une à une, en roulant (« il y a quelque chose sur l'arc vu par le capteur ») : 14 à 17 cm et 7° d'erreur médiane, pire que l'ancien recalage. Le faisceau réel est plus large que le modèle (des paliers de 65°) et le cap part de travers.
+- Tenir le trajet compté pour sûr à 1° près entre deux tours : 11 cm. Le plan lui-même n'est juste qu'à 10 ou 20 cm d'une pièce à l'autre ; il faut laisser le tour sur place décider.
+
+### La nouvelle localisation : `code/outils/localiser.py`
+
+Classe `Filtre` : 20 000 hypothèses (position, cap, erreur d'échelle du gyroscope, erreur d'échelle des roues). Elles avancent à chaque ligne du journal avec le trajet compté par le cerveau ; quand le gyroscope est muet et que le robot roule, la rotation lente est prise sur les roues. Une hypothèse qui entre dans un mur perd beaucoup ; un appui du pare-chocs doit tomber près de quelque chose. À la fin de chaque tour sur place, les paliers du tour jugent les hypothèses (la note de `plan.Plan.localiser`), après un bruit large sur le trajet (2 cm + 4 % ; 3°, parfois 8 ou 20°).
+
+Rejeu sur toute la soirée du 10 (`research_notes/…/data_analysis/m_rejeu_filtre.py` : le filtre ne voit chaque ligne et chaque tour qu'à son tour ; 61 tours, 59,8 m ; 27 fois plus vite que le robot). L'erreur est mesurée contre les positions de référence du § 28, retrouvées après coup dans les deux sens — pas contre un mètre ruban.
+
+| | Position, médiane | 9 fois sur 10 sous | Pire | Cap, médiane | Pire |
+|---|---|---|---|---|---|
+| Programme du 10 novembre, après son recalage (20 tours guidés par le plan) | 168 mm | 343 mm | 632 mm | 9,1° | 27,2° |
+| Nouveau filtre, mêmes 20 tours, juste après le tour | 76 mm | 172 mm | 199 mm | 1,6° | 7,0° |
+| Nouveau filtre, les 61 tours, juste après le tour | 70 mm | 168 mm | 326 mm | 1,7° | 16,7° |
+| Nouveau filtre, juste avant le tour (le robot vient de rouler) | 92 mm | 197 mm | 322 mm | 2,3° | 16,4° |
+| Un tour sur deux seulement donné au filtre : erreur aux tours qu'il n'a pas vus | 126 mm | 325 mm | 349 mm | 2,6° | 12,5° |
+| Un tour sur trois | 128 mm | 316 mm | 463 mm | 2,8° | 12,4° |
+| Départ faussé de 30 cm, 20 cm et 15° | 67 mm | 205 mm | 335 mm | 2,2° | 16,4° |
+
+Le filtre ne décroche jamais sur ces 60 m. Tourner deux à trois fois moins souvent coûte 5 à 6 cm : c'est le prix de la vitesse, et il reste sous l'erreur de l'ancien programme qui tournait à chaque étape.
+
+### La conduite d'un seul tenant
+
+- `Pilote.avance(dist_mm, …)` (`pilote.py`) : l'ordre « 8 » est redonné toutes les 0,5 s (le firmware coupe les roues 1,5 s après le dernier ordre) et chaque ligne du journal est surveillée ; arrêt à la distance (en anticipant le retard du journal), sur une alarme, si le cap a tourné de 5°, si le capteur de distance voit quelque chose dans la marge, ou si le journal se tait plus d'une seconde. Les réflexes du firmware (pare-chocs, 30 cm) restent ce qu'ils sont.
+- `explorer3.py` avec le plan : le filtre remplace `caler_sur_le_plan` (l'ancien reste par `--sans-filtre`) ; `--fluide` (avances d'un seul tenant), `--tour-tous-les MM` (distance entre deux tours vers une destination, 600 par défaut), `--sans-z` (le tour du firmware refait déjà le zéro du gyroscope : 1,4 s gagnée par tour), `--filtre-n`, `--base-plan U,V` (le champ infrarouge de la base n'arrête plus que les avances vers elle : il faut cela pour partir de la base). Les rotations se font à 75 mm/s au plus, quel que soit le réglage des avances. Le tour sur place accepte 20 à 62 mm/s (`tour.ino`) : `--tour-v 60` le ramène d'environ 17 s à 10 s.
+- `simulateur.py` : la même avance simulée, le tour à vitesse réglable, les compteurs de roues justes en rotation (ils comptaient double).
+
+Simulation, appartement de cinq pièces, quatre destinations, 19 à 20 m, gyroscope simulé à 1,0045 :
+
+| Réglage | Durée | Vitesse moyenne | Erreur après un tour (médiane / pire) | Contacts |
+|---|---|---|---|---|
+| Comme le 10 : une hypothèse, sauts, 75 mm/s, tour tous les 60 cm | 15,1 min | 21 mm/s | 26 / 53 mm | 0 |
+| Filtre seul, même conduite | 15,1 min | 21 mm/s | 18 / 38 mm | 0 |
+| Filtre, avances d'un seul tenant à 150 mm/s, tour tous les 1,8 m à 60 mm/s (trois tirages) | 5,6 à 6,0 min | 55 à 59 mm/s | 25 à 28 / 35 à 90 mm | 0 |
+| Le même à 100 mm/s | 6,0 min | 54 mm/s | 28 / 41 mm | 0 |
+
+La simulation retrouve la vitesse réelle du 10 (21 mm/s), ce qui donne du crédit au gain annoncé : 2,7 fois plus vite. Passer de 100 à 150 mm/s ne gagne presque rien : le temps part maintenant dans les rotations et les tours. La simulation a aussi trouvé un défaut du filtre avant le robot : le journal n'écrit le cap qu'à 0,1° près, et les rotations lentes étaient comptées deux fois (trois contacts avec un montant de porte simulé) ; corrigé en lisant la vitesse de rotation du gyroscope (`rot_dps`).
+
+### Ce qui n'est pas vérifié
+
+- La référence du rejeu n'est pas une mesure indépendante ; le capteur simulé est plus propre que le vrai.
+- `Pilote.avance`, le tour à 60 mm/s et la sortie de la base en marche arrière n'ont jamais tourné sur le robot.
+- Trois corrections relèvent du firmware et attendent l'accord de l'utilisateur : l'échelle du gyroscope et la zone morte seulement à l'arrêt ; un ordre de roues gauche et droite séparées, pour tourner en roulant ; un tour plus rapide que 62 mm/s.
+
+### Pour l'essai sur le robot
+
+Robot sur sa base, cerveau rebranché. Dans l'ordre : sortie de la base par des reculs courts (jamais essayée) ; deux tours au même endroit, à 30 puis 60 mm/s, comparés ; un trajet court avec le filtre et l'ancienne conduite ; puis la conduite d'un seul tenant à 100, puis 150 mm/s.

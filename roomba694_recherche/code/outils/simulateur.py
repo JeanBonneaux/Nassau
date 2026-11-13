@@ -275,7 +275,7 @@ class RobotSimule(Pilote):
              "pc_g": self.pc[0], "pc_d": self.pc[1], "roue_g": 0, "roue_d": 0,
              "vide_g": sol, "vide_avg": sol, "vide_avd": sol, "vide_d": sol,
              "lb_g": 20, "lb_avg": 16, "lb_cg": 36, "lb_cd": 10, "lb_avd": 44, "lb_d": 16,
-             "mv": 15300, "ma": -180, "mode": self.mode, "cap_deg": self.bcap % 360.0, "rot_dps": 0.0, "us_mm": float(round(us)),
+             "mv": 15300, "ma": -180, "mode": self.mode, "cap_deg": self.bcap % 360.0, "rot_dps": getattr(self, "rot_dps", 0.0), "us_mm": float(round(us)),
              "x_mm": round(self.bx), "y_mm": round(self.by), "cap_pos": round(self.bcap, 1),
              "ir_dessus": ir, "ir_g": 0, "ir_d": 0, "cur_g": 0, "cur_d": 0}
         self.lignes.append(l)
@@ -297,8 +297,8 @@ class RobotSimule(Pilote):
         """rotation vraie de dth_vrai radians ; le cerveau en compte un peu moins"""
         self.th += dth_vrai
         self.bcap += math.degrees(dth_vrai) / self.k_vrai
-        self.enc[0] -= math.degrees(dth_vrai) * 9.3
-        self.enc[1] += math.degrees(dth_vrai) * 9.3
+        self.enc[0] -= math.degrees(dth_vrai) * 4.613          # 235 mm d'entraxe, 0,4446 mm par pas : 4,6 pas par degré et par roue
+        self.enc[1] += math.degrees(dth_vrai) * 4.613
 
     def _avancer(self, ds, bloque=False):
         """ds mm le long du cap vrai (négatif : recul). bloque : les roues tournent mais le robot ne bouge pas."""
@@ -366,6 +366,65 @@ class RobotSimule(Pilote):
                 "us_avant": l0["us_mm"], "us_apres": l1["us_mm"], "lb_max": 44, "vide_min": min(l0["vide_g"], l1["vide_g"]),
                 "ma_min": -300, "lignes": n, "t0": l0["pc_s"], "t1": l1["pc_s"]}
 
+    # ------------------------------------------------------------ une avance d'un seul tenant, comme Pilote.avance
+    def avance(self, dist_mm, marge_mm=400, cap_tol=5.0, lb_repos=150, lb_max=400, vide_min=1500, vide_stop=0, duree_max=25.0):
+        l0 = self._ligne()
+        refus = self.controle(l0, avance=True, marge_mm=min(marge_mm, dist_mm + 220.0), lb_repos=lb_repos, vide_min=vide_min)
+        if refus:
+            return {"refus": refus}
+        if self.verrou or self.pc[0] or self.pc[1]:                 # le firmware refuse l'ordre
+            self.reflexe["refus"] += 1
+            self.dormir(0.6)
+            return {"touche": "8", "duree_ordre": 0.6, "alarme": None, "raison": "refus du firmware", "avance_mm": 0.0, "rot_gyro": 0.0,
+                    "us_avant": l0["us_mm"], "us_apres": l0["us_mm"], "lb_max": 44, "vide_min": l0["vide_g"], "lignes": 2}
+        x0, y0, cap0, t0 = self.bx, self.by, self.bcap, self.t
+        v = min(self.reglage + 21.0, 147.0)                          # vitesses réelles mesurées le 2026-11-10
+        dt = 0.05
+        alarme = raison = None
+        l = l0
+        while not (alarme or raison):
+            derive = 0.004 * v * dt * (1.0 + self.rng.gauss(0.0, 0.5))                                   # tire à gauche : 4° par mètre
+            self._tourner(math.radians(derive))
+            self.rot_dps = derive / dt
+            ds = v * dt
+            P2 = np.array([self.x + ds * math.cos(self.th), self.y + ds * math.sin(self.th)])
+            c = self.monde.contact(P2)
+            if c is not None:
+                rel = (c - self.th + math.pi) % (2 * math.pi) - math.pi
+                if abs(rel) < math.radians(100):
+                    self.pc = [1 if rel > -0.35 else 0, 1 if rel < 0.35 else 0]
+                    self.verrou = True
+                    self.reflexe["arrets"] += 1
+                    self.contacts.append((float(P2[0]), float(P2[1])))
+                    alarme = "pare-chocs " + ("gauche" if self.pc[0] else "") + (" droit" if self.pc[1] else "")
+                    break
+            self._avancer(ds)
+            self.dormir(dt)
+            l = self._ligne()
+            self.rot_dps = 0.0
+            alarme = self.alarme(l, lb_max=lb_max, vide_stop=vide_stop)
+            fait = math.hypot(self.bx - x0, self.by - y0)
+            if alarme:
+                break
+            if fait >= dist_mm - 18.0:
+                raison = "distance"
+            elif abs(self.bcap - cap0) > cap_tol:
+                raison = "cap"
+            elif 0 < l["us_mm"] < min(marge_mm, dist_mm - fait + 220.0):
+                raison = f"obstacle à {l['us_mm']:.0f} mm devant"
+            elif self.t - t0 > duree_max:
+                raison = "durée"
+        if not alarme:                                               # le temps que l'ordre d'arrêt arrive
+            P2 = np.array([self.x + 0.1 * v * math.cos(self.th), self.y + 0.1 * v * math.sin(self.th)])
+            if self.monde.contact(P2) is None:
+                self._avancer(0.1 * v)
+        self.dormir(0.4)
+        l1 = self._ligne()
+        return {"touche": "8", "duree_ordre": round(self.t - t0, 2), "alarme": alarme, "raison": raison,
+                "avance_mm": round(math.hypot(self.bx - x0, self.by - y0), 1), "rot_gyro": round(self.bcap - cap0, 2),
+                "us_avant": l0["us_mm"], "us_apres": l1["us_mm"], "lb_max": 44, "vide_min": min(l0["vide_g"], l1["vide_g"]),
+                "lignes": int((self.t - t0) / dt), "t0": l0["pc_s"], "t1": l1["pc_s"]}
+
     # ------------------------------------------------------------ liaison avec le cerveau
     def touche(self, c):
         if c == "5" and not (self.pc[0] or self.pc[1]):
@@ -384,7 +443,10 @@ class RobotSimule(Pilote):
 
     def get(self, chemin, timeout=3.0):
         if chemin.startswith("/api/tour?go=1"):
-            self._tour_sur_place()
+            v_tour = 30.0
+            if "&v=" in chemin:
+                v_tour = max(20.0, min(150.0, float(chemin.split("&v=")[1].split("&")[0])))
+            self._tour_sur_place(v_tour)
             return json.dumps({"etat": 2, "texte": "rotation"})
         if chemin.startswith("/api/tour"):
             return json.dumps(self.tour)
@@ -392,7 +454,7 @@ class RobotSimule(Pilote):
             return json.dumps(self.etat())
         return "{}"
 
-    def _tour_sur_place(self):
+    def _tour_sur_place(self, v_tour=30.0):
         if self.pc[0] or self.pc[1] or self.verrou:
             self.tour = {"etat": 4, "texte": "interrompu", "raison": "pare-chocs enfoncé", "n": 0}
             return
@@ -400,7 +462,8 @@ class RobotSimule(Pilote):
         self.tours_vrais.append((self.x, self.y, self.th))
         th0 = self.th
         pts = []
-        n = 150 + self.rng.randrange(10)
+        duree = 17.0 * 30.0 / v_tour                             # 380° en 17 s à 30 mm/s ; le capteur mesure 9 fois par seconde
+        n = int(150 * 30.0 / v_tour) + self.rng.randrange(6)
         for i in range(n):
             d_cerveau = 380.0 * i / (n - 1)                     # angle compté par le cerveau depuis le départ du tour
             th = th0 + math.radians(d_cerveau * self.k_vrai)
@@ -408,10 +471,10 @@ class RobotSimule(Pilote):
             pts.append([int(round(d_cerveau * 10)), int(round(self.monde.sonar(capteur, th, rng=self.rng)))])
         for _ in range(19):                                      # le journal continue pendant le tour
             self._tourner(math.radians(20.0 * self.k_vrai))
-            self.dormir(17.0 / 19)
+            self.dormir(duree / 19)
             self._ligne()
         self.x += self.rng.gauss(0.0, 3.0)
         self.y += self.rng.gauss(0.0, 3.0)
         self._ligne()
         self.tour = {"etat": 3, "texte": "terminé", "raison": "tour complet", "tourne": 380, "n": n, "roues": 30,
-                     "duree_ms": 17000, "depart": depart, "points": pts}
+                     "duree_ms": int(duree * 1000), "depart": depart, "points": pts}

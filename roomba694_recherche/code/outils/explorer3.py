@@ -261,7 +261,9 @@ class Exploration:
         self.dormir = getattr(p, "dormir", time.sleep)
         self.maintenant = getattr(p, "maintenant", time.time)
         self.est = Estime(a.k_gyro)
-        self.v_reelle = a.vitesse + 21.0                       # mesuré le 2026-11-10 : réglage + 21 mm/s
+        self.v_reelle = min(a.vitesse + 21.0, 147.0)           # mesuré le 2026-11-10 : réglage + 21 mm/s, 147 au plus
+        self.v_reglee = a.vitesse
+        self.filtre, self.i_filtre = None, 0                   # localisation à plusieurs hypothèses (localiser.py), avec le plan
         self.rot_dps = 2 * self.v_reelle / 235.0 * 57.29578
         self.stations = []                                     # toutes, dans l'ordre (les tours de recalage aussi)
         self.noeuds = []                                       # stations de l'arbre (pas les tours de recalage)
@@ -325,6 +327,24 @@ class Exploration:
                                          for ang, dist, larg in pal)
         self.j.setdefault("plan", []).append(info)
         self.dire(f"    sur le plan : {'recalée de' if info['garde'] else 'pas recalée (note trop basse) ; écart proposé'} ({dx:+.0f}, {dy:+.0f}) mm et {dc:+.1f}° ; note {note0:.2f} -> {note:.2f}")
+
+    def caler_par_le_filtre(self, st):
+        """Le tour qui vient de finir juge les hypothèses du filtre ; la position et le cap tenus par le PC sont remplacés
+        par ceux du filtre. Rejoué sur la soirée du 2026-11-10 : 6 cm et 2° d'erreur médiane, contre 17 cm et 9° pour
+        caler_sur_le_plan (une seule hypothèse, fenêtre de 30 cm et 10°)."""
+        e = self.filtre.tour(st.d, st.r)
+        dx, dy, dc = e["x"] - self.est.X, e["y"] - self.est.Y, ecart(e["cap"] - self.est.C)
+        self.est.decaler(dx, dy)
+        self.est.C += dc
+        c1 = st.pose[2] + ecart(e["cap_debut"] - st.pose[2])
+        st.reposer((e["x"], e["y"], c1))
+        self.j["stations"][-1]["pose"] = [round(e["x"], 1), round(e["y"], 1), round(c1, 2)]
+        info = {"station": st.nom, "filtre": True, "note": round(e["note"], 2), "dx": round(dx), "dy": round(dy), "dcap": round(dc, 1),
+                "etalement_mm": round(e["etalement_mm"]), "etalement_cap": round(e["etalement_cap"], 1), "echelle_gyro": round(e["echelle_gyro"], 4), "garde": True}
+        info["murs_confirmes"] = sum(self.plan.confirmer(*self.vers_px(pt[0], pt[1])) for psi, dist, larg, nb, pt in st.paliers)
+        self.j.setdefault("plan", []).append(info)
+        self.dire(f"    filtre : position corrigée de ({dx:+.0f}, {dy:+.0f}) mm et {dc:+.1f}° ; note {e['note']:.2f}, étalement {e['etalement_mm']:.0f} mm"
+                  f" et {e['etalement_cap']:.1f}°, gyroscope × {e['echelle_gyro']:.4f}")
 
     def lire_cibles(self):
         try:
@@ -394,7 +414,7 @@ class Exploration:
                 if l is None:
                     return None
                 dernier_jalon = (ju, jv) == tuple(jalons[-1])
-                if not dernier_jalon and math.hypot(q[0] - dernier_tour[0], q[1] - dernier_tour[1]) < 600.0:
+                if not dernier_jalon and math.hypot(q[0] - dernier_tour[0], q[1] - dernier_tour[1]) < getattr(self.a, "tour_tous_les", 600.0):
                     continue                                     # étape courte : pas de tour sur place ici, on enchaîne
                 st, raison = self.faire_un_tour(str(len(self.noeuds)), ici, "station")
                 if st is None:
@@ -440,6 +460,9 @@ class Exploration:
         if l is None:
             return None, None
         self.est.suivre(self.p.lignes)
+        if self.filtre is not None:                             # les hypothèses avancent avec les mêmes lignes
+            self.filtre.suivre(self.p.lignes[self.i_filtre:])
+            self.i_filtre = len(self.p.lignes)
         return l, (self.est.X, self.est.Y, self.est.C)
 
     def lire(self, chemin):
@@ -471,8 +494,36 @@ class Exploration:
             self.p.immobile()
             return {"touche": touche, "liaison": str(err), "alarme": None}
 
+    def regler_vitesse(self, v):
+        """vitesse des roues pour l'ordre qui suit ; ne redemande rien au cerveau si elle n'a pas changé"""
+        v = int(max(50, min(150, v)))
+        if v != self.v_reglee:
+            self.p.vitesse(v)
+            self.v_reglee = v
+            self.dormir(0.05)
+        self.v_reelle = min(v + 21.0, 147.0)
+        self.rot_dps = 2 * self.v_reelle / 235.0 * 57.29578
+
+    def avancer(self, dist, **k):
+        """Pilote.avance, avec la même reprise que saut() si la liaison flanche"""
+        try:
+            return self.p.avance(dist, **k)
+        except (OSError, urllib.error.URLError) as err:
+            self.pannes += 1
+            self.dire(f"  liaison : avance interrompue ({err})")
+            if self.pannes > 12:
+                raise RuntimeError("liaison : trop d'ordres perdus")
+            self.dormir(2.0)
+            try:
+                self.p.touche("5")
+            except (OSError, urllib.error.URLError):
+                pass
+            self.p.immobile()
+            return {"touche": "8", "liaison": str(err), "alarme": None}
+
     # ------------------------------------------------------------ mouvements
     def tourner_vers(self, cap_cible, tol=4.0, essais=8):
+        self.regler_vitesse(min(self.a.vitesse, 75))            # les rotations restent lentes : à 150 mm/s un saut de 0,1 s fait déjà 7°
         for _ in range(essais):
             l, q = self.pose()
             if l is None:
@@ -512,32 +563,50 @@ class Exploration:
                     return False, raison
                 continue
             i0 = len(self.p.lignes)
-            r = self.saut("8", min(1.3, max(0.2, (d - 8) / (self.v_reelle + 6))), marge_mm=min(400.0 if connu else 600.0, d + 220.0), vide_min=self.a.vide_min,
-                          vide_stop=self.a.vide_min)
+            self.regler_vitesse(self.a.vitesse)
+            if getattr(self.a, "fluide", False):                # d'un seul tenant jusqu'au point, ou jusqu'à ce que le cap ait tourné de 5°
+                r = self.avancer(min(d - 8.0, 1500.0), marge_mm=400.0 if connu else 600.0, vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
+            else:
+                r = self.saut("8", min(1.3, max(0.2, (d - 8) / (self.v_reelle + 6))), marge_mm=min(400.0 if connu else 600.0, d + 220.0),
+                              vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
             r["but"] = f"avance vers ({xt:.0f}, {yt:.0f}), reste {d:.0f} mm"
             self.j["sauts"].append(r)
             if "refus" in r:
                 return False, "avance refusée : " + r["refus"]
             if r.get("alarme"):
                 return False, "alarme pendant une avance : " + r["alarme"]
-            if any(int(m.get("ir_dessus", 0)) == 161 for m in self.p.lignes[i0:]):
+            if any(int(m.get("ir_dessus", 0)) == 161 for m in self.p.lignes[i0:]) and self.vers_la_base():
                 return False, "base proche (champ infrarouge 161)"
-            self.dormir(0.3)
+            self.dormir(0.05 if getattr(self.a, "fluide", False) else 0.3)
         return False, "trop de sauts"
+
+    def vers_la_base(self):
+        """Le robot roule-t-il vers sa base ? Sans base donnée sur le plan (--base-plan), on répond oui par prudence : le
+        champ infrarouge 161 arrête alors toute avance. Avec la base, un départ depuis la base reste possible."""
+        b = getattr(self.a, "base_plan", "")
+        if not b or self.plan is None:
+            return True
+        bu, bv = (float(v) for v in b.split(","))
+        bx, by = self.vers_mm(bu, bv)
+        c = math.radians(self.est.C)
+        return (bx - self.est.X) * math.cos(c) + (by - self.est.Y) * math.sin(c) > 0.0
 
     def faire_un_tour(self, nom, parent, genre):
         """Tour sur place du firmware. Renvoie (station, raison) ; station vaut None en cas d'échec."""
         l0, q0 = self.pose()
         if l0 is None:
             return None, "plus de lignes du journal"
+        if self.filtre is not None:
+            self.filtre.debut_tour()
         brut0 = (self.est.bx, self.est.by, self.est.C)
         rot0, ligne0 = self.est.rot, self.est.i
         a_k0 = self.a.k_gyro
         # Le zéro du gyroscope glisse pendant que la carte chauffe (2026-11-10 : 10 ° par minute au repos une demi-heure
         # après l'allumage, puis une vingtaine de degrés perdus en dix minutes d'exploration). Le robot est immobile
         # avant chaque tour : on en profite pour refaire ce zéro (touche z, une seconde). La position ne saute pas.
-        self.lire("/api/cmd?c=z")
-        self.dormir(1.4)
+        if not getattr(self.a, "sans_z", False):                 # le tour du firmware refait lui-même ce zéro à son départ (tour.ino)
+            self.lire("/api/cmd?c=z")
+            self.dormir(1.4)
         t = json.loads(self.lire(f"/api/tour?go=1&v={self.a.tour_v}"))
         if t.get("etat") not in (1, 2):
             return None, "tour refusé : " + str(t.get("raison", t.get("texte")))
@@ -565,7 +634,10 @@ class Exploration:
             "avant": {k: l0[k] for k in ("x_mm", "y_mm", "cap_pos", "us_mm", "vide_g", "vide_avg", "vide_avd", "vide_d")},
             "apres": {k: l1[k] for k in ("x_mm", "y_mm", "cap_pos", "us_mm")} if l1 else None, "tapis": bool(st.tapis)})
         if self.plan is not None:
-            self.caler_sur_le_plan(st, premier=not self.noeuds and not getattr(self.a, "depart_sur", False))
+            if self.filtre is not None:
+                self.caler_par_le_filtre(st)
+            else:
+                self.caler_sur_le_plan(st, premier=not self.noeuds and not getattr(self.a, "depart_sur", False))
             if parent is not None and genre not in ("recalage", "retour"):
                 self.plan.ouvrir([self.vers_px(parent.x, parent.y), self.vers_px(st.x, st.y)])      # le robot vient d'y passer : c'est libre
         if genre not in ("recalage", "retour"):
@@ -1068,6 +1140,13 @@ class Exploration:
             u, v, cap = (float(x) for x in a.depart_plan.split(","))
             self.est.X, self.est.Y = self.vers_mm(u, v)
             self.est.bx, self.est.by, self.est.C = self.est.X, self.est.Y, cap
+            if not getattr(a, "sans_filtre", False):
+                import localiser
+                sur = getattr(a, "depart_sur", False)
+                self.filtre = localiser.Filtre(self.plan, n=getattr(a, "filtre_n", 8000), k_gyro=a.k_gyro)
+                self.filtre.demarrer(u, v, cap, sigma_mm=100.0 if sur else 250.0, sigma_cap=6.0 if sur else 15.0)
+                self.i_filtre = max(0, len(self.p.lignes) - 1)
+                self.dire(f"localisation : filtre à {self.filtre.n} hypothèses autour du pixel ({u:.0f}, {v:.0f}), cap {cap:.0f}°")
         ici, raison = self.faire_un_tour("0", None, "départ")
         if ici is None:
             raise SystemExit("premier tour impossible : " + str(raison))
@@ -1188,6 +1267,12 @@ def main():
     p_.add_argument("--depart-plan", default="", help="avec --plan : U,V,CAP, pixel du plan où est le robot et direction de son avant (degrés, 0 = droite, 90 = haut)")
     p_.add_argument("--depart-sur", action="store_true", help="avec --plan : la position de départ est sûre à 10 cm et 5° près (premier tour cherché dans 30 cm et 10° au lieu de 60 cm et 25°)")
     p_.add_argument("--plan-roule", default="", help="avec --plan : fichiers JSON de l_localisation_globale.py, séparés par des points-virgules ; les trajets déjà roulés y sont tenus pour du sol sûr")
+    p_.add_argument("--base-plan", default="", help="avec --plan : U,V, pixel de la base ; le champ infrarouge de la base n'arrête alors que les avances vers elle")
+    p_.add_argument("--sans-filtre", action="store_true", help="avec --plan : ancien recalage à une seule hypothèse (caler_sur_le_plan) au lieu du filtre de localiser.py")
+    p_.add_argument("--filtre-n", type=int, default=8000, help="nombre d'hypothèses du filtre")
+    p_.add_argument("--fluide", action="store_true", help="avances d'un seul tenant (Pilote.avance) au lieu de sauts de 1,3 s")
+    p_.add_argument("--tour-tous-les", type=float, default=600.0, help="vers une destination : distance en mm entre deux tours sur place (600 ; 1800 avec le filtre)")
+    p_.add_argument("--sans-z", action="store_true", help="ne pas envoyer z avant chaque tour (le tour du firmware refait déjà le zéro du gyroscope)")
     p_.add_argument("--cibles-seules", action="store_true", help="avec --plan : s'arrêter quand les destinations données sont faites, sans explorer ensuite")
     p_.add_argument("--simulation", default="", help="nom d'un monde de simulateur.py : essai sans robot")
     p_.add_argument("--graine", type=int, default=1, help="simulation : graine du hasard")
