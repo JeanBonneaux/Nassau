@@ -997,3 +997,16 @@ L'utilisateur a dit « Oui, prépare la v9 ». Sa consigne demande des changemen
 **Non vérifié** : aucune ligne de la v9 ni de la v10 n'a tourné sur la carte ; `Pilote._mouvement` n'a tourné nulle part (le simulateur remplace `avance` et `tourne` en entier).
 
 **Ordre d'installation proposé, chaque étape avec l'accord de l'utilisateur** : (1) v9 par Wi-Fi, robot hors de sa base et immobile : version affichée, cap stable une minute, `imu.biais` qui bouge peu, un tour sur place normal ; puis un trajet court déjà fait le matin, pour comparer. (2) v10 : robot immobile, `/api/mouv` répond, un mouvement demandé en mode passif est refusé ; puis, avec lui à côté, une rotation de 30°, une avance de 10 cm, une avance de 50 cm, et la boucle de 7,5 m.
+
+## 34. Firmware v9 installé et vérifié (2026-11-13, 11 h 57 à 12 h 05)
+
+Accord de l'utilisateur : « Oui, installe la v9 ». Robot en C17, hors de sa base, immobile depuis la fin du § 32 (position du cerveau inchangée). Enregistrements : `mesures/exploration7_20261113_115916_*`, `mesures/position_20261113_120240.*`.
+
+- **Installation** par Wi-Fi (`curl -F firmware=@…/build/roomba694_v9.bin http://192.168.18.25/update`) : 10 s, « Mise à jour réussie », carte revenue en 6 s, version affichée « v9 Nov 13 2026 11:47:43 », raison du démarrage « redémarrage logiciel (mise à jour) ». Réglages du capteur de distance conservés (sécurité active, seuil 30 cm).
+- **Robot immobile, une minute** : cap du gyroscope et cap de la position à 0,00° du début à la fin ; zéro du gyroscope entre +0,009 et +0,017 °/s, retouché 100 fois par seconde (`imu.suivis` : 6 072 retouches en 61 s). Aucune dérive au repos, et le zéro se suit.
+- **Un tour sur place** à 60 mm/s : 12,8 s, 103 mesures, 8 paliers, comme en v8 (12,7 s, 102 mesures). Le filtre place le robot en C17, pixel (440, 73), cap 63° : là où le trajet du matin l'avait laissé ((441, 75), 63°).
+- **Trajet de comparaison** C17 → E15 → D12 → E15 → C17, conduite d'un seul tenant à 150 mm/s : 5,7 m en 2,2 min, 15 mouvements (9 avances, 6 rotations), un seul arrêt pour le cap, aucun contact, aucun arrêt imprévu. Le même aller, en v8 le matin (t3), demandait 1,5 min et 13 rotations pour 2,9 m. Corrections du filtre à chaque tour : 6 à 10 cm, 1,7 à 2,5°.
+- **Ce que la v9 fait voir** : pendant les avances le gyroscope compte maintenant 8,6° de dérive à gauche par mètre en moyenne (jusqu'à 10,5), contre 5,3 le matin sur les mêmes tronçons. La zone morte cachait donc environ 40 % de la dérive du robot. La visée de compensation, qui se règle sur cette mesure, en devient juste : les étapes de 88 cm se font d'une traite.
+- **Le trajet compté par le cerveau seul** finit à 14,5 cm de son départ après 6,0 m (2,4 %), alors que le robot est revenu à 8 cm de son point de départ d'après le filtre ; le matin, en v8, le même compte finissait à 75 cm après 26 m.
+
+**État à la fin** : firmware v9 sur la carte ; robot en C17, à 75 cm devant sa base, session fermée (`5`, `s`, `x`), capteur de distance au repos, batterie 1 807 mAh. La v10 (mouvements exécutés par le cerveau, § 33) est compilée et attend l'accord de l'utilisateur.

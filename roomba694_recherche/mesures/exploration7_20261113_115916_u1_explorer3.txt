@@ -1,0 +1,24 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (440, 73), cap 88°
+[  0.2 min]     filtre : position corrigée de (-6, +33) mm et +0.5° ; note 0.71, étalement 141 mm et 8.7°, gyroscope × 1.0045
+[  0.2 min] station 0 : 9 paliers, 3 lignes de murs, axes de la pièce 6.0°
+[  0.2 min] cibles reçues (série 1) : [(383, 112), (306, 100), (383, 112), (442, 72)]
+[  0.2 min]   vers la cible (383, 112) du plan : 2 étapes
+[  0.7 min]     filtre : position corrigée de (+56, -30) mm et +1.7° ; note 0.81, étalement 225 mm et 8.5°, gyroscope × 1.0045
+[  0.7 min]   porte possible : 782 mm de large vers (6538, 5316), direction 274°
+[  0.7 min]   porte possible : 1171 mm de large vers (8683, 6976), direction 4°
+[  0.7 min] station 1 (vers une cible) en (7270, 6057) : 3 paliers
+[  0.7 min]   cible (383, 112) atteinte
+[  0.7 min]   vers la cible (306, 100) du plan : 2 étapes
+[  1.2 min]     filtre : position corrigée de (+27, +94) mm et -2.5° ; note 0.92, étalement 318 mm et 8.8°, gyroscope × 1.0045
+[  1.2 min] station 2 (vers une cible) en (5799, 6385) : 5 paliers
+[  1.2 min]   cible (306, 100) atteinte
+[  1.2 min]   vers la cible (383, 112) du plan : 2 étapes
+[  1.7 min]     filtre : position corrigée de (+14, -38) mm et +0.5° ; note 0.74, étalement 254 mm et 9.7°, gyroscope × 1.0045
+[  1.7 min]   porte possible : 857 mm de large vers (8265, 5445), direction 274°
+[  1.7 min] station 3 (vers une cible) en (7245, 6056) : 6 paliers
+[  1.7 min]   cible (383, 112) atteinte
+[  1.7 min]   vers la cible (442, 72) du plan : 2 étapes
+[  2.2 min]     filtre : position corrigée de (-47, +61) mm et +2.2° ; note 0.74, étalement 308 mm et 11.2°, gyroscope × 1.0046
+[  2.2 min] station 4 (vers une cible) en (8290, 6877) : 8 paliers
+[  2.2 min]   cible (442, 72) atteinte
+[  2.2 min] fin : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 5 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 15 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 6.0 m | batterie 1807 mAh
