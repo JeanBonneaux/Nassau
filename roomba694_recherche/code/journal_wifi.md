@@ -1251,7 +1251,7 @@ Demande de l'utilisateur : « fais un aller retour, vers le c28, en utilisant ce
 
 ### Le retour (14 h 53 à 15 h 30)
 
-1. **Pièce centrale, en automatique (passage `c`) : 5 contacts en 3 min, puis arrêt.** Contacts en E27 (trois), E26 et D26. Cause du premier, retrouvée en rejouant le planificateur : le chemin allait en ligne droite de (728, 77) à (713, 122), dix centimètres à l'ouest du virage que la trace de l'aller fait en (720, 116). Le sol est blanc sur le plan à cet endroit, mais un objet que ni le capteur de distance ni les six capteurs optiques ne voient borde le passage (son bord est vers u = 705 à 707 pour v = 113 à 122). Pare-chocs droit, robot au pixel (713, 113). Ensuite le robot a cherché des détours dans une pièce où le filtre le place à 5 à 16 cm près, et a touché quatre autres choses.
+1. **Pièce centrale, en automatique (passage `c`) : 5 contacts en 3 min, puis arrêt.** *(Explication corrigée au § 43 : une roue avait patiné à l'aller, le robot était 37 cm à côté de là où il se croyait, et les positions de ce paragraphe sont décalées d'autant.)* Contacts en E27 (trois), E26 et D26. Cause du premier, retrouvée en rejouant le planificateur : le chemin allait en ligne droite de (728, 77) à (713, 122), dix centimètres à l'ouest du virage que la trace de l'aller fait en (720, 116). Le sol est blanc sur le plan à cet endroit, mais un objet que ni le capteur de distance ni les six capteurs optiques ne voient borde le passage (son bord est vers u = 705 à 707 pour v = 113 à 122). Pare-chocs droit, robot au pixel (713, 113). Ensuite le robot a cherché des détours dans une pièce où le filtre le place à 5 à 16 cm près, et a touché quatre autres choses.
 2. **Reprise à la main (14 h 56 à 15 h 12).** Un essai de recalage sur le tour de l'aller en C28, position et cap ensemble (outil `recaler_tour.py`, non gardé ; son tour est dans `_tour_c28_retour.json`), a rendu un cap faux d'une dizaine de degrés : dans cette pièce les parois appariées d'un tour à l'autre ne sont pas les mêmes. Position et cap repris par des regards vers le mur nord, puis l'intervalle (40 à 45 cm entre l'objet et le côté est, à cheval sur E27 et E28) a été repassé **en suivant la trace de l'aller à l'estime**, à 50 puis 75 mm/s demandés, en six petites avances : aucun contact. Le tour suivant, en G26, n'a corrigé que de (−11, −25) mm.
 3. **Couloir, en automatique (passage `d`) : 9,0 m en 4,2 min, 6 tours, 1 contact** (pare-chocs gauche en J23, pixel (589, 223)). Le cap repris à la main était faux d'une dizaine de degrés, d'après les corrections du filtre, toutes dans le même sens : +0,1°, +3,3°, +1,1°, +4,0°, +1,2°, +0,9°, soit 10,6° en six tours. Entre-temps le robot dérivait vers le sud, et chaque tour corrigeait la position de ce côté, de 3 à 29 cm.
 4. **Porte H12 vers le nord (15 h 16 à 15 h 27).** Devant la porte (J12), le filtre plaçait le robot une vingtaine de centimètres trop à l'ouest (19 cm d'après le tour fait ensuite en G12, 25 cm d'après le montant). Position reprise sur le montant est, au capteur de distance :
@@ -1265,7 +1265,7 @@ Demande de l'utilisateur : « fais un aller retour, vers le c28, en utilisant ce
 
 - `balise_base.py`, deux tours sur place : axe de la base à **−5 mm puis −13 mm** du centre du robot ; au second, base vue par les récepteurs avant à ±19° autour du cap 88,5° du plan (90° attendu). Robot tourné vers elle : récepteur du dessus et avant droit « rouge et vert », avant gauche « vert ».
 - Le filtre plaçait le robot au pixel (405,7 ; 81,0), donc sur l'axe (u = 405 à 407, § 39 et § 40). **En travers, l'arrivée est juste à 1 ou 2 cm.**
-- **En long, pas tranché.** Pendant le tour, le capteur de distance voit deux choses dans la direction de la base : un objet à 43 cm du centre, de 0 à 30° à gauche, et une paroi à 78 cm, de 6 à 42° à droite. Si cette paroi est le mur derrière la base (celui que le § 39 voyait à 905 mm), le robot est à v = 69 et non 81 : 22 cm plus près de la base que ne le dit le filtre. Un accostage le dirait (66 cm ou 89 cm à parcourir).
+- **En long, pas tranché.** *(Tranché au § 42 : le robot était à v = 92, le filtre le plaçait 20 cm trop près de la base ; la « paroi » est un objet.)* Pendant le tour, le capteur de distance voit deux choses dans la direction de la base : un objet à 43 cm du centre, de 0 à 30° à gauche, et une paroi à 78 cm, de 6 à 42° à droite. Si cette paroi est le mur derrière la base (celui que le § 39 voyait à 905 mm), le robot est à v = 69 et non 81 : 22 cm plus près de la base que ne le dit le filtre. Un accostage le dirait (66 cm ou 89 cm à parcourir).
 - L'objet à 43 cm est à 37 cm devant le mur : c'est celui du § 39, et c'est lui que le capteur avait pris pour la base au départ. Le § 39 le disait « côté droit » de l'axe ; aujourd'hui il apparaît à gauche : son côté n'est pas connu, le faisceau du capteur est trop large.
 
 ### Ce que disent les données
@@ -1277,7 +1277,7 @@ Demande de l'utilisateur : « fais un aller retour, vers le c28, en utilisant ce
 
 ### Ce qui change dans le code
 
-1. **Le planificateur préfère le sol déjà roulé** (`plan.py`). Un pas hors des voies coûte trois pas sur une voie (`Plan.hors_voie`), et une ligne droite entre deux points du chemin n'est prise que si elle n'ajoute pas de trajet hors voie (`jalons`, 6 cm de tolérance). Avant, une voie ne valait pas mieux que du sol blanc, et les lignes droites coupaient ses virages.
+1. **Le planificateur préfère le sol déjà roulé** (`plan.py`). *(Devenu un réglage, plus la conduite par défaut : § 44.)* Un pas hors des voies coûte trois pas sur une voie (`Plan.hors_voie`), et une ligne droite entre deux points du chemin n'est prise que si elle n'ajoute pas de trajet hors voie (`jalons`, 6 cm de tolérance). Avant, une voie ne valait pas mieux que du sol blanc, et les lignes droites coupaient ses virages.
    - Rejeu du départ du retour : le chemin passe maintenant par (721, 98) puis (715, 120), sur la trace de l'aller, au lieu de couper de (728, 77) à (713, 122).
    - Sur les 104 trajets possibles entre les 11 endroits visités aujourd'hui : 627 m au lieu de 625, dont 51 m hors voie au lieu de 98 ; aucun trajet allongé de plus d'un quart.
    - Simulation (`essai_explorer3.py --plan`, deux mondes, cinq tirages, allers-retours répétés) : aucun contact avant comme après, trajets 1,6 % plus longs dans l'appartement simulé, durée égale à 2 % près, même précision. La simulation n'a pas d'objet invisible : elle montre l'absence de dégât, pas le gain.
@@ -1297,3 +1297,120 @@ Depuis 60 cm environ : regards de 10° en 10° vers la porte ; le montant le plu
 **Non vérifié** : le nouveau planificateur sur le robot ; l'erreur d'arrivée en long ; ce que sont les objets invisibles de E27 et de E13 (à demander à l'utilisateur) ; ce que vaut un repère seul comparé sur trois parois, faute de cas où la vérité est connue ; la méthode de la porte, automatisée.
 
 **État à la fin** : robot en D16, pixel (406, 81) d'après le filtre, **dans l'axe de sa base à 1 cm près, tourné vers elle, à 78 cm de la paroi qui est derrière elle** ; il n'est pas posé sur sa base et ne charge pas. Session fermée (`5`, `s`, `x`) à 15 h 32 min 52, capteur de distance au repos, vitesse 150, batterie 1 541 mAh.
+
+## 42. Essai du planificateur modifié sur une boucle, et ce que la boucle dit de la précision (2026-11-13, 16 h 09 à 16 h 17)
+
+Demande de l'utilisateur : « Teste d'abord » (essayer le planificateur du § 41 avant d'accoster). Enregistrements : `mesures/exploration16_20261113_160926_*`, `mesures/position_20261113_161721.*`. Carte : `plan_lidar/carte_grille_20261113_boucle*.png` (hors dépôt). Analyse : `data_analysis/s_estime_boucle.py`, `results_s_estime_boucle_exploration16.txt`.
+
+**La boucle.** D16 → E15 → D12 → E11 → G12 → C17 → D16, dans la pièce de la base : trois trajets communs avec les deux boucles du § 38, deux où le nouveau planificateur choisit un autre chemin (E11 → G12 par un coude au lieu d'une ligne droite, G12 → C17 par d'autres points).
+
+| | Boucle d'essai | Boucles du § 38 |
+|---|---|---|
+| Chemin | 8,6 m | 7,5 et 7,4 m |
+| Durée | 4,5 min | 2,8 et 2,9 min |
+| Vitesse moyenne | 32 mm/s | 45 et 43 mm/s |
+| Tours sur place | 8 | 6 et 6 |
+| Rotations, avances | 14 et 14 | 7 et 9, 8 et 10 |
+| Contacts, trajets arrêtés | aucun | aucun |
+
+- Le planificateur modifié marche sur le robot : aucun contact, et les 7 voies de la boucle sont bien gardées dans le fichier de tours (première fois).
+- Il est plus lent. En suivant les anciennes traces de près, le chemin se découpe en deux fois plus de petits trajets, et chaque rotation coûte 4 à 6 s. D'E15 à D12, le même trajet prend 42 s au lieu de 31 et 34 s.
+- Une variante rejouée sur le plan (ligne droite permise partout où le corps du robot est déjà passé) n'a pas été gardée : elle redonnait la ligne droite du § 41 dans la pièce centrale.
+
+**Les repères sont cohérents entre eux, le filtre seul ne l'est pas.** La boucle refaite à l'estime pure (roues et gyroscope, aucun recalage), posée au mieux sur les cinq tours calés par les repères (E15, D12, G12, D15, C17) :
+
+- l'estime passe à 55 mm de ces cinq tours (quadratique), 79 mm au pire ; sur les deux boucles du § 38 : 37 et 32 mm. Des repères faits à des endroits différents s'accordent donc avec le trajet compté à 3 à 6 cm près sur 8 m ;
+- **le départ, que le filtre seul plaçait au pixel (407, 80), était en (403, 92) : 22 cm d'écart**, presque tout dans l'axe de la base ; l'arrivée, (407, 80) d'après le filtre, était en (408, 83) : 5 cm ;
+- les deux tours, de départ et d'arrivée, comparés directement (trois parois) : l'arrivée est à (+46, +187) mm du départ ; l'estime dit (+81, +173) mm ; le filtre disait (−12, +4) mm. **Devant la base, le filtre donne v = 80 pour deux endroits distants de 19 cm** : dans l'axe de la base, il ne voit pas où est le robot ;
+- même défaut au départ de la première boucle du § 38 (C17, après le retour de K9) : 29 cm.
+
+**Ce que cela corrige au § 41.**
+
+- « En long, pas tranché … le robot est à v = 69 et non 81 » : faux dans les deux sens. Le robot était à v = 92 : **le filtre le plaçait 20 cm trop près de sa base**, et non trop loin. L'arrivée de l'aller-retour vers C28, faite sans aucun repère depuis C28, était donc juste à 1 cm en travers et fausse de 21 cm en long.
+- « Une paroi à 78 cm » n'était pas le mur : c'est un objet, vers le pixel (419, 51), à 25 cm à l'est de l'axe de la base et 45 cm devant le mur. Il a été vu trois fois à la même place (14 h 44 à 65 cm, 15 h 30 à 80 cm, 16 h 14 à 65 cm), et c'est lui qui avait faussé le départ. Ajouté aux obstacles connus.
+- « Un objet à 43 cm, à 37 cm devant le mur » : quelque chose était bien là, vers le pixel (398, 68), immobile de 15 h 30 à 16 h 10 ; il n'y était ni à 14 h 44 ni à 16 h 14. Passager (à demander à l'utilisateur).
+
+**Arrivée de la boucle, mesurée par la base** : axe à +17 mm du centre du robot, direction de la base au cap 91,2° du plan, les trois récepteurs « rouge et vert » robot tourné vers elle.
+
+**État à la fin** : robot en D16, pixel (408, 83), dans l'axe de sa base, tourné vers elle, pas posé dessus ; session fermée (`5`, `s`, `x`) à 16 h 17 min 29, batterie 1 507 mAh.
+
+## 43. Le couloir, C28 et B22 : une roue qui patinait expliquait le retour manqué (2026-11-13, 16 h 32 à 17 h 04)
+
+Demandes de l'utilisateur, en cours de route : « reesaie le couloir et le c 28 », puis « direction B22 avant le retour », puis « stop ». Enregistrements : `mesures/exploration17_20261113_163238_*` (passages `a` à `e`, tours sur place `_tour_c28.json` et `_tour_b22.json`). Analyse : `data_analysis/t_patinage.py`, `results_t_patinage_20261113.txt`.
+
+### Ce qui s'était vraiment passé au premier aller (14 h 51)
+
+En relisant roue par roue l'aller du § 41 dans la pièce centrale :
+
+- deux fois, juste après le départ d'une avance à 135 mm/s demandés, **la roue droite a tourné plus que le sol ne défilait sous elle** : 43 cm de trop en 3,5 s (14 h 51 min 46), puis 35 cm en 2,8 s (14 h 52 min 03). Les codeurs disent que le robot tourne à gauche de 14 °/s, le gyroscope qu'il tourne à droite de 16 °/s : la roue patine, et le robot pivote autour d'elle ;
+- le robot a ainsi tourné de 58° puis de 47° pendant ces avances, que le cerveau a menées à leur terme ;
+- le cerveau compte le chemin comme la moyenne des deux roues : il a compté **21 puis 17 cm de trop**. À l'arrivée le programme se croyait au pixel (729, 66), en C28 ; **il était en (713, 78), en C27, à 37 cm de là**. Le filtre, dans cette pièce encombrée, n'a corrigé que de 17 cm, et dans une autre direction : il restait 28 cm d'erreur ;
+- sur les 160 m roulés ce jour-là, c'est arrivé seulement là. Le sol y est sombre sous les capteurs de vide (signal 700 à 1 700 au lieu de 2 600) : un tapis ou son bord, sans doute.
+
+**Ce que cela corrige au § 41.**
+
+- « Cause du premier contact : le chemin coupait de dix centimètres un virage de l'aller » : faux. Ce « virage » de la trace n'a jamais existé, c'était le patinage. La vraie cause : le robot est reparti 28 cm à l'ouest de là où il se croyait, droit dans les chaises de la table.
+- « Un objet que les capteurs ne voient pas borde le passage », « un intervalle de 40 à 45 cm » : ces positions étaient données dans le repère faussé. Replacés, les objets touchés sont vers les pixels (688 à 690, 119 à 122), (679, 124) et (661 à 662, 110 à 113), en E25 et E26 : les chaises et la table, 30 à 40 cm à l'ouest du chemin de l'aller. Le chemin lui-même est libre, et rien ne montre un intervalle étroit à cet endroit.
+- « Arrivée au pixel (728, 75), C28 » : le robot était en C27.
+- La préférence du planificateur pour les voies (§ 41) reposait sur ce faux virage : voir le § 44.
+
+### Le trajet
+
+- **Base → G12** (`a`) : 2,9 m en 1,7 min, deux recalages sur les repères, aucun contact. **Porte H12 vers le sud** à l'estime, comme à 14 h 47 : aucun contact.
+- **Couloir → G26** (`b`) : 8,3 m en 3,4 min, un contact léger au début (pare-chocs gauche en H14, à 16 h 37 : après la porte le robot était 10 cm plus au nord qu'il ne le croyait).
+- **G26 → C28 → G26, lentement, à l'estime** (`passage.py`, 60 mm/s demandés) : le tour fait en G26 a d'abord été comparé à celui de 14 h 51 au même endroit (5 parois : 5 cm d'écart avec le programme), puis le robot a suivi le chemin vrai du premier aller, recompté sans le patinage : (703, 131), (713, 117), (711, 92), (717, 84), puis 55 cm de plus jusqu'au pixel **(733, 59), en C28** (mur du fond à 69 cm). Retour par les mêmes points. **4,7 m, aucun contact.** Au même endroit que le matin la roue droite a encore glissé, de 4 cm seulement (2 cm de chemin en trop).
+- **Détour par B22**, demandé pendant le retour (le robot était en J20) : J20 → G22 (`d`), puis à l'estime par la colonne 22, entre un grand meuble à l'ouest et la table à l'est. Arrivé au pixel **(578, 43), en B22**, mur du fond à 17 cm du pare-chocs, grand meuble à 10 cm du flanc gauche.
+- **Le point étroit de E22** : 48 cm entre le grand meuble et le bord ouest de la table, pour un robot de 34 cm. À l'aller le robot est passé à moins d'un centimètre du meuble sans le toucher. Au retour, son flanc gauche a frôlé le bord de la table, que le capteur de distance ne voit pas même à 23 cm (seul le capteur optique de gauche a répondu, faiblement) ; recul de 12 cm, recentrage sur le meuble au capteur de distance (23 cm du centre, soit 6 et 8 cm de marge), second passage sans contact.
+- **Retour dans le couloir** (`e`) : contact du pare-chocs gauche en J16, vers le pixel (409, 223), à 17 h 03 min 39 ; puis « stop » de l'utilisateur : roues arrêtées à 17 h 03 min 54.
+
+Trois contacts légers en tout (H14, flanc en E22, J16) sur 32 m, tous hors de la pièce centrale.
+
+**Ce que ce trajet apprend d'autre.**
+
+- La comparaison au capteur de distance, depuis C28 : le mur nord est 17 cm plus loin que le plan ne le place vu du point où le robot se croyait. Dans cette pièce le plan et le trajet compté ne s'accordent qu'à 15 ou 20 cm.
+- Un passage de 48 cm ne se franchit pas sur la foi d'une position : il faut se centrer sur ce qu'on voit (ici le meuble, au capteur de distance), comme pour la porte H12 (§ 41).
+- Les quatre obstacles notés le matin dans la pièce centrale ont été déplacés de 28 cm dans `plan_lidar/obstacles.json`, et la voie fausse retirée.
+
+**État à la fin** : robot arrêté dans le couloir, en J16, éveillé en mode Safe, batterie 1 403 mAh. La suite est au § 44.
+
+## 44. Robot porté devant sa base, localisation, C9, coupure ; et ce qui change dans le code (2026-11-13, 17 h 08 à 17 h 20, puis hors robot)
+
+Messages de l'utilisateur : « Déplace en avant de la base reprend localise bien et va en c9 puis retourne. Ensuite recharge toi. Ensuite apprend de cette run », puis, pendant le retour de C9 : « debranche et range, had to go, apprend et inove ». Enregistrements : `mesures/exploration18_20261113_171121_*` (passages `a`, `b`, `c`, tour `_tour_d12.json`, `_balise1.txt` ; les fichiers sans lettre sont ceux du retour interrompu).
+
+**Deux messages mal lus d'abord.** « Déplace en avant de la base » : j'ai cru à un ordre et préparé le retour par le couloir. L'enregistrement disait autre chose : à 17 h 08 min 24 les deux roues se lèvent, le mode passe de Safe à passif, et neuf secondes plus tard le robot est reposé dans les faisceaux de sa base. C'est l'utilisateur qui l'avait porté. De même « débranche et range » : le cerveau ne répond plus au réseau depuis 17 h 19 min 55. Ses phrases sont souvent sans sujet : vérifier dans les mesures avant d'agir.
+
+**Localisation d'un robot reposé à la main.**
+
+1. Remis en mode Safe à sa demande (« reprend »), robot au sol, roues baissées.
+2. `balise_base.py` : la base est dans le cap 208,8° du cerveau, le robot du côté rouge de ses faisceaux. D'où un départ supposé au pixel (420, 92), cap 125°.
+3. `explorer3.py` sans `--depart-sur`, par C17, E15 et D12 : quatre recalages sur les repères, de 13 à 22 cm par rapport au filtre. Mais posée sur ces quatre tours, l'estime ne passe qu'à 151 mm d'eux (237 mm au pire), contre 32 à 55 mm sur les boucles : **avec un cap flottant (15° d'incertitude au départ), le filtre a bougé le cap de 2 à 5° à chaque tour, et les repères eux-mêmes se calent moins bien.** Le cap de départ tiré des faisceaux était pourtant bon : 125° donnés, 124° d'après l'estime posée sur les repères.
+4. Contrôle sur place : robot amené sur l'endroit exact de D12 où il a déjà tourné, tour sur place comparé à cinq repères. Position : même point à 1 cm près (dispersion 10 et 12 mm). Cap : 19 parois vues à −0,9° de leur direction connue. Robot localisé à 1 ou 2 cm et 1 ou 2° près, neuf minutes après avoir été posé.
+
+**C9.** D12 → D10 → C9 : 2,1 m en 1,4 min, aucun contact, corrections du filtre de 3 cm. Arrivé au pixel (224, 67). Le sol est un tapis en D10 et en C9.
+
+**La coupure.** Le retour part de C9 à 17 h 19 min 33 : tour sur place, puis rotation de +134,5° lancée à 17 h 19 min 55,0. La dernière ligne reçue du cerveau est de 17 h 19 min 55,1 ; depuis, ni page ni réponse au ping. Le message de l'utilisateur arrive une minute après. Je n'ai donc ni fermé la séance (`s`, `x`), ni lancé l'accostage demandé plus tôt (« recharge toi »), ni rien vérifié. À savoir : un cerveau débranché pendant un mouvement laisse au robot son dernier ordre de roues, jusqu'à ce qu'on le soulève ou qu'on appuie sur CLEAN (règle connue) ; soulevé, le robot repasse en mode passif, puis s'endort et peut charger.
+
+### Ce qui change dans le code, et comment c'est vérifié
+
+1. **Le patinage est retiré du chemin compté** (`carto.patinage`, `carto.part_roulee`, branchés dans `explorer3.Estime` et dans le filtre de `localiser.py`, pour le firmware v9 et suivants). Quand les codeurs annoncent une rotation que le gyroscope ne voit pas, la roue en trop est retirée. Rejoué avec le code du dépôt sur l'aller de 14 h 51 : arrivée au pixel (713, 78) au lieu de (729, 66), 389 mm retirés. Sur les onze enregistrements du jour, hors des deux vrais patinages : 0 à 20 mm retirés par enregistrement, 0,05 % du chemin.
+2. **Le pilote arrête une avance quand une roue patine** (`Pilote._mouvement`, 80 mm de trop) et `explorer3.py` finit alors le trajet à 60 mm/s demandés. Rejoué : les deux avances du matin auraient été arrêtées après 1,5 et 1,2 s, avec 4 cm comptés en trop au lieu de 21 et 17.
+3. **La préférence pour les voies n'est plus la conduite par défaut** (`Plan.hors_voie` = 1 ; `explorer3.py --voies-fortes 3` la remet). Raisons : le contact qui la motivait n'en était pas un effet (§ 43), et sur le robot elle coûte un tiers de vitesse (§ 42). Les voies gardées dans les fichiers de tours et relues par `--plan-roule` restent. Vérifié : les chemins par défaut sont redevenus ceux d'avant le § 41, à l'identique sur sept trajets.
+4. **Le cap lu sur les repères** (`Reperes.cap`) : du même endroit, les mêmes parois se voient dans les mêmes directions. Sur les tours du jour : juste à 3° près en général (corrélation 0,61 avec le cap tiré du trajet compté). `explorer3.py` ne corrige le cap que si l'écart est net (15 parois, 4° au moins, les deux quartiles du même signe) : cette règle n'aurait joué que deux fois aujourd'hui, robot reposé à la main, les deux fois dans le bon sens (−4,4° et −7,3° pour 8,2° et 6,2° d'erreur).
+5. `explorer3.py --depart-sigma MM,DEG` : incertitudes de départ de la position et du cap données séparément (ici il aurait fallu 250,6).
+6. `passage.py re=MM` : un recul court après un contact (il a fallu l'écrire à la main en séance).
+7. `explorer3.py` finit proprement quand le cerveau ne répond plus, en disant que l'état du robot est inconnu.
+8. Simulation (`essai_explorer3.py --plan`, deux mondes, cinq tirages, allers-retours) avec tout cela : mêmes résultats qu'avant le § 41 au millimètre et à la seconde près, aucun patinage vu (le simulateur n'en produit pas).
+
+Hors dépôt : `plan_lidar/reperes_tours.json` refait avec les tours de l'après-midi (79 repères au lieu de 35 : couloir, G26, E11, devant la base), les quatre tours de devant la base étant posés d'après l'estime de la boucle et non d'après le filtre ; ils se recalent les uns sur les autres à 3 à 5 cm.
+
+### Leçons de la journée
+
+- **Avant de soupçonner le plan ou le planificateur, regarder si une roue a patiné.** Une demi-journée d'explications fausses (§ 41) tenait à 39 cm de chemin compté en trop.
+- **Les repères sont la bonne mesure de position ; le filtre seul peut se tromper de 20 à 30 cm, même devant la base.** Là où il n'y a pas de repères (retour de C28, devant la base), l'erreur revient.
+- **Le cap se garde, il ne se retrouve pas en un tour** : un tour sur place renseigne peu sur le cap. Les sources sûres sont le gyroscope, les faisceaux de la base (3°) et un tour fait sur un endroit à repères (1 ou 2°).
+- **Un passage étroit se prend en mesurant ce qui le borde**, pas sur la foi d'une position : porte H12 par son montant, E22 par le meuble.
+- **Lentement là où le sol accroche mal** : à 60 mm/s demandés la roue glisse de 4 cm, à 135 de 43.
+
+**Non vérifié sur le robot** (cerveau éteint) : le retrait du patinage et l'arrêt sur patinage en roulant ; le cap corrigé sur les repères ; `--depart-sigma` ; `re=` ; les nouveaux repères. **Non fait** : le retour de C9, l'accostage, la fermeture de la séance ; relier entre eux par le trajet compté les repères d'endroits différents (seuls ceux de devant la base l'ont été, à la main) ; automatiser la porte et le centrage dans un passage étroit.
+
+**État à la fin** : inconnu de moi. Dernière position sûre : C9, pixel (224, 67), à 17 h 19 min 55, en mode Safe, une rotation tout juste lancée ; batterie 1 370 mAh à 17 h 17. D'après son message, l'utilisateur a débranché le cerveau et rangé le robot. À vérifier à son retour : robot immobile et endormi, posé ou non sur sa base, voyant de charge.

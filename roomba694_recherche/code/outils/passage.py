@@ -14,6 +14,7 @@
 #     va=U,V[,vitesse]   tourne vers ce pixel du plan puis avance jusqu'à lui (vitesse demandée en mm/s, 100 par défaut)
 #     cap=DEG            tourne vers ce cap du plan
 #     av=MM[,vitesse]    avance de MM en tenant le cap actuel
+#     re=MM              recule de MM (15 cm au plus), par exemple après un contact
 #     voir=c1/c2/...     tourne vers chaque cap et lit le capteur de distance pendant une seconde
 # La position est suivie à l'estime, d'après les compteurs et le gyroscope du cerveau lus dans le journal : bonne à
 # 1 ou 2 cm sur un mètre, mais elle ne se recale pas sur le plan. La dernière ligne affichée, POSE=U,V,CAP, se redonne
@@ -120,6 +121,27 @@ try:
                 dist, vit, d = f[0], (f[1] if len(f) > 1 else 100), 0.0
             print(f"{ordre} : {dist:.0f} mm au cap {pose()[2]:.1f}° (reste de cap {d:+.1f}°), {vit:.0f} mm/s demandés")
             ok = avancer(dist, int(vit), reste_cap=d if abs(d) >= 0.5 else 0.0)
+        elif nom == "re":
+            # recul court après un contact (touche 2 du firmware, comme explorer3.py) : 15 cm au plus par ordre
+            mm = min(150.0, float(val))
+            fait = 0.0
+            while fait < mm - 20.0 and ok:
+                p.lire()
+                l0 = p.frais()
+                r = p.saut("2", min(1.2, max(0.3, (mm - fait) / 130.0)), lb_repos=5000, lb_max=5000, vide_min=150)
+                time.sleep(0.4)
+                p.lire()
+                l1 = p.frais()
+                if "refus" in r or l0 is None or l1 is None:
+                    print("   recul refusé :", r.get("refus"))
+                    ok = False
+                    break
+                pas = math.hypot(l1["x_mm"] - l0["x_mm"], l1["y_mm"] - l0["y_mm"])
+                fait += pas
+                if pas < 5.0:
+                    break
+            u, v, c, l = pose()
+            print(f"{ordre} : recul de {fait:.0f} mm ; robot en ({u:.1f}, {v:.1f}), cap {c:.1f}°, pare-chocs {int(l['pc_g'])}{int(l['pc_d'])}")
         else:
             sys.exit(f"ordre inconnu : {ordre}")
 finally:

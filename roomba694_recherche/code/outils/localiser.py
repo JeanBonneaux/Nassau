@@ -36,7 +36,9 @@ DX = carto.DX             # le capteur de distance est 27 mm en avant du centre 
 
 class Filtre:
     def __init__(self, plan, n=20000, graine=1, k_gyro=1.0045, temperature=0.2, roues_si_muet=True,
-                 trajet=(20.0, 0.04, 80.0, 0.15, 0.85), caps=(3.0, 8.0, 20.0, 0.70, 0.95)):
+                 trajet=(20.0, 0.04, 80.0, 0.15, 0.85), caps=(3.0, 8.0, 20.0, 0.70, 0.95), patinage=False):
+        # patinage : retirer du chemin compté ce qu'une roue tourne de trop quand elle patine (carto.part_roulee) ;
+        #            à ne mettre qu'avec un firmware v9 ou plus (gyroscope qui compte aussi les rotations lentes).
         # trajet : ce qu'on ignore du chemin roulé entre deux tours sur place : (mm, part du chemin) pour le cas courant,
         #          (mm, part du chemin) pour le cas rare (glissement, plan faux), et la part du cas courant ;
         # caps   : la même chose pour le cap : trois écarts-types en degrés et les parts cumulées des deux premiers.
@@ -46,6 +48,7 @@ class Filtre:
         self.k = k_gyro
         self.temp = temperature
         self.roues_si_muet = roues_si_muet
+        self.patinage = patinage
         self.trajet, self.caps = tuple(trajet), tuple(caps)
         self.A, self.mur, self.Cs = plan.A.astype(np.float32), plan.mur, plan.Cs.astype(np.float32)
         self.Dc = (plan.D_chose / plan.s).astype(np.float32)        # distance au mur ou au meuble le plus proche, mm
@@ -108,6 +111,8 @@ class Filtre:
         if dx or dy or dc:
             ca = math.radians(a["cap_pos"])
             av, lat = math.cos(ca) * dx + math.sin(ca) * dy, -math.sin(ca) * dx + math.cos(ca) * dy
+            if self.patinage:                                        # une roue qui patine fait compter trop de chemin
+                av *= carto.part_roulee(a, b, self.k)
             muet = dc == 0 and abs(b.get("rot_dps", 1.0)) < 0.3 and abs(a.get("rot_dps", 1.0)) < 0.3
             if not muet:                                             # (dc nul sans être muet : le journal n'écrit le cap qu'à 0,1° près)
                 rot = (self.k + self.kg) * dc + self.rng.normal(0, 0.02 + 0.02 * abs(dc), n)

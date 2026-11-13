@@ -74,6 +74,7 @@ VOIE = 60.0                        # mm : demi-largeur du sol tenu pour libre le
 V_CERVEAU = 135                    # mm/s demandés au plus quand le cerveau exécute lui-même l'avance (firmware v10) : à 150 les roues
                                    # sont à leur plafond (146 à 150 mm/s réels) et la tenue de cap ne peut plus que freiner une
                                    # roue (2026-11-13 : 3,5° d'écart en route à 150 demandés, 1 à 2° à 125 et 135 ; journal § 35)
+V_PATINAGE = 60                    # mm/s demandés après un patinage : à 60, la roue droite n'a glissé que de 2 cm au même endroit (§ 43)
 PAS = (900.0, 700.0, 500.0)        # longueurs de trajet essayées, de la plus longue à la plus courte
 GARDE = {"mur": 230.0, "arete": 230.0, "echo": 200.0, "contact": 260.0, "devant": 230.0, "sombre": 260.0}
 ARRET_NET = ("Safe", "roue levée", "journal", "capteur de distance", "arrêt demandé")
@@ -102,6 +103,11 @@ class Estime:
         self.i0 = None                       # numéro de la première ligne du journal utilisée
         self.recalages = []                  # (numéro de ligne, dx, dy) : corrections de position déjà faites
         self.trace = []                      # (X, Y) tous les 5 cm roulés, pour marquer sur le plan le sol vraiment parcouru
+        # Roue qui patine : le cerveau compte la moyenne des deux roues, donc trop de chemin. On retire ce que la roue a
+        # tourné de trop (carto.part_roulee). Mis en service par Exploration.explorer() quand le firmware est la v9 ou
+        # plus : avant, le gyroscope ignorait les rotations lentes, et tout virage doux passerait pour un patinage.
+        self.patinage = False
+        self.patine = 0.0                    # mm de chemin retirés pour cause de patinage
 
     def suivre(self, lignes):
         if self.i is None:
@@ -113,6 +119,11 @@ class Estime:
             dx, dy, dc = b["x_mm"] - a["x_mm"], b["y_mm"] - a["y_mm"], b["cap_pos"] - a["cap_pos"]
             if abs(dx) > 500 or abs(dy) > 500 or abs(dc) > 300 or b["ms"] < a["ms"] - 1000:
                 raise RuntimeError("journal : la position du cerveau a sauté (cerveau redémarré ou position remise à zéro)")
+            if self.patinage and (dx or dy):
+                f = carto.part_roulee(a, b, self.k)
+                if f < 1.0:
+                    self.patine += (1.0 - f) * math.hypot(dx, dy)
+                    dx, dy = dx * f, dy * f
             e = math.radians(self.C - a["cap_pos"])              # ce qu'il faut ajouter au cap du cerveau
             ex, ey = math.cos(e) * dx - math.sin(e) * dy, math.sin(e) * dx + math.cos(e) * dy
             self.X += ex
@@ -143,6 +154,9 @@ class Estime:
         C = k * (c - c[0])
         e = np.radians(C[:-1] - c[:-1])
         dx, dy = np.diff(x), np.diff(y)
+        if self.patinage:                                        # même retrait du patinage que dans suivre()
+            f = np.array([carto.part_roulee(seg[i], seg[i + 1], k) for i in range(len(seg) - 1)])
+            dx, dy = dx * f, dy * f
         X = np.r_[0.0, np.cumsum(np.cos(e) * dx - np.sin(e) * dy)]
         Y = np.r_[0.0, np.cumsum(np.sin(e) * dx + np.cos(e) * dy)]
         self.bx, self.by = float(X[-1]), float(Y[-1])
@@ -299,6 +313,8 @@ class Exploration:
                 from PIL import Image
                 Z = np.asarray(Image.open(a.plan_passe).convert("RGB")).astype(int)
                 self.plan.passe_main |= (Z[..., 1] > Z[..., 0] + 40) & (Z[..., 1] > Z[..., 2] + 40)
+            if getattr(a, "voies_fortes", 0):                    # préférence pour le sol déjà roulé (voir Plan.hors_voie)
+                self.plan.hors_voie = float(a.voies_fortes)
             for f_ in getattr(a, "plan_roule", "").split(";"):   # trajets déjà roulés : sol sûr
                 if f_.strip():
                     with open(f_, encoding="utf-8") as fh:
@@ -385,6 +401,20 @@ class Exploration:
                 self.j["stations"][-1]["pose"] = [round(r[0], 1), round(r[1], 1), round(c1, 2)]
                 info["reperes"] = {"n": r[2], "noms": r[3][:8], "dx": round(rx), "dy": round(ry)}
                 self.dire(f"    repères : calé sur {r[2]} tours déjà faits ici ; ({rx:+.0f}, {ry:+.0f}) mm par rapport au filtre")
+                # Le cap lu sur les mêmes repères. Il n'est corrigé que si l'écart est net : 15 parois au moins, 4° ou
+                # plus, et les deux quartiles du même signe (sur les tours du 2026-11-13 cette règle n'aurait joué que
+                # deux fois, robot reposé à la main, et les deux fois dans le bon sens : journal_wifi.md § 44).
+                k = self.reperes.cap(r[0], r[1], c1, reperes_mod.paliers([[10.0 * a_, d_] for a_, d_ in zip(st.d, st.r)]))
+                if k is not None:
+                    info["reperes"]["cap"] = {"ecart": round(k[0], 1), "q1": round(k[1], 1), "q3": round(k[2], 1), "parois": k[3]}
+                    if k[3] >= 15 and abs(k[0]) >= 4.0 and k[1] * k[2] > 0:
+                        self.est.C -= k[0]
+                        self.filtre.C = ((self.filtre.C - k[0]) % 360.0).astype(np.float32)
+                        c1 -= k[0]
+                        st.reposer((r[0], r[1], c1))
+                        self.j["stations"][-1]["pose"] = [round(r[0], 1), round(r[1], 1), round(c1, 2)]
+                        info["reperes"]["cap"]["corrige"] = round(-k[0], 1)
+                        self.dire(f"    repères : cap corrigé de {-k[0]:+.1f}° ({k[3]} parois vues {k[0]:+.1f}° à côté de leur direction connue)")
 
     def lire_cibles(self):
         try:
@@ -491,6 +521,7 @@ class Exploration:
 
     def sauver(self):
         self.j["contacts"] = [[round(c[0]), round(c[1]), c[2]] for c in self.contacts]
+        self.j["patinage_mm"] = round(self.est.patine)           # chemin retiré de l'estime pour cause de roue qui patine
         self.j["portes"] = [{k: (v if not isinstance(v, tuple) else [round(q) for q in v]) for k, v in d.items() if k != "depuis"} for d in self.portes]
         with open(self.a.prefixe + "_stations.json", "w", encoding="utf-8") as f:
             json.dump(self.j, f, ensure_ascii=False)
@@ -619,6 +650,7 @@ class Exploration:
     def aller_a(self, xt, yt, tolerance=30.0, connu=False):
         """Va au point (xt, yt) de la carte par sauts. Renvoie (réussi, raison). connu : trajet déjà fait (retour par
         l'arbre) ; le capteur de distance n'y exige que 40 cm libres devant, au lieu de 60."""
+        patine = False                                         # une roue a patiné pendant ce trajet : la suite se fait lentement
         for _ in range(30):
             if self.demande() == "arrêt":
                 return False, "arrêt demandé (fichier _ARRET)"
@@ -650,7 +682,7 @@ class Exploration:
                     return False, raison
                 continue
             i0 = len(self.p.lignes)
-            self.regler_vitesse(min(self.a.vitesse, V_CERVEAU) if cerveau else self.a.vitesse)
+            self.regler_vitesse(min(self.a.vitesse, V_PATINAGE if patine else V_CERVEAU) if cerveau else self.a.vitesse)
             if getattr(self.a, "fluide", False):                # d'un seul tenant jusqu'au point, ou jusqu'à ce que le cap ait tourné de 5°
                 r = self.avancer(d_trait, marge_mm=400.0 if connu else 600.0, cap_tol=max(5.0, abs(derive) * d_trait + 4.0),
                                  vide_min=self.a.vide_min, vide_stop=self.a.vide_min, cap_rel=(err if cerveau else 0.0))
@@ -661,6 +693,12 @@ class Exploration:
                               vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
             r["but"] = f"avance vers ({xt:.0f}, {yt:.0f}), reste {d:.0f} mm"
             self.j["sauts"].append(r)
+            if "patinage" in str(r.get("raison")):
+                # Le pilote a arrêté l'avance : une roue tournait sans faire avancer le robot. La position tenue par le
+                # PC a déjà retiré ce chemin en trop (Estime.suivre) ; on repart de là, lentement, vers le même point.
+                patine = True
+                self.j.setdefault("patinages", []).append({"position": [round(q[0]), round(q[1])], "raison": r["raison"]})
+                self.dire(f"    {r['raison']} : avance arrêtée, la suite de ce trajet à {V_PATINAGE} mm/s demandés")
             if "refus" in r:
                 return False, "avance refusée : " + r["refus"]
             if r.get("alarme"):
@@ -1262,8 +1300,16 @@ class Exploration:
                 # flotter (1,5° au lieu de 3°) : rejoué sur les trajets du 2026-11-13, la position prédite avant chaque tour
                 # est plus juste (50 mm au lieu de 58 en médiane) et les positions après le tour ne changent pas (§ 38).
                 caps = (1.5, 5.0, 15.0, 0.80, 0.97) if n_ver >= 10 else (3.0, 8.0, 20.0, 0.70, 0.95)
-                self.filtre = localiser.Filtre(self.plan, n=getattr(a, "filtre_n", 8000), k_gyro=a.k_gyro, roues_si_muet=n_ver < 9, caps=caps)
-                self.filtre.demarrer(u, v, cap, sigma_mm=100.0 if sur else 250.0, sigma_cap=6.0 if sur else 15.0)
+                self.est.patinage = n_ver >= 9
+                self.filtre = localiser.Filtre(self.plan, n=getattr(a, "filtre_n", 8000), k_gyro=a.k_gyro, roues_si_muet=n_ver < 9, caps=caps,
+                                               patinage=n_ver >= 9)
+                # Incertitude de départ : 10 cm et 6° avec --depart-sur, 25 cm et 15° sans ; --depart-sigma MM,DEG donne
+                # les deux séparément (robot reposé à la main devant sa base le 2026-11-13 : cap connu à 3° près par les
+                # faisceaux, position à 25 cm près ; avec 15° de flottement le cap a bougé de 3 à 5° à chaque tour, § 44).
+                s_mm, s_cap = (100.0, 6.0) if sur else (250.0, 15.0)
+                if getattr(a, "depart_sigma", ""):
+                    s_mm, s_cap = (float(x) for x in a.depart_sigma.split(","))
+                self.filtre.demarrer(u, v, cap, sigma_mm=s_mm, sigma_cap=s_cap)
                 self.i_filtre = max(0, len(self.p.lignes) - 1)
                 self.dire(f"localisation : filtre à {self.filtre.n} hypothèses autour du pixel ({u:.0f}, {v:.0f}), cap {cap:.0f}°")
         ici, raison = self.faire_un_tour("0", None, "départ")
@@ -1385,6 +1431,8 @@ def main():
     p_.add_argument("--plan-passe", default="", help="avec --plan : la même image où un trait vert montre par où on passe (portes ouvertes aujourd'hui)")
     p_.add_argument("--depart-plan", default="", help="avec --plan : U,V,CAP, pixel du plan où est le robot et direction de son avant (degrés, 0 = droite, 90 = haut)")
     p_.add_argument("--depart-sur", action="store_true", help="avec --plan : la position de départ est sûre à 10 cm et 5° près (premier tour cherché dans 30 cm et 10° au lieu de 60 cm et 25°)")
+    p_.add_argument("--depart-sigma", default="", help="avec --plan : incertitude de la position et du cap de départ, MM,DEG (par exemple 250,6 : position à 25 cm près, cap à 6° près) ; remplace les valeurs de --depart-sur")
+    p_.add_argument("--voies-fortes", type=float, default=0.0, help="avec --plan : coût d'un pas hors des voies déjà roulées, compté en pas sur une voie (3 : le chemin repasse où le robot est déjà passé ; plus lent ; par défaut 1, aucune préférence)")
     p_.add_argument("--reperes", default="", help="avec --plan : fichier de repères fabriqué par reperes.py ; chaque tour sur place fait près d'un tour déjà connu est recalé sur lui")
     p_.add_argument("--plan-ferme", default="", help="avec --plan : fichier JSON d'obstacles trouvés par le robot et absents du plan, liste de {u, v, rayon_mm} en pixels du plan ; les chemins les contournent")
     p_.add_argument("--plan-roule", default="", help="avec --plan : fichiers JSON de l_localisation_globale.py, séparés par des points-virgules ; les trajets déjà roulés y sont tenus pour du sol sûr")
@@ -1415,7 +1463,12 @@ def main():
         except Exception as err:
             print("réglages de fin non envoyés :", err, flush=True)
         ex.sauver()
-        e = p.etat()
+        try:
+            e = p.etat()
+        except Exception as err:                                 # cerveau éteint ou hors réseau (2026-11-13, 17 h 19) : le dire sans trace d'erreur
+            ex.dire(f"fin : {ex.j['fin']} | le cerveau ne répond plus ({err}) : état du robot inconnu, roues peut-être encore en marche"
+                    f" | {len(ex.noeuds)} stations | {ex.est.chemin / 1000:.1f} m")
+            return ex, p
         ex.dire(f"fin : {ex.j['fin']} | mode {e['robot']['mode']} | roues {'en marche' if e['driving'] else 'arrêtées'} | pare-chocs {e['robot']['bump']}"
                 f" | {len(ex.noeuds)} stations, {len(ex.j['recalages'])} recalages, {len(ex.j['caps'])} corrections de cap (échelle du gyroscope {ex.est.k:.4f}), {len(ex.j['sauts'])} sauts, {len(ex.j['echecs'])} trajets arrêtés,"
                 f" {len(ex.contacts)} obstacles touchés ou vus devant | {ex.est.chemin / 1000:.1f} m | batterie {e['robot']['q']} mAh")

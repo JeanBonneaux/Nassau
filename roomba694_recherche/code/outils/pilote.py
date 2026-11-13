@@ -19,6 +19,8 @@ import math
 import time
 import urllib.request
 
+import carto
+
 MM_PAR_PAS = 3.141592653589793 * 72.0 / 508.8      # 0,4446 mm par pas de compteur
 ENTRAXE_MM = 235.0
 LB = ["lb_g", "lb_avg", "lb_cg", "lb_cd", "lb_avd", "lb_d"]
@@ -144,10 +146,13 @@ class Pilote:
                 self._mouv = False
         return self._mouv
 
-    def _mouvement(self, requete, recul=False, lb_max=400, vide_stop=0, marge_mm=0, dist_mm=0.0, duree_max=40.0):
+    def _mouvement(self, requete, recul=False, lb_max=400, vide_stop=0, marge_mm=0, dist_mm=0.0, duree_max=40.0, patinage_mm=0.0):
         """Demande un mouvement au cerveau et le surveille jusqu'à sa fin. Le cerveau s'arrête de lui-même au but, sur
         le pare-chocs, une roue levée, la perte du mode Safe ou un obstacle sous son seuil ; le PC ajoute ses propres
-        arrêts (capteurs optiques, sol sombre, obstacle dans la marge) en envoyant stop. Même dictionnaire que saut()."""
+        arrêts (capteurs optiques, sol sombre, obstacle dans la marge) en envoyant stop. Même dictionnaire que saut().
+        patinage_mm : arrêt quand une roue a tourné de tant de millimètres de plus que le sol n'a défilé sous elle
+        (carto.patinage ; 0 : pas de surveillance). Le 2026-11-13 la roue droite a patiné 3,5 s de suite, le robot a
+        pivoté de 58° et l'avance est allée à son terme sans que personne ne s'en aperçoive (journal_wifi.md § 43)."""
         i0 = len(self.lignes) - 1
         l0 = self.lignes[i0]
         t0 = time.time()
@@ -156,12 +161,19 @@ class Pilote:
             return {"refus": str(m.get("raison") or m.get("texte") or "mouvement refusé par le cerveau")}
         alarme = raison = None
         vu = i0
+        exces = 0.0
         while True:
             self.lire()
-            for l in self.lignes[vu + 1:]:
+            for i in range(vu + 1, len(self.lignes)):
+                l = self.lignes[i]
                 alarme = self.alarme(l, lb_max=lb_max, recul=recul, vide_stop=vide_stop)
                 if alarme:
                     break
+                if patinage_mm:
+                    exces += carto.patinage(self.lignes[i - 1], l)
+                    if abs(exces) >= patinage_mm:
+                        raison = f"patinage de la roue {'droite' if exces > 0 else 'gauche'} ({abs(exces):.0f} mm de trop)"
+                        break
                 if marge_mm:
                     fait = math.hypot(l["x_mm"] - l0["x_mm"], l["y_mm"] - l0["y_mm"])
                     if 0 < l["us_mm"] < min(marge_mm, dist_mm - fait + 220.0):
@@ -190,7 +202,7 @@ class Pilote:
                     g, d = any(l["pc_g"] for l in seg), any(l["pc_d"] for l in seg)
                     if g or d:                                  # même texte que Pilote.alarme : le contact est noté du bon côté
                         alarme = "pare-chocs " + ("gauche" if g else "") + (" droit" if d else "")
-        return {"duree_ordre": round(t_stop - t0, 2), "alarme": alarme, "raison": raison or dit,
+        return {"duree_ordre": round(t_stop - t0, 2), "alarme": alarme, "raison": raison or dit, "patinage_mm": round(exces),
                 "avance_mm": round(math.hypot(seg[-1]["x_mm"] - seg[0]["x_mm"], seg[-1]["y_mm"] - seg[0]["y_mm"]), 1),
                 "rot_gyro": round(seg[-1]["cap_pos"] - seg[0]["cap_pos"], 2), "us_avant": seg[0]["us_mm"], "us_apres": seg[-1]["us_mm"],
                 "lb_max": max(max(l[c] for c in LB) for l in seg), "vide_min": min(min(l[c] for c in VIDE) for l in seg),
@@ -212,7 +224,7 @@ class Pilote:
             return {"refus": refus}
         if self.sait_mouv():                                    # firmware v10 : le cerveau tient le cap et s'arrête au but lui-même
             r = self._mouvement(f"av={dist_mm:.0f}" + (f"&cap={cap_rel:.1f}" if abs(cap_rel) >= 0.5 else ""), lb_max=lb_max, vide_stop=vide_stop,
-                                marge_mm=marge_mm, dist_mm=dist_mm, duree_max=duree_max + 15.0)
+                                marge_mm=marge_mm, dist_mm=dist_mm, duree_max=duree_max + 15.0, patinage_mm=80.0)
             r["touche"] = "8"
             return r
         i0 = len(self.lignes) - 1

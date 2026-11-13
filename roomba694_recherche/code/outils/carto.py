@@ -23,11 +23,50 @@ from scipy.optimize import least_squares
 
 DX = 27.0              # mm : le devant du capteur de distance est en avant du centre du robot (contact du 2026-11-10)
 TOL_PALIER = 25.0      # mm : écart toléré à l'intérieur d'un palier
+PAS_CODEUR = 0.4446    # mm de roue par pas de codeur
+VOIE_ROUES = 235.0     # mm entre les deux roues
 
 
 def ecart_angle(a):
     """angle ramené entre -180 et 180 degrés"""
     return (a + 180.0) % 360.0 - 180.0
+
+
+def patinage(a, b, k_gyro=1.0):
+    """Entre deux lignes du journal du cerveau : ce qu'une roue a tourné de plus que le sol n'a défilé sous elle, en mm
+    (positif : la roue droite, négatif : la gauche ; 0 s'il n'y a rien de net).
+
+    Les deux codeurs disent de combien le robot a tourné (différence des deux roues) ; le gyroscope le dit aussi, sans
+    les roues. Quand une roue patine, les codeurs comptent une rotation que le gyroscope ne voit pas. Le 2026-11-13,
+    dans la pièce centrale, la roue droite a ainsi tourné 43 puis 35 cm de trop en deux avances : le robot a pivoté de
+    58° et de 47°, et le chemin compté par le cerveau (la moyenne des deux roues) était trop long de 21 et de 17 cm
+    (journal_wifi.md § 43). Ne vaut que roues dans le même sens (avance ou recul), et avec un gyroscope qui compte
+    aussi les rotations lentes (firmware v9 et suivants). Seuil : 40 mm/s d'écart, soit 2 mm par ligne à 20 lignes par
+    seconde ; sur les 160 m roulés ce jour-là il ne retire, hors des deux vrais patinages, que 0,05 % du chemin."""
+    try:
+        dg = (((b["enc_g"] - a["enc_g"]) + 32768) % 65536 - 32768) * PAS_CODEUR
+        dd = (((b["enc_d"] - a["enc_d"]) + 32768) % 65536 - 32768) * PAS_CODEUR
+        dc = b["cap_pos"] - a["cap_pos"]
+        dt = (b["ms"] - a["ms"]) / 1000.0
+    except (KeyError, TypeError):
+        return 0.0
+    if dg * dd <= 0 or abs(dg) > 60 or abs(dd) > 60 or abs(dc) > 30:
+        return 0.0
+    if not 0.0 < dt <= 1.0:
+        dt = 0.05
+    delta = (dd - dg) - math.radians(k_gyro * dc) * VOIE_ROUES
+    return delta if abs(delta) > max(2.0, 40.0 * dt) else 0.0
+
+
+def part_roulee(a, b, k_gyro=1.0):
+    """Part du chemin compté par le cerveau entre deux lignes du journal qui a vraiment été parcourue : 1 en temps
+    normal, moins quand une roue patine (le cerveau compte la moyenne des deux roues : on retire la moitié de ce que
+    la roue qui patine a tourné de trop)."""
+    delta = patinage(a, b, k_gyro)
+    if delta == 0.0:
+        return 1.0
+    d = abs((((b["enc_g"] - a["enc_g"]) + 32768) % 65536 - 32768) + (((b["enc_d"] - a["enc_d"]) + 32768) % 65536 - 32768)) * PAS_CODEUR / 2.0
+    return max(0.0, d - abs(delta) / 2.0) / d if d > 0 else 1.0
 
 
 def paliers(d, r):

@@ -117,6 +117,36 @@ class Reperes:
             return float(np.mean([c[0] for c in bons])), float(np.mean([c[1] for c in bons])), len(bons), [c[3] for c in bons]
         return None
 
+    def cap(self, x, y, cap_debut, pal, rayon=250.0, larg_min=15.0):
+        """Le cap lu sur les repères : du même endroit, les mêmes parois se voient dans les mêmes directions. Pour
+        chaque repère à moins de `rayon` de (x, y), chaque paroi large est appariée à la paroi du tour vue à la même
+        distance (à 120 mm près) et dans une direction voisine (à 20° près) ; l'écart de direction est l'erreur du cap.
+        Renvoie (écart médian, premier quartile, troisième quartile, nombre de parois, nombre de repères), en degrés
+        (positif : le cap donné est trop grand), ou None s'il y a moins de 6 parois.
+        Mesuré le 2026-11-13 (journal_wifi.md § 44) : juste à 3° près en général, assez pour voir une erreur de 5° ou
+        plus après un robot reposé à la main ; trop bruité pour corriger le cap à chaque tour."""
+        ecarts, n_rep = [], 0
+        for r in self.R:
+            if math.hypot(r["x"] - x, r["y"] - y) > rayon:
+                continue
+            n_rep += 1
+            for (ma, da, la, na) in r["pal"]:
+                if la < larg_min:
+                    continue
+                c = [(abs(_ecart(cap_debut + mb - (r["c"] + ma))), _ecart(cap_debut + mb - (r["c"] + ma)))
+                     for (mb, db, lb, nb) in pal if lb >= larg_min and abs(db - da) < 120.0]
+                c = [q for q in c if q[0] <= 20.0]
+                if c:
+                    ecarts.append(min(c)[1])
+        if len(ecarts) < 6:
+            return None
+        q1, med, q3 = (float(v) for v in np.percentile(ecarts, [25, 50, 75]))
+        return med, q1, q3, len(ecarts), n_rep
+
+
+def _ecart(a):
+    return (a + 180.0) % 360.0 - 180.0
+
 
 def main():
     argv = list(sys.argv[1:])

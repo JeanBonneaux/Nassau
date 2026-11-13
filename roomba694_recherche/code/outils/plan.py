@@ -38,11 +38,13 @@ class Plan:
         self.passe = np.zeros((self.H, self.W), bool)                            # là où le robot est déjà passé : libre, quoi que dise le plan
         self.ferme = np.zeros((self.H, self.W), bool)                            # obstacles rencontrés par le robot
         self.passe_main = np.zeros((self.H, self.W), bool)                       # passages tracés à la main sur le plan : indicatifs
-        # Un pas hors des voies déjà roulées coûte ce nombre de pas sur une voie : le chemin repasse où le robot est déjà
-        # passé tant que le détour ne triple pas la distance. Le 2026-11-13 (journal_wifi.md § 41), sans cette préférence,
-        # le chemin du retour coupait de 10 cm un virage de l'aller dans la pièce centrale : le sol y est blanc sur le
-        # plan, mais un objet que ni le capteur de distance ni les capteurs optiques ne voient borde le passage (5 contacts).
-        self.hors_voie = 3.0
+        # Un pas hors des voies déjà roulées coûte ce nombre de pas sur une voie. 1 : aucune préférence (une voie ouvre un
+        # passage, sans plus). Avec 3, essayé le 2026-11-13, le chemin repasse où le robot est déjà passé tant que le
+        # détour ne triple pas la distance, et ses lignes droites ne quittent plus les voies : boucle de 8,6 m sans
+        # contact, mais à 32 mm/s au lieu de 43 à 45 (deux fois plus de petits trajets), et de D12 à C9 le chemin faisait
+        # 3,7 m au lieu de 1,7. Le contact qui avait motivé cette préférence (§ 41) venait en fait d'une roue qui patinait
+        # (§ 43). Gardé comme réglage (explorer3.py --voies-fortes 3), pas comme conduite par défaut.
+        self.hors_voie = 1.0
 
     def confirmer(self, u, v, pres_mm=80.0, rayon_mm=160.0):
         """Le robot voit quelque chose à cet endroit. Si le plan y montre un mur (à 8 cm près), ce mur est bien là
@@ -173,9 +175,9 @@ class Plan:
             return []
         out, i = [chemin[0]], 0
         pas, mini = pas_mm * self.s, mini_mm * self.s
-        # Longueur de chemin hors des voies déjà roulées, cumulée le long du chemin : une ligne droite entre deux points
-        # du chemin n'est prise que si elle n'ajoute pas de trajet hors voie (6 cm de tolérance). Là où le chemin suit
-        # une voie, la ligne droite ne coupe donc plus les virages de cette voie ; ailleurs rien ne change.
+        # Avec une préférence pour les voies (hors_voie > 1) : longueur de chemin hors des voies déjà roulées, cumulée le
+        # long du chemin ; une ligne droite entre deux points du chemin n'est alors prise que si elle n'ajoute pas de
+        # trajet hors voie (6 cm de tolérance), pour ne pas couper les virages d'une voie.
         hv = [0.0]
         for (u0, v0), (u1, v1) in zip(chemin, chemin[1:]):
             dehors = not (self.passe[int(v0), int(u0)] and self.passe[int(v1), int(u1)])
@@ -184,7 +186,7 @@ class Plan:
             j = None
             for k in range(len(chemin) - 1, i, -1):
                 if (math.hypot(chemin[k][0] - chemin[i][0], chemin[k][1] - chemin[i][1]) <= pas and self._visible(chemin[i], chemin[k])
-                        and self._hors_voie(chemin[i], chemin[k]) <= hv[k] - hv[i] + 60.0 * self.s):
+                        and (self.hors_voie <= 1.0 or self._hors_voie(chemin[i], chemin[k]) <= hv[k] - hv[i] + 60.0 * self.s)):
                     j = k
                     break
             if j is None or (j < len(chemin) - 1 and math.hypot(chemin[j][0] - chemin[i][0], chemin[j][1] - chemin[i][1]) < mini):
