@@ -1,5 +1,14 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 9 — 2026-11-13 : le gyroscope seulement, deux retouches liées (journal_wifi.md § 31 et § 33).
+    (1) La zone morte de 0,3 °/s ne sert plus qu'à l'arrêt : tant qu'un ordre de roues est en cours, et une demi-seconde
+    après, toute rotation mesurée entre dans le cap. Le robot dévie lentement en roulant (5 à 13° par mètre mesurés le
+    2026-11-13) et la zone morte cachait cette rotation sur 14 % des lignes du journal du 2026-11-10.
+    (2) À l'arrêt complet (aucun ordre de roues depuis 1,5 s, rotation mesurée dans la zone morte), le zéro du gyroscope
+    suit lentement la mesure (constante de temps 2,5 s). Il glisse quand la carte chauffe (10° par minute le 2026-11-10) ;
+    sans cela, ce glissement entrerait dans le cap dès que le robot roule. La calibration d'une seconde (touche z, départ
+    d'un tour sur place) reste telle quelle. /api/state : imu.biais (zéro sur l'axe vertical, °/s) et imu.suivis.
+    Aucun ordre de roues ni aucune sécurité n'est modifié.
   Version 8 — 2026-11-10 (après-midi) : deux ajouts indépendants. (1) Cinq colonnes à la fin du journal CSV : infrarouge
     reçu par les trois récepteurs (codes de la base) et courants des deux roues, jusque-là visibles seulement par la touche e.
     (2) Tour sur place à vitesse réglable : /api/tour?go=1&v=NN (roues de 20 à 62 mm/s demandés, pour ce tour seulement),
@@ -109,6 +118,7 @@ Preferences prefs;
 
 bool     driving = false;
 uint32_t lastDriveMs = 0;
+volatile uint32_t lastRoulageMs = 0;   // v9 : dernier ordre de marche envoyé aux roues, ou leur arrêt ; lu par la tâche du gyroscope
 bool     keepAwake = false;
 uint32_t lastKeepAwakeMs = 0;
 bool     csvEnabled = false;
@@ -164,6 +174,7 @@ struct ImuState {
   volatile float acc[3] = { 0, 0, 0 }; // g
   volatile float gyr[3] = { 0, 0, 0 }; // °/s, biais retiré
   volatile uint32_t samples = 0, errors = 0;
+  volatile uint32_t suivis = 0;        // v9 : nombre de retouches du zéro faites à l'arrêt
   volatile bool calibRequested = false, calibrating = false;
 } imu;
 
@@ -247,7 +258,16 @@ void imuTask(void*) {
       if (imu.vertAxis >= 0) {
         float r = imu.vertSign * imu.gyr[imu.vertAxis];
         imu.rateDps = r;
-        if (fabsf(r) > 0.3f) imu.yawDeg += r * dt;   // zone morte de 0,3 °/s contre la dérive au repos
+        // v9 : la zone morte de 0,3 °/s (contre la dérive au repos) ne sert plus qu'à l'arrêt. Tant que les roues ont un
+        // ordre de marche, et 0,5 s après leur arrêt, tout est compté : le robot dévie lentement en roulant.
+        uint32_t depuis = millis() - lastRoulageMs;
+        bool roule = driving || depuis < 500;
+        if (roule || fabsf(r) > 0.3f) imu.yawDeg += r * dt;
+        // v9 : à l'arrêt complet, le zéro suit lentement la mesure (0,4 % par échantillon à 100 Hz : 2,5 s).
+        if (!roule && depuis > 1500 && fabsf(r) < 0.3f) {
+          for (int k = 0; k < 3; k++) imu.bias[k] += 0.004f * (g[k] - imu.bias[k]);
+          imu.suivis = imu.suivis + 1;
+        }
       }
       imu.samples = imu.samples + 1;
     } else {
@@ -806,7 +826,9 @@ void driveDirect(int16_t right, int16_t left) {
   robot.write(OI_DRIVE_DIRECT);
   writeI16(right);   // roue droite d'abord, puis roue gauche (ordre imposé par l'OI)
   writeI16(left);
+  bool roulait = driving;
   driving = (right != 0 || left != 0);
+  if (driving || roulait) lastRoulageMs = millis();   // v9 : ordre de marche, ou arrêt de roues qui tournaient
   driveForward = (right > 0 && left > 0);
   driveBackward = (right < 0 && left < 0);
   lastDriveMs = millis();
@@ -994,7 +1016,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v8 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v9 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"

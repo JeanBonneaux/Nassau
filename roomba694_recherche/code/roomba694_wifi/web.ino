@@ -81,11 +81,11 @@ void handleState() {
   j.reserve(2400);
   char b[800];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v8 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
+    "{\"ms\":%lu,\"ver\":\"v9 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u,\"wall\":%u,\"cur\":[%d,%d],\"base\":%s},"
-    "\"imu\":{\"ok\":%s,\"cal\":%s,\"yaw\":%.1f,\"rate\":%.1f,\"acc\":[%.2f,%.2f,%.2f]},",
+    "\"imu\":{\"ok\":%s,\"cal\":%s,\"yaw\":%.1f,\"rate\":%.1f,\"acc\":[%.2f,%.2f,%.2f],\"biais\":%.3f,\"suivis\":%lu},",
     (unsigned long)millis(), __DATE__, __TIME__, HOSTNAME, driving ? "true" : "false", (int)driveSpeed,
     keepAwake ? "true" : "false", csvEnabled ? "true" : "false", useSplitGroups ? "groupes 6 et 101" : "groupe 100",
     st.ok ? "true" : "false", (unsigned long)(millis() - st.lastOkMs), st.voltage, st.current, st.temp,
@@ -95,7 +95,8 @@ void handleState() {
     st.light[0], st.light[1], st.light[2], st.light[3], st.light[4], st.light[5],
     st.encL, st.encR, st.buttons, st.wallSignal, st.curL, st.curR, (st.chargeSrc & 2) ? "true" : "false",
     imu.present ? "true" : "false", imu.calibrating ? "true" : "false", imuCap(), imu.rateDps,
-    imu.acc[0], imu.acc[1], imu.acc[2]);
+    imu.acc[0], imu.acc[1], imu.acc[2],
+    (imu.vertAxis >= 0) ? imu.vertSign * imu.bias[imu.vertAxis] : 0.0f, (unsigned long)imu.suivis);   // v9 : zéro du gyroscope suivi à l'arrêt
   j += b;
   poseStateJson(j);    // "pose":{x, y, cap, cap_roues, dist, n, gen, pas, gyro, leve, leves, sauts}
   carteStateJson(j);   // "carte":{total, gen, dx}
