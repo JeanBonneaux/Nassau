@@ -70,6 +70,7 @@ from pilote import Pilote
 
 DX = carto.DX
 RAYON = 170.0                      # mm, rayon du robot
+VOIE = 60.0                        # mm : demi-largeur du sol tenu pour libre le long d'un trajet déjà roulé
 V_CERVEAU = 135                    # mm/s demandés au plus quand le cerveau exécute lui-même l'avance (firmware v10) : à 150 les roues
                                    # sont à leur plafond (146 à 150 mm/s réels) et la tenue de cap ne peut plus que freiner une
                                    # roue (2026-11-13 : 3,5° d'écart en route à 150 demandés, 1 à 2° à 125 et 135 ; journal § 35)
@@ -100,6 +101,7 @@ class Estime:
         self.rot = 0.0                       # rotation nette comptée par le cerveau depuis le départ, degrés
         self.i0 = None                       # numéro de la première ligne du journal utilisée
         self.recalages = []                  # (numéro de ligne, dx, dy) : corrections de position déjà faites
+        self.trace = []                      # (X, Y) tous les 5 cm roulés, pour marquer sur le plan le sol vraiment parcouru
 
     def suivre(self, lignes):
         if self.i is None:
@@ -120,6 +122,8 @@ class Estime:
             self.C += self.k * dc
             self.rot += dc
             self.chemin += math.hypot(dx, dy)
+            if not self.trace or math.hypot(self.X - self.trace[-1][0], self.Y - self.trace[-1][1]) >= 50.0:
+                self.trace.append((self.X, self.Y))
             self.i += 1
 
     def decaler(self, ex, ey):
@@ -127,6 +131,7 @@ class Estime:
         self.X += ex
         self.Y += ey
         self.recalages.append((self.i, ex, ey))
+        self.trace.append((self.X, self.Y))
 
     def recalculer(self, lignes, k):
         """Refait tout le trajet depuis la première ligne avec l'échelle k du gyroscope, recalages compris. Renvoie la
@@ -267,6 +272,7 @@ class Exploration:
         self.v_reelle = min(a.vitesse + 21.0, 147.0)           # mesuré le 2026-11-10 : réglage + 21 mm/s, 147 au plus
         self.v_reglee = a.vitesse
         self.filtre, self.i_filtre = None, 0                   # localisation à plusieurs hypothèses (localiser.py), avec le plan
+        self.reperes = None                                    # tours sur place déjà faits, pour se recaler dessus (reperes.py)
         self.rot_dps = 2 * self.v_reelle / 235.0 * 57.29578
         self.stations = []                                     # toutes, dans l'ordre (les tours de recalage aussi)
         self.noeuds = []                                       # stations de l'arbre (pas les tours de recalage)
@@ -296,7 +302,16 @@ class Exploration:
                 if f_.strip():
                     with open(f_, encoding="utf-8") as fh:
                         roule = json.load(fh).get("trajet", [])
-                    self.plan.ouvrir([(p[0], p[1]) for p in roule], rayon_mm=150.0)
+                    # Une voie étroite (6 cm de part et d'autre) : le robot est passé LÀ, pas 15 cm à côté. Avec 15 cm
+                    # (jusqu'au 2026-11-13) le chemin pouvait longer le bord de la bande, contre un montant de porte.
+                    self.plan.ouvrir([(p[0], p[1]) for p in roule], rayon_mm=VOIE)
+            if getattr(a, "reperes", ""):
+                import reperes as reperes_mod
+                self.reperes = reperes_mod.Reperes(a.reperes)
+            if getattr(a, "plan_ferme", ""):                     # obstacles trouvés par le robot et absents du plan
+                with open(a.plan_ferme, encoding="utf-8") as fh:
+                    for o in json.load(fh):
+                        self.plan.fermer(o["u"], o["v"], rayon_mm=o.get("rayon_mm", 250.0))
         self.t0 = self.maintenant()
         self.j = {"mode": "exploration3", "k_gyro": a.k_gyro, "pas": list(PAS), "vitesse": a.vitesse, "vide_min": a.vide_min,
                   "interdits": self.interdits, "stations": [], "sauts": [], "choix": [], "echecs": [], "contacts": [],
@@ -348,6 +363,23 @@ class Exploration:
         self.j.setdefault("plan", []).append(info)
         self.dire(f"    filtre : position corrigée de ({dx:+.0f}, {dy:+.0f}) mm et {dc:+.1f}° ; note {e['note']:.2f}, étalement {e['etalement_mm']:.0f} mm"
                   f" et {e['etalement_cap']:.1f}°, gyroscope × {e['echelle_gyro']:.4f}")
+        # Repères (reperes.py) : si le robot a déjà fait des tours tout près d'ici, la comparaison directe avec eux donne
+        # sa position à 2 ou 3 cm près, là où le filtre peut se tromper de 10 à 20 cm quand le plan ne ressemble pas à ce
+        # que le robot voit (journal_wifi.md § 38). Le cap reste celui du filtre.
+        if self.reperes is not None:
+            import reperes as reperes_mod
+            r = self.reperes.caler(e["x"], e["y"], c1, reperes_mod.paliers([[10.0 * a_, d_] for a_, d_ in zip(st.d, st.r)]))
+            if r is None:
+                self.dire("    repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)")
+            else:
+                rx, ry = r[0] - self.est.X, r[1] - self.est.Y
+                self.est.decaler(rx, ry)
+                self.filtre.X = (self.filtre.X + rx).astype(np.float32)
+                self.filtre.Y = (self.filtre.Y + ry).astype(np.float32)
+                st.reposer((r[0], r[1], c1))
+                self.j["stations"][-1]["pose"] = [round(r[0], 1), round(r[1], 1), round(c1, 2)]
+                info["reperes"] = {"n": r[2], "noms": r[3][:8], "dx": round(rx), "dy": round(ry)}
+                self.dire(f"    repères : calé sur {r[2]} tours déjà faits ici ; ({rx:+.0f}, {ry:+.0f}) mm par rapport au filtre")
 
     def lire_cibles(self):
         try:
@@ -678,6 +710,9 @@ class Exploration:
         sol = [l0[k] for k in ("vide_g", "vide_avg", "vide_avd", "vide_d")]
         st.tapis = min(sol) < 2000
         st.chemin = self.est.chemin
+        self.est.trace.append((self.est.X, self.est.Y))          # là où le robot se croit avant que ce tour le recale
+        i_av = len(self.est.trace) - 1
+        st.i_trace = i_av                                        # où commence la trace du trajet suivant (refait après le recalage)
         self.stations.append(st)
         self.j["stations"].append({
             "nom": nom, "genre": genre, "de": parent.nom if parent else None, "heure": time.strftime("%H:%M:%S"),
@@ -692,7 +727,15 @@ class Exploration:
             else:
                 self.caler_sur_le_plan(st, premier=not self.noeuds and not getattr(self.a, "depart_sur", False))
             if parent is not None and genre not in ("recalage", "retour"):
-                self.plan.ouvrir([self.vers_px(parent.x, parent.y), self.vers_px(st.x, st.y)])      # le robot vient d'y passer : c'est libre
+                # Le robot vient de rouler du tour précédent à celui-ci : c'est libre le long de sa trace (et non en ligne
+                # droite d'un tour à l'autre : il a pu contourner quelque chose). La correction que le tour vient
+                # d'apporter est répartie le long de la trace.
+                tr = self.est.trace[getattr(parent, "i_trace", 0):i_av + 1]
+                if len(tr) >= 2:
+                    ex, ey = st.x - tr[-1][0], st.y - tr[-1][1]
+                    pts = [self.vers_px(x + ex * k / (len(tr) - 1), y + ey * k / (len(tr) - 1)) for k, (x, y) in enumerate(tr)]
+                    self.plan.ouvrir(pts, rayon_mm=VOIE)
+            st.i_trace = len(self.est.trace) - 1                 # le recalage a ajouté la position corrigée à la trace
         if genre not in ("recalage", "retour"):
             self.noeuds.append(st)
             if parent is not None:
@@ -1203,7 +1246,12 @@ class Exploration:
                     n_ver = int("".join(c for c in ver.split()[0] if c.isdigit()) or 8)
                 except (ValueError, IndexError, RuntimeError):
                     n_ver = 8
-                self.filtre = localiser.Filtre(self.plan, n=getattr(a, "filtre_n", 8000), k_gyro=a.k_gyro, roues_si_muet=n_ver < 9)
+                # Firmware v10 : le cerveau tient le cap pendant les avances ; d'un tour au suivant le cap compté ne bouge que
+                # de 1 à 2°, alors que le cap donné par un tour seul est bruité de 2 à 3°. Le filtre le laisse donc moins
+                # flotter (1,5° au lieu de 3°) : rejoué sur les trajets du 2026-11-13, la position prédite avant chaque tour
+                # est plus juste (50 mm au lieu de 58 en médiane) et les positions après le tour ne changent pas (§ 38).
+                caps = (1.5, 5.0, 15.0, 0.80, 0.97) if n_ver >= 10 else (3.0, 8.0, 20.0, 0.70, 0.95)
+                self.filtre = localiser.Filtre(self.plan, n=getattr(a, "filtre_n", 8000), k_gyro=a.k_gyro, roues_si_muet=n_ver < 9, caps=caps)
                 self.filtre.demarrer(u, v, cap, sigma_mm=100.0 if sur else 250.0, sigma_cap=6.0 if sur else 15.0)
                 self.i_filtre = max(0, len(self.p.lignes) - 1)
                 self.dire(f"localisation : filtre à {self.filtre.n} hypothèses autour du pixel ({u:.0f}, {v:.0f}), cap {cap:.0f}°")
@@ -1326,6 +1374,8 @@ def main():
     p_.add_argument("--plan-passe", default="", help="avec --plan : la même image où un trait vert montre par où on passe (portes ouvertes aujourd'hui)")
     p_.add_argument("--depart-plan", default="", help="avec --plan : U,V,CAP, pixel du plan où est le robot et direction de son avant (degrés, 0 = droite, 90 = haut)")
     p_.add_argument("--depart-sur", action="store_true", help="avec --plan : la position de départ est sûre à 10 cm et 5° près (premier tour cherché dans 30 cm et 10° au lieu de 60 cm et 25°)")
+    p_.add_argument("--reperes", default="", help="avec --plan : fichier de repères fabriqué par reperes.py ; chaque tour sur place fait près d'un tour déjà connu est recalé sur lui")
+    p_.add_argument("--plan-ferme", default="", help="avec --plan : fichier JSON d'obstacles trouvés par le robot et absents du plan, liste de {u, v, rayon_mm} en pixels du plan ; les chemins les contournent")
     p_.add_argument("--plan-roule", default="", help="avec --plan : fichiers JSON de l_localisation_globale.py, séparés par des points-virgules ; les trajets déjà roulés y sont tenus pour du sol sûr")
     p_.add_argument("--base-plan", default="", help="avec --plan : U,V, pixel de la base ; le champ infrarouge de la base n'arrête alors que les avances vers elle")
     p_.add_argument("--sans-filtre", action="store_true", help="avec --plan : ancien recalage à une seule hypothèse (caler_sur_le_plan) au lieu du filtre de localiser.py")

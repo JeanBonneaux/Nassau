@@ -1113,7 +1113,7 @@ Franchissement : robot placé à l'estime dans l'axe (2,2 m libres droit devant,
 
 Message de l'utilisateur : « tu es bien en K10, devant ma chaise », et « continue dans cette session pour la navigation ». Il a aussi demandé une session à part pour une carte qui suit le robot en direct : elle est lancée, en lecture seule vis-à-vis du robot, et n'écrit que dans `code/carte_vivante/`. Enregistrements du retour : `mesures/exploration10_20261113_132251_*`, `mesures/position_20261113_133311.*`. Carte : `plan_lidar/carte_grille_20261113_retour*.png` (hors dépôt).
 
-**Ce que son observation remplace.** Le § 36 retenait le pixel (236, 251), « en K9 à 5 cm de la limite », d'après l'estime et les obstacles. C'était faux : le robot était en K10. Le filtre, qui le plaçait au pixel (240, 251) avec une note de 0,52 et 38 cm d'étalement, avait raison ; l'estime était 10 cm trop à l'ouest, et je l'avais préférée. K9 est occupée par sa chaise : les objets fins vus à 2 ou 3 cm de la coque en sont les pieds.
+**Ce que son observation remplace** (nuancé au § 38 : il a précisé ensuite « K9, K10, peut-être entre les deux »)**.** Le § 36 retenait le pixel (236, 251), « en K9 à 5 cm de la limite », d'après l'estime et les obstacles. C'était faux : le robot était en K10. Le filtre, qui le plaçait au pixel (240, 251) avec une note de 0,52 et 38 cm d'étalement, avait raison ; l'estime était 10 cm trop à l'ouest, et je l'avais préférée. K9 est occupée par sa chaise : les objets fins vus à 2 ou 3 cm de la coque en sont les pieds.
 
 **Retour, à l'estime depuis la position du filtre** (`outils/passage.py`, départ au pixel (240, 251), cap 216°).
 
@@ -1137,3 +1137,44 @@ Message de l'utilisateur : « tu es bien en K10, devant ma chaise », et « cont
 **À faire, pas fait** : dans `Plan.chemin`, le trait vert efface encore la distance aux murs ; donner à `explorer3.py` la méthode de `passage.py` pour les passages étroits ; l'accostage sur la base n'a jamais été essayé (touche `h` du firmware : l'ordre « rentre à la base » du robot, à ne lancer qu'avec l'accord de l'utilisateur).
 
 **État à la fin** : robot en C17, pixel (440, 71), cap 67°, à 85 cm devant sa base ; session fermée (`5`, `s`, `x`) à 13 h 33, capteur de distance au repos, vitesse 150, batterie 1 648 mAh.
+
+## 38. Guidage et précision : le signal de la base, la précision mesurée par les retours au même endroit, les repères (2026-11-13, 13 h 45 à 14 h 10)
+
+Message de l'utilisateur : « il était je ne sais pas, K9, K10, peut-être entre les deux ; essaie d'améliorer encore le guidage et la précision ; voit-on le signal que la base émet ? cela peut-il aider ? ». Enregistrement de l'essai sur le robot : `mesures/exploration11_20261113_135821_*` (`_a_`, `_b_` : deux tours de boucle), `mesures/position_20261113_140541.*`.
+
+**Correction du § 37.** J'y écrivais « c'était faux : le robot était en K10 ; c'est le filtre qui avait raison ». Son observation ne permet pas de trancher : il était à la limite des deux cases, et mes deux positions (pixels 236 et 240, limite à 238,5) sont à 7,5 cm l'une de l'autre, de part et d'autre de cette limite. Ce qui reste établi vient du retour, pas de son observation : l'estime repartie de la position du filtre est retombée sur le filtre à 4 cm près après 2,6 m, et dans ce repère le coin du mur et le chant du battant sont là où le plan les montre, à 2 pixels près.
+
+**Le signal de la base** (`data_analysis/n_signal_base.py`, `results_n_signal_base_20261113.txt` ; chaque ligne du journal replacée sur le plan).
+
+- On le voit : le récepteur du dessus reçoit les codes 168 (faisceau rouge), 164 (vert) et 172 (les deux) sur 2,2 % des lignes de la journée. **Jamais au-delà de 2,0 m** (34 586 lignes entre 2 et 5 m, aucune avec un code).
+- À l'endroit où il avait fait glisser le robot hors de sa base le matin (dans l'axe, à 70 cm) : un code sur 44 % des lignes, presque toujours 172, et les deux récepteurs avant lisent 168 quand le robot fait face à la base.
+- Au même endroit, le code change selon le cap du robot (rouge, les deux, vert) : le récepteur est à l'avant, à une quinzaine de centimètres du centre, et balaie les faisceaux quand le robot tourne. Les limites entre faisceaux sont donc nettes à quelques centimètres. Le récepteur ne voit pas vers l'arrière.
+- **En C17, où je croyais le robot juste devant sa base, aucun code sur des milliers de lignes, tours sur place compris.** La base n'est donc pas là où la carte la place (B17, pixel (442, 27), tournée vers le bas) : sa marque sur le plan est un trait en biais, et les faisceaux reçus s'expliquent par une base tournée vers le bas à gauche (axe entre 231° et 254° selon sa place exacte). Sa position n'est pas résolue à mieux que 10 à 30 cm : il faudra un passage devant elle, récepteurs relevés.
+- Ce que cela peut apporter : un repère fixe, indépendant du plan et des meubles, pour recaler le robot de côté à quelques centimètres quand il est à moins de 2 m de sa base, et pour l'accoster. Rien en K9 ou K10 : trop loin.
+
+**La précision mesurée sans vérité de terrain** (`data_analysis/p_precision_retours.py`, `results_p_precision_retours_*.txt`). Deux tours sur place faits presque au même endroit se comparent directement (`carto.apparier`), à 2 ou 3 cm près, sans le plan ; l'écart avec ce que disent les positions du filtre est une erreur de localisation.
+
+- Trajets de l'après-midi en firmware v10, avant les repères : 16 paires, écart médian 64 mm, **un quart des paires au-dessus de 200 mm**, pire 264 mm.
+- Tour par tour, sur les 53 tours de la journée : la plupart à moins de 7 cm ; quelques-uns décalés de 10 à 23 cm, dont le retour en D14 (23 cm, note 0,59), le premier tour du matin (20 cm) et **l'arrivée en C17 du § 37 (14 cm)**.
+- Rejeux du filtre : garder le filtre d'un trajet à l'autre ou serrer l'incertitude du trajet ne change rien (médiane 51 à 70 mm au lieu de 56). Les écarts viennent de la pose du tour sur le plan, là où le plan ne ressemble pas à ce que le robot voit, pas du trajet compté. Laisser moins flotter le cap (1,5° au lieu de 3°) rend la position prédite avant chaque tour plus juste (50 mm au lieu de 58 en médiane) sans changer le reste : adopté pour le firmware v10.
+- Par rapport au § 31 (« 7 cm d'erreur médiane » au rejeu du 10) : la médiane se confirme (6 cm), mais elle cachait une queue : quelques tours faussés de 10 à 23 cm, qui mettent un quart des paires au-delà de 20 cm.
+
+**Le planificateur** (`plan.py`, `explorer3.py`).
+
+- Le trait vert ouvre un passage mais n'efface plus la distance aux murs.
+- Le sol tenu pour libre le long d'un trajet déjà roulé est une voie de 6 cm de part et d'autre, tracée sur le trajet réel (15 cm, et la ligne droite d'un tour au suivant, jusque-là).
+- Un raccourci en ligne droite doit laisser 17 cm au centre du robot (9 jusque-là).
+- Obstacles trouvés par le robot et absents du plan : `--plan-ferme plan_lidar/obstacles.json` (D14, montant est de la porte H12, objet après le passage, coin de meuble J10, chaise en K9).
+- Résultat : le chemin de C17 à K10 franchit la ligne de la porte H12 à u = 301 à 304 (297 avant, sur le liseré du montant ouest), passe sous l'obstacle de D14, et s'arrête devant la chaise quand on demande K9. Simulation : 63 à 73 mm/s, deux portes de 80 cm, aucun contact.
+
+**Les repères** (`outils/reperes.py`, `explorer3.py --reperes`). Un repère est un tour sur place déjà fait ; un nouveau tour fait à moins de 35 cm de repères se recale sur eux par comparaison directe (deux repères d'accord à 6 cm, ou un seul comparé sur quatre parois). Le fichier `plan_lidar/reperes_tours.json` vient des 53 tours du jour : 35 gardés (C17, D12 et E15 : 8 chacun ; D17 : 4 ; D14 : 3 ; D15 et G12 : 2), les tours sans voisin ou corrigés de plus de 12 cm étant écartés.
+
+- Hors robot : les tours de l'après-midi recalés sur les repères du matin et de midi : écart entre deux passages au même endroit de 200 mm à 41 mm (médiane, 5 paires).
+- Sur le robot, deux fois la boucle de 7,5 m (2,8 et 2,9 min, aucun contact, 16 et 18 mouvements) : calage sur les repères à quatre tours sur six dans la première boucle (le tour de départ ne s'est pas calé) et cinq dans la seconde, à 2 à 13 cm du filtre (en D14 : 11 cm les deux fois, le filtre y est décalé). **Entre les deux boucles, aux quatre endroits calés, la position annoncée concorde avec la comparaison directe des deux tours à 1 cm près** (1 à 10 mm) ; en E11, sans repère : 26 mm.
+- Ce que cela ne fait pas : le cap (toujours celui du filtre) ; un endroit vu pour la première fois ; la porte et K10 (deux repères en G12, aucun au-delà).
+
+**Ce qui limite encore le guidage.** Savoir où l'on est à 1 cm ne suffit pas à arriver sur la cible : à la première boucle le robot est arrivé en E15 à 24 cm du point visé (le départ, l'arrivée du § 37, était faux de 14 cm et le premier tour ne s'est pas calé), à la seconde à 9 cm. Deux causes vues : le cap est recalé à chaque tour par le filtre, à 2 ou 3° près, ce qui déplace l'arrivée suivante de 5 à 10 cm ; et après le tour d'arrivée le robot ne se rapproche pas de la cible.
+
+**À faire, pas fait** : tenir le cap par le gyroscope avec une correction lente ; une petite avance de rattrapage après le tour d'arrivée ; rendre les repères de deux endroits cohérents entre eux par le trajet compté ; replacer la base sur le plan par un passage devant elle et s'aligner sur le couloir « rouge et vert » ; donner à `explorer3.py` la méthode de `passage.py` pour les passages étroits.
+
+**État à la fin** : robot en C17, pixel (437, 68), cap 66°, devant sa base ; session fermée (`5`, `s`, `x`) à 14 h 05, capteur de distance au repos, vitesse 150, batterie 1 613 mAh.

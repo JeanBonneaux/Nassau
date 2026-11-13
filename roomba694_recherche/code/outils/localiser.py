@@ -35,13 +35,18 @@ DX = carto.DX             # le capteur de distance est 27 mm en avant du centre 
 
 
 class Filtre:
-    def __init__(self, plan, n=20000, graine=1, k_gyro=1.0045, temperature=0.2, roues_si_muet=True):
+    def __init__(self, plan, n=20000, graine=1, k_gyro=1.0045, temperature=0.2, roues_si_muet=True,
+                 trajet=(20.0, 0.04, 80.0, 0.15, 0.85), caps=(3.0, 8.0, 20.0, 0.70, 0.95)):
+        # trajet : ce qu'on ignore du chemin roulé entre deux tours sur place : (mm, part du chemin) pour le cas courant,
+        #          (mm, part du chemin) pour le cas rare (glissement, plan faux), et la part du cas courant ;
+        # caps   : la même chose pour le cap : trois écarts-types en degrés et les parts cumulées des deux premiers.
         self.pl, self.s, self.H, self.W = plan, plan.s, plan.H, plan.W
         self.n = int(n)
         self.rng = np.random.default_rng(graine)
         self.k = k_gyro
         self.temp = temperature
         self.roues_si_muet = roues_si_muet
+        self.trajet, self.caps = tuple(trajet), tuple(caps)
         self.A, self.mur, self.Cs = plan.A.astype(np.float32), plan.mur, plan.Cs.astype(np.float32)
         self.Dc = (plan.D_chose / plan.s).astype(np.float32)        # distance au mur ou au meuble le plus proche, mm
         self.X = None
@@ -152,11 +157,13 @@ class Filtre:
         L = self.chemin - self.chemin_tour
         self.chemin_tour = self.chemin
         tir = self.rng.random(n)
-        sig = np.where(tir < 0.85, 20.0 + 0.04 * L, 80.0 + 0.15 * L)
+        t0, t1, t2, t3, tp = self.trajet
+        sig = np.where(tir < tp, t0 + t1 * L, t2 + t3 * L)
         self.X = (self.X + self.rng.normal(0, 1.0, n) * sig).astype(np.float32)
         self.Y = (self.Y + self.rng.normal(0, 1.0, n) * sig).astype(np.float32)
         tir = self.rng.random(n)
-        self.C = (self.C + self.rng.normal(0, 1.0, n) * np.where(tir < 0.70, 3.0, np.where(tir < 0.95, 8.0, 20.0))).astype(np.float32)
+        c0_, c1_, c2_, p0_, p1_ = self.caps
+        self.C = (self.C + self.rng.normal(0, 1.0, n) * np.where(tir < p0_, c0_, np.where(tir < p1_, c1_, c2_))).astype(np.float32)
         c0 = self.C - (self.k + self.kg) * tourne                    # cap de chaque hypothèse au début du tour
         if pal:
             nt = self._note(pal, self.X, self.Y, c0)

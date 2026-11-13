@@ -127,9 +127,16 @@ class Plan:
         # en morceaux).
         g = garde_mm * self.s
         sombre = (255.0 - self.G) / 255.0
-        cout = 1.0 + 300.0 * sombre ** 3 + 4.0 * np.clip((3.0 * g - self.D_mur) / (2.0 * g), 0.0, 1.0)
+        proche = 4.0 * np.clip((3.0 * g - self.D_mur) / (2.0 * g), 0.0, 1.0)      # près d'un mur : plus cher
+        cout = 1.0 + 300.0 * sombre ** 3 + proche
         cout[self.D_mur < 0.6 * g] = 1e6
-        cout[self.passe | self.passe_main] = 1.0
+        cout[self.passe] = 1.0                                   # là où le robot a roulé : libre, quoi que dise le plan
+        # Le trait tracé à la main ouvre un passage (même à travers un trait sombre : porte fermée le jour du relevé),
+        # mais il ne dit pas à quelle distance des murs passer : la distance aux murs continue de compter. Jusqu'au
+        # 2026-11-13 le trait valait du sol libre partout, et le chemin le suivait jusque contre un montant de porte et
+        # sur le chant d'un battant (journal_wifi.md § 36).
+        main = self.passe_main & ~self.passe
+        cout[main] = 1.0 + proche[main]
         cout[self.ferme] = 1e6
         a, b = (int(round(depart[1])), int(round(depart[0]))), (int(round(arrivee[1])), int(round(arrivee[0])))
         # Le robot est là où il est : autour de lui, tout est franchissable, même si le plan ou un obstacle noté tout près
@@ -177,10 +184,17 @@ class Plan:
         return out
 
     def _visible(self, a, b):
-        """le segment a-b ne touche aucun mur (à 9 cm près) ; là où le robot est déjà passé, tout est tenu pour libre"""
+        """Le segment a-b laisse au centre du robot 17 cm (son rayon) jusqu'au premier trait sombre ; là où le robot est
+        déjà passé, tout est tenu pour libre ; sous le trait tracé à la main, le segment peut traverser un trait sombre
+        (25 cm au plus), pas le longer. Jusqu'au 2026-11-13 il suffisait de 9 cm : un raccourci en ligne droite pouvait
+        frôler un montant de porte (journal_wifi.md § 36 et § 38)."""
         n = int(max(2, math.hypot(b[0] - a[0], b[1] - a[1])))
         us, vs = np.linspace(a[0], b[0], n).round().astype(int), np.linspace(a[1], b[1], n).round().astype(int)
-        return bool(np.all((self.D_mur[vs, us] >= 90.0 * self.s) | self.passe[vs, us] | self.passe_main[vs, us]))
+        pres = (self.D_mur[vs, us] < 170.0 * self.s) & ~self.passe[vs, us]
+        if not pres.any():
+            return True
+        pas = math.hypot(b[0] - a[0], b[1] - a[1]) / max(1, n - 1)           # pixels entre deux points du segment
+        return bool(np.all(self.passe_main[vs, us][pres]) and pres.sum() * pas <= 250.0 * self.s)
 
     def fermer(self, u, v, rayon_mm=250.0):
         """un obstacle rencontré par le robot à cet endroit du plan : les prochains chemins le contournent"""
