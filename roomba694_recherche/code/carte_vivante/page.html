@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="color-scheme" content="light">
+<title>Carte vivante — Roomba 694</title>
+<style>
+  :root {
+    --fond: #f4f3ef; --surface: #fcfcfb; --encre: #0b0b0b; --doux: #52514e; --trait: #d9d7d0;
+    --bleu: #2a78d6; --orange: #eb6834; --vert: #1a8f4c; --rouge: #d03b3b; --violet: #7a5cc4; --ambre: #b57a00; --echo: #0d8f8f;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--fond); color: var(--encre);
+    font: 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overscroll-behavior: none; }
+  body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+  header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 12px; row-gap: 4px; padding: 7px 12px;
+    padding-top: max(7px, env(safe-area-inset-top)); background: var(--surface); border-bottom: 1px solid var(--trait); }
+  #case { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; min-width: 62px; line-height: 1; font-variant-numeric: tabular-nums; }
+  #act { font-weight: 600; min-width: 0; }
+  #act small { display: block; font-weight: 400; color: var(--doux); font-size: 13px; }
+  #source { grid-column: 1 / -1; color: var(--doux); font-size: 13px; display: flex; align-items: baseline; gap: 6px; }
+  #source b { color: var(--encre); font-weight: 600; }
+  .pastille { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #9a9992; transform: translateY(-1px); }
+  .pastille.sur { background: var(--vert); } .pastille.estime { background: var(--ambre); } .pastille.inconnu { background: var(--rouge); }
+  #direct { flex: none; font-size: 12px; color: var(--doux); text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  #voyant { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: var(--encre); }
+  #voyant i { width: 8px; height: 8px; border-radius: 50%; background: #9a9992; }
+  #voyant.vif i { background: var(--vert); animation: bat 1.4s ease-in-out infinite; }
+  #voyant.rejeu i { background: var(--bleu); } #voyant.panne i { background: var(--rouge); }
+  @keyframes bat { 50% { opacity: 0.25; } }
+  main { position: relative; flex: 1; min-height: 0; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+  #boutons { position: absolute; right: 10px; bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+  #boutons button { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--trait); background: var(--surface);
+    color: var(--encre); font-size: 20px; line-height: 1; box-shadow: 0 1px 3px rgba(0,0,0,.12); cursor: pointer; }
+  #boutons button.actif { background: var(--encre); color: #fff; border-color: var(--encre); }
+  #bulle { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); max-width: calc(100% - 24px); padding: 8px 12px;
+    border-radius: 10px; background: rgba(11,11,11,.9); color: #fff; font-size: 14px; text-align: center; pointer-events: none;
+    opacity: 0; transition: opacity .25s; }
+  #bulle.vue { opacity: 1; }
+  #bulle.cal { background: rgba(92,62,170,.95); } #bulle.contact { background: rgba(190,40,40,.95); }
+  #fiche { position: absolute; left: 10px; right: 64px; bottom: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface);
+    border: 1px solid var(--trait); box-shadow: 0 2px 8px rgba(0,0,0,.15); font-size: 14px; display: none; }
+  #fiche.vue { display: block; } #fiche b { display: block; margin-bottom: 2px; }
+  #attente { position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); text-align: center; color: var(--doux);
+    background: rgba(252,252,251,.9); padding: 14px; border-radius: 12px; display: none; }
+  #attente.vue { display: block; }
+  #rejeu { display: none; align-items: center; gap: 8px; padding: 6px 12px; background: var(--surface); border-top: 1px solid var(--trait); font-size: 13px; }
+  #rejeu.vue { display: flex; }
+  #rejeu button, #rejeu select { height: 34px; border-radius: 9px; border: 1px solid var(--trait); background: #fff; font: inherit; padding: 0 10px; }
+  #rejeu input { flex: 1; min-width: 0; accent-color: var(--bleu); }
+  #rejeu output { font-variant-numeric: tabular-nums; }
+  footer { background: var(--surface); border-top: 1px solid var(--trait); padding-bottom: env(safe-area-inset-bottom); }
+  #poignee { display: flex; align-items: center; gap: 8px; padding: 9px 12px; cursor: pointer; font-size: 14px; }
+  #dernier { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #dernier time, #journal time { color: var(--doux); font-variant-numeric: tabular-nums; margin-right: 6px; }
+  #chevron { color: var(--doux); transition: transform .2s; }
+  footer.ouvert #chevron { transform: rotate(180deg); }
+  #volet { display: none; max-height: 46vh; overflow-y: auto; border-top: 1px solid var(--trait); -webkit-overflow-scrolling: touch; }
+  footer.ouvert #volet { display: block; }
+  #mesures { padding: 8px 12px; color: var(--doux); font-size: 13px; border-bottom: 1px solid var(--trait); }
+  #journal { list-style: none; margin: 0; padding: 0; }
+  #journal li { padding: 8px 12px; border-bottom: 1px solid #eceae4; font-size: 14px; cursor: pointer; display: flex; gap: 8px; }
+  #journal li i { flex: none; width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; background: #9a9992; }
+  #journal li.cal i { background: var(--violet); } #journal li.contact i, #journal li.alerte i { background: var(--rouge); }
+  #journal li.cible i { background: var(--vert); } #journal li.pos i { background: var(--ambre); }
+  #legende { padding: 10px 12px 14px; font-size: 13px; color: var(--doux); display: grid; grid-template-columns: 26px 1fr; gap: 6px 8px; align-items: center; }
+  #legende svg { width: 26px; height: 14px; display: block; }
+  #legende h2 { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--encre); }
+</style>
+</head>
+<body>
+<header>
+  <div id="case" title="Case où est le robot">—</div>
+  <div id="act">En attente des données…</div>
+  <div id="direct"><span id="voyant"><i></i><span id="voyantTexte">…</span></span><span id="horloge"></span></div>
+  <div id="source"><span class="pastille" id="pastille"></span><span id="srcTexte"></span></div>
+</header>
+<main>
+  <canvas id="carte" aria-label="Plan quadrillé de l'appartement avec la position du robot"></canvas>
+  <div id="bulle" role="status"></div>
+  <div id="attente"></div>
+  <div id="fiche"></div>
+  <div id="boutons">
+    <button id="bSuivre" title="Suivre le robot" aria-label="Suivre le robot">◎</button>
+    <button id="bTout" title="Voir tout l'appartement" aria-label="Voir tout l'appartement">▭</button>
+    <button id="bPlus" title="Agrandir" aria-label="Agrandir">+</button>
+    <button id="bMoins" title="Réduire" aria-label="Réduire">−</button>
+  </div>
+</main>
+<div id="rejeu">
+  <button id="rJouer" aria-label="Lecture ou pause">⏸</button>
+  <input id="rCurseur" type="range" min="0" max="1000" value="0" aria-label="Position dans l'enregistrement">
+  <output id="rHeure">--:--:--</output>
+  <select id="rVitesse" aria-label="Vitesse du rejeu">
+    <option value="1">× 1</option><option value="4">× 4</option><option value="8" selected>× 8</option><option value="20">× 20</option><option value="60">× 60</option>
+  </select>
+</div>
+<footer id="bas">
+  <div id="poignee"><span id="dernier" aria-live="polite">Journal de l'essai</span><span id="chevron">▲</span></div>
+  <div id="volet">
+    <div id="mesures"></div>
+    <ol id="journal"></ol>
+    <div id="legende">
+      <h2>Ce que montre la carte</h2>
+      <svg viewBox="0 0 26 14"><line x1="1" y1="7" x2="25" y2="7" stroke="#2a78d6" stroke-width="2.5"/></svg><span>trajet calé : corrigé par le tour sur place qui l'a suivi</span>
+      <svg viewBox="0 0 26 14"><line x1="1" y1="7" x2="25" y2="7" stroke="#2a78d6" stroke-width="2.5" stroke-dasharray="5 4"/></svg><span>trajet à l'estime : compté par le robot depuis le dernier calage</span>
+      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="4.5" fill="#fff" stroke="#2a78d6" stroke-width="2"/></svg><span>tour sur place (le robot se recale sur le plan)</span>
+      <svg viewBox="0 0 26 14"><line x1="3" y1="11" x2="20" y2="4" stroke="#7a5cc4" stroke-width="2"/><path d="M23 3 L16 3.5 L18.6 8 Z" fill="#7a5cc4"/></svg><span>correction : d'où le robot se croyait à où le calage le place</span>
+      <svg viewBox="0 0 26 14"><path d="M8 2 L18 12 M18 2 L8 12" stroke="#d03b3b" stroke-width="2.6"/></svg><span>contact du pare-chocs</span>
+      <svg viewBox="0 0 26 14"><circle cx="6" cy="7" r="1.6" fill="#0d8f8f"/><circle cx="13" cy="5" r="1.6" fill="#0d8f8f"/><circle cx="20" cy="8" r="1.6" fill="#0d8f8f"/></svg><span>échos du capteur de distance (ce qu'il a vu devant lui)</span>
+      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="3" fill="#eb6834" stroke="#fff"/><circle cx="13" cy="7" r="5.5" fill="none" stroke="#eb6834"/></svg><span>objet frôlé (capteurs optiques du pare-chocs)</span>
+      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="5" fill="none" stroke="#1a8f4c" stroke-width="2"/><circle cx="13" cy="7" r="1.6" fill="#1a8f4c"/></svg><span>destination ; pleine une fois atteinte</span>
+      <svg viewBox="0 0 26 14"><rect x="8" y="2" width="10" height="10" fill="#1a8f4c"/></svg><span>base de recharge</span>
+      <svg viewBox="0 0 26 14"><rect x="2" y="2" width="22" height="10" fill="rgba(208,59,59,.12)" stroke="rgba(208,59,59,.75)"/></svg><span>pièces inaccessibles (ton dessin)</span>
+      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="5.5" fill="none" stroke="#b57a00" stroke-dasharray="2 2"/></svg><span>marge de l'estime : 2 cm + 4 % du chemin roulé depuis le dernier calage</span>
+    </div>
+  </div>
+</footer>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const cv = $('carte'), ctx = cv.getContext('2d');
+const C = { bleu: '#2a78d6', orange: '#eb6834', vert: '#1a8f4c', rouge: '#d03b3b', violet: '#7a5cc4', ambre: '#b57a00', echo: '#0d8f8f',
+            grille: '#3b6fb5', encre: '#0b0b0b', doux: '#52514e', surface: '#fcfcfb' };
+const O = new Map();                       // ce que le serveur publie : clé -> données
+let E = -1, V = 0, NT = 0, robot = null, horloge = null, decor = null;
+let premiere = true, panne = false, sale = true, dernierDessin = 0;
+let Wc = 300, Hc = 300, dpr = 1;
+const vue = { cx: 600, cy: 217, z: 0.3, suivre: true, pret: false, zAuto: true };
+let mesure = false;                                  // la taille de la carte à l'écran est-elle connue ?
+const aff = { u: 0, v: 0, cap: 0, ok: false };        // le robot tel qu'il est dessiné (lissé)
+let anim = null;                                     // dernière correction ou dernier contact, à animer
+let fiche = null;
+const plan = new Image();
+plan.onload = () => { sale = true; };
+plan.src = 'plan.png';
+
+// ------------------------------------------------------------ mots et nombres
+const DIRS = ['la droite', 'le haut et la droite', 'le haut', 'le haut et la gauche', 'la gauche', 'le bas et la gauche', 'le bas', 'le bas et la droite'];
+const versMot = cap => 'vers ' + DIRS[Math.round((((cap % 360) + 360) % 360) / 45) % 8];
+const nb = (x, n = 0) => x.toFixed(n).replace('.', ',');
+const hm = h => h ? h.slice(0, 2) + ' h ' + h.slice(3, 5) : '';
+const cm = o => o.cm >= 1 ? o.cm + ' cm' : 'moins de 1 cm';        // une correction, arrondie comme dans le journal
+const longueur = mm => mm < 995 ? nb(mm / 10) + ' cm' : nb(mm / 1000, 1) + ' m';
+function duree(s) {
+  s = Math.max(0, Math.round(s));
+  if (s < 90) return s + ' s';
+  if (s < 5400) return Math.round(s / 60) + ' min';
+  return Math.floor(s / 3600) + ' h ' + String(Math.round((s % 3600) / 60)).padStart(2, '0');
+}
+const echappe = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ------------------------------------------------------------ la vue
+const X = u => (u - vue.cx) * vue.z + Wc / 2, Y = v => (v - vue.cy) * vue.z + Hc / 2;
+const versPlan = (x, y) => [(x - Wc / 2) / vue.z + vue.cx, (y - Hc / 2) / vue.z + vue.cy];
+function repereplan() { ctx.setTransform(dpr * vue.z, 0, 0, dpr * vue.z, dpr * (Wc / 2 - vue.cx * vue.z), dpr * (Hc / 2 - vue.cy * vue.z)); }
+function repereecran() { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+function zMin() { return decor ? Math.min(Wc / decor.W, Hc / decor.H) * 0.92 : 0.2; }
+function zSuivi() {
+  // en suivant le robot : environ 4,6 m en travers de l'écran ; sur un téléphone tenu debout, tout le plan en hauteur
+  if (!decor) return 1;
+  const z = Hc > Wc ? Math.max(Hc / (decor.H + 30), Wc / (7 * decor.px_par_m)) : Math.min(Wc, Hc) / (4.6 * decor.px_par_m);
+  return Math.max(zMin(), z);
+}
+function centreBorne(u, v) {
+  // le plan remplit l'écran autant que possible : pas de grande marge vide quand le robot est près d'un bord
+  if (!decor) return [u, v];
+  const mx = Wc / 2 / vue.z, my = Hc / 2 / vue.z, m = 26 / vue.z;
+  const cx = 2 * mx >= decor.W + 2 * m ? decor.W / 2 : Math.max(mx - m, Math.min(decor.W - mx + m, u));
+  const cy = 2 * my >= decor.H + 2 * m ? decor.H / 2 : Math.max(my - m, Math.min(decor.H - my + m, v));
+  return [cx, cy];
+}
+function borner() {
+  vue.z = Math.max(zMin() * 0.8, Math.min(14, vue.z));
+  [vue.cx, vue.cy] = centreBorne(vue.cx, vue.cy);
+}
+function toutVoir() { if (!decor) return; vue.suivre = false; vue.z = zMin(); vue.cx = decor.W / 2; vue.cy = decor.H / 2; majBoutons(); sale = true; }
+function suivre(oui) {
+  vue.suivre = oui;
+  if (oui) { if (vue.z < zSuivi() * 0.7) { vue.z = zSuivi(); vue.zAuto = true; } if (aff.ok) [vue.cx, vue.cy] = centreBorne(aff.u, aff.v); }
+  majBoutons(); sale = true;
+}
+function zoomer(f, x = Wc / 2, y = Hc / 2) {
+  const [u, v] = versPlan(x, y);
+  vue.zAuto = false;
+  vue.z *= f; borner();
+  if (!vue.suivre) { vue.cx = u - (x - Wc / 2) / vue.z; vue.cy = v - (y - Hc / 2) / vue.z; borner(); }
+  sale = true;
+}
+function majBoutons() { $('bSuivre').classList.toggle('actif', vue.suivre); }
+function taille() {
+  const r = cv.getBoundingClientRect();
+  dpr = Math.min(window.devicePixelRatio || 1, 3);
+  Wc = Math.max(50, r.width); Hc = Math.max(50, r.height);
+  cv.width = Math.round(Wc * dpr); cv.height = Math.round(Hc * dpr);
+  mesure = true;
+  if (vue.pret && vue.suivre && vue.zAuto) vue.z = zSuivi();      // l'écran a changé de taille : l'agrandissement suit
+  sale = true;
+}
+new ResizeObserver(taille).observe(cv);
+
+// ------------------------------------------------------------ doigts et souris
+const doigts = new Map();
+let pince = null, bouge = false;
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  doigts.set(e.pointerId, { x: e.offsetX, y: e.offsetY, x0: e.offsetX, y0: e.offsetY });
+  bouge = false;
+  if (doigts.size === 2) { const [a, b] = [...doigts.values()]; pince = { d: Math.hypot(a.x - b.x, a.y - b.y), z: vue.z }; }
+});
+cv.addEventListener('pointermove', e => {
+  const d = doigts.get(e.pointerId);
+  if (!d) return;
+  const dx = e.offsetX - d.x, dy = e.offsetY - d.y;
+  d.x = e.offsetX; d.y = e.offsetY;
+  if (Math.hypot(d.x - d.x0, d.y - d.y0) > 6) bouge = true;
+  if (doigts.size === 1 && bouge) {
+    if (vue.suivre) { vue.suivre = false; majBoutons(); }
+    vue.cx -= dx / vue.z; vue.cy -= dy / vue.z; borner(); sale = true;
+  } else if (doigts.size === 2 && pince) {
+    const [a, b] = [...doigts.values()];
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const [u, v] = versPlan(mx, my);
+    vue.z = pince.z * Math.hypot(a.x - b.x, a.y - b.y) / Math.max(20, pince.d); borner();
+    if (!vue.suivre) { vue.cx = u - (mx - Wc / 2) / vue.z; vue.cy = v - (my - Hc / 2) / vue.z; borner(); }
+    bouge = true; sale = true;
+  }
+});
+function lacher(e) {
+  const d = doigts.get(e.pointerId);
+  doigts.delete(e.pointerId);
+  if (doigts.size < 2) pince = null;
+  if (d && !bouge && e.type === 'pointerup') toucher(d.x, d.y);
+}
+cv.addEventListener('pointerup', lacher);
+cv.addEventListener('pointercancel', lacher);
+cv.addEventListener('wheel', e => { e.preventDefault(); zoomer(Math.exp(-e.deltaY * 0.0015), e.offsetX, e.offsetY); }, { passive: false });
+$('bSuivre').onclick = () => suivre(!vue.suivre);
+$('bTout').onclick = toutVoir;
+$('bPlus').onclick = () => zoomer(1.5);
+$('bMoins').onclick = () => zoomer(1 / 1.5);
+$('poignee').onclick = () => $('bas').classList.toggle('ouvert');
+
+// toucher un repère de la carte : sa fiche
+function toucher(x, y) {
+  let mieux = null, dm = 22;
+  const essai = (u, v, titre, texte) => { const d = Math.hypot(X(u) - x, Y(v) - y); if (d < dm) { dm = d; mieux = { titre, texte }; } };
+  for (const [k, o] of O) {
+    if (!o) continue;
+    if (k.startsWith('cal/') && !o.muet) essai(o.u, o.v, titreCalage(o), texteCalage(o));
+    else if (k.startsWith('ct/')) essai(o.u, o.v, 'Contact du pare-chocs, ' + hm(o.h), (o.cote === 'devant' ? 'De face' : 'Côté ' + o.cote) + ', robot en ' + o.case + '. Le point marque l\'endroit touché, à 20 cm du centre du robot.');
+  }
+  for (const c of O.get('cibles') || []) essai(c.u, c.v, 'Destination ' + c.case, 'État : ' + c.etat + '.');
+  if (decor && decor.base) essai(decor.base[0], decor.base[1], 'Base de recharge', 'Case ' + nomCase(decor.base[0], decor.base[1]) + '.');
+  if (aff.ok && robot && robot.connu) essai(aff.u, aff.v, 'Robot en ' + robot.case, texteRobot());
+  if (!mieux && decor) { const [u, v] = versPlan(x, y); if (u >= 0 && v >= 0 && u < decor.W && v < decor.H) mieux = { titre: 'Case ' + nomCase(u, v), texte: '' }; }
+  fiche = mieux;
+  const f = $('fiche');
+  f.classList.toggle('vue', !!mieux);
+  if (mieux) f.innerHTML = '<b>' + echappe(mieux.titre) + '</b>' + echappe(mieux.texte);
+}
+$('fiche').onclick = () => { $('fiche').classList.remove('vue'); };
+function nomCase(u, v) {
+  const col = Math.min(decor.n_col - 1, Math.max(0, Math.floor(u / decor.case))), lig = Math.min(decor.n_lig - 1, Math.max(0, Math.floor(v / decor.case)));
+  return decor.lettres[lig] + (col + 1);
+}
+function titreCalage(o) {
+  if (o.src === 'filtre' || o.src === 'plan') return 'Tour sur place, ' + hm(o.h) + ' — ' + o.case;
+  return 'Position donnée, ' + hm(o.h) + ' — ' + o.case;
+}
+function texteCalage(o) {
+  let t = '';
+  if (o.src === 'filtre' || o.src === 'plan') {
+    if (o.av) t = (o.d < 20 && Math.abs(o.dc) < 1) ? 'Le tour confirme la position (écart de ' + nb(o.d / 10, 1) + ' cm).'
+      : 'Le tour déplace la position de ' + cm(o) + ' ' + versMot(o.dir) + ' et tourne le cap de ' + nb(Math.abs(o.dc), 1) + '°.';
+    else t = 'Première position mesurée sur le plan.';
+    if (o.info && o.info.note != null) t += ' Note du calage : ' + nb(o.info.note, 2) + (o.info.note < 0.6 ? ' (incertain).' : '.');
+    if (o.info && o.info.etal != null) t += ' Étalement des hypothèses : ' + nb(o.info.etal / 10) + ' cm.';
+  } else {
+    t = ({ depart: 'Position de départ donnée au programme de navigation.', annonce: 'Position de départ annoncée par le programme de navigation.',
+           pose: 'Position tenue à l\'estime par passage.py.', report: 'Position reprise de l\'enregistrement précédent, à l\'estime.' })[o.src] || 'Position donnée.';
+    if (o.av) t += ' Écart avec la position suivie jusque-là : ' + cm(o) + ' et ' + nb(Math.abs(o.dc), 1) + '°.';
+  }
+  return t;
+}
+function texteRobot() {
+  const r = robot;
+  let t = 'Tourné ' + versMot(r.cap) + ' (cap ' + nb(r.cap) + '°). ';
+  t += r.us > 0 ? 'Capteur de distance : ' + longueur(r.us) + ' devant. ' : r.us === 0 ? 'Capteur de distance : rien à portée. ' : '';
+  if (r.q != null && r.qmax) t += 'Batterie ' + Math.round(100 * r.q / r.qmax) + ' %. ';
+  return t;
+}
+
+// ------------------------------------------------------------ le dessin
+function trace(pts) { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); }
+function fleche(x0, y0, x1, y1, t) {
+  const a = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0), p = Math.min(t, L * 0.6);
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - Math.cos(a) * p * 0.8, y1 - Math.sin(a) * p * 0.8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - Math.cos(a - 0.45) * p, y1 - Math.sin(a - 0.45) * p);
+  ctx.lineTo(x1 - Math.cos(a + 0.45) * p, y1 - Math.sin(a + 0.45) * p); ctx.closePath(); ctx.fill();
+}
+function etiquette(texte, x, y, opts = {}) {
+  ctx.font = (opts.gras ? '600 ' : '') + (opts.t || 12) + 'px system-ui, sans-serif';
+  const w = ctx.measureText(texte).width, h = (opts.t || 12) + 4;
+  const ax = opts.centre ? x - w / 2 : x;
+  ctx.fillStyle = 'rgba(252,252,251,.88)'; ctx.fillRect(ax - 3, y - h / 2, w + 6, h);
+  ctx.fillStyle = opts.c || C.encre; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillText(texte, ax, y + 0.5);
+}
+
+function dessiner(maintenant) {
+  repereecran();
+  ctx.fillStyle = '#e9e7e1'; ctx.fillRect(0, 0, Wc, Hc);
+  if (!decor) return;
+  const z = vue.z, e = 1 / z;                               // e : un pixel d'écran, en pixels du plan
+  const s = decor.px_par_m / 1000;                          // pixels du plan par millimètre
+  const [u0, v0] = versPlan(0, 0), [u1, v1] = versPlan(Wc, Hc);
+  repereplan();
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, decor.W, decor.H);
+  if (plan.complete && plan.naturalWidth) { ctx.globalAlpha = 0.82; ctx.imageSmoothingEnabled = true; ctx.drawImage(plan, 0, 0, decor.W, decor.H); ctx.globalAlpha = 1; }
+  for (const [x0, y0, x1, y1] of decor.zones) {
+    ctx.fillStyle = 'rgba(208,59,59,.10)'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.strokeStyle = 'rgba(208,59,59,.75)'; ctx.lineWidth = 1.3 * e; ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  }
+  // le quadrillage : une case = 50 cm
+  const c = decor.case;
+  for (const fort of [false, true]) {
+    ctx.beginPath();
+    for (let j = 0; j <= decor.n_col; j++) if ((j % 5 === 0) === fort) { const x = Math.min(j * c, decor.W); ctx.moveTo(x, 0); ctx.lineTo(x, decor.H); }
+    for (let i = 0; i <= decor.n_lig; i++) if ((i % 5 === 0) === fort) { const y = Math.min(i * c, decor.H); ctx.moveTo(0, y); ctx.lineTo(decor.W, y); }
+    ctx.strokeStyle = fort ? 'rgba(59,111,181,.55)' : 'rgba(59,111,181,.30)'; ctx.lineWidth = (fort ? 1.1 : 0.7) * e; ctx.stroke();
+  }
+  // les morceaux du tracé, dans l'ordre
+  const T = [];
+  for (let k = 0; k < NT; k++) { const t = O.get('t/' + k); if (t && t.p.length) T.push(t); }
+  // échos du capteur de distance : un point là où il a vu quelque chose
+  ctx.fillStyle = 'rgba(13,143,143,.55)';
+  const pt = Math.max(1.6 * e, 0.8);
+  for (const t of T) for (const p of t.p) {
+    if (p[3] > 0 && p[3] <= 3000) {
+      const a = p[2] * Math.PI / 180, d = (p[3] + 27) * s;
+      ctx.fillRect(p[0] + d * Math.cos(a) - pt / 2, p[1] - d * Math.sin(a) - pt / 2, pt, pt);
+    }
+  }
+  // objets frôlés par les capteurs optiques du pare-chocs
+  for (const p of O.get('proches') || []) {
+    ctx.beginPath(); ctx.arc(p[0], p[1], 2.4 * e, 0, 6.3); ctx.fillStyle = C.orange; ctx.fill();
+    ctx.beginPath(); ctx.arc(p[0], p[1], 4.6 * e, 0, 6.3); ctx.strokeStyle = 'rgba(235,104,52,.6)'; ctx.lineWidth = 1 * e; ctx.stroke();
+  }
+  // le tracé : plein quand un calage l'a corrigé, en tirets tant qu'il n'est tenu qu'à l'estime
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  let fin = null;
+  for (const t of T) {
+    const deb = t.p[0];
+    if (fin && Math.hypot(deb[0] - fin[0], deb[1] - fin[1]) > 1.5) {          // repositionnement : pas un trajet
+      ctx.beginPath(); ctx.moveTo(fin[0], fin[1]); ctx.lineTo(deb[0], deb[1]);
+      ctx.setLineDash([2 * e, 4 * e]); ctx.strokeStyle = 'rgba(122,92,196,.9)'; ctx.lineWidth = 1.6 * e; ctx.stroke(); ctx.setLineDash([]);
+    }
+    trace(t.p);
+    ctx.lineWidth = 2.6 * e;
+    if (t.e === 'cale') { ctx.strokeStyle = C.bleu; ctx.setLineDash([]); }
+    else if (t.e === 'estime') { ctx.strokeStyle = C.bleu; ctx.setLineDash([6 * e, 5 * e]); }
+    else { ctx.strokeStyle = 'rgba(42,120,214,.55)'; ctx.setLineDash([1.5 * e, 4.5 * e]); }
+    ctx.stroke(); ctx.setLineDash([]);
+    fin = t.p[t.p.length - 1];
+  }
+  // obstacles notés par la navigation (vus devant, bord sombre)
+  for (const o of O.get('obstacles') || []) {
+    ctx.strokeStyle = o[2] === 'sombre' ? C.encre : C.orange; ctx.lineWidth = 2.2 * e;
+    ctx.beginPath(); ctx.moveTo(o[0] - 4 * e, o[1] + 3.5 * e); ctx.lineTo(o[0], o[1] - 4 * e); ctx.lineTo(o[0] + 4 * e, o[1] + 3.5 * e); ctx.closePath(); ctx.stroke();
+  }
+  // calages : la correction (flèche violette) puis le rond du tour sur place
+  const cals = [];
+  for (const [k, o] of O) if (o && k.startsWith('cal/') && !o.muet) cals.push(o);
+  for (const o of cals) {
+    if (o.av && Math.hypot(o.u - o.av[0], o.v - o.av[1]) * z >= 7) {
+      ctx.strokeStyle = ctx.fillStyle = C.violet; ctx.lineWidth = 1.8 * e;
+      if (!o.rep) ctx.setLineDash([2 * e, 3 * e]);
+      fleche(o.av[0], o.av[1], o.u, o.v, 7 * e); ctx.setLineDash([]);
+    }
+  }
+  for (const o of cals) {
+    const mesure = o.src === 'filtre' || o.src === 'plan', douteux = mesure && o.info && o.info.note != null && o.info.note < 0.6;
+    ctx.beginPath();
+    if (mesure) ctx.arc(o.u, o.v, 4.6 * e, 0, 6.3);
+    else { ctx.moveTo(o.u, o.v - 5 * e); ctx.lineTo(o.u + 5 * e, o.v); ctx.lineTo(o.u, o.v + 5 * e); ctx.lineTo(o.u - 5 * e, o.v); ctx.closePath(); }
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.strokeStyle = mesure ? (douteux ? C.ambre : C.bleu) : C.ambre; ctx.lineWidth = 2 * e;
+    if (douteux) ctx.setLineDash([2.5 * e, 2 * e]);
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  // contacts du pare-chocs
+  for (const [k, o] of O) if (o && k.startsWith('ct/')) {
+    for (const [coul, larg] of [['#fff', 5.5], [C.rouge, 2.8]]) {
+      ctx.strokeStyle = coul; ctx.lineWidth = larg * e; ctx.beginPath();
+      ctx.moveTo(o.u - 5 * e, o.v - 5 * e); ctx.lineTo(o.u + 5 * e, o.v + 5 * e); ctx.moveTo(o.u + 5 * e, o.v - 5 * e); ctx.lineTo(o.u - 5 * e, o.v + 5 * e); ctx.stroke();
+    }
+  }
+  // base de recharge
+  if (decor.base) { ctx.fillStyle = C.vert; ctx.fillRect(decor.base[0] - 5 * e, decor.base[1] - 5 * e, 10 * e, 10 * e); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2 * e; ctx.strokeRect(decor.base[0] - 5 * e, decor.base[1] - 5 * e, 10 * e, 10 * e); }
+  // destinations
+  const cibles = O.get('cibles') || [];
+  const battement = 0.5 + 0.5 * Math.sin(maintenant / 260);
+  for (const q of cibles) {
+    const fait = q.etat === 'atteinte', perdu = q.etat === 'laissée', cours = q.etat === 'en cours';
+    if (cours && aff.ok) {
+      ctx.beginPath(); ctx.moveTo(aff.u, aff.v); ctx.lineTo(q.u, q.v); ctx.setLineDash([3 * e, 5 * e]);
+      ctx.strokeStyle = 'rgba(26,143,76,.75)'; ctx.lineWidth = 1.6 * e; ctx.stroke(); ctx.setLineDash([]);
+    }
+    const coul = perdu ? '#8d8c86' : C.vert;
+    ctx.beginPath(); ctx.arc(q.u, q.v, (cours ? 7 + 2.5 * battement : 7) * e, 0, 6.3);
+    ctx.fillStyle = fait ? 'rgba(26,143,76,.22)' : 'rgba(255,255,255,.7)'; ctx.fill();
+    ctx.strokeStyle = coul; ctx.lineWidth = 2.2 * e; ctx.stroke();
+    ctx.beginPath(); ctx.arc(q.u, q.v, (fait ? 4 : 2) * e, 0, 6.3); ctx.fillStyle = coul; ctx.fill();
+    if (perdu) { ctx.beginPath(); ctx.moveTo(q.u - 6 * e, q.v + 6 * e); ctx.lineTo(q.u + 6 * e, q.v - 6 * e); ctx.stroke(); }
+  }
+  // le robot
+  if (aff.ok && robot && robot.connu) {
+    const a = -aff.cap * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+    const rr = Math.max(decor.rayon, 8 * e);
+    // ce que voit le capteur de distance, à l'instant
+    if (robot.us >= 0 && robot.age < 5) {
+      const ox = aff.u + decor.dx_capteur * ca, oy = aff.v + decor.dx_capteur * sa, R = (robot.us > 0 ? robot.us : 3000) * s, o = 0.21;
+      ctx.beginPath(); ctx.moveTo(ox, oy); ctx.arc(ox, oy, R, a - o, a + o); ctx.closePath();
+      ctx.fillStyle = robot.us > 0 ? 'rgba(13,143,143,.16)' : 'rgba(13,143,143,.05)'; ctx.fill();
+      if (robot.us > 0) { ctx.beginPath(); ctx.arc(ox, oy, R, a - o, a + o); ctx.strokeStyle = C.echo; ctx.lineWidth = 2.4 * e; ctx.stroke(); }
+    }
+    // marge de l'estime depuis le dernier calage
+    if (robot.src) {
+      const m = (20 + 0.04 * robot.src.mm) * s;
+      if (rr + m > rr * 1.25) { ctx.beginPath(); ctx.arc(aff.u, aff.v, rr + m, 0, 6.3); ctx.setLineDash([3 * e, 3 * e]); ctx.strokeStyle = 'rgba(181,122,0,.8)'; ctx.lineWidth = 1.2 * e; ctx.stroke(); ctx.setLineDash([]); }
+    }
+    if (robot.act === 'tour') {                                // tour de mesure : un anneau qui tourne
+      ctx.beginPath(); ctx.arc(aff.u, aff.v, rr + 6 * e, maintenant / 300, maintenant / 300 + 4.4);
+      ctx.strokeStyle = C.bleu; ctx.lineWidth = 2.4 * e; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(aff.u, aff.v, rr, 0, 6.3); ctx.fillStyle = C.orange; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6 * e; ctx.stroke();
+    // pare-chocs : la moitié touchée passe au rouge
+    for (const [cote, a0, a1] of [[0, a - 1.4, a], [1, a, a + 1.4]]) {
+      ctx.beginPath(); ctx.arc(aff.u, aff.v, rr - 1.2 * e, a0, a1);
+      ctx.strokeStyle = robot.pc[cote] ? C.rouge : 'rgba(11,11,11,.55)'; ctx.lineWidth = (robot.pc[cote] ? 4.5 : 2.4) * e; ctx.stroke();
+    }
+    // les six capteurs optiques du pare-chocs, quand la carte est assez agrandie
+    if (rr * z >= 13 && robot.lb) {
+      const angles = [62, 36, 12, -12, -36, -62];
+      for (let k = 0; k < 6; k++) if (robot.lb[k] >= 80) {
+        const b = a - angles[k] * Math.PI / 180;
+        ctx.beginPath(); ctx.arc(aff.u + (rr + 4 * e) * Math.cos(b), aff.v + (rr + 4 * e) * Math.sin(b), 2.6 * e, 0, 6.3);
+        ctx.fillStyle = robot.lb[k] >= 200 ? C.rouge : C.ambre; ctx.fill();
+      }
+    }
+    ctx.beginPath(); ctx.moveTo(aff.u + rr * 0.78 * ca, aff.v + rr * 0.78 * sa);
+    ctx.lineTo(aff.u + rr * 0.42 * Math.cos(a + 2.5), aff.v + rr * 0.42 * Math.sin(a + 2.5));
+    ctx.lineTo(aff.u + rr * 0.42 * Math.cos(a - 2.5), aff.v + rr * 0.42 * Math.sin(a - 2.5)); ctx.closePath();
+    ctx.fillStyle = '#fff'; ctx.fill();
+  }
+  // une correction qui vient d'arriver : d'où le robot se croyait (cercle violet) à où le calage le place
+  if (anim) {
+    const age = (maintenant - anim.t) / 1000;
+    if (age > 7) anim = null;
+    else if (anim.genre === 'cal' && anim.o.av) {
+      const o = anim.o, rr = Math.max(decor.rayon, 8 * e), k = Math.min(1, age / 0.6);
+      ctx.globalAlpha = Math.max(0, 1 - age / 7);
+      ctx.beginPath(); ctx.arc(o.av[0], o.av[1], rr, 0, 6.3); ctx.setLineDash([4 * e, 3 * e]); ctx.strokeStyle = C.violet; ctx.lineWidth = 2 * e; ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(o.u, o.v, rr + (4 + 14 * k) * e, 0, 6.3); ctx.strokeStyle = C.violet; ctx.lineWidth = 2.4 * e * (1 - 0.6 * k); ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (anim.genre === 'contact') {
+      const o = anim.o, k = (age * 1.5) % 1;
+      ctx.globalAlpha = Math.max(0, 1 - age / 5);
+      ctx.beginPath(); ctx.arc(o.u, o.v, (6 + 18 * k) * e, 0, 6.3); ctx.strokeStyle = C.rouge; ctx.lineWidth = 2.4 * e; ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // ---------------- le texte, en pixels d'écran
+  repereecran();
+  const cz = c * z;
+  if (cz >= 32) {                                            // le nom de chaque case, dans son coin
+    ctx.font = (cz >= 44 ? 11 : 10) + 'px system-ui, sans-serif'; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(31,61,102,.62)';
+    for (let i = Math.max(0, Math.floor(v0 / c)); i < Math.min(decor.n_lig, Math.ceil(v1 / c)); i++)
+      for (let j = Math.max(0, Math.floor(u0 / c)); j < Math.min(decor.n_col, Math.ceil(u1 / c)); j++)
+        ctx.fillText(decor.lettres[i] + (j + 1), X(j * c) + 4, Y(i * c) + 3);
+  }
+  if (decor.base) etiquette('base', X(decor.base[0]) + 10, Y(decor.base[1]), { t: 12 });
+  for (const q of cibles) etiquette(q.case, X(q.u) + 12, Y(q.v) - 10, { t: 12, gras: true, c: q.etat === 'laissée' ? C.doux : C.vert });
+  if (anim && anim.genre === 'cal' && anim.o.av && (maintenant - anim.t) < 7000)
+    etiquette('corrigé de ' + cm(anim.o), X(anim.o.u), Y(anim.o.v) + Math.max(decor.rayon * z, 8) + 26, { t: 12, gras: true, c: C.violet, centre: true });
+  // règles : numéros des colonnes en haut, lettres des lignes à gauche, toujours visibles
+  const B = 19;
+  ctx.fillStyle = 'rgba(252,252,251,.93)'; ctx.fillRect(0, 0, Wc, B); ctx.fillRect(0, 0, B, Hc);
+  ctx.fillStyle = C.encre; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  const pasCol = cz >= 17 ? 1 : cz >= 7 ? 5 : 10;
+  ctx.font = '600 ' + (cz >= 24 ? 12 : 10.5) + 'px system-ui, sans-serif';
+  for (let j = 0; j < decor.n_col; j++) {
+    if ((j + 1) % pasCol && pasCol > 1) continue;
+    const x = X((j + 0.5) * c); if (x > B + 4 && x < Wc - 4) ctx.fillText(String(j + 1), x, B / 2 + 0.5);
+  }
+  const pasLig = cz >= 12 ? 1 : 2;
+  for (let i = 0; i < decor.n_lig; i++) {
+    if (i % pasLig) continue;
+    const y = Y(Math.min((i + 0.5) * c, (i * c + decor.H) / 2)); if (y > B + 4 && y < Hc - 4) ctx.fillText(decor.lettres[i], B / 2, y);
+  }
+  ctx.fillStyle = 'rgba(252,252,251,1)'; ctx.fillRect(0, 0, B, B);
+  ctx.strokeStyle = '#d9d7d0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, B + 0.5); ctx.lineTo(Wc, B + 0.5); ctx.moveTo(B + 0.5, 0); ctx.lineTo(B + 0.5, Hc); ctx.stroke();
+  // vue d'ensemble, en bas à gauche : où est le robot dans l'appartement, et ce que montre l'écran
+  if (z > zMin() * 1.5 && plan.complete && plan.naturalWidth) {
+    const mw = Math.min(170, Wc * 0.42), mh = mw * decor.H / decor.W, mx = B + 8, my = Hc - mh - 10, k = mw / decor.W;
+    ctx.fillStyle = '#fff'; ctx.fillRect(mx, my, mw, mh);
+    ctx.globalAlpha = 0.9; ctx.drawImage(plan, mx, my, mw, mh); ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#8a8a86'; ctx.lineWidth = 1; ctx.strokeRect(mx + 0.5, my + 0.5, mw, mh);
+    ctx.strokeStyle = C.encre; ctx.lineWidth = 1.5;
+    const rx0 = Math.max(0, u0), ry0 = Math.max(0, v0), rx1 = Math.min(decor.W, u1), ry1 = Math.min(decor.H, v1);
+    ctx.strokeRect(mx + rx0 * k, my + ry0 * k, Math.max(2, (rx1 - rx0) * k), Math.max(2, (ry1 - ry0) * k));
+    if (aff.ok && robot && robot.connu) { ctx.beginPath(); ctx.arc(mx + aff.u * k, my + aff.v * k, 3.5, 0, 6.3); ctx.fillStyle = C.orange; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke(); }
+  }
+}
+
+// ------------------------------------------------------------ l'animation
+let tPrec = 0;
+function image(t) {
+  const dt = Math.min(0.2, (t - tPrec) / 1000); tPrec = t;
+  let mouvement = false;
+  if (robot && robot.connu) {
+    if (!aff.ok || Math.hypot(robot.u - aff.u, robot.v - aff.v) > 120) { aff.u = robot.u; aff.v = robot.v; aff.cap = robot.cap; aff.ok = true; mouvement = true; }
+    else {
+      const k = 1 - Math.exp(-dt / 0.16), dc = ((robot.cap - aff.cap + 540) % 360) - 180;
+      if (Math.abs(robot.u - aff.u) > 0.02 || Math.abs(robot.v - aff.v) > 0.02 || Math.abs(dc) > 0.1) {
+        aff.u += (robot.u - aff.u) * k; aff.v += (robot.v - aff.v) * k; aff.cap += dc * k; mouvement = true;
+      }
+    }
+    if (vue.suivre && mesure) {
+      if (!vue.pret) vue.z = zSuivi();
+      const [tx, ty] = centreBorne(aff.u, aff.v);
+      if (!vue.pret) { vue.cx = tx; vue.cy = ty; vue.pret = true; mouvement = true; }
+      else if (Math.abs(vue.cx - tx) > 0.05 || Math.abs(vue.cy - ty) > 0.05) {
+        const k = 1 - Math.exp(-dt / 0.35); vue.cx += (tx - vue.cx) * k; vue.cy += (ty - vue.cy) * k; mouvement = true;
+      }
+    }
+  } else if (decor && mesure && !vue.pret && !vue.attente) {     // position pas encore connue : tout l'appartement
+    vue.z = zMin(); vue.cx = decor.W / 2; vue.cy = decor.H / 2; vue.attente = true; sale = true;
+  }
+  const vivant = anim || (robot && robot.act === 'tour') || (O.get('cibles') || []).some(q => q.etat === 'en cours');
+  if (sale || mouvement || (vivant && t - dernierDessin > 50)) { sale = false; dernierDessin = t; dessiner(t); }
+  requestAnimationFrame(image);
+}
+requestAnimationFrame(image);
+
+// ------------------------------------------------------------ le texte autour de la carte
+let bulleFin = 0;
+function bulle(texte, genre) {
+  const b = $('bulle'); b.textContent = texte; b.className = 'vue ' + genre; bulleFin = performance.now() + 5000;
+  setTimeout(() => { if (performance.now() >= bulleFin - 50) b.className = genre; }, 5050);
+}
+function majTexte() {
+  const r = robot, h = horloge;
+  const voyant = $('voyant');
+  if (panne) { voyant.className = 'panne'; $('voyantTexte').textContent = 'serveur injoignable'; }
+  else if (h && h.mode === 'rejeu') { voyant.className = 'rejeu'; $('voyantTexte').textContent = 'rejeu × ' + nb(h.vitesse, h.vitesse < 1 ? 2 : 0) + (h.pause ? ' (pause)' : ''); }
+  else if (r && r.age != null && r.age <= 3) { voyant.className = 'vif'; $('voyantTexte').textContent = 'en direct'; }
+  else { voyant.className = ''; $('voyantTexte').textContent = r && r.age != null ? 'sans nouvelles depuis ' + duree(r.age) : 'pas d\'enregistrement'; }
+  $('horloge').textContent = h ? h.h : '';
+  const att = $('attente');
+  if (!r || !r.connu) {
+    $('case').textContent = '?';
+    $('act').textContent = 'Position inconnue';
+    $('pastille').className = 'pastille inconnu';
+    const pourquoi = !r || r.pourquoi === 'aucune ligne du journal' ? 'aucune donnée du robot pour l\'instant'
+      : r.pourquoi === 'rupture' ? 'le cerveau a redémarré ou sa position a été remise à zéro' : 'aucun calage sur le plan pour l\'instant';
+    $('srcTexte').textContent = 'En attente : ' + pourquoi + '.';
+    att.textContent = 'Le robot apparaîtra dès que la navigation aura donné sa position sur le plan (départ donné ou premier tour sur place).';
+    att.classList.add('vue');
+    return;
+  }
+  att.classList.remove('vue');
+  $('case').textContent = r.case;
+  const v = Math.abs(r.vit) / 10;
+  $('act').innerHTML = ({ avance: 'Avance à ' + nb(v) + ' cm/s', recule: 'Recule à ' + nb(v) + ' cm/s', tourne: 'Tourne sur place',
+    tour: 'Tour de mesure sur place', arret: 'À l\'arrêt' })[r.act] + (r.pc[0] || r.pc[1] ? ' — pare-chocs enfoncé' : '')
+    + '<small>tourné ' + versMot(r.cap) + '</small>';
+  const sc = r.src, mesure = sc.src === 'filtre' || sc.src === 'plan';
+  const depuis = sc.mm >= 30 ? ' · <b>' + longueur(sc.mm) + '</b> à l\'estime depuis' : ' · pas bougé depuis';
+  let t;
+  if (mesure) t = 'Calé à <b>' + hm(sc.h) + '</b> par un tour sur place' + (sc.note != null && sc.note < 0.6 ? ' (incertain)' : '') + depuis;
+  else t = ({ depart: 'Position de départ donnée à ', annonce: 'Position de départ donnée à ', pose: 'Position donnée par passage.py à ',
+              report: 'Position reprise de l\'enregistrement précédent à ' })[sc.src] + '<b>' + hm(sc.h) + '</b>, pas mesurée' + depuis;
+  $('srcTexte').innerHTML = t;
+  $('pastille').className = 'pastille ' + (mesure && sc.mm < 2500 && !(sc.note != null && sc.note < 0.6) ? 'sur' : 'estime');
+  let m = 'Capteur de distance : ' + (r.us > 0 ? longueur(r.us) + ' devant' : r.us === 0 ? 'rien à portée' : 'éteint');
+  m += ' · mode ' + ({ 1: 'passif', 2: 'passif', 3: 'Safe', 4: 'Full' }[r.mode] || r.mode);
+  if (r.q != null && r.qmax) m += ' · batterie ' + Math.round(100 * r.q / r.qmax) + ' %';
+  m += ' · ' + nb(r.mv / 1000, 1) + ' V';
+  const sn = O.get('seance'); if (sn && sn.nom) m += ' · ' + sn.nom;
+  $('mesures').textContent = m;
+}
+function majJournal() {
+  const J = O.get('journal') || [];
+  const ol = $('journal');
+  ol.innerHTML = J.slice().reverse().map((e, i) => '<li class="' + e.g + '" data-i="' + (J.length - 1 - i) + '"><i></i><span><time>' + e.h + '</time>' + echappe(e.x) + '</span></li>').join('');
+  const d = J[J.length - 1];
+  $('dernier').innerHTML = d ? '<time>' + d.h + '</time>' + echappe(d.x) : 'Journal de l\'essai : rien encore';
+}
+$('journal').onclick = ev => {
+  const li = ev.target.closest('li'); if (!li) return;
+  const e = (O.get('journal') || [])[+li.dataset.i];
+  if (e && e.u != null) { vue.suivre = false; vue.cx = e.u; vue.cy = e.v; if (vue.z < zSuivi()) vue.z = zSuivi(); majBoutons(); $('bas').classList.remove('ouvert'); sale = true; }
+};
+
+// ------------------------------------------------------------ le rejeu
+async function ordreRejeu(q) { try { await fetch('api/rejeu?' + q, { cache: 'no-store' }); } catch (err) { /* le prochain sondage le dira */ } }
+$('rJouer').onclick = () => { if (horloge) ordreRejeu('pause=' + (horloge.pause ? 0 : 1)); };
+$('rVitesse').onchange = e => ordreRejeu('vitesse=' + e.target.value);
+let glisse = false;
+$('rCurseur').oninput = () => { glisse = true; };
+$('rCurseur').onchange = e => { glisse = false; ordreRejeu('aller=' + (e.target.value / 1000)); };
+function majRejeu() {
+  const h = horloge, bar = $('rejeu');
+  bar.classList.toggle('vue', !!h && h.mode === 'rejeu');
+  if (!h || h.mode !== 'rejeu') return;
+  $('rJouer').textContent = h.pause ? '▶' : '⏸';
+  $('rHeure').textContent = h.h;
+  if (!glisse) $('rCurseur').value = Math.round(1000 * (h.t - h.t0) / Math.max(1, h.t1 - h.t0));
+  const sel = $('rVitesse');
+  if (document.activeElement !== sel && [...sel.options].some(o => +o.value === h.vitesse)) sel.value = String(h.vitesse);
+}
+
+// ------------------------------------------------------------ le sondage du serveur, quatre fois par seconde
+async function sonder() {
+  let delai = 250;
+  try {
+    const rep = await fetch('api/suite?e=' + E + '&v=' + V, { cache: 'no-store' });
+    if (!rep.ok) throw new Error(rep.status);
+    const d = await rep.json();
+    if (d.e !== E) { O.clear(); E = d.e; premiere = true; aff.ok = false; anim = null; vue.pret = vue.attente = false; }
+    let journal = false;
+    for (const [k, val] of Object.entries(d.obj)) {
+      if (val === null) { O.delete(k); continue; }
+      const neuf = !O.has(k);
+      O.set(k, val);
+      if (k === 'decor') { decor = val; borner(); }
+      else if (k === 'journal') journal = true;
+      else if (!premiere && k.startsWith('cal/') && !val.muet && (val.src === 'filtre' || val.src === 'plan')) {
+        anim = { genre: 'cal', o: val, t: performance.now() };
+        if (val.av && (val.d >= 20 || Math.abs(val.dc) >= 1)) bulle('Recalé en ' + val.case + ' : ' + cm(val) + ' ' + versMot(val.dir) + ', ' + nb(Math.abs(val.dc), 1) + '°', 'cal');
+        else bulle('Tour sur place en ' + val.case + ' : position confirmée', 'cal');
+      } else if (!premiere && neuf && k.startsWith('ct/')) {
+        anim = { genre: 'contact', o: val, t: performance.now() };
+        bulle('Contact du pare-chocs ' + (val.cote === 'devant' ? 'de face' : val.cote) + ' en ' + val.case, 'contact');
+      }
+    }
+    for (const k of [...O.keys()]) if (k.startsWith('t/') && +k.slice(2) >= d.nt) O.delete(k);
+    V = d.v; NT = d.nt; robot = d.robot; horloge = d.horloge;
+    if (panne) panne = false;
+    if (journal || premiere) majJournal();
+    premiere = false;
+    majTexte(); majRejeu();
+    sale = true;
+  } catch (err) {
+    panne = true; delai = 1500; majTexte();
+  }
+  setTimeout(sonder, delai);
+}
+majBoutons();
+sonder();
+</script>
+</body>
+</html>
