@@ -79,6 +79,6 @@ Données privées : le plan reste dans `plan_lidar/` (hors dépôt) et n'est cop
 
 Ce jour-là `explorer3.py` a reçu une étape de plus : après le filtre, la position est calée sur des tours déjà faits au même endroit (« repères »). La `pose` écrite dans le fichier des tours en tient compte, donc la carte aussi : en E15 elle montre 26 cm de correction, somme des 13 cm du filtre et des 13 cm des repères.
 
-5. **Ouverture au réseau de la maison**, à 14 h 21 : le serveur écoute sur `127.0.0.1` et sur l'adresse Wi-Fi du PC, pas sur ses trois autres cartes réseau ; la page, le plan et l'état répondent sur les deux ; une requête au nom d'un autre site reçoit 403. Essayé depuis le PC seulement.
+5. **Ouverture au réseau de la maison**, à 14 h 21 : le serveur écoute sur `127.0.0.1` et sur l'adresse Wi-Fi du PC, pas sur ses trois autres cartes réseau ; la page, le plan et l'état répondent sur les deux ; une requête au nom d'un autre site reçoit 403. Essayé depuis le PC, puis par l'utilisateur à 14 h 23 : la page s'affiche sur son téléphone (« Oui, elle s'affiche »).
 
-Pas encore vérifié : la page sur un vrai téléphone (seulement à la taille d'un téléphone, dans Edge et dans le navigateur de l'application), donc ni la traversée du pare-feu ni le confort au doigt ; les lignes `POSE=` (aucun fichier de ce genre n'existe encore) ; un redémarrage du cerveau en cours d'enregistrement ; une séance de plus d'une demi-heure.
+Pas encore vérifié : sur le téléphone, le déplacement et l'agrandissement au doigt, et un trajet entier suivi des yeux (l'utilisateur a seulement confirmé que la page s'affiche) ; les lignes `POSE=` (aucun fichier de ce genre n'existe encore) ; un redémarrage du cerveau en cours d'enregistrement ; une séance de plus d'une demi-heure.
