@@ -1010,3 +1010,65 @@ Accord de l'utilisateur : « Oui, installe la v9 ». Robot en C17, hors de sa ba
 - **Le trajet compté par le cerveau seul** finit à 14,5 cm de son départ après 6,0 m (2,4 %), alors que le robot est revenu à 8 cm de son point de départ d'après le filtre ; le matin, en v8, le même compte finissait à 75 cm après 26 m.
 
 **État à la fin** : firmware v9 sur la carte ; robot en C17, à 75 cm devant sa base, session fermée (`5`, `s`, `x`), capteur de distance au repos, batterie 1 807 mAh. La v10 (mouvements exécutés par le cerveau, § 33) est compilée et attend l'accord de l'utilisateur.
+
+## 35. Firmware v10 installé et essayé : les mouvements exécutés par le cerveau (2026-11-13, 12 h 09 à 12 h 30)
+
+Accord de l'utilisateur : « Oui, installe la v10 ». Robot en C17, hors de sa base, l'utilisateur à côté. Enregistrements : `mesures/exploration8_20261113_121304_*` (`_a_` : trajet de retour, `_b_` : boucle), `mesures/position_20261113_122943.*`. Outils écrits pour la séance : `outils/essai_mouv.py` (un mouvement à la fois, ce que le cerveau annonce et ce que montre le journal) et `outils/essai_cadence.py`.
+
+**Installation** par Wi-Fi à 12 h 09 : « Mise à jour réussie », carte revenue en 6 s, version affichée « v10 Nov 13 2026 11:53:11 », `/api/mouv` répond « repos ». Réglages du capteur de distance conservés.
+
+**Robot immobile, avant tout ordre de roues.**
+
+- Robot endormi : `rot=5` et `av=100` refusés (« le robot ne répond pas »), roues jamais mises en marche. Cap à 0,0° pendant 20 s, zéro du gyroscope retouché 100 fois par seconde.
+- Robot réveillé, en mode passif : `rot=5`, `av=100`, `av=-50` refusés (« le robot n'est pas en mode Safe (touche f) »).
+- En mode Safe : `rot=0.5` et `av=5` refusés (angle, distance trop petits) ; `stop` sans mouvement en cours : sans effet.
+- `/api/mouv` répond en 33 ms (médiane), 79 ms au plus.
+
+**Rotations** (16 menées à leur terme dans la séance, de 10° à 169°) : écart à l'arrêt complet de 0,5° en médiane, 1,1° au plus. Essais isolés : 30° → 30,3° ; −30° → −30,0° ; 10° → 10,4° ; −10° → −10,6° ; 151° → 151,9° en 3,5 s ; −43° → −43,5° ; 169° → 168,9° en 4,0 s. Le cerveau coupe les roues 1,2 à 1,6° avant le but et le robot finit sur son élan. Le matin, pilotées par le PC, les rotations dépassaient de 5° et, sur un retard du Wi-Fi, de 50°.
+
+**Avances** (19 menées à leur terme, de 100 à 893 mm) : distance trop longue de 3,9 mm en médiane, 7,2 mm au plus ; cap à l'arrivée à 0,6° du cap demandé en médiane, 2,0° au plus.
+
+| Demande | Chemin fait | Cap à l'arrivée | Écart de cap le plus grand en route | En travers | Vitesse réelle |
+|---|---|---|---|---|---|
+| 100 mm à 50 mm/s | 101,6 mm | −0,8° | 0,8° | 1 mm | 72 mm/s |
+| 500 mm à 100 mm/s | 503,2 mm | +0,1° | 1,4° | 4 mm | 117 mm/s |
+| 500 mm à 125 mm/s | 504,6 mm | −0,2° | 1,0° | 0 mm | 136 mm/s |
+| 500 mm à 150 mm/s | 500,8 mm | +1,2° | 3,8° | 17 mm | 146 mm/s à gauche, 151 à droite |
+| 300 mm à 135 mm/s, par `Pilote.avance` | 303,0 mm | +0,6° | 1,5° | 1 mm | 146 mm/s |
+
+Le matin (firmware v9, avance pilotée par le PC), le cap tournait de 8,6° par mètre, soit 4° sur 50 cm.
+
+**Changement de cap en roulant** (`av=600,cap=30`, par `Pilote.avance`) : 604 mm, cap +30,3°, virage pris en 2,8 s sans arrêt (roue intérieure à 95 mm/s, extérieure à 150 ; 13 °/s, puis de plus en plus doucement).
+
+**Vitesse réelle et tenue de cap.** Les vitesses réelles ci-dessus suivent la loi déjà mesurée le 10 (§ 22 : une vingtaine de mm/s de plus que demandé, puis un plafond vers 146 à 150). Elles ne dépendent pas du rythme des ordres : à 50 mm/s demandés, 70 à 74 mm/s réels que la flèche soit répétée 2, 5, 10 ou 20 fois par seconde (`essai_cadence.py`). En cours de séance j'avais annoncé le contraire à l'utilisateur (« 20 ordres par seconde font rouler plus vite ») : c'était faux, et corrigé aussitôt la mesure faite. Ce qui est nouveau : à 150 demandés les deux roues sont au plafond, la correction de cap ne peut plus accélérer une roue, et freiner l'autre n'a d'effet qu'une fois celle-ci descendue sous le plafond ; d'où 3,8° d'écart en route à 150, contre 1 à 2° à 125 et 135. `explorer3.py` ne demande donc plus que 135 mm/s quand le cerveau conduit (`V_CERVEAU`), ce qui donne 146 mm/s réels : rien n'est perdu.
+
+**Arrêts demandés** : `stop=1` pendant une avance à 117 mm/s : roues immobiles 0,16 s après l'envoi, 11 mm parcourus ; touche `5` pendant une rotation : 0,17 s, 5° d'élan ; `stop=1` pendant une rotation : 0,13 s, 3°.
+
+**Deux sécurités vues à l'œuvre sans les avoir cherchées.**
+
+- **Contact du pare-chocs gauche en D14**, à 12 h 22 min 13, à 145 mm/s, pendant une avance de 612 mm : réflexe du cerveau et mouvement interrompu (« pare-chocs touché »), robot arrêté 8 mm et 0,2 s après. Rien n'avait été vu : capteur de distance entre 1,29 et 1,47 m, capteurs optiques au repos (28 à 41). Le robot était au pixel (359, 90), cap 15° ; le programme place l'obstacle au pixel (364, 82), une dizaine de centimètres sous la bande grise que le plan montre en haut de D14 : quelque chose en dépasse, que le plan ne montre pas. Le matin le robot était passé 6 cm plus bas sans toucher. À demander à l'utilisateur ce que c'est.
+- Défaut du programme vu à cette occasion et corrigé : il a appliqué sa règle « quelque chose sur un passage déjà roulé : attendre 8 s » et le robot est resté **8,8 s appuyé contre l'obstacle** avant de reculer (26 cm). Après un contact, `explorer3.py` recule maintenant tout de suite ; l'attente ne vaut plus que pour un obstacle vu à distance.
+- **Arrêt du capteur de distance** : en C17, une avance de 67 mm vers l'encombrement à gauche de la base s'est arrêtée à 26 mm (« obstacle devant (capteur de distance) », 28 cm).
+
+**Trajets avec le pilote complet** (`explorer3.py`, options du matin, 135 mm/s demandés).
+
+- E12 → D14 → C17 : 3,8 m en 1,7 min, 4 tours sur place, le contact ci-dessus puis reprise, destination atteinte.
+- La boucle du matin, C17, E15, D12, E11, D14, C17 (D14 visé 11 cm plus bas, au pixel (368, 97)) : **7,5 m en 2,7 min, soit 46 mm/s** ; 6 tours sur place ; 7 rotations (539° en 14 s) et 9 avances (7,0 m en 51 s, 138 mm/s en moyenne), dont deux avec un vrai changement de cap en roulant (23° et 11°) ; aucun contact, aucun arrêt pour le cap, aucun arrêt imprévu. Le matin (t6, firmware v8) : 2,8 min, 45 mm/s, 14 rotations.
+- Où passe le temps de la boucle (162 s) : les tours sur place 75 s, soit 46 % (6 fois 12,5 s, dont 1,5 s de préparation) ; les mouvements 65 s, soit 40 % ; le reste (calcul du filtre, pauses entre deux ordres) 22 s.
+- Corrections du filtre aux six tours : 2 à 12 cm et 0 à 3,3°, du même ordre que le matin.
+- Le compte du cerveau seul finit à 41 cm de la position donnée par le filtre après 14,4 m et 4 337° tournés vers la gauche au total (dont 0,45 % manquent au gyroscope, soit 19° : c'est le PC qui corrige cette échelle).
+
+**Ce que ces mesures remplacent.**
+
+- § 33, « sur le vrai robot [le gain de vitesse] devrait être plus net » : **non**. La boucle prend 2,7 min contre 2,8. La v10 apporte autre chose : des gestes justes (rotation à 1° près, distance à 7 mm près), deux fois moins de rotations, plus aucun arrêt pour redresser le cap, et un arrêt qui ne dépend plus du Wi-Fi. Le temps part maintenant dans les tours sur place.
+- § 33, « `Pilote._mouvement` n'a tourné nulle part » : il a mené 27 mouvements sur le robot, dont un arrêté par le pare-chocs et un par le capteur de distance.
+- `simulateur.py` supposait un virage en roulant à 20 °/s : mesuré, 13 °/s puis de plus en plus doucement. Le simulateur est aligné sur la mesure (65 à 66 mm/s sur un circuit de 12 m, 62 en firmware 8).
+
+**Défauts vus, pas encore corrigés.**
+
+- Après une avance avec changement de cap, le robot arrive à côté du point visé, de 4 à 9 cm : le cerveau vise un cap, pas un point, et le virage décale la trajectoire. Il faut alors une rotation et quelques centimètres pour finir (mouvements 27 et 28), ou une rotation devenue inutile juste avant un tour (mouvement 35). Remède à proposer : une v11 où le cerveau vise le point lui-même, en recalculant son cap en route d'après sa position.
+- Chaque tour sur place commence par 1,5 s de préparation (zéro du gyroscope) qui ne sert plus depuis la v9.
+
+**Non vérifié** : ce qui se passe si le Wi-Fi se coupe pendant un mouvement ; les arrêts sur roue soulevée, sortie du mode Safe, durée maximale et robot bloqué (aucun ne s'est produit).
+
+**État à la fin** : firmware v10 sur la carte ; robot en C17, pixel (443, 61), cap 98°, face à sa base et à 65 cm d'elle ; session fermée (`5`, `s`, `x`) à 12 h 29, capteur de distance au repos (sécurité active, seuil 30 cm), vitesse remise à 150, batterie 1 752 mAh.

@@ -70,6 +70,9 @@ from pilote import Pilote
 
 DX = carto.DX
 RAYON = 170.0                      # mm, rayon du robot
+V_CERVEAU = 135                    # mm/s demandés au plus quand le cerveau exécute lui-même l'avance (firmware v10) : à 150 les roues
+                                   # sont à leur plafond (146 à 150 mm/s réels) et la tenue de cap ne peut plus que freiner une
+                                   # roue (2026-11-13 : 3,5° d'écart en route à 150 demandés, 1 à 2° à 125 et 135 ; journal § 35)
 PAS = (900.0, 700.0, 500.0)        # longueurs de trajet essayées, de la plus longue à la plus courte
 GARDE = {"mur": 230.0, "arete": 230.0, "echo": 200.0, "contact": 260.0, "devant": 230.0, "sombre": 260.0}
 ARRET_NET = ("Safe", "roue levée", "journal", "capteur de distance", "arrêt demandé")
@@ -406,8 +409,13 @@ class Exploration:
                             # le couloir) : on attend et on réessaie, sans le noter sur le plan ni chercher un détour
                             attentes += 1
                             essai -= 1
-                            self.dire(f"    quelque chose sur un passage déjà roulé ({raison}) : attente de 8 s, puis nouvel essai")
-                            self.dormir(8.0)
+                            if "pare-chocs" in str(raison):
+                                # un contact : on ne reste pas appuyé contre ce qu'on a touché (8,8 s le 2026-11-13 en D14) ;
+                                # le recul et le tour sur place d'apres_echec, juste après, laissent le temps de s'écarter
+                                self.dire(f"    contact sur un passage déjà roulé ({raison}) : recul tout de suite, puis nouvel essai")
+                            else:
+                                self.dire(f"    quelque chose sur un passage déjà roulé ({raison}) : attente de 8 s, puis nouvel essai")
+                                self.dormir(8.0)
                         else:
                             self.plan.fermer(ou, ov)
                     ici, compte = self.apres_echec(ici, {"phi": phi, "genre": "cible"}, raison)
@@ -603,7 +611,7 @@ class Exploration:
                     return False, raison
                 continue
             i0 = len(self.p.lignes)
-            self.regler_vitesse(self.a.vitesse)
+            self.regler_vitesse(min(self.a.vitesse, V_CERVEAU) if cerveau else self.a.vitesse)
             if getattr(self.a, "fluide", False):                # d'un seul tenant jusqu'au point, ou jusqu'à ce que le cap ait tourné de 5°
                 r = self.avancer(d_trait, marge_mm=400.0 if connu else 600.0, cap_tol=max(5.0, abs(derive) * d_trait + 4.0),
                                  vide_min=self.a.vide_min, vide_stop=self.a.vide_min, cap_rel=(err if cerveau else 0.0))

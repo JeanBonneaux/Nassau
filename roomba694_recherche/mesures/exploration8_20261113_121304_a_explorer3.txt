@@ -1,0 +1,18 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (290, 112), cap 16°
+[  0.2 min]     filtre : position corrigée de (+14, -10) mm et -3.4° ; note 0.81, étalement 146 mm et 7.8°, gyroscope × 1.0045
+[  0.2 min] station 0 : 5 paliers, 2 lignes de murs, axes de la pièce 61.5°
+[  0.2 min] cibles reçues (série 1) : [(368, 91), (442, 72)]
+[  0.2 min]   vers la cible (368, 91) du plan : 2 étapes
+[  0.4 min]     quelque chose sur un passage déjà roulé (alarme pendant une avance : pare-chocs gauche) : attente de 8 s, puis nouvel essai
+[  0.6 min]     arrêté : alarme pendant une avance : pare-chocs gauche ; robot en (6783, 6461)
+[  0.8 min]     filtre : position corrigée de (-6, +30) mm et +2.6° ; note 1.00, étalement 207 mm et 7.7°, gyroscope × 1.0046
+[  0.8 min] station 1 (là où le robot s'est arrêté) en (6533, 6433), 4 paliers
+[  0.8 min]   vers la cible (368, 91) du plan : 1 étapes
+[  1.2 min]     filtre : position corrigée de (-6, -60) mm et -2.6° ; note 0.94, étalement 204 mm et 9.0°, gyroscope × 1.0045
+[  1.2 min] station 2 (vers une cible) en (6934, 6416) : 5 paliers
+[  1.2 min]   cible (368, 91) atteinte
+[  1.2 min]   vers la cible (442, 72) du plan : 2 étapes
+[  1.7 min]     filtre : position corrigée de (-48, +110) mm et +1.7° ; note 0.86, étalement 325 mm et 10.5°, gyroscope × 1.0046
+[  1.7 min] station 3 (vers une cible) en (8297, 6912) : 9 paliers
+[  1.7 min]   cible (442, 72) atteinte
+[  1.7 min] fin : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 4 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 10 sauts, 1 trajets arrêtés, 1 obstacles touchés ou vus devant | 3.8 m | batterie 1769 mAh

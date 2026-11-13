@@ -388,13 +388,16 @@ class RobotSimule(Pilote):
         l = l0
         while not (alarme or raison):
             derive = 0.004 * v * dt * (1.0 + self.rng.gauss(0.0, 0.5))                                   # tire à gauche : 4° par mètre
-            if self.firmware >= 10:                                  # le cerveau tient le cap : il rejoint le cap visé à 20 °/s au plus
+            if self.firmware >= 10:
+                # Le cerveau tient le cap. Mesuré sur le robot le 2026-11-13 (journal_wifi.md § 35) : il rejoint le cap visé à
+                # 13 °/s au plus (la roue extérieure est à son plafond, l'autre freinée), puis de plus en plus doucement
+                # (environ 1 °/s par degré d'écart) ; pendant le virage le robot avance moins vite (122 mm/s pour 146).
                 ecart_cap = (cap0 + cap_rel) - self.bcap
-                derive = max(-20.0 * dt, min(20.0 * dt, ecart_cap)) + self.rng.gauss(0.0, 0.02)
+                derive = max(-13.0 * dt, min(13.0 * dt, ecart_cap * 1.0 * dt)) + self.rng.gauss(0.0, 0.02)
                 cap_tol = 1e9
             self._tourner(math.radians(derive))
             self.rot_dps = derive / dt
-            ds = v * dt
+            ds = (v - (117.5 * abs(math.radians(derive)) / dt if self.firmware >= 10 else 0.0)) * dt
             P2 = np.array([self.x + ds * math.cos(self.th), self.y + ds * math.sin(self.th)])
             c = self.monde.contact(P2)
             if c is not None:
