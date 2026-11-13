@@ -1096,7 +1096,7 @@ Franchissement : robot placé à l'estime dans l'axe (2,2 m libres droit devant,
 
 **Arrivée.** À 27 cm du but, contact du pare-chocs droit (13 h 05, 94 mm/s, arrêt en 4 mm, appui de 0,14 s : l'objet a cédé ou le robot a rebondi ; capteur optique avant droit à 373 juste avant) : un coin de meuble ou un pied de chaise à la limite de J10 et K10. Recul de 12 cm, regards au capteur, contournement par le sud-ouest en deux avances (24 et 21 cm). Tour sur place final : objets fins à 18 à 20 cm du centre du robot au nord et à l'ouest-nord-ouest (2 à 3 cm de sa coque), un autre à 25 cm au sud-sud-ouest, une grande surface à 70 cm à l'ouest. Je n'ai pas avancé davantage.
 
-**Où est le robot.** À l'estime depuis le dernier calage : pixel (234, 256). Le filtre, sur le tour final : pixel (240, 251), case K10 à 3 cm près, note 0,52, étalement 38 cm (les objets proches ne sont pas sur le plan). Les obstacles vus ou touchés à l'ouest de la porte (bout du mur, chant du battant, coin de meuble) sont tous 5 à 10 pixels plus au nord sur le plan que là où l'estime les place. Position retenue : pixel (236, 251), **en K9, à 5 cm de la limite avec K10**, à 10 cm près. Aucun autre juge que les capteurs du robot.
+**Où est le robot.** À l'estime depuis le dernier calage : pixel (234, 256). Le filtre, sur le tour final : pixel (240, 251), case K10 à 3 cm près, note 0,52, étalement 38 cm (les objets proches ne sont pas sur le plan). Les obstacles vus ou touchés à l'ouest de la porte (bout du mur, chant du battant, coin de meuble) sont tous 5 à 10 pixels plus au nord sur le plan que là où l'estime les place. Position retenue : pixel (236, 251), **en K9, à 5 cm de la limite avec K10**, à 10 cm près. Aucun autre juge que les capteurs du robot. **Corrigé au § 37 : l'utilisateur a vu le robot en K10 ; c'est le filtre qui avait raison.**
 
 **Ce que ces mesures remplacent ou apprennent.**
 
@@ -1107,4 +1107,33 @@ Franchissement : robot placé à l'estime dans l'axe (2,2 m libres droit devant,
 
 **Non fait, non vérifié** : le retour ; `passage.py` suit la position à l'estime et ne connaît pas le plan ; le seuil de 15° n'a tourné qu'en simulation.
 
-**État à la fin** : robot en K9 (pixel (236, 251)), cap 193° (vers la gauche), immobile entre des objets fins ; session fermée (`5`, `s`, `x`) à 13 h 10, capteur de distance au repos, vitesse 150, batterie 1 685 mAh ; 8,3 m parcourus depuis C17, mode Safe jamais quitté, sol clair partout (signal le plus bas : 2 453). Pour revenir : le même passage en sens inverse (se remettre dans l'axe à l'estime, regarder, passer), puis la porte H12 en visant u = 305, robot aligné avant d'avancer.
+**État à la fin** : robot annoncé en K9 (pixel (236, 251)), en réalité en K10 (§ 37), cap 193° (vers la gauche), immobile entre des objets fins ; session fermée (`5`, `s`, `x`) à 13 h 10, capteur de distance au repos, vitesse 150, batterie 1 685 mAh ; 8,3 m parcourus depuis C17, mode Safe jamais quitté, sol clair partout (signal le plus bas : 2 453). Pour revenir : le même passage en sens inverse (se remettre dans l'axe à l'estime, regarder, passer), puis la porte H12 en visant u = 305, robot aligné avant d'avancer.
+
+## 37. Le robot était en K10, pas en K9 ; retour de K10 à C17 sans contact (2026-11-13, 13 h 22 à 13 h 33)
+
+Message de l'utilisateur : « tu es bien en K10, devant ma chaise », et « continue dans cette session pour la navigation ». Il a aussi demandé une session à part pour une carte qui suit le robot en direct : elle est lancée, en lecture seule vis-à-vis du robot, et n'écrit que dans `code/carte_vivante/`. Enregistrements du retour : `mesures/exploration10_20261113_132251_*`, `mesures/position_20261113_133311.*`. Carte : `plan_lidar/carte_grille_20261113_retour*.png` (hors dépôt).
+
+**Ce que son observation remplace.** Le § 36 retenait le pixel (236, 251), « en K9 à 5 cm de la limite », d'après l'estime et les obstacles. C'était faux : le robot était en K10. Le filtre, qui le plaçait au pixel (240, 251) avec une note de 0,52 et 38 cm d'étalement, avait raison ; l'estime était 10 cm trop à l'ouest, et je l'avais préférée. K9 est occupée par sa chaise : les objets fins vus à 2 ou 3 cm de la coque en sont les pieds.
+
+**Retour, à l'estime depuis la position du filtre** (`outils/passage.py`, départ au pixel (240, 251), cap 216°).
+
+- Sortie par le chemin d'arrivée, en trois avances (22, 25 et 15 cm), sans contact.
+- À l'ouest du passage, regards vers l'est : le bout du mur à 34 cm au cap 315° (pixel (281, 250) : le coin que montre le plan), le chant du battant à 34 cm au cap 49° (pixel (281, 225) : c'est bien le « point » isolé du plan, à 5 pixels près). Largeur mesurée de ce côté : 49 cm (47 à l'aller).
+- Un objet immobile vu à 89 cm droit devant, de l'autre côté du passage (pixel (320, 244) environ). À l'aller le robot s'était arrêté tout près de lui (quelques centimètres, d'après les positions) sans le voir : aucun capteur ne regarde sur le côté.
+- Passage vers l'est : 56 cm à 50 mm/s demandés, arrêt avant l'objet ; aucun contact, capteurs optiques à 53 au plus.
+- Porte H12 vue du sud : vue dégagée de 89° à 113° (3,6 m), montant est à 60 cm au cap 60° (pixel (322, 187) : le liseré gris du plan), montant ouest à 53 cm vers 133° (le coin (290, 193) du plan). **Environ 62 cm entre les deux montants.** Passée en visant u = 304 : 72 cm à 50 mm/s demandés, aucun contact. Le cap a glissé de 3,4° pendant cette avance : à 50 mm/s demandés la tenue de cap est molle.
+- En G12, premier tour sur place d'`explorer3.py` : le filtre corrige de 4 cm et 0,3° (note 0,83). **Après 2,6 m à l'estime, passage et porte compris, l'estime et le filtre sont d'accord à 4 cm près** : cela confirme aussi la position du filtre en K10.
+
+**De G12 à C17** (`explorer3.py`, options habituelles, avec le pivot dès 15° d'écart du § 36, essayé ici pour la première fois sur le robot) : E12, D14, C17 ; 3,9 m en 1,7 min, 4 tours sur place, 6 rotations et 6 avances, aucun contact, aucun arrêt imprévu. En D14 le filtre a corrigé de 22 cm et 4,8° avec une note médiocre (0,59) ; l'arrivée en C17 s'est faite quand même à 2 cm de la position visée d'après le tour suivant (note 0,74, étalement 41 cm).
+
+**Bilan du retour** : 6,6 m en 10 minutes (regards compris), aucun contact en mouvement, mode Safe jamais quitté, sol clair partout. Le journal montre le pare-chocs droit enfoncé 0,7 s à 13 h 23 min 05, robot immobile en mode passif, juste après le réveil et avant tout mouvement : cause inconnue (la chaise, ou une main).
+
+**Leçons.**
+
+- Quand le filtre et l'estime divergent, c'est le filtre qu'il faut croire, même avec une note médiocre, et il faut dire qu'ils divergent au lieu de trancher. D'où venaient les 10 cm d'écart de l'estime à l'aller (glissement au moment du contact avec le coin de meuble ?) : non établi.
+- La méthode de `passage.py` (regards cap par cap à l'arrêt, mise dans l'axe, ligne droite lente) a passé les 47 cm et la porte dans les deux sens sans contact. Les deux seuls contacts de la journée dans ces endroits ont eu lieu sous la conduite d'`explorer3.py` ou au bout d'une avance non regardée.
+- Le robot ne voit rien sur ses côtés : un objet peut être à 10 cm de sa coque sans qu'il le sache.
+
+**À faire, pas fait** : dans `Plan.chemin`, le trait vert efface encore la distance aux murs ; donner à `explorer3.py` la méthode de `passage.py` pour les passages étroits ; l'accostage sur la base n'a jamais été essayé (touche `h` du firmware : l'ordre « rentre à la base » du robot, à ne lancer qu'avec l'accord de l'utilisateur).
+
+**État à la fin** : robot en C17, pixel (440, 71), cap 67°, à 85 cm devant sa base ; session fermée (`5`, `s`, `x`) à 13 h 33, capteur de distance au repos, vitesse 150, batterie 1 648 mAh.
