@@ -556,7 +556,7 @@ class Exploration:
             err = cap_cible - q[2]
             if abs(err) <= tol:
                 return True, None
-            if getattr(self.a, "fluide", False) and abs(err) > 12.0:   # d'un seul tenant ; les petites retouches restent des sauts courts
+            if getattr(self.a, "fluide", False) and (abs(err) > 12.0 or self.p.sait_mouv()):   # d'un seul tenant ; sans le firmware v10, les petites retouches restent des sauts courts
                 r = self.tourner(err)
             else:
                 r = self.saut("4" if err > 0 else "6", min(1.3, max(0.10, abs(err) / self.rot_dps - 0.04)), lb_repos=5000, lb_max=5000,
@@ -590,9 +590,14 @@ class Exploration:
             # de l'autre côté, de la moitié de ce qu'il va tourner, pour que l'arc finisse sur le point au lieu de
             # s'arrêter tous les 40 cm pour se redresser. La dérive est mesurée sur les avances précédentes.
             derive = getattr(self, "derive", 0.0) if (fluide and not getattr(self.a, "sans_visee", False)) else 0.0
+            # Firmware v10 : le cerveau tient le cap lui-même et sait le changer en roulant. Plus de visée à côté, et le
+            # robot ne s'arrête pour pivoter que si le point est à plus de 35° de son axe.
+            cerveau = fluide and self.p.sait_mouv()
+            if cerveau:
+                derive = 0.0
             a_cote = max(-4.0, min(4.0, 0.5 * derive * max(0.0, d_trait)))      # 4° au plus : le capteur de distance doit continuer de regarder le chemin
             err = ecart(math.degrees(math.atan2(dy, dx)) - a_cote - q[2])
-            if abs(err) > (4.0 if d > 120 else 8.0):
+            if abs(err) > ((35.0 if d > 250 else 12.0) if cerveau else (4.0 if d > 120 else 8.0)):
                 ok, raison = self.tourner_vers(q[2] + err)
                 if not ok:
                     return False, raison
@@ -601,7 +606,7 @@ class Exploration:
             self.regler_vitesse(self.a.vitesse)
             if getattr(self.a, "fluide", False):                # d'un seul tenant jusqu'au point, ou jusqu'à ce que le cap ait tourné de 5°
                 r = self.avancer(d_trait, marge_mm=400.0 if connu else 600.0, cap_tol=max(5.0, abs(derive) * d_trait + 4.0),
-                                 vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
+                                 vide_min=self.a.vide_min, vide_stop=self.a.vide_min, cap_rel=(err if cerveau else 0.0))
                 if r.get("avance_mm", 0.0) >= 300.0 and "rot_gyro" in r:
                     self.derive = max(-0.012, min(0.012, 0.7 * derive + 0.3 * r["rot_gyro"] / r["avance_mm"]))
             else:
@@ -1181,7 +1186,14 @@ class Exploration:
             if not getattr(a, "sans_filtre", False):
                 import localiser
                 sur = getattr(a, "depart_sur", False)
-                self.filtre = localiser.Filtre(self.plan, n=getattr(a, "filtre_n", 8000), k_gyro=a.k_gyro)
+                # À partir du firmware v9 le gyroscope compte aussi les rotations lentes quand le robot roule : le filtre
+                # ne doit plus les reprendre sur les roues (elles seraient comptées deux fois).
+                try:
+                    ver = str(json.loads(self.lire("/api/state")).get("ver", ""))
+                    n_ver = int("".join(c for c in ver.split()[0] if c.isdigit()) or 8)
+                except (ValueError, IndexError, RuntimeError):
+                    n_ver = 8
+                self.filtre = localiser.Filtre(self.plan, n=getattr(a, "filtre_n", 8000), k_gyro=a.k_gyro, roues_si_muet=n_ver < 9)
                 self.filtre.demarrer(u, v, cap, sigma_mm=100.0 if sur else 250.0, sigma_cap=6.0 if sur else 15.0)
                 self.i_filtre = max(0, len(self.p.lignes) - 1)
                 self.dire(f"localisation : filtre à {self.filtre.n} hypothèses autour du pixel ({u:.0f}, {v:.0f}), cap {cap:.0f}°")

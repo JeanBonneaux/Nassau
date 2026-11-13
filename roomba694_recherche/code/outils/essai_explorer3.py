@@ -62,12 +62,13 @@ def main():
     q.add_argument("--tour-v", type=int, default=30)
     q.add_argument("--tour-tous-les", type=float, default=600.0)
     q.add_argument("--sans-z", action="store_true")
+    q.add_argument("--firmware", type=int, default=8, help="version du firmware simulé : 10 = avance et rotation exécutées par le cerveau")
     q.add_argument("--sans-visee", action="store_true")
     q.add_argument("--enchainer", action="store_true")
     q.add_argument("--cibles-seules", action="store_true")
     b = q.parse_args()
     monde = sim.Monde(**sim.MONDES[b.monde]())
-    robot = sim.RobotSimule(monde, graine=b.graine, echelle_gyro=b.k_vrai)
+    robot = sim.RobotSimule(monde, graine=b.graine, echelle_gyro=b.k_vrai, firmware=b.firmware)
     prefixe = os.path.join(b.dossier, f"sim_{b.monde}_{b.graine}")
     robot.reglage = b.vitesse
     a = types.SimpleNamespace(adresse="sim", prefixe=prefixe, stations=b.stations, minutes=b.minutes, vitesse=b.vitesse, tour_v=b.tour_v, vide_min=150.0,

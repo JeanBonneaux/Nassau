@@ -227,7 +227,8 @@ class Monde:
 class RobotSimule(Pilote):
     """Le robot et son cerveau, simulés. Mêmes méthodes que Pilote ; l'horloge avance toute seule (maintenant, dormir)."""
 
-    def __init__(self, monde, graine=1, echelle_gyro=1.0015, vitesse=75):
+    def __init__(self, monde, graine=1, echelle_gyro=1.0015, vitesse=75, firmware=8):
+        self.firmware = firmware                   # 10 : avance et rotation exécutées par le cerveau (cap tenu, arrêt exact)
         self.rng = random.Random(graine)
         self.monde = monde
         self.k_vrai = echelle_gyro                 # rotation vraie = k × rotation comptée par le cerveau
@@ -367,7 +368,10 @@ class RobotSimule(Pilote):
                 "ma_min": -300, "lignes": n, "t0": l0["pc_s"], "t1": l1["pc_s"]}
 
     # ------------------------------------------------------------ une avance d'un seul tenant, comme Pilote.avance
-    def avance(self, dist_mm, marge_mm=400, cap_tol=5.0, lb_repos=150, lb_max=400, vide_min=1500, vide_stop=0, duree_max=25.0):
+    def sait_mouv(self):
+        return self.firmware >= 10
+
+    def avance(self, dist_mm, marge_mm=400, cap_tol=5.0, lb_repos=150, lb_max=400, vide_min=1500, vide_stop=0, duree_max=25.0, cap_rel=0.0):
         l0 = self._ligne()
         refus = self.controle(l0, avance=True, marge_mm=min(marge_mm, dist_mm + 220.0), lb_repos=lb_repos, vide_min=vide_min)
         if refus:
@@ -384,6 +388,10 @@ class RobotSimule(Pilote):
         l = l0
         while not (alarme or raison):
             derive = 0.004 * v * dt * (1.0 + self.rng.gauss(0.0, 0.5))                                   # tire à gauche : 4° par mètre
+            if self.firmware >= 10:                                  # le cerveau tient le cap : il rejoint le cap visé à 20 °/s au plus
+                ecart_cap = (cap0 + cap_rel) - self.bcap
+                derive = max(-20.0 * dt, min(20.0 * dt, ecart_cap)) + self.rng.gauss(0.0, 0.02)
+                cap_tol = 1e9
             self._tourner(math.radians(derive))
             self.rot_dps = derive / dt
             ds = v * dt
@@ -406,7 +414,7 @@ class RobotSimule(Pilote):
             fait = math.hypot(self.bx - x0, self.by - y0)
             if alarme:
                 break
-            if fait >= dist_mm - 18.0:
+            if fait >= dist_mm - (4.0 if self.firmware >= 10 else 18.0):
                 raison = "distance"
             elif abs(self.bcap - cap0) > cap_tol:
                 raison = "cap"
@@ -414,7 +422,7 @@ class RobotSimule(Pilote):
                 raison = f"obstacle à {l['us_mm']:.0f} mm devant"
             elif self.t - t0 > duree_max:
                 raison = "durée"
-        if not alarme:                                               # le temps que l'ordre d'arrêt arrive
+        if not alarme and self.firmware < 10:                        # le temps que l'ordre d'arrêt arrive (le cerveau, lui, s'arrête au but)
             P2 = np.array([self.x + 0.1 * v * math.cos(self.th), self.y + 0.1 * v * math.sin(self.th)])
             if self.monde.contact(P2) is None:
                 self._avancer(0.1 * v)
@@ -440,13 +448,14 @@ class RobotSimule(Pilote):
         vit = 2 * v / 235.0 * 57.29578                               # degrés par seconde
         signe = 1.0 if angle_deg > 0 else -1.0
         dt = 0.05
-        while abs(self.bcap - cap0) + vit * 0.10 < abs(angle_deg) and self.t - t0 < duree_max:
+        retard = 0.01 if self.firmware >= 10 else 0.10           # le cerveau mesure et s'arrête lui-même : un degré près
+        while abs(self.bcap - cap0) + vit * retard < abs(angle_deg) and self.t - t0 < duree_max:
             self._tourner(math.radians(signe * vit * dt) * (1.0 + self.rng.gauss(0.0, 0.03)))
             self.rot_dps = signe * vit
             self.dormir(dt)
             self._ligne()
         self.rot_dps = 0.0
-        self._tourner(math.radians(signe * vit * 0.08))               # le temps que l'ordre d'arrêt arrive
+        self._tourner(math.radians(signe * vit * (0.0 if self.firmware >= 10 else 0.08) + self.rng.gauss(0.0, 0.5)))   # le temps que l'ordre d'arrêt arrive
         self.dormir(0.4)
         self._ligne()
         return {"touche": "4" if signe > 0 else "6", "duree_ordre": round(self.t - t0, 2), "alarme": None, "raison": "angle",
@@ -464,7 +473,7 @@ class RobotSimule(Pilote):
 
     def etat(self):
         self.reflexe["verrou"] = self.verrou
-        return {"driving": False, "speed": self.reglage,
+        return {"driving": False, "speed": self.reglage, "ver": f"v{self.firmware} simulation",
                 "robot": {"ok": True, "q": int(self.q), "qmax": 2068, "mode": self.mode, "bump": list(self.pc), "base": False},
                 "pose": {"x": round(self.bx), "y": round(self.by), "cap": round(self.bcap, 1)}, "reflexe": dict(self.reflexe)}
 

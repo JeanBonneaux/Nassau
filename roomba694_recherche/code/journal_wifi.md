@@ -971,3 +971,29 @@ Du 10 au 13, sur ce robot : de 16 à 21 mm/s à 45 mm/s. Sur les trajets de 3 m,
 **État à la fin** : robot en C17, à 75 cm devant sa base, nez vers le haut-droite ; session fermée (`5`, `s`, `x`), capteur de distance au repos ; batterie 1 828 mAh. À remettre sur sa base à la main.
 
 **Suite proposée** : une version 9 du firmware, avec l'accord de l'utilisateur — avance et rotation exécutées par le cerveau lui-même (arrêt exact malgré le Wi-Fi), roues gauche et droite commandées séparément pour tenir le cap en roulant, échelle du gyroscope corrigée et zone morte à l'arrêt seulement ; puis le même essai par la porte de H12 et le couloir.
+
+## 33. Firmware v9 et v10 préparés : écrits et compilés, pas encore installés (2026-11-13, 11 h 45 à 12 h 10)
+
+L'utilisateur a dit « Oui, prépare la v9 ». Sa consigne demande des changements de firmware petits et un à la fois : ce qui était annoncé comme « la v9 » est donc préparé en deux versions, à installer et vérifier l'une après l'autre, avec son accord à chaque fois. **Rien n'a été envoyé au cerveau, qui tourne toujours en v8.** Binaires : `code/roomba694_wifi/build/roomba694_v9.bin` et `roomba694_v10.bin` (dossier hors du dépôt).
+
+**v9 — le gyroscope seulement** (`roomba694_wifi.ino`, tâche `imuTask` ; 1 129 854 octets, 86 %).
+
+- La zone morte de 0,3 °/s ne sert plus qu'à l'arrêt : tant qu'un ordre de roues est en cours, et une demi-seconde après, toute rotation mesurée entre dans le cap (§ 31 : le gyroscope se taisait sur 14 % des lignes où le robot roulait).
+- À l'arrêt complet (aucun ordre de roues depuis 1,5 s, rotation mesurée dans la zone morte), le zéro du gyroscope suit lentement la mesure (constante de temps 2,5 s). C'est ce que recommandait l'audit du firmware ; sans cela, le glissement du zéro (10° par minute le 10) entrerait dans le cap dès que le robot roule.
+- `/api/state` : `imu.biais` (zéro sur l'axe vertical, °/s) et `imu.suivis`.
+- Aucun ordre de roues ni aucune sécurité n'est modifié. L'échelle du gyroscope (1,0045) reste corrigée sur le PC, qui l'estime en route.
+
+**v10 — les mouvements exécutés par le cerveau** (nouveau fichier `mouv.ino`, `/api/mouv` ; 1 141 094 octets, 87 %).
+
+- `/api/mouv?av=MM[&v=][&cap=DEG]` : avance de MM mm (2 m au plus ; négatif : recul, 30 cm au plus) en tenant le cap au gyroscope, les deux roues commandées séparément 20 fois par seconde ; `cap` change le cap en roulant (45° au plus) ; départ progressif, ralentissement dans les huit derniers centimètres, arrêt par le cerveau. `/api/mouv?rot=DEG` : rotation sur place, ralentie dans les trente derniers degrés. `/api/mouv?stop=1`. `/api/mouv` : état.
+- Sécurités : celles des flèches et du tour sur place. Refus au départ si le robot est muet, hors mode Safe, une roue soulevée, le pare-chocs enfoncé ou un choc non dégagé (sauf pour un recul), un obstacle sous le seuil du capteur de distance (avance), les roues déjà en marche. En route : les mêmes causes, une durée maximale, un robot qui n'avance pas ou ne tourne pas. Le réflexe pare-chocs de la v6 et l'arrêt du capteur de distance restent actifs et inchangés ; toute touche d'arrêt, de roues ou de mode interrompt le mouvement. Le plafond de 150 mm/s de `driveDirect` s'applique.
+- Ce qui change pour la sécurité, à dire nettement : si le Wi-Fi se coupe pendant un mouvement, le robot ne s'arrête plus au bout de 1,5 s ; il va au bout du mouvement demandé (2 m au plus), sous la garde de ses réflexes. Le tour sur place se comporte déjà ainsi.
+- La v10 suppose la v9 : pour tenir le cap contre une dérive lente, il faut que le gyroscope la voie.
+
+**Côté PC** : `Pilote.avance` et `Pilote.tourne` passent par `/api/mouv` quand le cerveau le propose (`Pilote.sait_mouv`), et gardent l'ancienne façon sinon ; le PC continue de surveiller le journal et envoie `stop` pour ses propres arrêts (capteurs optiques, sol sombre, obstacle dans sa marge). Avec la v10, `aller_a` ne s'arrête pour pivoter que si le point est à plus de 35° de l'axe du robot : en dessous, le cerveau change de cap en roulant. Le filtre de localisation ne reprend plus les rotations lentes sur les roues à partir de la v9 (elles seraient comptées deux fois). `simulateur.py` : `firmware=10` simule ces mouvements.
+
+**Simulation** (circuit de 20 m, trois tirages) : firmware 8, 70 à 71 mm/s ; firmware 10, 73 à 74 mm/s ; erreurs de position inchangées (15 à 30 mm), aucun contact. Le gain simulé est faible parce que le robot simulé ne tire que de 4° par mètre et que sa liaison n'a jamais de retard ; sur le vrai robot (5 à 13° par mètre, une seconde de retard par moments) il devrait être plus net. À mesurer.
+
+**Non vérifié** : aucune ligne de la v9 ni de la v10 n'a tourné sur la carte ; `Pilote._mouvement` n'a tourné nulle part (le simulateur remplace `avance` et `tourne` en entier).
+
+**Ordre d'installation proposé, chaque étape avec l'accord de l'utilisateur** : (1) v9 par Wi-Fi, robot hors de sa base et immobile : version affichée, cap stable une minute, `imu.biais` qui bouge peu, un tour sur place normal ; puis un trajet court déjà fait le matin, pour comparer. (2) v10 : robot immobile, `/api/mouv` répond, un mouvement demandé en mode passif est refusé ; puis, avec lui à côté, une rotation de 30°, une avance de 10 cm, une avance de 50 cm, et la boucle de 7,5 m.

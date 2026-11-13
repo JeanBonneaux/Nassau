@@ -134,8 +134,66 @@ class Pilote:
                 return f"obstacle à {l['us_mm']:.0f} mm devant (marge {marge_mm} mm)"
         return None
 
+    # ------------------------------------------------------------ mouvements exécutés par le cerveau (firmware v10)
+    def sait_mouv(self):
+        """le cerveau sait-il exécuter lui-même une avance ou une rotation (/api/mouv, firmware v10) ?"""
+        if getattr(self, "_mouv", None) is None:
+            try:
+                self._mouv = "etat" in json.loads(self.get("/api/mouv"))
+            except Exception:
+                self._mouv = False
+        return self._mouv
+
+    def _mouvement(self, requete, recul=False, lb_max=400, vide_stop=0, marge_mm=0, dist_mm=0.0, duree_max=40.0):
+        """Demande un mouvement au cerveau et le surveille jusqu'à sa fin. Le cerveau s'arrête de lui-même au but, sur
+        le pare-chocs, une roue levée, la perte du mode Safe ou un obstacle sous son seuil ; le PC ajoute ses propres
+        arrêts (capteurs optiques, sol sombre, obstacle dans la marge) en envoyant stop. Même dictionnaire que saut()."""
+        i0 = len(self.lignes) - 1
+        l0 = self.lignes[i0]
+        t0 = time.time()
+        m = json.loads(self.get("/api/mouv?" + requete))
+        if m.get("etat") != 1:
+            return {"refus": str(m.get("raison") or m.get("texte") or "mouvement refusé par le cerveau")}
+        alarme = raison = None
+        vu = i0
+        while True:
+            self.lire()
+            for l in self.lignes[vu + 1:]:
+                alarme = self.alarme(l, lb_max=lb_max, recul=recul, vide_stop=vide_stop)
+                if alarme:
+                    break
+                if marge_mm:
+                    fait = math.hypot(l["x_mm"] - l0["x_mm"], l["y_mm"] - l0["y_mm"])
+                    if 0 < l["us_mm"] < min(marge_mm, dist_mm - fait + 220.0):
+                        raison = f"obstacle à {l['us_mm']:.0f} mm devant"
+                        break
+            vu = len(self.lignes) - 1
+            if alarme or raison or time.time() - t0 > duree_max:
+                self.get("/api/mouv?stop=1")
+                break
+            m = json.loads(self.get("/api/mouv"))
+            if m.get("etat") != 1:
+                break
+            time.sleep(0.05)
+        t_stop = time.time()
+        self.immobile()
+        self.lire()
+        m = json.loads(self.get("/api/mouv"))
+        seg = self.lignes[i0:]
+        dit = str(m.get("raison") or "")
+        if m.get("etat") == 3 and not alarme and not raison:
+            if "obstacle devant" in dit:
+                raison = f"obstacle à {seg[-1]['us_mm']:.0f} mm devant"
+            elif "arrêt demandé" not in dit:
+                alarme = dit                                    # arrêt décidé par le cerveau : pare-chocs, roue, mode Safe, robot bloqué
+        return {"duree_ordre": round(t_stop - t0, 2), "alarme": alarme, "raison": raison or dit,
+                "avance_mm": round(math.hypot(seg[-1]["x_mm"] - seg[0]["x_mm"], seg[-1]["y_mm"] - seg[0]["y_mm"]), 1),
+                "rot_gyro": round(seg[-1]["cap_pos"] - seg[0]["cap_pos"], 2), "us_avant": seg[0]["us_mm"], "us_apres": seg[-1]["us_mm"],
+                "lb_max": max(max(l[c] for c in LB) for l in seg), "vide_min": min(min(l[c] for c in VIDE) for l in seg),
+                "lignes": len(seg), "t0": seg[0]["pc_s"], "t1": seg[-1]["pc_s"], "cerveau": True}
+
     # ------------------------------------------------------------ une avance d'un seul tenant
-    def avance(self, dist_mm, marge_mm=400, cap_tol=5.0, lb_repos=150, lb_max=400, vide_min=1500, vide_stop=0, duree_max=25.0):
+    def avance(self, dist_mm, marge_mm=400, cap_tol=5.0, lb_repos=150, lb_max=400, vide_min=1500, vide_stop=0, duree_max=25.0, cap_rel=0.0):
         """Avance de dist_mm au plus, sans s'arrêter tous les 12 cm comme saut() : l'ordre « 8 » est redonné toutes les
         0,5 s (le firmware arrête les roues de lui-même 1,5 s après le dernier ordre) et chaque ligne du journal est
         surveillée. S'arrête à la distance, sur une alarme, quand le cap a tourné de plus de cap_tol degrés (le robot
@@ -148,6 +206,11 @@ class Pilote:
         refus = self.controle(l0, avance=True, marge_mm=min(marge_mm, dist_mm + 220.0), lb_repos=lb_repos, vide_min=vide_min)
         if refus:
             return {"refus": refus}
+        if self.sait_mouv():                                    # firmware v10 : le cerveau tient le cap et s'arrête au but lui-même
+            r = self._mouvement(f"av={dist_mm:.0f}" + (f"&cap={cap_rel:.1f}" if abs(cap_rel) >= 0.5 else ""), lb_max=lb_max, vide_stop=vide_stop,
+                                marge_mm=marge_mm, dist_mm=dist_mm, duree_max=duree_max + 15.0)
+            r["touche"] = "8"
+            return r
         i0 = len(self.lignes) - 1
         t0 = t_ordre = time.time()
         self.touche("8")
@@ -212,6 +275,10 @@ class Pilote:
         if refus:
             return {"refus": refus}
         touche = "4" if angle_deg > 0 else "6"
+        if self.sait_mouv():                                    # firmware v10 : rotation mesurée et arrêtée par le cerveau
+            r = self._mouvement(f"rot={angle_deg:.1f}", lb_max=5000, vide_stop=vide_stop, duree_max=duree_max + 15.0)
+            r["touche"] = touche
+            return r
         i0 = len(self.lignes) - 1
         t0 = t_ordre = t_ligne = time.time()
         self.touche(touche)
