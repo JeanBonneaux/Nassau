@@ -425,6 +425,33 @@ class RobotSimule(Pilote):
                 "us_avant": l0["us_mm"], "us_apres": l1["us_mm"], "lb_max": 44, "vide_min": min(l0["vide_g"], l1["vide_g"]),
                 "lignes": int((self.t - t0) / dt), "t0": l0["pc_s"], "t1": l1["pc_s"]}
 
+    # ------------------------------------------------------------ une rotation d'un seul tenant, comme Pilote.tourne
+    def tourne(self, angle_deg, vide_min=1500, vide_stop=0, duree_max=12.0):
+        l0 = self._ligne()
+        refus = self.controle(l0, avance=False, lb_repos=5000, vide_min=vide_min)
+        if refus:
+            return {"refus": refus}
+        if self.verrou or self.pc[0] or self.pc[1]:
+            self.reflexe["refus"] += 1
+            self.dormir(0.6)
+            return {"touche": "4", "duree_ordre": 0.6, "alarme": None, "raison": "refus du firmware", "avance_mm": 0.0, "rot_gyro": 0.0}
+        cap0, t0 = self.bcap, self.t
+        v = min(self.reglage + 21.0, 147.0)
+        vit = 2 * v / 235.0 * 57.29578                               # degrés par seconde
+        signe = 1.0 if angle_deg > 0 else -1.0
+        dt = 0.05
+        while abs(self.bcap - cap0) + vit * 0.10 < abs(angle_deg) and self.t - t0 < duree_max:
+            self._tourner(math.radians(signe * vit * dt) * (1.0 + self.rng.gauss(0.0, 0.03)))
+            self.rot_dps = signe * vit
+            self.dormir(dt)
+            self._ligne()
+        self.rot_dps = 0.0
+        self._tourner(math.radians(signe * vit * 0.08))               # le temps que l'ordre d'arrêt arrive
+        self.dormir(0.4)
+        self._ligne()
+        return {"touche": "4" if signe > 0 else "6", "duree_ordre": round(self.t - t0, 2), "alarme": None, "raison": "angle",
+                "avance_mm": 0.0, "rot_gyro": round(self.bcap - cap0, 2), "lignes": int((self.t - t0) / dt), "t0": l0["pc_s"], "t1": self.t}
+
     # ------------------------------------------------------------ liaison avec le cerveau
     def touche(self, c):
         if c == "5" and not (self.pc[0] or self.pc[1]):

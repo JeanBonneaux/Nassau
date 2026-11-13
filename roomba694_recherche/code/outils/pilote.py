@@ -199,6 +199,62 @@ class Pilote:
                 "lb_max": max(max(l[c] for c in LB) for l in seg), "vide_min": min(min(l[c] for c in VIDE) for l in seg),
                 "lignes": len(seg), "t0": seg[0]["pc_s"], "t1": seg[-1]["pc_s"]}
 
+    # ------------------------------------------------------------ une rotation d'un seul tenant
+    def tourne(self, angle_deg, vide_min=1500, vide_stop=0, duree_max=12.0):
+        """Rotation sur place de angle_deg (positif : à gauche) d'un seul tenant, surveillée au gyroscope à chaque ligne du
+        journal, au lieu de sauts minutés suivis d'une vérification : le 2026-11-13 un trajet de 2,9 m demandait
+        13 rotations saccadées. L'ordre est redonné toutes les 0,5 s ; arrêt à l'angle (en anticipant le retard du
+        journal), sur une alarme, ou si le journal se tait. Renvoie le même dictionnaire que saut(), avec « raison »."""
+        l0 = self.frais()
+        if l0 is None:
+            return {"refus": "aucune ligne récente du journal (robot muet ?)"}
+        refus = self.controle(l0, avance=False, lb_repos=5000, vide_min=vide_min)
+        if refus:
+            return {"refus": refus}
+        touche = "4" if angle_deg > 0 else "6"
+        i0 = len(self.lignes) - 1
+        t0 = t_ordre = t_ligne = time.time()
+        self.touche(touche)
+        alarme = raison = None
+        vu, avant = i0, l0
+        while not (alarme or raison):
+            if self.lire():
+                t_ligne = time.time()
+            for l in self.lignes[vu + 1:]:
+                alarme = self.alarme(l, lb_max=5000, vide_stop=vide_stop)
+                if alarme:
+                    break
+                fait = abs(l["cap_pos"] - l0["cap_pos"])
+                dt_l = max(0.02, (l["ms"] - avant["ms"]) / 1000.0)
+                vit = min(120.0, abs(l["cap_pos"] - avant["cap_pos"]) / dt_l)
+                retard = min(0.6, max(0.0, time.time() - l["pc_s"])) + 0.18      # 0,08 laissait 5° de trop (2026-11-13)
+                avant = l
+                if fait + vit * retard >= abs(angle_deg):
+                    raison = "angle"
+                    break
+            vu = len(self.lignes) - 1
+            if alarme or raison:
+                break
+            if time.time() - t0 > duree_max:
+                raison = "durée"
+            elif time.time() - t_ligne > 1.0:
+                raison = "journal muet"
+            elif time.time() - t_ordre > 0.5:
+                self.touche(touche)
+                t_ordre = time.time()
+            else:
+                time.sleep(0.02)
+        t_stop = time.time()
+        self.touche("5")
+        self.immobile()
+        self.lire()
+        seg = self.lignes[i0:]
+        return {"touche": touche, "duree_ordre": round(t_stop - t0, 2), "alarme": alarme, "raison": raison,
+                "avance_mm": round(math.hypot(seg[-1]["x_mm"] - seg[0]["x_mm"], seg[-1]["y_mm"] - seg[0]["y_mm"]), 1),
+                "rot_gyro": round(seg[-1]["cap_pos"] - seg[0]["cap_pos"], 2), "us_avant": seg[0]["us_mm"], "us_apres": seg[-1]["us_mm"],
+                "lb_max": max(max(l[c] for c in LB) for l in seg), "vide_min": min(min(l[c] for c in VIDE) for l in seg),
+                "lignes": len(seg), "t0": seg[0]["pc_s"], "t1": seg[-1]["pc_s"]}
+
     # ------------------------------------------------------------ un saut
     def saut(self, touche, duree, marge_mm=600, lb_repos=150, lb_max=400, vide_min=1500, vide_stop=0):
         """Envoie une touche de roues, surveille, arrête au bout de `duree` secondes (1,4 s au plus).

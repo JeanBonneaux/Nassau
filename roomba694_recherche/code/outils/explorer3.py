@@ -385,7 +385,14 @@ class Exploration:
                 if math.hypot(x - ici.x, y - ici.y) < 250:
                     continue
                 phi = math.degrees(math.atan2(y - ici.y, x - ici.x)) % 360.0
-                ok, raison = self.aller_a(x, y, connu=True)      # chemin tracé sur le plan : 40 cm libres devant suffisent
+                # En conduite d'un seul tenant, un point de passage est tenu pour atteint à 10 cm près (6 cm pour le dernier) :
+                # le 2026-11-13, avec 3 cm exigés, le robot faisait un quart de tour et quelques centimètres à chaque point
+                # (29 rotations pour 7,5 m, 36 % du temps à tourner). L'étape suivante part de là où il est vraiment.
+                if getattr(self.a, "fluide", False):
+                    tol = 60.0 if (ju, jv) == tuple(jalons[-1]) else 100.0
+                else:
+                    tol = 30.0
+                ok, raison = self.aller_a(x, y, tolerance=tol, connu=True)      # chemin tracé sur le plan : 40 cm libres devant suffisent
                 if not ok:
                     l, q = self.pose()
                     if l is not None:                             # l'obstacle rencontré est porté sur le plan : le prochain chemin le contourne
@@ -414,8 +421,9 @@ class Exploration:
                 if l is None:
                     return None
                 dernier_jalon = (ju, jv) == tuple(jalons[-1])
-                if not dernier_jalon and math.hypot(q[0] - dernier_tour[0], q[1] - dernier_tour[1]) < getattr(self.a, "tour_tous_les", 600.0):
-                    continue                                     # étape courte : pas de tour sur place ici, on enchaîne
+                court = math.hypot(q[0] - dernier_tour[0], q[1] - dernier_tour[1]) < getattr(self.a, "tour_tous_les", 600.0)
+                if court and (not dernier_jalon or (len(self.cibles) > 1 and getattr(self.a, "enchainer", False))):
+                    continue                                     # étape courte, ou destination de passage : pas de tour ici, on enchaîne
                 st, raison = self.faire_un_tour(str(len(self.noeuds)), ici, "station")
                 if st is None:
                     self.dire(f"  tour impossible : {raison}")
@@ -504,6 +512,23 @@ class Exploration:
         self.v_reelle = min(v + 21.0, 147.0)
         self.rot_dps = 2 * self.v_reelle / 235.0 * 57.29578
 
+    def tourner(self, angle):
+        """Pilote.tourne, avec la même reprise que saut() si la liaison flanche"""
+        try:
+            return self.p.tourne(angle, vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
+        except (OSError, urllib.error.URLError) as err:
+            self.pannes += 1
+            self.dire(f"  liaison : rotation interrompue ({err})")
+            if self.pannes > 12:
+                raise RuntimeError("liaison : trop d'ordres perdus")
+            self.dormir(2.0)
+            try:
+                self.p.touche("5")
+            except (OSError, urllib.error.URLError):
+                pass
+            self.p.immobile()
+            return {"touche": "4", "liaison": str(err), "alarme": None}
+
     def avancer(self, dist, **k):
         """Pilote.avance, avec la même reprise que saut() si la liaison flanche"""
         try:
@@ -531,8 +556,11 @@ class Exploration:
             err = cap_cible - q[2]
             if abs(err) <= tol:
                 return True, None
-            r = self.saut("4" if err > 0 else "6", min(1.3, max(0.10, abs(err) / self.rot_dps - 0.04)), lb_repos=5000, lb_max=5000,
-                          vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
+            if getattr(self.a, "fluide", False) and abs(err) > 12.0:   # d'un seul tenant ; les petites retouches restent des sauts courts
+                r = self.tourner(err)
+            else:
+                r = self.saut("4" if err > 0 else "6", min(1.3, max(0.10, abs(err) / self.rot_dps - 0.04)), lb_repos=5000, lb_max=5000,
+                              vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
             r["but"] = f"rotation de {err:+.1f}°"
             self.j["sauts"].append(r)
             if "refus" in r:
@@ -556,7 +584,14 @@ class Exploration:
             d = math.hypot(dx, dy)
             if d <= tolerance:
                 return True, None
-            err = ecart(math.degrees(math.atan2(dy, dx)) - q[2])
+            fluide = getattr(self.a, "fluide", False)
+            d_trait = min(d - 8.0, 1500.0)
+            # Le robot tire d'un côté en roulant (2 à 13° par mètre le 2026-11-13) : en conduite d'un seul tenant on vise
+            # de l'autre côté, de la moitié de ce qu'il va tourner, pour que l'arc finisse sur le point au lieu de
+            # s'arrêter tous les 40 cm pour se redresser. La dérive est mesurée sur les avances précédentes.
+            derive = getattr(self, "derive", 0.0) if (fluide and not getattr(self.a, "sans_visee", False)) else 0.0
+            a_cote = max(-4.0, min(4.0, 0.5 * derive * max(0.0, d_trait)))      # 4° au plus : le capteur de distance doit continuer de regarder le chemin
+            err = ecart(math.degrees(math.atan2(dy, dx)) - a_cote - q[2])
             if abs(err) > (4.0 if d > 120 else 8.0):
                 ok, raison = self.tourner_vers(q[2] + err)
                 if not ok:
@@ -565,7 +600,10 @@ class Exploration:
             i0 = len(self.p.lignes)
             self.regler_vitesse(self.a.vitesse)
             if getattr(self.a, "fluide", False):                # d'un seul tenant jusqu'au point, ou jusqu'à ce que le cap ait tourné de 5°
-                r = self.avancer(min(d - 8.0, 1500.0), marge_mm=400.0 if connu else 600.0, vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
+                r = self.avancer(d_trait, marge_mm=400.0 if connu else 600.0, cap_tol=max(5.0, abs(derive) * d_trait + 4.0),
+                                 vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
+                if r.get("avance_mm", 0.0) >= 300.0 and "rot_gyro" in r:
+                    self.derive = max(-0.012, min(0.012, 0.7 * derive + 0.3 * r["rot_gyro"] / r["avance_mm"]))
             else:
                 r = self.saut("8", min(1.3, max(0.2, (d - 8) / (self.v_reelle + 6))), marge_mm=min(400.0 if connu else 600.0, d + 220.0),
                               vide_min=self.a.vide_min, vide_stop=self.a.vide_min)
@@ -1272,6 +1310,8 @@ def main():
     p_.add_argument("--filtre-n", type=int, default=8000, help="nombre d'hypothèses du filtre")
     p_.add_argument("--fluide", action="store_true", help="avances d'un seul tenant (Pilote.avance) au lieu de sauts de 1,3 s")
     p_.add_argument("--tour-tous-les", type=float, default=600.0, help="vers une destination : distance en mm entre deux tours sur place (600 ; 1800 avec le filtre)")
+    p_.add_argument("--sans-visee", action="store_true", help="avec --fluide : ne pas viser à côté du point pour compenser la dérive du robot")
+    p_.add_argument("--enchainer", action="store_true", help="pas de tour sur place aux destinations de passage si le dernier tour est proche (essai : en simulation le robot reste parfois coincé ensuite)")
     p_.add_argument("--sans-z", action="store_true", help="ne pas envoyer z avant chaque tour (le tour du firmware refait déjà le zéro du gyroscope)")
     p_.add_argument("--cibles-seules", action="store_true", help="avec --plan : s'arrêter quand les destinations données sont faites, sans explorer ensuite")
     p_.add_argument("--simulation", default="", help="nom d'un monde de simulateur.py : essai sans robot")

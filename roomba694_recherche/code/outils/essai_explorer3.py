@@ -62,6 +62,8 @@ def main():
     q.add_argument("--tour-v", type=int, default=30)
     q.add_argument("--tour-tous-les", type=float, default=600.0)
     q.add_argument("--sans-z", action="store_true")
+    q.add_argument("--sans-visee", action="store_true")
+    q.add_argument("--enchainer", action="store_true")
     q.add_argument("--cibles-seules", action="store_true")
     b = q.parse_args()
     monde = sim.Monde(**sim.MONDES[b.monde]())
@@ -70,7 +72,8 @@ def main():
     robot.reglage = b.vitesse
     a = types.SimpleNamespace(adresse="sim", prefixe=prefixe, stations=b.stations, minutes=b.minutes, vitesse=b.vitesse, tour_v=b.tour_v, vide_min=150.0,
                               interdit="", k_gyro=b.k_gyro, recalage_m=b.recalage_m, echecs_max=12, batterie_min=1000, sans_retour=b.cibles_seules,
-                              fluide=b.fluide, sans_filtre=b.sans_filtre, tour_tous_les=b.tour_tous_les, sans_z=b.sans_z, cibles_seules=b.cibles_seules, filtre_n=6000)
+                              fluide=b.fluide, sans_filtre=b.sans_filtre, tour_tous_les=b.tour_tous_les, sans_z=b.sans_z, cibles_seules=b.cibles_seules, filtre_n=6000,
+                              sans_visee=b.sans_visee, enchainer=b.enchainer)
     a.plan, a.px_par_m, a.depart_plan = "", 50.0, ""
     if b.plan:
         import json as json_

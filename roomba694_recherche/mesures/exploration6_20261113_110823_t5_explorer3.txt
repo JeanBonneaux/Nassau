@@ -1,0 +1,29 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (433, 83), cap 72°
+[  0.2 min]     filtre : position corrigée de (+14, +2) mm et +0.0° ; note 0.81, étalement 139 mm et 8.3°, gyroscope × 1.0045
+[  0.2 min] station 0 : 9 paliers, 2 lignes de murs, axes de la pièce 11.5°
+[  0.2 min] cibles reçues (série 1) : [(383, 112), (306, 100), (278, 126), (368, 91), (442, 72)]
+[  0.3 min]   vers la cible (383, 112) du plan : 2 étapes
+[  0.8 min]     filtre : position corrigée de (+19, -29) mm et +2.3° ; note 0.92, étalement 186 mm et 8.0°, gyroscope × 1.0046
+[  0.8 min]   porte possible : 667 mm de large vers (6712, 7160), direction 97°
+[  0.8 min]   porte possible : 1032 mm de large vers (8769, 7005), direction 7°
+[  0.8 min] station 1 (vers une cible) en (7244, 6057) : 4 paliers
+[  0.8 min]   cible (383, 112) atteinte
+[  0.8 min]   vers la cible (306, 100) du plan : 2 étapes
+[  1.6 min]     filtre : position corrigée de (-13, +29) mm et -1.0° ; note 0.79, étalement 282 mm et 8.0°, gyroscope × 1.0046
+[  1.6 min]   porte possible : 622 mm de large vers (6068, 7135), direction 96°
+[  1.6 min] station 2 (vers une cible) en (5744, 6315) : 8 paliers
+[  1.6 min]   cible (306, 100) atteinte
+[  1.6 min]   vers la cible (278, 126) du plan : 1 étapes
+[  2.1 min]     filtre : position corrigée de (-71, -36) mm et +0.2° ; note 0.85, étalement 275 mm et 8.7°, gyroscope × 1.0046
+[  2.1 min] station 3 (vers une cible) en (5193, 5758) : 6 paliers
+[  2.1 min]   cible (278, 126) atteinte
+[  2.1 min]   vers la cible (368, 91) du plan : 3 étapes
+[  3.0 min]     filtre : position corrigée de (+15, -97) mm et -1.9° ; note 0.58, étalement 332 mm et 10.8°, gyroscope × 1.0045
+[  3.0 min]   porte possible : 647 mm de large vers (5436, 7074), direction 96°
+[  3.0 min] station 4 (vers une cible) en (6960, 6369) : 6 paliers
+[  3.0 min]   cible (368, 91) atteinte
+[  3.0 min]   vers la cible (442, 72) du plan : 2 étapes
+[  3.6 min]     filtre : position corrigée de (-35, -24) mm et -1.0° ; note 0.77, étalement 389 mm et 12.0°, gyroscope × 1.0045
+[  3.6 min] station 5 (vers une cible) en (8292, 6818) : 8 paliers
+[  3.6 min]   cible (442, 72) atteinte
+[  3.6 min] fin : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 6 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 44 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 7.5 m | batterie 1842 mAh

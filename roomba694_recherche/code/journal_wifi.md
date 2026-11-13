@@ -937,3 +937,37 @@ La simulation retrouve la vitesse réelle du 10 (21 mm/s), ce qui donne du créd
 ### Pour l'essai sur le robot
 
 Robot sur sa base, cerveau rebranché. Dans l'ordre : sortie de la base par des reculs courts (jamais essayée) ; deux tours au même endroit, à 30 puis 60 mm/s, comparés ; un trajet court avec le filtre et l'ancienne conduite ; puis la conduite d'un seul tenant à 100, puis 150 mm/s.
+
+## 32. Premier essai sur le robot de la nouvelle localisation et de la conduite d'un seul tenant (2026-11-13, 11 h 08 à 11 h 40)
+
+Robot sur sa base, cerveau rebranché par l'utilisateur, qui surveille (« la base est un peu encombrée » : une table, un pot de plante et un tapis de sol roulé autour d'elle). Firmware inchangé (v8). Enregistrements : `mesures/exploration6_20261113_110823_*` (`_essai_tours.json`, puis six trajets `_t1_` à `_t6_`), `mesures/position_20261113_113834.*`. 26,1 m roulés d'après le cerveau, **aucun appui du pare-chocs, aucun arrêt imprévu, aucune sortie du mode Safe**.
+
+**La sortie de la base par le programme ne marche pas.** Sur la base alimentée le mode Safe s'obtient (mode lu 3), mais deux ordres de recul à 75 mm/s restent sans effet : compteurs de roues immobiles, courant des deux moteurs à zéro, mode toujours 3. Le robot ignore les ordres de roues tant qu'il est sur ses contacts de charge. L'utilisateur l'a fait glisser de 70 cm en arrière, nez vers la base ; le robot s'était endormi en quittant la base (réveil par `w` puis `s`). Nouvel outil `code/outils/sortie_base.py`, gardé pour le jour où la base sera débranchée ou le firmware changé.
+
+**Un tour rapide voit aussi bien qu'un tour lent** (`code/outils/essai_tours.py`, deux tours au même endroit) : à 30 mm/s, 19,7 s et 162 mesures ; à 60 mm/s, 12,7 s et 102 mesures ; les deux courbes se superposent à 13 mm près (médiane ; 326 mm pour un décalage quelconque) avec le décalage attendu (20° trouvés, 22° au gyroscope). Les tours se font désormais à 60 mm/s. Le filtre, parti d'une position donnée à 25 cm et 15° près, place le robot en C17/D17 tourné vers la base, comme l'utilisateur l'avait posé.
+
+**Les trajets**, tous dans la grande pièce de la base, sur du sol déjà roulé le 10 :
+
+| Trajet | Réglage | Distance | Durée | Vitesse moyenne | Remarques |
+|---|---|---|---|---|---|
+| t1 : C17 → E15 → D12 | filtre, sauts de 1,3 s, 75 mm/s, tour tous les 60 cm | 2,6 m | 2,0 min | 22 mm/s | 4 tours ; la conduite du 10 |
+| t2 : D12 → E15 → D17 | avances d'un seul tenant, 100 mm/s | 2,9 m | 1,5 min | 32 mm/s | première avance continue : 121 mm/s réels |
+| t3 : D17 → E15 → D12 | le même à 150 mm/s | 2,9 m | 1,5 min | 32 mm/s | 147 à 150 mm/s réels ; 13 rotations par à-coups |
+| t4 : D12 → E15 → D17 | + rotations d'un seul tenant (`Pilote.tourne`) | 2,9 m | 1,5 min | 32 mm/s | 170° d'une traite en 3,5 s |
+| t5 : boucle D17, E15, D12, E11, D14, C17 | + visée qui compense la dérive | 7,5 m | 3,6 min | 35 mm/s | 1 arrêt pour le cap sur 15 avances, mais 29 rotations : 36 % du temps |
+| t6 : la même boucle | + point de passage accepté à 10 cm, fin de rotation mieux anticipée | 7,5 m | 2,8 min | 45 mm/s | 14 rotations, 13 s d'ordres de rotation au lieu de 36 |
+
+Du 10 au 13, sur ce robot : de 16 à 21 mm/s à 45 mm/s. Sur les trajets de 3 m, la vitesse des roues ne change rien (32 mm/s à 100 comme à 150) : trois tours sur place y prennent 39 s sur 90.
+
+**Ce que le robot a appris au programme pendant l'essai** :
+
+- **Il tire à gauche bien plus que prévu** : 5 à 13° par mètre selon les tronçons (2° sur d'autres). Avec un arrêt dès 5° d'écart, il s'arrêtait tous les 40 cm. Désormais `aller_a` vise à côté du point, de la moitié de ce que le robot va tourner (4° au plus), d'après la dérive mesurée sur les avances précédentes : les étapes de 87 cm se font d'une traite.
+- **Un point de passage à 3 cm près coûte un quart de tour** : pour 3 à 9 cm d'écart en fin d'étape, le robot pivotait de 90°, avançait de quelques centimètres et repivotait. En conduite d'un seul tenant, un point de passage est accepté à 10 cm (6 cm pour le dernier).
+- **Le journal arrive parfois en retard au PC** : une rotation demandée de 98° en a fait 150, une autre de 72° en a fait 94. Quand le Wi-Fi hésite, le robot continue jusqu'à 1,5 s sur son dernier ordre. Les réflexes du firmware (pare-chocs, 30 cm) n'en dépendent pas, mais la précision des arrêts, si : c'est la raison de fond pour mettre « avance de tant » et « tourne de tant » dans le cerveau.
+- **Enchaîner les destinations sans tour sur place** (essayé en simulation seulement) laissait parfois le robot simulé coincé devant une porte : gardé en option (`--enchainer`), pas utilisé.
+
+**La localisation pendant ces trajets** : à chaque tour sur place le filtre a corrigé la position tenue par le PC de 3 à 6 cm le plus souvent, 18 cm au plus (après une étape longue en t6), et le cap de 0 à 5°. Notes des tours : 0,58 à 1,00. Il n'y a pas de mesure indépendante de l'erreur ; deux indices : le robot est revenu deux fois au même point devant la base (pixels (439, 73) puis (441, 75) pour une destination en (442, 72)), et aucune étape n'a rencontré d'obstacle là où le plan n'en montre pas. Le trajet compté par le cerveau seul finit, lui, à 75 cm de son départ après 26 m.
+
+**État à la fin** : robot en C17, à 75 cm devant sa base, nez vers le haut-droite ; session fermée (`5`, `s`, `x`), capteur de distance au repos ; batterie 1 828 mAh. À remettre sur sa base à la main.
+
+**Suite proposée** : une version 9 du firmware, avec l'accord de l'utilisateur — avance et rotation exécutées par le cerveau lui-même (arrêt exact malgré le Wi-Fi), roues gauche et droite commandées séparément pour tenir le cap en roulant, échelle du gyroscope corrigée et zone morte à l'arrêt seulement ; puis le même essai par la porte de H12 et le couloir.
