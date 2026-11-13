@@ -1200,7 +1200,7 @@ Accord de l'utilisateur : « Oui, la base » (mesurer la base par ses faisceaux 
 
 - Vérification à l'arrêt, robot tourné vers le cap 90° : **les trois récepteurs lisent « rouge et vert »** (37 lignes sur 82, le reste sans code).
 - Le déplacement de 75 mm a fait passer l'écart mesuré de +72 à −16 mm avec un récepteur supposé à 150 mm du centre : il est donc à 126 mm du centre, et les écarts vrais étaient +61 puis −14 mm. Le couloir « rouge et vert » fait 5 à 7 cm de large à 85 cm de la base.
-- Capteur de distance dans l'axe : 878 mm, soit le mur à 905 mm du centre, là où le plan le montre (v = 27 à 28). La base est trop basse pour lui. Depuis (409, 75) il voyait quelque chose à 52 cm vers le cap 89° : un objet près de l'axe, côté droit, à 38 cm du mur (pot ou pied de table ; position à 10 cm près, le faisceau du capteur est large).
+- Capteur de distance dans l'axe : 878 mm, soit quelque chose à 905 mm du centre, là où le plan montre le mur (v = 27 à 28) ; je pensais la base trop basse pour lui (corrigé au § 40 : c'était le dos de la base, ou le mur juste derrière). Depuis (409, 75) il voyait quelque chose à 52 cm vers le cap 89° : un objet près de l'axe, côté droit, à 38 cm du mur (pot ou pied de table ; position à 10 cm près, le faisceau du capteur est large).
 
 **Où est la base.** Son axe est la droite u = 405 du plan (à 2 pixels près), elle regarde vers le bas (cap 270° à 3° près), adossée au mur du haut : pixel (405, 33), **case B16**. Cela remplace la position tenue depuis le 10 (B17, pixel (442, 27), centre de la marque de l'utilisateur) : 70 cm trop à l'est. Tout ce que ce journal appelle « C17, devant la base » depuis le § 32 était donc 60 à 70 cm à côté de son axe ; c'est pour cela qu'aucun faisceau n'y était reçu (le faisceau rouge s'arrête vers u = 420 à cette hauteur). `--base-plan` devient `405,33`.
 
@@ -1209,3 +1209,29 @@ Accord de l'utilisateur : « Oui, la base » (mesurer la base par ses faisceaux 
 **Non fait** : l'accostage (avancer sur la base, ou l'ordre « rentre à la base » du robot, touche `h`) ; le champ proche (code 161) n'a pas été revu.
 
 **État à la fin** : robot en C16, pixel (405, 75), cap 90°, **dans l'axe de sa base à 1 ou 2 cm près, tourné vers elle, le pare-chocs à 60 cm d'elle environ** ; session fermée (`5`, `s`, `x`) à 14 h 30, capteur de distance au repos, vitesse 150, batterie 1 585 mAh.
+
+## 40. Accostage : l'ordre « rentre à la base » du robot, lancé dans l'axe (2026-11-13, 14 h 34 à 14 h 36)
+
+Accord de l'utilisateur : « Oui, lance-le ». Enregistrements : `mesures/exploration13_20261113_143420_*`, `mesures/position_20261113_143621.*`. Robot aligné sur l'axe de sa base depuis le § 39, le pare-chocs à 60 cm d'elle, endormi.
+
+**Déroulement.** Réveil (`w`, `s` : mode passif), puis touche `h` du firmware (Seek Dock, 143) à 14 h 35 min 03. C'est le robot qui se conduit ; le cerveau ne fait que lire ses capteurs.
+
+- 0 à 3 s : immobile, le courant de la batterie passe de 0,13 à 0,62 A.
+- 3 à 21 s : il avance vers la base, reçoit le champ proche (code 161) après 52 cm de trajet, recule de 9 cm en pivotant vers 18 s, puis reprend.
+- 21 s : contacts de charge trouvés (`base` vrai). Quatre secondes plus tard la charge commence (état 2) : 0,93 A, puis 1,27 A sous 16,2 V.
+- Déplacement compté : 787 mm droit devant, 38 mm vers la droite, cap +1,3° ; chemin 1 019 mm.
+
+**Ce que cet ordre fait, à savoir avant de le relancer.**
+
+- Vitesse la plus forte : **209 mm/s**, au-dessus des 150 mm/s de la consigne pour les ordres du cerveau.
+- Courant pendant l'approche : **0,9 à 1,05 A**, contre 0,27 A quand le cerveau fait rouler le robot à 135 mm/s (boucles du § 38). Le robot a donc fait tourner autre chose que ses roues pendant une vingtaine de secondes, sans doute ses brosses ou son aspirateur. Pas vérifié à l'oreille : à demander à l'utilisateur.
+
+**Où est la base, d'après le robot posé.** Son centre est à 787 mm du point d'alignement, au pixel (407, 34) : la base est juste au-delà, contre le mur du haut, pixel (407, 30) environ, case B16. Le § 39 disait (405, 33) : d'accord à 3 pixels.
+
+**Correction du § 39.** J'y écrivais que la base était trop basse pour le capteur de distance et qu'il voyait le mur à 905 mm. Le robot posé a son centre à 12 cm seulement de ce point : ce que le capteur voyait était donc le dos de la base, ou le mur juste derrière elle.
+
+**Ce qui est fait aujourd'hui, bout à bout** : aller jusqu'à la limite de K9 et K10, retour, repérage de la base par ses faisceaux, alignement sur son axe, accostage et charge.
+
+**Non vérifié** : l'accostage lancé de plus loin ou de travers ; si les brosses ont tourné ; un accostage mené par le cerveau, à vitesse réglée et brosses arrêtées (jamais essayé).
+
+**État à la fin** : robot sur sa base (B16), en charge ; session fermée (`s`, `x`) à 14 h 36, capteur de distance au repos, vitesse 150, batterie 1 585 mAh. Pour repartir, il faudra le tirer de sa base à la main : sur la base alimentée il ignore les ordres de roues (§ 32).

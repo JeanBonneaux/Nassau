@@ -1,0 +1,18 @@
+# exploration13_20261113_143420 — carte 192.168.18.25 — début 14:34:20.144 le 2026-11-13
+# 2026-11-13 : ordre rentre a la base du robot (touche h, Seek Dock 143), avec l'accord de l'utilisateur, robot aligne sur l'axe de sa base en C16, a 60 cm d'elle. Firmware v10.
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794598460.500	14:34:20.499	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794598460.500	14:34:20.499	Client TCP connecté : 192.168.18.6
+1794598461.317	14:34:21.317	>> j
+1794598461.330	14:34:21.329	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794598498.391	14:34:58.391	Impulsion BRC envoyée.
+1794598501.108	14:35:01.108	Envoyé : Start (128) -> Passive
+1794598503.514	14:35:03.514	Envoyé : Seek Dock (143)
+1794598509.250	14:35:09.249	Le robot envoie du texte : il vient de démarrer ou de se réveiller (fois numéro 6). Pour reprendre la main : s, puis f.
+1794598511.233	14:35:11.233	  texte du robot : Performing eEEProm transfer 
+1794598573.416	14:36:13.416	Envoyé : Start (128) -> Passive
+1794598574.470	14:36:14.469	Envoyé : Stop (173) -> OI fermée
+1794598575.516	14:36:15.515	Radar : arrêt, servo recentré puis relâché.
+1794598576.277	14:36:16.276	>> j
+1794598576.315	14:36:16.314	Journal CSV désactivé.
+1794598577.333	14:36:17.332	## fin de l'enregistrement après 117.2 s
