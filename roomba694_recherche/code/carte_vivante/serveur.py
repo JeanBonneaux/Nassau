@@ -12,6 +12,7 @@
 # l'utilisateur. Le plan reste dans plan_lidar/ (hors dépôt) ; la page le demande au serveur, il n'est copié nulle part.
 import argparse
 import datetime
+import ipaddress
 import json
 import os
 import socket
@@ -44,7 +45,8 @@ p_.add_argument("--zones", default=os.path.join(RACINE, "plan_lidar", "plan_lida
 p_.add_argument("--px-par-m", type=float, default=53.0)
 p_.add_argument("--base", default="442,27", help="pixel de la base de recharge sur le plan")
 p_.add_argument("--port", type=int, default=8694)
-p_.add_argument("--ouvert", action="store_true", help="écouter sur le réseau de la maison (accord de l'utilisateur requis) au lieu de 127.0.0.1 seulement")
+p_.add_argument("--ouvert", action="store_true", help="écouter aussi sur l'adresse de ce PC sur le réseau de la maison (accord de l'utilisateur requis), pour le téléphone")
+p_.add_argument("--cerveau", default="192.168.18.25", help="adresse du cerveau : sert seulement à trouver la carte réseau de la maison pour --ouvert, rien ne lui est envoyé")
 a = p_.parse_args()
 
 
@@ -153,26 +155,28 @@ def reponse_suite(e_client, v_client):
 
 
 # ---------------------------------------------------------------- le serveur
-def adresses_locales():
-    A = {"127.0.0.1", "localhost"}
-    if a.ouvert:
-        A.add(socket.gethostname().lower())
-        A.add(socket.gethostname().lower() + ".local")
-        try:
-            A.update(socket.gethostbyname_ex(socket.gethostname())[2])
-        except OSError:
-            pass
-        try:                                                      # l'adresse de ce PC sur le réseau de la maison (aucun paquet n'est envoyé)
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("192.168.18.25", 80))
-            A.add(s.getsockname()[0])
-            s.close()
-        except OSError:
-            pass
-    return A
+def adresse_maison():
+    """L'adresse de ce PC sur le réseau de la maison : celle de la carte réseau par laquelle il rejoindrait le cerveau.
+    Rien n'est envoyé au cerveau : une prise UDP « connectée » ne fait que choisir la route."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect((a.cerveau, 80))
+        return s.getsockname()[0]
+    finally:
+        s.close()
 
 
-HOTES = adresses_locales()
+# Avec --ouvert, le serveur écoute en plus sur cette adresse-là seulement (pas sur toutes les cartes réseau du PC) et ne
+# sert que des appareils d'un réseau privé : le plan ne sort pas de la maison.
+MAISON = None
+if a.ouvert:
+    try:
+        MAISON = ipaddress.ip_address(adresse_maison())
+    except (OSError, ValueError) as err:
+        raise SystemExit(f"--ouvert : adresse de ce PC sur le réseau de la maison introuvable ({err})")
+    if MAISON.is_loopback or not MAISON.is_private:
+        raise SystemExit(f"--ouvert : {MAISON} n'est pas une adresse de réseau privé ; le serveur n'est pas ouvert")
+HOTES = {"127.0.0.1", "localhost"} | ({str(MAISON)} if MAISON else set())
 CSP = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'"
 
 
@@ -200,7 +204,12 @@ class Page(BaseHTTPRequestHandler):
     def do_GET(self):
         # une page d'un autre site ne doit pas pouvoir lire le plan en visant ce serveur sous un autre nom
         hote = (self.headers.get("Host") or "").rsplit(":", 1)[0].strip("[]").lower()
-        if hote not in HOTES or self.headers.get("Origin") not in (None, f"http://{self.headers.get('Host')}"):
+        try:
+            client = ipaddress.ip_address(self.client_address[0])
+            permis = client.is_loopback or (MAISON is not None and client.is_private)      # ce PC, ou un appareil de la maison
+        except ValueError:
+            permis = False
+        if not permis or hote not in HOTES or self.headers.get("Origin") not in (None, f"http://{self.headers.get('Host')}"):
             return self.envoyer(403, "text/plain; charset=utf-8", "refusé".encode("utf-8"))
         u = urlparse(self.path)
         q = parse_qs(u.query)
@@ -232,15 +241,19 @@ class Page(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     threading.Thread(target=boucle, daemon=True).start()
     threading.Thread(target=memoire, daemon=True).start()
-    hote = "0.0.0.0" if a.ouvert else "127.0.0.1"
-    srv = ThreadingHTTPServer((hote, a.port), Page)
-    srv.daemon_threads = True
+    serveurs = []
+    for hote in ["127.0.0.1"] + ([str(MAISON)] if MAISON else []):
+        srv = ThreadingHTTPServer((hote, a.port), Page)
+        srv.daemon_threads = True
+        serveurs.append(srv)
+    for srv in serveurs[1:]:
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
     quoi = f"rejeu de {os.path.basename(SOURCE.prefixe)} (× {a.vitesse:g})" if a.rejeu else f"en direct, dossier {a.mesures}"
     print(f"Carte vivante : {quoi}", flush=True)
     print(f"Sur ce PC : http://127.0.0.1:{a.port}", flush=True)
-    if a.ouvert:
-        print("Sur le réseau de la maison : " + ", ".join(f"http://{h}:{a.port}" for h in sorted(HOTES) if h[0].isdigit() and h != "127.0.0.1"), flush=True)
+    if MAISON:
+        print(f"Sur le téléphone, relié au même Wi-Fi que ce PC : http://{MAISON}:{a.port}", flush=True)
     try:
-        srv.serve_forever()
+        serveurs[0].serve_forever()
     except KeyboardInterrupt:
         pass

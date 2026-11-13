@@ -20,7 +20,13 @@ python roomba694_recherche/code/carte_vivante/serveur.py --rejeu exploration9_20
 
 Options : `--debut HH:MM:SS` et `--pause` (rejeu), `--prefixe NOM` (suivre un enregistrement précis), `--port`, `--plan`, `--zones`, `--base U,V`, `--px-par-m`.
 
-**Téléphone.** Par défaut le serveur n'écoute que sur ce PC (`127.0.0.1`). `--ouvert` le rend visible des appareils du réseau de la maison : la page montre le plan de l'appartement à tout appareil de ce réseau, donc à ne lancer qu'avec l'accord de l'utilisateur. Le serveur affiche alors l'adresse à ouvrir sur le téléphone.
+**Téléphone.** Par défaut le serveur n'écoute que sur ce PC (`127.0.0.1`). Avec `--ouvert`, il écoute en plus sur l'adresse de ce PC sur le réseau de la maison — sa carte Wi-Fi seulement, pas ses autres cartes réseau — et ne sert que des appareils d'un réseau privé. Il affiche l'adresse à ouvrir sur le téléphone, qui doit être relié au même Wi-Fi que le PC (pas au réseau « Roomba694 » du cerveau, pas aux données mobiles).
+
+```
+python roomba694_recherche/code/carte_vivante/serveur.py --ouvert
+```
+
+La page montre alors le plan de l'appartement à tout appareil de ce réseau : à ne lancer qu'avec l'accord de l'utilisateur. Il l'a donné le 2026-11-13 à 14 h 20 (« Oui, ouvre-la »), pour cette page et ce réseau ; à redemander si l'un des deux change. Le pare-feu de Windows laissait déjà entrer les connexions vers ce Python sur ce réseau (règle existante, que la carte n'a ni créée ni modifiée).
 
 ## Ce que montre la page
 
@@ -73,4 +79,6 @@ Données privées : le plan reste dans `plan_lidar/` (hors dépôt) et n'est cop
 
 Ce jour-là `explorer3.py` a reçu une étape de plus : après le filtre, la position est calée sur des tours déjà faits au même endroit (« repères »). La `pose` écrite dans le fichier des tours en tient compte, donc la carte aussi : en E15 elle montre 26 cm de correction, somme des 13 cm du filtre et des 13 cm des repères.
 
-Pas encore vérifié : la page sur un vrai téléphone (seulement à la taille d'un téléphone, dans Edge et dans le navigateur de l'application) ; les lignes `POSE=` (aucun fichier de ce genre n'existe encore) ; un redémarrage du cerveau en cours d'enregistrement ; une séance de plus d'une demi-heure.
+5. **Ouverture au réseau de la maison**, à 14 h 21 : le serveur écoute sur `127.0.0.1` et sur l'adresse Wi-Fi du PC, pas sur ses trois autres cartes réseau ; la page, le plan et l'état répondent sur les deux ; une requête au nom d'un autre site reçoit 403. Essayé depuis le PC seulement.
+
+Pas encore vérifié : la page sur un vrai téléphone (seulement à la taille d'un téléphone, dans Edge et dans le navigateur de l'application), donc ni la traversée du pare-feu ni le confort au doigt ; les lignes `POSE=` (aucun fichier de ce genre n'existe encore) ; un redémarrage du cerveau en cours d'enregistrement ; une séance de plus d'une demi-heure.
