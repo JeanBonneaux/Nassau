@@ -1,0 +1,10 @@
+# repos_f36_5min_20261114_152221 — carte 192.168.18.25 — début 15:22:21.288 le 2026-11-14
+# robot immobile en F36, mode passif, sans la touche e, ping du PC en meme temps : cinq minutes pour compter les trous
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794687741.403	15:22:21.403	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794687741.403	15:22:21.403	Client TCP connecté : 192.168.18.6
+1794687742.332	15:22:22.331	>> j
+1794687742.341	15:22:22.340	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794688026.332	15:27:06.332	>> j
+1794688026.343	15:27:06.342	Journal CSV désactivé.
+1794688027.348	15:27:07.347	## fin de l'enregistrement après 286.1 s

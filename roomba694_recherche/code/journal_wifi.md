@@ -1675,3 +1675,41 @@ L'utilisateur a envoyé une photo de la cuisine, prise du bas du plan vers le ha
 - Ce que le robot a vu à 27 cm devant lui en G36 est hors de la photo : toujours pas identifié.
 
 La photo ne montre pas d'assez près la batterie du cerveau ni ses fils : une photo de près est redemandée.
+
+## 49. Cinq minutes robot immobile : un accroc du Wi-Fi suffit à suspendre les lectures ; et la version 11 du firmware, écrite sans être installée (2026-11-14, 15 h 20 à 15 h 30)
+
+Message de l'utilisateur : « peut etre un buffer de data pour rien perdre quand wifi drop ? relance la carto de la salle ou tu es, trouve de bon repere et va partout ou tu peux (autour de la table en 5 par exemple) puis va a l'etape de la marche a franchir plusierus fois et apprendre, ensuite retour face a la base, attend la photo et continue ». Rien n'a roulé pendant cette section : j'attends la photo des branchements, comme il le demande.
+
+### Cinq minutes robot immobile, avec le ping du PC
+
+`mesures/repos_f36_5min_20261114_152221_*` et `mesures/repos_f36_5min_20261114_ping.csv`. Mode passif, sans la touche `e`. 5 503 lectures en 4,7 min ; 560 pings, dont 3 sans réponse ; 9 ms d'aller-retour en médiane.
+
+| Trou dans les lectures | Durée | Pings du PC au même moment |
+|---|---|---|
+| 15 h 23 min 56,6 | 0,8 s | un ping perdu à 56,3 s, puis 124 et 119 ms |
+| 15 h 24 min 12,0 | 2,4 s | 68 ms, 125 ms, un ping perdu à 13,3 s, puis 192 et 107 ms |
+| 15 h 24 min 18,6 | 0,5 s | 210 ms |
+| 15 h 25 min 41,1 | 1,4 s | 64, 51 et 51 ms |
+
+Chaque trou tombe sur un ping perdu ou lent ; il n'y a pas de trou ailleurs. Un accroc du Wi-Fi d'un ou deux dixièmes de seconde devient une à deux secondes sans lecture. Le troisième ping perdu (15 h 26 min 12) n'a pas fait de trou.
+
+**Le mécanisme**, lu dans la bibliothèque installée sur ce PC (cœur ESP32 3.3.7, `NetworkClient::write`) : quand le client ne peut pas recevoir tout de suite, une écriture attend jusqu'à une seconde, et recommence jusqu'à dix fois. Le firmware écrit chaque ligne de la console et du journal au client TCP depuis sa boucle principale (`TeeOut::write`) : la boucle attend avec elle, et avec elle la lecture des capteurs, le réflexe du pare-chocs et la surveillance des mouvements. **Ceci remplace le « lu dans le code, pas démontré » du § 48** : l'essai le montre, robot immobile, sans la touche `e` ni rien d'autre en jeu.
+
+Restent sans explication : le redémarrage du robot à 15 h 05 min 46 et la rotation trop rapide du premier tour (§ 48). Autre constat, non étudié : 19 demandes d'état du PC sur 505 ont attendu leur réponse 2,0 à 2,5 s, à des moments sans trou.
+
+### Version 11 du firmware : écrite et compilée, pas installée
+
+L'idée du tampon est de l'utilisateur. Une seule retouche, dans `roomba694_wifi.ino` et `web.ino` :
+
+- ce que le cerveau écrit pour le client TCP va dans un tampon en mémoire de 24 ko (environ 8 s de journal) ; `tcpTick()` envoie à chaque passage ce que la liaison accepte tout de suite (`send` avec `MSG_DONTWAIT`) et n'attend jamais ;
+- si le tampon est plein, des lignes entières sont abandonnées et comptées : aucune ligne du journal n'arrive coupée ou collée à la suivante ;
+- `/api/state` gagne `console` : `tampon` (octets en attente), `max`, `perdus` ; la version affichée devient « v11 » ;
+- rien d'autre ne change : mêmes sécurités, mêmes délais (1,5 s pour une avance, 2,5 s pour un tour).
+
+Compilée sans avertissement : 1 141 818 octets, 87 % de la place. **La carte porte toujours la v10** : l'installation attend l'accord de l'utilisateur, puis un essai robot immobile (cinq minutes avec le ping : plus aucun trou attendu, même quand un ping se perd).
+
+### Ce qui est prêt pour la suite demandée
+
+- **Second passage dans la cuisine**, pour créer des repères : repasser par les huit tours du § 48 et faire le tour de l'îlot par la droite, le long du comptoir en inox. Le plan donne un chemin pour chaque étape (`plan_lidar/cuisine_chemin_passage2.png`) ; la bande à droite de l'îlot y fait 60 cm. Destinations, en pixels : (937, 180), (975, 91), (984, 122), (984, 150), (984, 176), (1005, 70), (937, 81), (925, 106), (930, 129), (937, 142).
+- **Vers la marche** : le passage entre la table aux bacs de recyclage et le mur ne fait que 49 cm sur le plan, de D31 à D34 (le planificateur n'y passe que grâce au trait vert de l'utilisateur) ; puis une porte en C29, où doit être la marche (`plan_lidar/cuisine_vers_marche.png`). À mesurer au capteur de distance avant de s'y engager.
+- **La marche** : sa hauteur et son sens ne sont pas connus. En mode Safe, une roue qui se soulève fait retomber le robot en mode passif : il faudra l'accord de l'utilisateur pour le remettre en mode Safe à chaque fois pendant cette leçon.

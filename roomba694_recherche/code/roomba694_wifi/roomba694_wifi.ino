@@ -1,5 +1,14 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 11 — 2026-11-14 : tampon de la console TCP, une seule retouche (journal_wifi.md § 48, idée de l'utilisateur).
+    Jusqu'à la v10 chaque ligne de la console et du journal CSV était écrite au client TCP depuis la boucle principale,
+    et cette écriture peut attendre le réseau jusqu'à dix secondes (NetworkClient::write du cœur ESP32 3.3.7 : dix
+    essais d'une seconde). Pendant ce temps la boucle ne lit plus les capteurs : ni réflexe du pare-chocs, ni arrêt du
+    capteur de distance, ni surveillance des tours et des avances. Vu le 2026-11-14 dans la cuisine : trous de 0,4 à
+    5 s dans les lectures quand le Wi-Fi décroche, 196 mm roulés sans surveillance.
+    Désormais ce que le cerveau écrit va dans un tampon en mémoire (24 ko, environ 8 s de journal), et tcpTick()
+    envoie au client ce que la liaison accepte tout de suite, sans jamais attendre. Si le tampon est plein, des lignes
+    entières sont abandonnées et comptées. /api/state gagne « console » : tampon, max, perdus. Rien d'autre ne change.
   Version 10 — 2026-11-13 : mouvements exécutés par le cerveau (fichier mouv.ino, /api/mouv) : « avance de tant » en
     tenant le cap au gyroscope, les deux roues commandées séparément, et « tourne de tant » ; départ progressif,
     ralentissement avant le but, arrêt par le cerveau. Les sécurités sont celles des flèches et du tour sur place :
@@ -83,6 +92,8 @@
 #include <Wire.h>
 #include "driver/gpio.h"
 #include "esp_system.h"   // esp_reset_reason() : pourquoi la carte a redémarré
+#include <lwip/sockets.h>   // v11 : send() avec MSG_DONTWAIT, pour écrire au client TCP sans jamais attendre
+#include <errno.h>
 
 #if __has_include("secrets.h")
 #include "secrets.h"
@@ -303,18 +314,64 @@ void logAppend(uint8_t c) {
   line[logPos++] = (char)c;
 }
 
+// ---------- v11 : tampon de la console TCP ----------
+// Tout ce qui est destiné au client TCP est rangé ici ; tcpTick() l'envoie sans attendre (consVider). L'anneau ne garde
+// que des lignes entières : une ligne qui ne tient plus est abandonnée d'un bloc, pour qu'aucune ligne du journal CSV
+// n'arrive coupée ou collée à la suivante (le PC lirait alors des capteurs faux).
+constexpr size_t CONS_BUF     = 24576;   // octets ; 8 s environ de journal CSV à 20 lignes par seconde
+constexpr size_t CONS_RESERVE = 512;     // place gardée pour finir une ligne commencée
+uint8_t  consBuf[CONS_BUF];
+size_t   consTete = 0, consQueue = 0;    // octets en attente : de consQueue à consTete, en anneau
+bool     consOuvert = false;             // un client TCP est là (tenu à jour par tcpTick)
+bool     consEnLigne = false;            // le dernier octet rangé n'était pas une fin de ligne
+bool     consSaute = false;              // une ligne est en train d'être abandonnée, jusqu'à sa fin
+uint32_t consPerdus = 0;                 // octets abandonnés depuis le démarrage (tampon plein : liaison coupée trop longtemps)
+uint32_t consMax = 0;                    // plus grand remplissage vu, octets
+
+size_t consEnAttente() { return (consTete + CONS_BUF - consQueue) % CONS_BUF; }
+
+void consVide() { consTete = consQueue = 0; consEnLigne = false; consSaute = false; }
+
+void consAjouter(const uint8_t* b, size_t n) {
+  if (!consOuvert || n == 0) return;
+  bool finit = (b[n - 1] == '\n');
+  size_t libre = CONS_BUF - 1 - consEnAttente();
+  if (consSaute) {                         // la suite d'une ligne abandonnée : elle part avec elle
+    consPerdus += n;
+    if (finit) consSaute = false;
+    return;
+  }
+  if (n > libre || (!consEnLigne && n + CONS_RESERVE > libre)) {   // plus de place pour une ligne entière
+    consPerdus += n;
+    if (consEnLigne && libre >= 1) {       // une ligne déjà commencée : on la ferme, le reste est abandonné
+      consBuf[consTete] = '\n';
+      consTete = (consTete + 1) % CONS_BUF;
+      consEnLigne = false;
+    }
+    consSaute = !finit;
+    return;
+  }
+  size_t premier = min(n, CONS_BUF - consTete);
+  memcpy(consBuf + consTete, b, premier);
+  if (n > premier) memcpy(consBuf, b + premier, n - premier);
+  consTete = (consTete + n) % CONS_BUF;
+  consEnLigne = !finit;
+  size_t attente = consEnAttente();
+  if (attente > consMax) consMax = attente;
+}
+
 class TeeOut : public Print {
  public:
   bool page = true;   // faux le temps d'écrire une ligne du journal CSV : elle va à l'USB et au client TCP, pas à la console de la page (v7)
   size_t write(uint8_t c) override {
     Serial.write(c);
-    if (tcpClient && tcpClient.connected()) tcpClient.write(c);
+    consAjouter(&c, 1);   // v11 : plus d'écriture directe au client TCP
     if (page) logAppend(c);
     return 1;
   }
   size_t write(const uint8_t* b, size_t n) override {
     Serial.write(b, n);
-    if (tcpClient && tcpClient.connected()) tcpClient.write(b, n);
+    consAjouter(b, n);    // v11
     if (page) for (size_t i = 0; i < n; i++) logAppend(b[i]);
     return n;
   }
@@ -1024,7 +1081,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v10 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v11 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"
@@ -1228,6 +1285,25 @@ void wifiTick() {
   }
 }
 
+// v11 : envoie au client TCP ce que la liaison accepte à l'instant, et rien de plus. send() avec MSG_DONTWAIT ne
+// rend jamais la main en retard : si la liaison est coupée ou lente, les octets restent dans le tampon.
+void consVider() {
+  int fd = tcpClient.fd();
+  if (fd < 0) return;
+  for (int k = 0; k < 6 && consQueue != consTete; k++) {
+    size_t n = (consTete > consQueue) ? consTete - consQueue : CONS_BUF - consQueue;   // un morceau d'un seul tenant
+    if (n > 1460) n = 1460;
+    int r = send(fd, consBuf + consQueue, n, MSG_DONTWAIT);
+    if (r > 0) {
+      consQueue = (consQueue + (size_t)r) % CONS_BUF;
+      if ((size_t)r < n) break;            // la liaison n'en prend pas plus pour l'instant
+    } else {
+      if (r < 0 && errno != EAGAIN && errno != EWOULDBLOCK) tcpClient.stop();   // liaison rompue : traitée au passage suivant
+      break;
+    }
+  }
+}
+
 void tcpTick() {
   if (tcpServer.hasClient()) {
     WiFiClient nc = tcpServer.accept();
@@ -1238,6 +1314,8 @@ void tcpTick() {
       tcpClient = nc;
       tcpClient.setNoDelay(true);
       tcpWasConnected = true;
+      consVide();            // v11 : le nouveau client ne reçoit pas les restes du précédent
+      consOuvert = true;
       tcpClient.println("Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.");
       out.printf("Client TCP connecté : %s\n", tcpClient.remoteIP().toString().c_str());
     }
@@ -1248,8 +1326,11 @@ void tcpTick() {
       if (c < 0x20 || c > 0x7E) continue;   // fins de ligne, séquences telnet et octets parasites ignorés
       handle(c);
     }
+    consVider();             // v11 : envoie ce que la liaison accepte tout de suite, sans attendre
   } else if (tcpWasConnected) {
     tcpWasConnected = false;
+    consOuvert = false;
+    consVide();
     Serial.println(F("Client TCP déconnecté."));
     tourEnd(false, "console TCP déconnectée");   // sans effet si aucun tour sur place n'est en cours
     if (driving) stopWheels();

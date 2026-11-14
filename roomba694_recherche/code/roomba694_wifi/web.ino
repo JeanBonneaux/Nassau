@@ -82,7 +82,7 @@ void handleState() {
   j.reserve(2400);
   char b[800];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v10 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
+    "{\"ms\":%lu,\"ver\":\"v11 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u,\"wall\":%u,\"cur\":[%d,%d],\"base\":%s},"
@@ -107,6 +107,9 @@ void handleState() {
   // réflexe pare-chocs (v6) : arrêts décidés par le cerveau, ordres refusés, verrou après un choc, cause du dernier arrêt
   j += "\"reflexe\":{\"arrets\":"; j += (unsigned long)reflexStops; j += ",\"refus\":"; j += (unsigned long)reflexRefused;
   j += ",\"verrou\":"; j += bumpLatch ? "true" : "false"; j += ",\"cause\":"; jsonStr(j, reflexCause); j += "},";
+  // v11 : tampon de la console TCP (octets en attente, plus grand remplissage vu, octets abandonnés tampon plein)
+  j += "\"console\":{\"tampon\":"; j += (unsigned long)consEnAttente(); j += ",\"max\":"; j += (unsigned long)consMax;
+  j += ",\"perdus\":"; j += (unsigned long)consPerdus; j += "},";
   j += "\"bauds19200\":"; j += (unsigned long)baudRescues; j += ',';   // retours du robot de 19200 à 115200 bauds depuis le démarrage
   j += "\"robot_redem\":"; j += (unsigned long)robotBoots; j += ',';   // redémarrages du robot vus (texte de démarrage reçu)
   j += "\"ap\":{\"ssid\":"; jsonStr(j, AP_SSID);
