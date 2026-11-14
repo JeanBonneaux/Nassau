@@ -32,7 +32,7 @@ Dire « va dans telle pièce » et que le robot y aille seul. L'ordre que tu as 
 - **Se situer sur le plan** : à 1 cm près sur un repère ; se retrouver à 1 ou 2 cm et 1 ou 2° près, neuf minutes après avoir été porté à la main devant sa base.
 - **Planifier un trajet** en évitant les murs et les 14 obstacles qu'il a déjà touchés ou vus.
 - **Atteindre les cases demandées** : C28, B22, C9, K10, et revenir en D16 devant sa base.
-- **Explorer seul une pièce qu'il ne connaît pas** : la cuisine le 14, posé à la main en C39. Huit tours sur place et 7 m en 4 minutes de route, un contact léger contre la table ou une chaise.
+- **Explorer seul une pièce qu'il ne connaît pas** : la cuisine le 14, posé à la main en C39. Huit tours sur place et 7 m en 4 minutes de route, un contact léger contre l'îlot en bois.
 - **Retrouver l'axe de sa base** grâce à ses faisceaux infrarouges : à 2 mm près à la dernière arrivée ; signal reçu jusqu'à 2 m.
 
 ## Ce qui n'est pas encore au point

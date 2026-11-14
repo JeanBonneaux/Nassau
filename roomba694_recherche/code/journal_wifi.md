@@ -1662,3 +1662,16 @@ Dans `exploration21`, par minute depuis le réveil de 14 h 34 min 39 : 28, 14, 7
 Le tour de D34 et le passage étroit vers la marche ; le côté droit de la table ; des repères dans la cuisine ; la carte vivante pendant cette séance (je ne l'ai pas regardée) ; les causes ci-dessus.
 
 **État à la fin** : `s` puis `x` à 14 h 50 min 46 après l'exploration ; ensuite trois réveils pour les essais immobiles, sans aucun ordre de roues ; le robot a redémarré de lui-même à 15 h 05 min 46 et ne répond plus au cerveau (il dort). Il est en F36, pixel (935, 156), tourné vers 318° environ, **hors de sa base : il ne charge pas** ; batterie 2 007 mAh sur 2 068 à 15 h 04. Cerveau allumé. Capteur de distance arrêté.
+
+### Complément : une photo de la pièce (reçue à 15 h 16, non gardée)
+
+L'utilisateur a envoyé une photo de la cuisine, prise du bas du plan vers le haut. Ce qu'elle précise, reporté sur la carte (`plan_lidar/reperes_20261114_cuisine.json`) :
+
+- Le bloc gris de B34 à C37, que j'appelais « le comptoir », est la cuisinière et le frigo. À leur gauche, une table avec les bacs de recyclage dessous ; à droite du frigo, la poubelle, puis une porte, fermée sur la photo (B38).
+- La « table » de E37 et F37 est un îlot en bois sur pieds, avec une tablette basse : le contact de F37 est un pied ou cette tablette, pas une chaise.
+- Le long du mur de droite, une étagère métallique sur pieds (E39), puis un comptoir en inox sur pieds (F39 à H39). Le capteur de distance voit entre leurs pieds : c'est ce qui explique la surface vue 25 cm plus loin que le bord du plan au premier tour, et sans doute une part des notes médiocres du filtre dans cette pièce. À droite de l'îlot, le sol est libre le long de ce comptoir ; le robot n'y est pas allé.
+- Sur la photo le robot est contre le pied de l'étagère, près de la porte : c'est sa position de départ (C39), et ce pied est « l'objet à 5 cm de sa coque ». La photo daterait donc du moment où il a été posé ; non vérifié auprès de l'utilisateur.
+- Le chat est dans la pièce, à un mètre et demi du robot. C'est une cause possible de la rotation trop rapide du premier tour (robot poussé), sans preuve.
+- Ce que le robot a vu à 27 cm devant lui en G36 est hors de la photo : toujours pas identifié.
+
+La photo ne montre pas d'assez près la batterie du cerveau ni ses fils : une photo de près est redemandée.
