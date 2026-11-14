@@ -94,9 +94,9 @@
       "slug": "shaders-fractal-cathedral",
       "squad": "shaders",
       "title": "Fractal Cathedral",
-      "tagline": "Glide through an infinite Menger-sponge cathedral of light.",
-      "controls": "Drag to look · hold for speed · wheel to morph · C changes colour",
-      "note": "First build was a noisy brown fractal seen from outside. The lead threw the idea out and ordered an endless corridor fly-through instead."
+      "tagline": "Fly anywhere inside an endless fractal. Carve it, light it, get lost.",
+      "controls": "Drag to steer and fly · WASD move · Q/E down/up · Shift boost · wheel carves the stone · 1-4 realms · Space pulse · C colour · R home",
+      "note": "The builders' version was a fixed ride down one corridor. The orchestrator rebuilt it as free flight with solid walls, four realms that morph into each other, embers to collect and light pulses that sweep the halls."
     },
     {
       "slug": "noise-drift-garden",

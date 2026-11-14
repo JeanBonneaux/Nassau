@@ -8,15 +8,20 @@
   html,body{margin:0;height:100%;overflow:hidden;background:#05060a;}
   canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;touch-action:none;cursor:grab;}
   canvas:active{cursor:grabbing;}
-  #hud{position:fixed;top:12px;left:12px;z-index:2;pointer-events:none;
-       font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7);
-       text-shadow:0 0 6px rgba(0,0,0,.6);user-select:none;}
+  #hud{position:fixed;top:12px;left:12px;right:140px;z-index:2;pointer-events:none;
+       font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7);
+       text-shadow:0 0 6px rgba(0,0,0,.8);user-select:none;}
   #hud .t{letter-spacing:.14em;}
+  #hud .s{color:rgba(255,255,255,.92);}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="hud"><div class="t">FRACTAL CATHEDRAL</div><div>drag: look · hold: speed · wheel: morph · C: colour</div></div>
+<div id="hud">
+  <div class="t">FRACTAL CATHEDRAL</div>
+  <div>drag: steer and fly · WASD: move · Q/E: down/up · shift: boost · wheel: carve · 1-4: realm · space: pulse · C: colour · R: home</div>
+  <div class="s" id="stat"></div>
+</div>
 
 <script>
 (() => {
@@ -24,6 +29,7 @@
 
 const canvas = document.getElementById('c');
 const hud = document.getElementById('hud');
+const stat = document.getElementById('stat');
 const PREVIEW = /preview/.test(location.hash);
 if (PREVIEW) hud.style.display = 'none';
 
@@ -41,126 +47,170 @@ const FS = `
 precision highp float;
 uniform vec2  uRes;
 uniform float uTime;
-uniform vec2  uMouse;
-uniform float uMorph;
-uniform float uCamZ;
-uniform float uRoll;
-uniform float uDive;
+uniform vec3  uRo;
+uniform vec3  uRt;
+uniform vec3  uUp;
+uniform vec3  uFw;
+uniform float uFov;
+uniform float uHole;
+uniform mat3  uRot;
 uniform int   uIters;
 uniform int   uSteps;
 uniform vec3  uWarm;
 uniform vec3  uCool;
-uniform vec3  uHue;
+uniform vec3  uAccent;
+uniform vec4  uPulse[3];
+uniform vec3  uTaken[8];
+uniform float uFlash;
 
-/* infinite cross of three square beams, half-width 1 (negative inside) */
-float sdCross(vec3 p){
-  p = abs(p);
-  return min(max(p.x, p.y), min(max(p.y, p.z), max(p.z, p.x))) - 1.0;
+/* three crossing square shafts in a cell scaled to [0,3]; uHole is the shaft half-width */
+float crossD(vec3 r, float w){
+  return min(max(r.x, r.y), min(max(r.y, r.z), max(r.z, r.x))) - w;
 }
 
-/* infinite Menger sponge: start solid everywhere, carve the cross holes at every level */
+/* solid everywhere, with the shafts carved out at every level. Each level is 3x smaller; the carve
+   (uHole) bites hardest at the largest level and relaxes to the classic sponge in the fine detail,
+   and everything below the great halls is turned once by uRot. */
 float DE(vec3 p){
-  p += 0.12 * uMorph * vec3(sin(p.y * 1.3 + uTime * 0.3), sin(p.z * 1.1), sin(p.x * 1.2));
-  float d = -1.0;
-  float s = 1.0;
+  float d = -1.0, s = 1.0, k = 1.0;
+  vec3 q = p;
   for (int m = 0; m < 4; m++){
     if (m >= uIters) break;
-    vec3 a = mod(p * s, 2.0) - 1.0;          // local cell in [-1,1]
-    vec3 r = 3.0 * abs(a);                   // middle third  <=>  r < 1
-    float c = sdCross(r) / (3.0 * s);        // negative inside a hole, world units
-    d = max(d, -c);
-    s *= 3.0;
+    vec3 r = 3.0 * abs(mod(q, 2.0) - 1.0);
+    d = max(d, -crossD(r, 1.0 + (uHole - 1.0) * k) / (3.0 * s));
+    q *= 3.0;
+    if (m == 0) q = uRot * q;
+    s *= 3.0; k *= 0.42;
   }
   return d;
 }
 
-vec3 calcN(vec3 p){
-  const float e = 0.0015;
+/* x: level whose wall we are on, y and z: distance to the rims of the level-2 and level-3 openings */
+vec3 info(vec3 p){
+  float d = -1.0, s = 1.0, k = 1.0, lev = 0.0, rim2 = 1.0, rim3 = 1.0;
+  vec3 q = p;
+  for (int m = 0; m < 4; m++){
+    vec3 r = 3.0 * abs(mod(q, 2.0) - 1.0);
+    float c = -crossD(r, 1.0 + (uHole - 1.0) * k) / (3.0 * s);
+    if (m < uIters && c > d){ d = c; lev = float(m); }
+    if (m == 2) rim2 = abs(c);
+    if (m == 3) rim3 = abs(c);
+    q *= 3.0;
+    if (m == 0) q = uRot * q;
+    s *= 3.0; k *= 0.42;
+  }
+  return vec3(lev, rim2, rim3);
+}
+
+vec3 calcN(vec3 p, float e){
   return normalize(vec3(DE(p + vec3(e, 0.0, 0.0)) - DE(p - vec3(e, 0.0, 0.0)),
                         DE(p + vec3(0.0, e, 0.0)) - DE(p - vec3(0.0, e, 0.0)),
                         DE(p + vec3(0.0, 0.0, e)) - DE(p - vec3(0.0, 0.0, e))));
 }
 
-float hash3(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+/* an ember floats at the centre of one cell in eleven, unless it was just collected */
+float emberAt(vec3 cell){
+  if (mod(cell.x * 3.0 + cell.y * 5.0 + cell.z * 7.0, 11.0) > 0.5) return 0.0;
+  for (int j = 0; j < 8; j++){
+    vec3 dd = abs(cell - uTaken[j]);
+    if (dd.x + dd.y + dd.z < 0.5) return 0.0;
+  }
+  return 1.0;
+}
+
 float hash2(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+float hash3(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 
 void main(){
   vec2 q = gl_FragCoord.xy / uRes;
   vec2 p = (2.0 * gl_FragCoord.xy - uRes) / uRes.y;
+  vec3 rd = normalize(p.x * uRt + p.y * uUp + uFov * uFw);
 
-  /* camera rides the channel x = y = 1 (a hole at every level), gentle sway, clamped inside the channel */
-  float yaw = (uMouse.x - 0.5) * 1.2;                      // +-0.6 rad
-  float pit = (uMouse.y - 0.5) * 1.0;                      // +-0.5 rad
-  vec2 sway = vec2(0.10 * sin(uTime * 0.23) + 0.05 * sin(uTime * 0.61), 0.10 * cos(uTime * 0.17));
-  vec2 off = clamp(sway + (uMouse - 0.5) * 0.2, -0.15, 0.15);
-  vec3 ro = vec3(1.0 + off.x, 1.0 + off.y, uCamZ);
-  float d0 = DE(ro);
-  if (d0 < 0.05) ro.xy = mix(ro.xy, vec2(1.0), 0.5);       // safety: drift back to the channel axis
-
-  vec3 fw = vec3(sin(yaw) * cos(pit), sin(pit), cos(yaw) * cos(pit));
-  vec3 rt0 = normalize(cross(fw, vec3(0.0, 1.0, 0.0)));
-  vec3 up0 = cross(rt0, fw);
-  float cr = cos(uRoll), sr = sin(uRoll);
-  vec3 rt = rt0 * cr + up0 * sr;
-  vec3 up = up0 * cr - rt0 * sr;
-  vec3 rd = normalize(p.x * rt + p.y * up + 1.6 * fw);
-
-  float fa = pow(clamp(dot(rd, fw), 0.0, 1.0), 6.0);       // looking down the corridor -> glowing far end
-  vec3 fogCol = mix(vec3(0.03, 0.08, 0.2), mix(uWarm, vec3(1.0), 0.25) * 0.85, fa);
+  vec3 fogCol = mix(vec3(0.004, 0.006, 0.016) + uCool * 0.02, uCool * 0.07 + uWarm * 0.015, 0.5 + 0.5 * rd.y);
   vec3 c = fogCol;
 
   /* march */
-  float t = 0.0, tHit = 0.0, steps = 0.0, glow = 0.0, hit = 0.0;
-  for (int i = 0; i < 72; i++){
+  float t = 0.0, hit = 0.0, glow = 0.0, ember = 0.0;
+  vec3 shell = vec3(0.0);
+  for (int i = 0; i < 96; i++){
     if (i >= uSteps) break;
-    vec3 pos = ro + rd * t;
+    vec3 pos = uRo + rd * t;
     float d = DE(pos);
-    glow += 0.02 / (1.0 + d * d * 80.0);
-    if (d < 0.001 * t + 0.0005){ hit = 1.0; tHit = t; break; }
-    t += d * 0.9;
-    steps += 1.0;
-    if (t > 40.0) break;
+    float stp = d * 0.95;
+    vec3 cell = floor(pos * 0.5);
+    if (emberAt(cell) > 0.5){
+      float od = length(pos - (cell * 2.0 + 1.0));
+      stp = min(stp, max(od * 0.5, 0.02));
+      ember += stp * exp(-t * 0.07) / (od * od * 420.0 + 0.012);
+    }
+    glow += 0.01 / (1.0 + d * d * 700.0);
+    if (d < 0.0006 * t + 0.0003){ hit = 1.0; break; }
+    t += stp;
+    if (t > 36.0) break;
   }
 
   if (hit > 0.5){
-    vec3 pos = ro + rd * tHit;
-    vec3 n = calcN(pos);
-    float ao = pow(clamp(1.0 - steps / float(uSteps), 0.0, 1.0), 2.0);
+    vec3 pos = uRo + rd * t;
+    vec3 n = calcN(pos, max(0.0006, 0.001 * t));
+    vec3 inf = info(pos);
 
-    vec3 key = normalize(rt * 0.4 + up * 0.8 - fw * 0.5);  // warm key, rotates with the camera
-    float dif = clamp(dot(n, key), 0.0, 1.0);
-    float fil = clamp(dot(n, -key), 0.0, 1.0);              // cool fill from the opposite side
+    float ao = 0.0, aw = 1.0;
+    for (int k = 1; k <= 3; k++){ float h = 0.05 * float(k); ao += aw * (h - DE(pos + n * h)); aw *= 0.55; }
+    ao = clamp(1.0 - ao * 7.0, 0.0, 1.0);
 
-    vec3 toEye = ro - pos;
-    float tl = max(length(toEye), 1e-4);
-    float lamp = clamp(dot(n, toEye / tl), 0.0, 1.0) / (1.0 + 0.15 * tHit * tHit);  // warm light at the camera
+    /* stone: cool on the great walls, warmer the deeper the level, a little variation per block */
+    float blk = hash3(floor(pos * 1.5 + 0.01));
+    vec3 alb = mix(vec3(0.34, 0.38, 0.47) * (0.55 + 0.45 * uCool), vec3(0.8, 0.6, 0.4) * (0.45 + 0.55 * uWarm), clamp(inf.x / 2.5, 0.0, 1.0));
+    alb *= 0.75 + 0.5 * blk;
 
-    float mixK = 0.5 + 0.5 * sin(dot(pos, vec3(0.7, 1.3, 0.9)));
-    vec3 base = mix(uCool, uWarm, 0.15 + 0.7 * mixK) * 0.9;
-    float blk = hash3(floor(pos * 0.5));
-    base *= mix(vec3(1.0), 0.5 + 0.5 * cos(6.2831 * (uHue + blk)), 0.12);  // per-block tint
+    /* the lantern you carry, plus a faint sky from above */
+    vec3 L = uRo - pos;
+    float ld = max(length(L), 1e-4);
+    L /= ld;
+    float lamp = max(dot(n, L), 0.0) * 1.8 / (1.0 + 0.45 * ld * ld);
+    float sky = 0.5 + 0.5 * n.y;
+    vec3 lit = uWarm * lamp + uCool * mix(0.02, 0.13, sky);
+    c = alb * lit * (0.05 + 0.95 * ao * ao);
+    c += vec3(1.0, 0.9, 0.75) * pow(max(dot(reflect(-L, n), -rd), 0.0), 40.0) * lamp * 0.5;
 
-    float aoL = 0.0, aw = 1.0;
-    for (int k = 1; k <= 3; k++){ float h = 0.06 * float(k); aoL += aw * (h - DE(pos + n * h)); aw *= 0.5; }
-    aoL = clamp(1.0 - aoL * 6.0, 0.0, 1.0);
-    ao *= 0.4 + 0.6 * aoL;
-    vec3 lit = uWarm * dif * 1.5 + uCool * fil * 0.55 + uWarm * lamp * 0.6 + uCool * 0.05;
-    c = base * lit * (0.03 + 0.97 * ao);
-    float rimF = pow(1.0 - clamp(dot(n, -rd), 0.0, 1.0), 3.0);
-    float spc = pow(clamp(dot(reflect(rd, n), key), 0.0, 1.0), 24.0);
-    c += uCool * rimF * 0.35 * ao + vec3(1.0, 0.85, 0.65) * spc * 0.35 * ao;
-    c += uWarm * pow(1.0 - aoL, 2.0) * 0.55;                 // warm light glowing from inside the recesses
-    float fogK = exp(-tHit * 0.11);
-    c = mix(fogCol, c, fogK);
+    /* glowing rims around the small openings, with light running through them */
+    float run = 0.55 + 0.45 * sin(dot(pos, vec3(1.3, 0.7, 1.1)) * 1.6 - uTime * 1.7);
+    float rims = exp(-inf.y * 420.0) * run + exp(-inf.z * 1100.0) * 0.7 * exp(-t * 0.5);
+    c += uAccent * rims * 1.5;
+
+    /* embers light the stone around them */
+    vec3 cell = floor(pos * 0.5);
+    if (emberAt(cell) > 0.5){
+      vec3 ev = cell * 2.0 + 1.0 - pos;
+      float el = max(length(ev), 1e-4);
+      c += alb * uAccent * max(dot(n, ev / el), 0.0) * 1.5 / (1.0 + el * el * 5.0);
+    }
+
+    /* pulse shells sweep outward over the surfaces */
+    for (int j = 0; j < 3; j++){
+      float pr = uPulse[j].w;
+      if (pr > 0.0){
+        float band = (length(pos - uPulse[j].xyz) - pr) * 5.0;
+        float trail = clamp(1.0 + band * 0.12, 0.0, 1.0) * step(band, 0.0);        // faint afterglow behind the front
+        shell += (uAccent * 0.9 + 0.1) * mix(alb * 2.0, vec3(1.0), 0.2) * (exp(-band * band) + 0.05 * trail * trail)
+                 * exp(-pr * 0.075) * smoothstep(0.0, 2.5, pr) * (0.4 + 0.6 * ao);
+      }
+    }
+
+    c = mix(fogCol, c, exp(-t * 0.13));
+    c += shell * 1.5 * exp(-t * 0.035);                                             // pulses cut through the fog
   }
 
-  c += glow * 0.12 * mix(uCool, uWarm, 0.7);               // near-miss glow / light shafts
+  c += glow * 0.12 * mix(uCool, uWarm, 0.6);
+  c += (uAccent * 0.85 + 0.2) * min(ember * 0.8, 1.6);
+  c += uAccent * uFlash * 0.22;
 
   /* tone map, gamma, vignette, grain */
-  c = 1.0 - exp(-c * 1.2);
+  c = 1.0 - exp(-c * 1.35);
+  c = mix(c, c * c * (3.0 - 2.0 * c), 0.35);                                        // a little contrast
   c = pow(c, vec3(0.4545));
   vec2 vq = q * (1.0 - q);
-  c *= mix(0.35, 1.0, pow(16.0 * vq.x * vq.y, 0.3));
+  c *= mix(0.3, 1.0, pow(16.0 * vq.x * vq.y, 0.28));
   c += (hash2(gl_FragCoord.xy + fract(uTime * 7.0) * vec2(113.0, 71.0)) - 0.5) * 0.015;
 
   gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
@@ -190,17 +240,72 @@ gl.enableVertexAttribArray(aPos);
 gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
 const U = {};
-['uRes','uTime','uMouse','uMorph','uCamZ','uRoll','uDive','uIters','uSteps','uWarm','uCool','uHue']
+['uRes','uTime','uRo','uRt','uUp','uFw','uFov','uHole','uRot','uIters','uSteps','uWarm','uCool','uAccent','uPulse','uTaken','uFlash']
   .forEach(n => U[n] = gl.getUniformLocation(prog, n));
+
+/* ---------- the world, mirrored in JS for collision and the autopilot ---------- */
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const REALMS = [
+  { name: 'SPONGE',   hole: 1.0,  twist: 0,      tilt: 0 },     // the classic: square halls inside square halls
+  { name: 'SCAFFOLD', hole: 1.95, twist: 0,      tilt: 0 },     // the great walls carved down to girders
+  { name: 'DIAMOND',  hole: 1.12, twist: 0.7854, tilt: 0 },     // every window turned 45 degrees
+  { name: 'TANGLE',   hole: 1.6,  twist: 0.6,    tilt: 0.42 }   // open frames with the detail askew inside
+];
+let realm = 0, hole = REALMS[0].hole, twist = REALMS[0].twist, tilt = REALMS[0].tilt, carve = 0;
+const R = [1, 0, 0, 0, 1, 0, 0, 0, 1];             // row-major rotation applied between levels
+const Rcol = new Float32Array(9);
+function setRot(tw, ti){
+  const cz = Math.cos(tw), sz = Math.sin(tw), cx = Math.cos(ti), sx = Math.sin(ti);
+  R[0] = cz;      R[1] = -sz;     R[2] = 0;
+  R[3] = cx * sz; R[4] = cx * cz; R[5] = -sx;
+  R[6] = sx * sz; R[7] = sx * cz; R[8] = cx;
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) Rcol[j * 3 + i] = R[i * 3 + j];
+}
+let curHole = hole;
+function DE(x, y, z){
+  let d = -1, s = 1, k = 1, qx = x, qy = y, qz = z;
+  for (let m = 0; m < 3; m++){
+    const rx = 3 * Math.abs(qx - 2 * Math.floor(qx / 2) - 1);
+    const ry = 3 * Math.abs(qy - 2 * Math.floor(qy / 2) - 1);
+    const rz = 3 * Math.abs(qz - 2 * Math.floor(qz / 2) - 1);
+    const c = -(Math.min(Math.max(rx, ry), Math.max(ry, rz), Math.max(rz, rx)) - (1 + (curHole - 1) * k)) / (3 * s);
+    if (c > d) d = c;
+    qx *= 3; qy *= 3; qz *= 3;
+    if (m === 0){
+      const tx = qx, ty = qy, tz = qz;
+      qx = R[0] * tx + R[1] * ty + R[2] * tz;
+      qy = R[3] * tx + R[4] * ty + R[5] * tz;
+      qz = R[6] * tx + R[7] * ty + R[8] * tz;
+    }
+    s *= 3; k *= 0.42;
+  }
+  return d;
+}
+function trace(ox, oy, oz, dx, dy, dz, maxT){
+  let t = 0;
+  for (let i = 0; i < 16; i++){
+    const d = DE(ox + dx * t, oy + dy * t, oz + dz * t);
+    if (d < 0.03) break;
+    t += d;
+    if (t >= maxT) return maxT;
+  }
+  return t;
+}
+const emberCell = (cx, cy, cz) => ((((cx * 3 + cy * 5 + cz * 7) % 11) + 11) % 11) === 0;
 
 /* ---------- palettes ---------- */
 const PALS = [
-  { warm: [1.0, 0.52, 0.18], cool: [0.12, 0.38, 0.80], hue: [0.0, 0.1, 0.2] },   // amber and teal
-  { warm: [1.000, 0.420, 0.220], cool: [0.420, 0.200, 0.900], hue: [0.35, 0.0, 0.55] }, // ember and violet
-  { warm: [0.960, 0.930, 0.780], cool: [0.200, 0.520, 0.880], hue: [0.55, 0.62, 0.72] } // ivory and glacier
+  { warm: [1.0, 0.56, 0.22],  cool: [0.14, 0.38, 0.85], hue: 0.50 },   // amber lantern, blue stone, cyan rims
+  { warm: [1.0, 0.40, 0.24],  cool: [0.42, 0.20, 0.90], hue: 0.90 },   // ember and violet, magenta rims
+  { warm: [0.95, 0.92, 0.80], cool: [0.16, 0.50, 0.62], hue: 0.12 }    // ivory and sea, gold rims
 ];
-const cur = { warm: PALS[0].warm.slice(), cool: PALS[0].cool.slice(), hue: PALS[0].hue.slice() };
-let palIdx = 0;
+const cur = { warm: PALS[0].warm.slice(), cool: PALS[0].cool.slice() };
+let palIdx = 0, hueNow = PALS[0].hue, hueGoal = PALS[0].hue;
+function hsl(h, s, l){
+  h = ((h % 1) + 1) % 1;
+  const f = n => { const k = (n + h * 12) % 12; return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+  return [f(0), f(8), f(4)];
+}
 
 /* ---------- sizing ---------- */
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -214,53 +319,105 @@ function resize(){
 window.addEventListener('resize', resize);
 resize();
 
-/* ---------- input ---------- */
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-let px = 0.5, py = 0.5, lastPtr = -1e9, pDown = false;
-let autoMorph = true, manualMorph = 0.5, morphS = 0.5;
+/* ---------- pilot state ---------- */
+const HOME = [1, 1, 0];
+const pos = HOME.slice(), vel = [0, 0, 0];
+let yaw = 0, pitch = 0, roll = 0, yawGoal = 0, pitchGoal = 0;
+let auto = true, lastInput = -1e9, nextThink = 0, nextRealm = 20, nextAutoPulse = 7;
+let boostS = 0, flash = 0, embers = 0, lastPulse = -1e9;
+const pulses = new Float32Array(12);      // xyz + radius, radius <= 0 means idle
+const taken = new Float32Array(24).fill(1e6);
+let takenAt = 0;
+const keys = Object.create(null);
+const ptrs = new Map();
+let statText = '';
 
-function setPtr(e){
-  px = clamp(e.clientX / innerWidth, 0, 1);
-  py = clamp(1 - e.clientY / innerHeight, 0, 1);
-  lastPtr = performance.now();
+function manual(now){ auto = false; lastInput = now; }
+function pulse(x, y, z){
+  let slot = 0;
+  for (let i = 0; i < 3; i++){ if (pulses[i * 4 + 3] <= 0){ slot = i; break; } if (pulses[i * 4 + 3] > pulses[slot * 4 + 3]) slot = i; }
+  pulses[slot * 4] = x; pulses[slot * 4 + 1] = y; pulses[slot * 4 + 2] = z; pulses[slot * 4 + 3] = 0.05;
 }
+function userPulse(now){
+  if (now - lastPulse < 350) return;
+  lastPulse = now;
+  pulse(pos[0], pos[1], pos[2]);
+}
+function setRealm(i){
+  realm = ((i % REALMS.length) + REALMS.length) % REALMS.length;
+  carve = 0;
+}
+function goHome(){
+  pos[0] = HOME[0]; pos[1] = HOME[1]; pos[2] = HOME[2];
+  vel[0] = vel[1] = vel[2] = 0;
+  yaw = yawGoal = 0; pitch = pitchGoal = 0;
+}
+
+/* ---------- input ---------- */
 canvas.addEventListener('pointerdown', e => {
-  setPtr(e); pDown = true;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  manual(performance.now());
   try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
 });
-window.addEventListener('pointermove', setPtr);
-const release = () => { pDown = false; };
+window.addEventListener('pointermove', e => {
+  const p = ptrs.get(e.pointerId);
+  if (!p) return;
+  const k = 2.6 / Math.max(320, innerHeight);
+  yaw += (e.clientX - p.x) * k;
+  pitch = clamp(pitch - (e.clientY - p.y) * k, -1.45, 1.45);
+  yawGoal = yaw; pitchGoal = pitch;
+  p.x = e.clientX; p.y = e.clientY;
+  manual(performance.now());
+});
+const release = e => { ptrs.delete(e.pointerId); };
 window.addEventListener('pointerup', release);
 window.addEventListener('pointercancel', release);
-
-function leaveAuto(){
-  if (autoMorph){ autoMorph = false; manualMorph = morphS; }
-}
+canvas.addEventListener('dblclick', () => userPulse(performance.now()));
+canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  leaveAuto();
-  manualMorph = clamp(manualMorph - e.deltaY * 0.001, 0, 1);
+  carve = clamp(carve - e.deltaY * 0.0012, 0.55 - REALMS[realm].hole, 2.35 - REALMS[realm].hole);
+  lastInput = performance.now();
 }, { passive: false });
-canvas.addEventListener('dblclick', () => {
-  if (autoMorph) leaveAuto(); else autoMorph = true;
-});
+
+const MOVE = { KeyW: 1, KeyA: 1, KeyS: 1, KeyD: 1, KeyQ: 1, KeyE: 1, ArrowUp: 1, ArrowDown: 1, ArrowLeft: 1, ArrowRight: 1, ShiftLeft: 1, ShiftRight: 1 };
 window.addEventListener('keydown', e => {
-  const k = e.key;
-  if (k === 'c' || k === 'C'){
-    palIdx = (palIdx + 1) % PALS.length;
-  } else if (k === '+' || k === '=' || k === '-' || k === '_'){
-    leaveAuto();
-    const step = (k === '-' || k === '_') ? -0.04 : 0.04;
-    manualMorph = clamp(manualMorph + step, 0, 1);
+  const now = performance.now();
+  keys[e.code] = true;
+  if (MOVE[e.code]) manual(now);
+  if (e.code === 'Space' || e.code.indexOf('Arrow') === 0) e.preventDefault();
+  if (e.repeat) return;
+  if (e.code === 'Space') userPulse(now);
+  else if (e.code === 'KeyC'){ palIdx = (palIdx + 1) % PALS.length; hueGoal = PALS[palIdx].hue + embers * 0.06; }
+  else if (e.code === 'KeyR'){ goHome(); lastInput = now; }
+  else if (e.code === 'KeyH'){ if (!PREVIEW) hud.style.display = hud.style.display === 'none' ? '' : 'none'; }
+  else if (/^Digit[1-4]$/.test(e.code)){ setRealm(+e.code.slice(5) - 1); lastInput = now; nextRealm = 1e9; }
+  else if (e.code === 'BracketLeft' || e.code === 'BracketRight'){
+    carve = clamp(carve + (e.code === 'BracketRight' ? 0.08 : -0.08), 0.55 - REALMS[realm].hole, 2.35 - REALMS[realm].hole);
   }
 });
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; ptrs.clear(); });
+
+/* ---------- autopilot: look along a fan of directions and lean toward the longest clear run ---------- */
+const FAN = [[0, 0], [0.45, 0], [-0.45, 0], [0, 0.35], [0, -0.35], [0.45, 0.3], [-0.45, 0.3], [0.45, -0.3], [-0.45, -0.3],
+             [0.95, 0], [-0.95, 0], [1.6, 0], [-1.6, 0], [0, 0.8], [0, -0.8]];
+function think(simT){
+  let best = -1e9, by = 0, bp = 0;
+  for (let i = 0; i < FAN.length; i++){
+    const y = yaw + FAN[i][0], p = clamp(pitch + FAN[i][1], -1.1, 1.1);
+    const cp = Math.cos(p);
+    const run = trace(pos[0], pos[1], pos[2], Math.sin(y) * cp, Math.sin(p), Math.cos(y) * cp, 9);
+    const score = run - 1.5 * (Math.abs(FAN[i][0]) + Math.abs(FAN[i][1])) - 1.1 * Math.abs(p)
+                + 0.9 * Math.sin(simT * 0.21 + i * 1.7);
+    if (score > best){ best = score; by = y; bp = p; }
+  }
+  yawGoal = by; pitchGoal = bp;
+}
 
 /* ---------- loop ---------- */
 let simT = 0, lastNow = performance.now();
-let blend = 1, dive = 0, camZ = 0;
-const mSm = [0.5, 0.5];
 let avgMs = 16, adaptAcc = 0;
-
 function adapt(rawMs){
   avgMs = avgMs * 0.95 + rawMs * 0.05;
   adaptAcc += rawMs;
@@ -268,7 +425,7 @@ function adapt(rawMs){
   adaptAcc = 0;
   let s = scale;
   if (avgMs > 30) s = Math.max(PREVIEW ? 0.3 : 0.35, s - 0.1);
-  else if (avgMs < 12) s = Math.min(0.85, s + 0.1);
+  else if (avgMs < 12) s = Math.min(0.9, s + 0.1);
   if (Math.abs(s - scale) > 1e-6){ scale = Math.round(s * 100) / 100; resize(); }
 }
 
@@ -280,47 +437,149 @@ function frame(now){
   simT += dt;
   adapt(rawMs);
 
-  /* pointer steers; after 3 s idle the autopilot eases back in */
-  const idle = (now - lastPtr) > 3000;
-  blend += ((idle ? 1 : 0) - blend) * (1 - Math.exp(-dt * 1.6));
-  const ax = 0.5 + 0.5 * Math.sin(simT * 0.09);
-  const ay = 0.5 + 0.5 * Math.sin(simT * 0.061 + 1.3);
-  const tx = px + (ax - px) * blend;
-  const ty = py + (ay - py) * blend;
-  const kM = 1 - Math.exp(-dt * 4);
-  mSm[0] += (tx - mSm[0]) * kM;
-  mSm[1] += (ty - mSm[1]) * kM;
+  /* hand control back to the autopilot after a quiet spell */
+  if (!auto && (PREVIEW || now - lastInput > 9000) && ptrs.size === 0){ auto = true; nextRealm = simT + 14; nextAutoPulse = simT + 2; }
 
-  /* hold to speed up (dive) */
-  dive += ((pDown ? 1 : 0) - dive) * (1 - Math.exp(-dt * 5));
-  camZ += dt * 0.6 * (1 + dive);
+  /* realm and carve ease toward their targets: the stone moves around you */
+  const kR = 1 - Math.exp(-dt * 1.1);
+  hole += (clamp(REALMS[realm].hole + carve, 0.55, 2.35) - hole) * kR;
+  twist += (REALMS[realm].twist - twist) * kR;
+  tilt += (REALMS[realm].tilt - tilt) * kR;
+  if (Math.abs(twist) < 1e-4 && REALMS[realm].twist === 0) twist = 0;
+  if (Math.abs(tilt) < 1e-4 && REALMS[realm].tilt === 0) tilt = 0;
+  curHole = hole;
+  setRot(twist, tilt);
 
-  /* morph: auto or manual, both within [0,1] */
-  const autoM = 0.5 + 0.5 * Math.sin(simT * 0.1);
-  const goalM = autoMorph ? autoM : manualMorph;
-  morphS += (goalM - morphS) * (1 - Math.exp(-dt * 3));
+  /* steering */
+  let turn = 0;
+  if (auto){
+    if (simT >= nextThink){ think(simT); nextThink = simT + 0.16; }
+    if (simT >= nextRealm){ setRealm(realm + 1); nextRealm = simT + 22; }
+    if (simT >= nextAutoPulse){ pulse(pos[0], pos[1], pos[2]); nextAutoPulse = simT + 6.5; }
+    const kA = 1 - Math.exp(-dt * 1.4);
+    const dy = (yawGoal - yaw) * kA;
+    yaw += dy; pitch += (pitchGoal - pitch) * kA;
+    turn = dy / Math.max(dt, 1e-4);
+  } else {
+    turn = ((keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0)) * 1.5;
+    yaw += turn * dt;
+  }
 
-  /* palette cross-fade */
+  const cp = Math.cos(pitch), sp = Math.sin(pitch), cy = Math.cos(yaw), sy = Math.sin(yaw);
+  const fw = [sy * cp, sp, cy * cp];
+  const rt0 = [cy, 0, -sy];
+  const up0 = [-sy * sp, cp, -cy * sp];
+
+  /* thrust: speed follows the room you have, so tight tunnels are slow and the voids are fast */
+  const dHere = DE(pos[0], pos[1], pos[2]);
+  const room = clamp(dHere * 3.5, 0.12, 1.5);
+  let f = 0, s = 0, v = 0;
+  if (auto) f = 1;
+  else {
+    f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+    if (ptrs.size > 0) f = Math.max(f, 1);
+    s = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+    v = (keys.KeyE ? 1 : 0) - (keys.KeyQ ? 1 : 0);
+  }
+  const boosting = !auto && (keys.ShiftLeft || keys.ShiftRight || ptrs.size > 1);
+  boostS += ((boosting ? 1 : 0) - boostS) * (1 - Math.exp(-dt * 5));
+  const speed = 0.85 * room * (1 + 2.2 * boostS);
+  const kV = 1 - Math.exp(-dt * 5);
+  for (let i = 0; i < 3; i++){
+    const want = (fw[i] * f + rt0[i] * s + (i === 1 ? v : 0)) * speed;
+    vel[i] += (want - vel[i]) * kV;
+    pos[i] += vel[i] * dt;
+  }
+
+  /* walls are solid: step back out along the gradient and slide */
+  for (let k = 0; k < 4; k++){
+    const d = DE(pos[0], pos[1], pos[2]);
+    if (d >= 0.035) break;
+    const h = 0.004;
+    let gx = DE(pos[0] + h, pos[1], pos[2]) - DE(pos[0] - h, pos[1], pos[2]);
+    let gy = DE(pos[0], pos[1] + h, pos[2]) - DE(pos[0], pos[1] - h, pos[2]);
+    let gz = DE(pos[0], pos[1], pos[2] + h) - DE(pos[0], pos[1], pos[2] - h);
+    const gl2 = Math.hypot(gx, gy, gz);
+    if (gl2 < 1e-9) break;
+    gx /= gl2; gy /= gl2; gz /= gl2;
+    const push = Math.min(0.036 - d, 0.25);
+    pos[0] += gx * push; pos[1] += gy * push; pos[2] += gz * push;
+    const into = vel[0] * gx + vel[1] * gy + vel[2] * gz;
+    if (into < 0){ vel[0] -= gx * into; vel[1] -= gy * into; vel[2] -= gz * into; }
+  }
+
+  /* embers: fly through one to take it */
+  const cxI = Math.floor(pos[0] / 2), cyI = Math.floor(pos[1] / 2), czI = Math.floor(pos[2] / 2);
+  if (emberCell(cxI, cyI, czI)){
+    let gone = false;
+    for (let j = 0; j < 8; j++) if (taken[j * 3] === cxI && taken[j * 3 + 1] === cyI && taken[j * 3 + 2] === czI) gone = true;
+    const ex = cxI * 2 + 1, ey = cyI * 2 + 1, ez = czI * 2 + 1;
+    if (!gone && Math.hypot(pos[0] - ex, pos[1] - ey, pos[2] - ez) < 0.42){
+      taken[takenAt * 3] = cxI; taken[takenAt * 3 + 1] = cyI; taken[takenAt * 3 + 2] = czI;
+      takenAt = (takenAt + 1) % 8;
+      embers++;
+      flash = 1;
+      hueGoal = PALS[palIdx].hue + embers * 0.06;
+      pulse(ex, ey, ez);
+    }
+  }
+
+  /* far from home with an untwisted world, hop back by a whole number of periods so precision never decays */
+  if (twist === 0 && tilt === 0){
+    for (let i = 0; i < 3; i++){
+      if (Math.abs(pos[i]) > 440){
+        const sh = Math.round(pos[i] / 22) * 22;
+        pos[i] -= sh;
+        for (let j = 0; j < 3; j++) pulses[j * 4 + i] -= sh;
+        for (let j = 0; j < 8; j++) if (taken[j * 3 + i] < 1e5) taken[j * 3 + i] -= sh / 2;
+      }
+    }
+  }
+
+  for (let j = 0; j < 3; j++){
+    if (pulses[j * 4 + 3] > 0){ pulses[j * 4 + 3] += dt * 6.5; if (pulses[j * 4 + 3] > 34) pulses[j * 4 + 3] = 0; }
+  }
+  flash *= Math.exp(-dt * 3.5);
+
+  /* bank into turns and strafes */
+  const rollGoal = clamp(-turn * 0.16 - s * 0.1, -0.5, 0.5);
+  roll += (rollGoal - roll) * (1 - Math.exp(-dt * 3));
+  const cr = Math.cos(roll), sr = Math.sin(roll);
+  const rt = [rt0[0] * cr + up0[0] * sr, rt0[1] * cr + up0[1] * sr, rt0[2] * cr + up0[2] * sr];
+  const up = [up0[0] * cr - rt0[0] * sr, up0[1] * cr - rt0[1] * sr, up0[2] * cr - rt0[2] * sr];
+
+  /* colours */
   const P = PALS[palIdx];
   const kP = 1 - Math.exp(-dt * 2.2);
   for (let i = 0; i < 3; i++){
     cur.warm[i] += (P.warm[i] - cur.warm[i]) * kP;
     cur.cool[i] += (P.cool[i] - cur.cool[i]) * kP;
-    cur.hue[i]  += (P.hue[i]  - cur.hue[i])  * kP;
+  }
+  hueNow += (hueGoal - hueNow) * kP;
+  const acc = hsl(hueNow, 0.95, 0.56);
+
+  if (!PREVIEW){
+    const txt = REALMS[realm].name + ' · embers ' + embers + ' · ' + (auto ? 'autopilot (drag or WASD to take over)' : 'you have the helm');
+    if (txt !== statText){ statText = txt; stat.textContent = txt; }
   }
 
   gl.uniform2f(U.uRes, canvas.width, canvas.height);
   gl.uniform1f(U.uTime, simT);
-  gl.uniform2f(U.uMouse, mSm[0], mSm[1]);
-  gl.uniform1f(U.uMorph, morphS);
-  gl.uniform1f(U.uCamZ, camZ);
-  gl.uniform1f(U.uRoll, 0.15 * Math.sin(simT * 0.05) * blend);
-  gl.uniform1f(U.uDive, dive);
+  gl.uniform3f(U.uRo, pos[0], pos[1], pos[2]);
+  gl.uniform3f(U.uRt, rt[0], rt[1], rt[2]);
+  gl.uniform3f(U.uUp, up[0], up[1], up[2]);
+  gl.uniform3f(U.uFw, fw[0], fw[1], fw[2]);
+  gl.uniform1f(U.uFov, 1.45 - 0.4 * boostS);
+  gl.uniform1f(U.uHole, hole);
+  gl.uniformMatrix3fv(U.uRot, false, Rcol);
   gl.uniform1i(U.uIters, PREVIEW ? 3 : 4);
-  gl.uniform1i(U.uSteps, PREVIEW ? 40 : 72);
+  gl.uniform1i(U.uSteps, PREVIEW ? 56 : 88);
   gl.uniform3f(U.uWarm, cur.warm[0], cur.warm[1], cur.warm[2]);
   gl.uniform3f(U.uCool, cur.cool[0], cur.cool[1], cur.cool[2]);
-  gl.uniform3f(U.uHue, cur.hue[0], cur.hue[1], cur.hue[2]);
+  gl.uniform3f(U.uAccent, acc[0], acc[1], acc[2]);
+  gl.uniform4fv(U.uPulse, pulses);
+  gl.uniform3fv(U.uTaken, taken);
+  gl.uniform1f(U.uFlash, flash);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 requestAnimationFrame(frame);
