@@ -1,0 +1,24 @@
+{
+  "squads": [
+    { "id": "forces", "name": "Forces", "theme": "Physics you can grab: cloth, gravity and magnetism.", "crew": "1 Sonnet lead · 3 Haiku builders" },
+    { "id": "patterns", "name": "Patterns", "theme": "Simple rules that grow into living structure.", "crew": "1 Sonnet lead · 3 Haiku builders" },
+    { "id": "shaders", "name": "Shaders", "theme": "Whole worlds drawn by one fragment shader.", "crew": "1 Sonnet lead · 3 Haiku builders" },
+    { "id": "noise", "name": "Noise", "theme": "Instruments made of light. Click to hear them.", "crew": "1 Sonnet lead · 3 Haiku builders" }
+  ],
+  "demos": [
+    { "slug": "forces-silk-storm", "squad": "forces", "title": "Silk Storm", "tagline": "A sheet of silk in a gale. Grab it, cut it, mend it.", "controls": "Drag to pull · X or right-drag to cut · W gust · R mend", "note": "" },
+    { "slug": "forces-gravity-garden", "squad": "forces", "title": "Gravity Garden", "tagline": "Seven hundred bodies orbiting suns you can throw.", "controls": "Drag to fling a sun · B repel · C respawn · wheel sets gravity", "note": "" },
+    { "slug": "forces-magnet-field", "squad": "forces", "title": "Magnet Field", "tagline": "Iron filings snap to attention as magnets wander.", "controls": "Drag a magnet · click to add one · F flip polarity · C reset", "note": "" },
+    { "slug": "patterns-slime-weave", "squad": "patterns", "title": "Slime Weave", "tagline": "Twelve thousand tiny agents spin veins of living light.", "controls": "Drag to attract · right-drag to repel · Space scatter · 1-3 palette", "note": "" },
+    { "slug": "patterns-attractor-bloom", "squad": "patterns", "title": "Attractor Bloom", "tagline": "Chaos plotted as a firework you can bend by hand.", "controls": "Move to bend the shape · click or Space for the next · R random · 1-3 palette", "note": "" },
+    { "slug": "patterns-reaction-garden", "squad": "patterns", "title": "Reaction Garden", "tagline": "Chemistry that sprouts coral and labyrinths where you touch.", "controls": "Drag to seed growth · right-drag to erase · 1-5 presets · C palette", "note": "" },
+    { "slug": "shaders-neon-tunnel", "squad": "shaders", "title": "Hyperlane", "tagline": "An endless neon tunnel at full throttle.", "controls": "Move to steer · hold to boost · Space palette", "note": "" },
+    { "slug": "shaders-ocean-world", "squad": "shaders", "title": "Tidal Dusk", "tagline": "A raymarched ocean rolling under a low sun.", "controls": "Move to look · hold to ascend · T time of day", "note": "" },
+    { "slug": "shaders-fractal-cathedral", "squad": "shaders", "title": "Mandelbox Cathedral", "tagline": "Fly through a fractal that never stops rebuilding itself.", "controls": "Move to orbit · hold to dive · wheel to morph · C colour", "note": "" },
+    { "slug": "noise-drift-garden", "squad": "noise", "title": "Drift Garden", "tagline": "Glowing orbs drift through the dark and sing when they touch.", "controls": "Click to plant an orb · move to herd them · Space to stir", "note": "" },
+    { "slug": "noise-pulse-grid", "squad": "noise", "title": "Pulse Grid", "tagline": "A step sequencer with synthesized drums and light that kicks.", "controls": "Click pads to toggle · Space play/pause · R randomise · C clear · arrows tempo", "note": "" },
+    { "slug": "noise-aurora-harp", "squad": "noise", "title": "Aurora Harp", "tagline": "Strum eighteen strings of light under a northern sky.", "controls": "Drag across the strings · click to pluck · A-L and Q-O keys", "note": "" }
+  ],
+  "steps": [],
+  "fine": ""
+}

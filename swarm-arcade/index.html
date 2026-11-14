@@ -1,0 +1,390 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Swarm Arcade</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: marquee header, one live "now playing" stage with its caption, then four squad shelves of three cabinets each. */
+:root {
+  color-scheme: dark;
+  --bg: #0d0a18;
+  --panel: #161127;
+  --raise: #201938;
+  --line: #2f2752;
+  --ink: #f3eeff;
+  --muted: #a69dc2;
+  --forces: #ffb347;
+  --patterns: #4be3b5;
+  --shaders: #ff5fc4;
+  --noise: #6fb6ff;
+  --accent: var(--forces);
+  --display: "Bungee", "Arial Black", Impact, sans-serif;
+  --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--body);
+}
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* ---------- header ---------- */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; }
+.wordmark { font: 400 clamp(30px, 6vw, 54px)/0.95 var(--display); letter-spacing: 0.01em; margin: 0; text-wrap: balance; }
+.wordmark span { color: var(--accent); transition: color .6s; }
+.lede { margin: 10px 0 0; max-width: 58ch; color: var(--muted); }
+.roster { display: flex; flex-direction: column; gap: 8px; font: 400 12px/1.3 var(--mono); color: var(--muted); }
+.dots { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--ink)); }
+.dot.lead { width: 13px; height: 13px; margin-left: 7px; }
+.dot.boss { width: 17px; height: 17px; background: var(--ink); }
+
+/* ---------- stage ---------- */
+.stage { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+.screen {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  max-width: 100%;
+  background: #05060a;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 0 4px var(--panel), 0 0 60px -18px var(--accent);
+  transition: box-shadow .6s;
+}
+.screen img, .screen iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.screen img { object-fit: cover; }
+.screen iframe { pointer-events: none; opacity: 0; transition: opacity .5s; }
+.screen iframe.on { opacity: 1; }
+.screen .hit { position: absolute; inset: 0; width: 100%; height: 100%; background: none; border: 0; padding: 0; }
+.screen .hit span {
+  position: absolute; left: 14px; bottom: 14px;
+  font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  background: rgba(5, 6, 10, .72); color: var(--ink);
+  padding: 9px 12px; border-radius: 3px; border: 1px solid rgba(255, 255, 255, .18);
+}
+.screen .hit:hover span { background: var(--accent); color: #0d0a18; border-color: transparent; }
+.timer { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, .08); }
+.timer i { display: block; height: 100%; width: 0; background: var(--accent); }
+.timer i.run { animation: fill 12s linear forwards; }
+.paused .timer i.run { animation-play-state: paused; }
+@keyframes fill { to { width: 100%; } }
+
+.caption { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.eyebrow { font: 500 12px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); transition: color .6s; }
+.caption h2 { font: 400 clamp(24px, 3.2vw, 34px)/1.05 var(--display); margin: 0; text-wrap: balance; overflow-wrap: anywhere; }
+.caption .tag { margin: 0; font-size: 17px; line-height: 1.4; }
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 14px; margin: 0; font-size: 13px; }
+.facts dt { font: 500 11px/1.7 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.facts dd { margin: 0; color: var(--ink); }
+.facts dd.mono { font: 400 12.5px/1.55 var(--mono); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; }
+.btn { background: var(--raise); border: 1px solid var(--line); border-radius: 4px; padding: 10px 16px; font: 500 13px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.btn:hover { border-color: var(--muted); }
+.btn.go { background: var(--accent); border-color: transparent; color: #0d0a18; transition: background .6s; }
+.btn.go:hover { filter: brightness(1.12); }
+
+/* ---------- shelves ---------- */
+.shelves { display: flex; flex-direction: column; gap: 28px; }
+.shelf { --c: var(--forces); display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
+.shelf header { display: flex; flex-direction: column; gap: 6px; }
+.shelf h3 { font: 400 20px/1 var(--display); margin: 0; color: var(--c); }
+.shelf header p { margin: 0; font-size: 13px; color: var(--muted); }
+.shelf header .crew { font: 400 11.5px/1.5 var(--mono); }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.card { display: flex; flex-direction: column; gap: 10px; text-align: left; background: none; border: 0; padding: 0; min-width: 0; }
+.card .thumb { position: relative; aspect-ratio: 16 / 10; width: 100%; background: linear-gradient(135deg, var(--raise), #05060a); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.card .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+.card:hover .thumb, .card.sel .thumb { border-color: var(--c); }
+.card:hover .thumb img { transform: scale(1.04); }
+.card .txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.card b { font: 600 15px/1.25 var(--body); }
+.card.sel b { color: var(--c); }
+.card small { font-size: 13px; line-height: 1.4; color: var(--muted); }
+
+/* ---------- how it was built ---------- */
+.built { border-top: 1px solid var(--line); padding-top: 24px; display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 20px; }
+.built h3 { font: 400 20px/1 var(--display); margin: 0; }
+.built ol { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.built li { counter-increment: s; font-size: 13.5px; color: var(--muted); }
+.built li::before { content: counter(s, decimal-leading-zero); display: block; font: 500 12px/1 var(--mono); color: var(--ink); margin-bottom: 8px; }
+.built li strong { color: var(--ink); font-weight: 600; }
+.built .fine { grid-column: 2; margin: 0; font: 400 12px/1.6 var(--mono); color: var(--muted); }
+
+/* ---------- play overlay ---------- */
+.play { position: fixed; inset: 0; z-index: 50; background: #05060a; }
+.play iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.play .back {
+  position: absolute; z-index: 2;
+  top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px));
+  background: rgba(13, 10, 24, .78); border: 1px solid rgba(255, 255, 255, .22); border-radius: 4px;
+  padding: 8px 12px; font: 500 12px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase;
+}
+.play .back:hover { background: var(--ink); color: #0d0a18; }
+body.playing { overflow: hidden; }
+
+@media (max-width: 860px) {
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  .shelf, .built { grid-template-columns: minmax(0, 1fr); }
+  .built .fine { grid-column: 1; }
+  .built ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .cards { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .card { flex-direction: row; align-items: center; gap: 12px; }
+  .card .thumb { width: 124px; flex: none; }
+  .built ol { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+  .timer { display: none; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 class="wordmark">Swarm <span>Arcade</span></h1>
+      <p class="lede">Twelve browser toys built in one sitting by a three-tier swarm of agents. Each one is a single HTML file with no libraries. Pick a cabinet and poke it.</p>
+    </div>
+    <div class="roster" aria-label="Who built this">
+      <div class="dots" id="dots"></div>
+      <div>1 orchestrator · 4 Sonnet leads · 12 Haiku builders</div>
+    </div>
+  </header>
+
+  <section class="stage" id="stage" aria-label="Now playing">
+    <div class="screen">
+      <img id="stagePoster" alt="">
+      <iframe id="stageFrame" title="Live preview" tabindex="-1" aria-hidden="true" allow="autoplay"></iframe>
+      <button class="hit" id="stageHit" type="button"><span>Play full screen</span></button>
+      <div class="timer"><i id="timerBar"></i></div>
+    </div>
+    <div class="caption">
+      <div class="eyebrow" id="cEyebrow"></div>
+      <h2 id="cTitle"></h2>
+      <p class="tag" id="cTag"></p>
+      <dl class="facts">
+        <dt>Controls</dt><dd class="mono" id="cControls"></dd>
+        <dt id="cNoteLabel">Lead's note</dt><dd id="cNote"></dd>
+      </dl>
+      <div class="actions">
+        <button class="btn go" id="playBtn" type="button">Play</button>
+        <button class="btn" id="prevBtn" type="button" aria-label="Previous demo">Prev</button>
+        <button class="btn" id="nextBtn" type="button" aria-label="Next demo">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="shelves" id="shelves" aria-label="All demos"></section>
+
+  <section class="built" aria-label="How it was built">
+    <h3>Chain of command</h3>
+    <ol id="steps"></ol>
+    <p class="fine" id="fine"></p>
+  </section>
+</div>
+
+<script>
+const SQUADS = /*SQUADS*/[{"id":"forces","name":"Forces","theme":"Physics you can grab: cloth, gravity and magnetism.","crew":"1 Sonnet lead · 3 Haiku builders"},{"id":"patterns","name":"Patterns","theme":"Simple rules that grow into living structure.","crew":"1 Sonnet lead · 3 Haiku builders"},{"id":"shaders","name":"Shaders","theme":"Whole worlds drawn by one fragment shader.","crew":"1 Sonnet lead · 3 Haiku builders"},{"id":"noise","name":"Noise","theme":"Instruments made of light. Click to hear them.","crew":"1 Sonnet lead · 3 Haiku builders"}];
+const DEMOS = /*DEMOS*/[{"slug":"forces-silk-storm","squad":"forces","title":"Silk Storm","tagline":"A sheet of silk in a gale. Grab it, cut it, mend it.","controls":"Drag to pull · X or right-drag to cut · W gust · R mend","note":""},{"slug":"forces-gravity-garden","squad":"forces","title":"Gravity Garden","tagline":"Seven hundred bodies orbiting suns you can throw.","controls":"Drag to fling a sun · B repel · C respawn · wheel sets gravity","note":""},{"slug":"forces-magnet-field","squad":"forces","title":"Magnet Field","tagline":"Iron filings snap to attention as magnets wander.","controls":"Drag a magnet · click to add one · F flip polarity · C reset","note":""},{"slug":"patterns-slime-weave","squad":"patterns","title":"Slime Weave","tagline":"Twelve thousand tiny agents spin veins of living light.","controls":"Drag to attract · right-drag to repel · Space scatter · 1-3 palette","note":""},{"slug":"patterns-attractor-bloom","squad":"patterns","title":"Attractor Bloom","tagline":"Chaos plotted as a firework you can bend by hand.","controls":"Move to bend the shape · click or Space for the next · R random · 1-3 palette","note":""},{"slug":"patterns-reaction-garden","squad":"patterns","title":"Reaction Garden","tagline":"Chemistry that sprouts coral and labyrinths where you touch.","controls":"Drag to seed growth · right-drag to erase · 1-5 presets · C palette","note":""},{"slug":"shaders-neon-tunnel","squad":"shaders","title":"Hyperlane","tagline":"An endless neon tunnel at full throttle.","controls":"Move to steer · hold to boost · Space palette","note":""},{"slug":"shaders-ocean-world","squad":"shaders","title":"Tidal Dusk","tagline":"A raymarched ocean rolling under a low sun.","controls":"Move to look · hold to ascend · T time of day","note":""},{"slug":"shaders-fractal-cathedral","squad":"shaders","title":"Mandelbox Cathedral","tagline":"Fly through a fractal that never stops rebuilding itself.","controls":"Move to orbit · hold to dive · wheel to morph · C colour","note":""},{"slug":"noise-drift-garden","squad":"noise","title":"Drift Garden","tagline":"Glowing orbs drift through the dark and sing when they touch.","controls":"Click to plant an orb · move to herd them · Space to stir","note":""},{"slug":"noise-pulse-grid","squad":"noise","title":"Pulse Grid","tagline":"A step sequencer with synthesized drums and light that kicks.","controls":"Click pads to toggle · Space play/pause · R randomise · C clear · arrows tempo","note":""},{"slug":"noise-aurora-harp","squad":"noise","title":"Aurora Harp","tagline":"Strum eighteen strings of light under a northern sky.","controls":"Drag across the strings · click to pluck · A-L and Q-O keys","note":""}];
+const STEPS = /*STEPS*/[];
+const FINE = /*FINE*/"";
+
+const $ = (id) => document.getElementById(id);
+const squadOf = (d) => SQUADS.find((s) => s.id === d.squad);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cache = {};
+
+// Demo files check location.hash for "preview". When the page is served over http we fetch the file and
+// feed it to the frame as srcdoc (works inside sandboxed hosts); from file:// we fall back to a plain src.
+async function mount(frame, slug, preview) {
+  const url = 'demos/' + slug + '.html';
+  try {
+    if (location.protocol === 'file:') throw 0;
+    if (!cache[slug]) {
+      const r = await fetch(url);
+      if (!r.ok) throw 0;
+      cache[slug] = await r.text();
+    }
+    const flag = preview ? '<script>location.hash="preview"<\/script>' : '';
+    const html = cache[slug];
+    frame.removeAttribute('src');
+    frame.srcdoc = /^\s*<!doctype html>/i.test(html) ? html.replace(/<!doctype html>/i, (m) => m + flag) : flag + html;
+  } catch (e) {
+    frame.removeAttribute('srcdoc');
+    frame.src = url + (preview ? '#preview' : '');
+  }
+}
+
+// ---------- roster dots ----------
+{
+  const dots = $('dots');
+  const add = (cls, c) => { const i = document.createElement('i'); i.className = 'dot ' + cls; if (c) i.style.setProperty('--c', c); dots.append(i); };
+  add('boss');
+  for (const s of SQUADS) { add('lead', `var(--${s.id})`); for (let k = 0; k < 3; k++) add('', `var(--${s.id})`); }
+}
+
+// ---------- shelves ----------
+const cardEls = {};
+for (const s of SQUADS) {
+  const shelf = document.createElement('div');
+  shelf.className = 'shelf';
+  shelf.style.setProperty('--c', `var(--${s.id})`);
+  const head = document.createElement('header');
+  head.innerHTML = `<h3></h3><p></p><p class="crew"></p>`;
+  head.children[0].textContent = s.name;
+  head.children[1].textContent = s.theme;
+  head.children[2].textContent = s.crew;
+  const cards = document.createElement('div');
+  cards.className = 'cards';
+  for (const d of DEMOS.filter((x) => x.squad === s.id)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'card';
+    b.innerHTML = `<span class="thumb"><img loading="lazy" alt=""></span><span class="txt"><b></b><small></small></span>`;
+    const img = b.querySelector('img');
+    img.src = 'posters/' + d.slug + '.jpg';
+    img.onerror = () => img.remove();
+    b.querySelector('b').textContent = d.title;
+    b.querySelector('small').textContent = d.tagline;
+    b.addEventListener('click', () => openPlay(d.slug));
+    b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') { hold(true); show(DEMOS.indexOf(d)); } });
+    b.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hold(false); });
+    b.addEventListener('focus', () => show(DEMOS.indexOf(d)));
+    cardEls[d.slug] = b;
+    cards.append(b);
+  }
+  shelf.append(head, cards);
+  $('shelves').append(shelf);
+}
+
+// ---------- chain of command ----------
+for (const [title, text] of STEPS) {
+  const li = document.createElement('li');
+  const st = document.createElement('strong');
+  st.textContent = title + ' ';
+  li.append(st, text);
+  $('steps').append(li);
+}
+$('fine').textContent = FINE;
+
+// ---------- stage ----------
+// Rotation order interleaves the squads so the stage never shows two from the same shelf in a row.
+const ORDER = [];
+for (let k = 0; k < 3; k++) for (const s of SQUADS) { const d = DEMOS.filter((x) => x.squad === s.id)[k]; if (d) ORDER.push(DEMOS.indexOf(d)); }
+let current = -1, playing = null, heldBy = 0;
+const stage = $('stage'), frame = $('stageFrame'), bar = $('timerBar');
+
+function show(i) {
+  if (i === current) return;
+  current = i;
+  const d = DEMOS[i], s = squadOf(d);
+  document.documentElement.style.setProperty('--accent', `var(--${s.id})`);
+  $('cEyebrow').textContent = `Now playing · Squad ${s.name}`;
+  $('cTitle').textContent = d.title;
+  $('cTag').textContent = d.tagline;
+  $('cControls').textContent = d.controls;
+  $('cNote').textContent = d.note || '';
+  $('cNote').hidden = $('cNoteLabel').hidden = !d.note;
+  $('playBtn').textContent = 'Play ' + d.title;
+  const poster = $('stagePoster');
+  poster.hidden = false;
+  poster.onerror = () => { poster.hidden = true; };
+  poster.src = 'posters/' + d.slug + '.jpg';
+  for (const k in cardEls) cardEls[k].classList.toggle('sel', k === d.slug);
+  frame.classList.remove('on');
+  if (!reduced && !playing) {
+    frame.onload = () => { if (DEMOS[current] === d) setTimeout(() => frame.classList.add('on'), 350); };
+    mount(frame, d.slug, true);
+  }
+  restartTimer();
+}
+function step(dir) {
+  const at = ORDER.indexOf(current);
+  show(ORDER[(at + dir + ORDER.length) % ORDER.length]);
+}
+function restartTimer() {
+  bar.classList.remove('run');
+  void bar.offsetWidth;
+  if (!reduced) bar.classList.add('run');
+}
+function hold(on) { heldBy = Math.max(0, heldBy + (on ? 1 : -1)); stage.classList.toggle('paused', heldBy > 0 || document.hidden || !!playing); }
+bar.addEventListener('animationend', () => step(1));
+document.addEventListener('visibilitychange', () => hold(false));
+stage.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') hold(true); });
+stage.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hold(false); });
+$('prevBtn').addEventListener('click', () => step(-1));
+$('nextBtn').addEventListener('click', () => step(1));
+$('playBtn').addEventListener('click', () => openPlay(DEMOS[current].slug));
+$('stageHit').addEventListener('click', () => openPlay(DEMOS[current].slug));
+
+// ---------- play overlay ----------
+function openPlay(slug) {
+  if (playing === slug) return;
+  closePlay(true);
+  const d = DEMOS.find((x) => x.slug === slug);
+  if (!d) return;
+  playing = slug;
+  show(DEMOS.indexOf(d));
+  frame.classList.remove('on');
+  frame.removeAttribute('srcdoc');
+  frame.src = 'about:blank';
+  const el = document.createElement('div');
+  el.className = 'play';
+  el.id = 'play';
+  const f = document.createElement('iframe');
+  f.title = d.title;
+  f.allow = 'autoplay; fullscreen';
+  f.onload = () => { try { f.focus(); } catch (e) {} };
+  const back = document.createElement('button');
+  back.type = 'button';
+  back.className = 'back';
+  back.textContent = 'Back';
+  back.addEventListener('click', () => closePlay());
+  el.append(f, back);
+  document.body.append(el);
+  document.body.classList.add('playing');
+  mount(f, slug, false);
+  hold(false);
+  try { if (location.hash !== '#' + slug) location.hash = slug; } catch (e) {}
+}
+function closePlay(silent) {
+  const el = $('play');
+  if (!el) return;
+  el.remove();
+  document.body.classList.remove('playing');
+  const was = playing;
+  playing = null;
+  if (silent) return;
+  try { if (location.hash === '#' + was) location.hash = 'arcade'; } catch (e) {}
+  const i = current; current = -1; show(i);
+  hold(false);
+  if (cardEls[was]) cardEls[was].focus({ preventScroll: true });
+}
+addEventListener('keydown', (e) => { if (e.key === 'Escape') closePlay(); });
+addEventListener('hashchange', route);
+function route() {
+  const slug = location.hash.slice(1);
+  if (DEMOS.some((d) => d.slug === slug)) openPlay(slug);
+  else if (playing) closePlay();
+}
+
+show(ORDER[0]);
+route();
+</script>

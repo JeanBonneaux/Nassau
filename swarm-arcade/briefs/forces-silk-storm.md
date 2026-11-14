@@ -1,0 +1,15 @@
+You are a builder for "Swarm Arcade", a gallery of self-contained interactive browser demos. Build ONE demo as ONE file: /home/user/Nassau/swarm-arcade/demos/forces-silk-storm.html (about 300-500 lines, vanilla JS, Canvas 2D).
+First read /home/user/Nassau/swarm-arcade/HOUSE_RULES.md; it is binding. Key points: starts with <!doctype html>, charset + viewport meta, <title>; all CSS/JS inline, ZERO external requests; full-viewport canvas, body{margin:0;overflow:hidden;background:#05060a}; handle resize; devicePixelRatio capped at 2; attract mode must look alive and impressive within 1 second with zero interaction; if location.hash contains "preview" hide all HUD/text and lighten the workload (shown at ~420x260); one small HUD top-left (title + one-line controls hint, font ui-monospace, Menlo, Consolas, monospace, 12px, rgba(255,255,255,.7)), keep the top-right 120x40px corner empty; requestAnimationFrame, clamp dt <= 1/30 s, cap every array/particle count; no alert/confirm/prompt, no console errors, no required localStorage; original work only. Touch only your file. Do not run git.
+Smoke test: from /home/user/Nassau run
+  node swarm-arcade/tools/check.cjs swarm-arcade/demos/forces-silk-storm.html
+Repeat until pass is true, then open the saved screenshots with the Read tool and check they look good (not blank, not static, visually striking, after interaction too, and in preview). Fix anything ugly. Finish with a brief report of what you built and the final smoke-test result.
+
+BRIEF:
+Silk Storm: Verlet cloth.
+- Data: cloth grid ~64x40 points in typed arrays (x,y,px,py,pinned). Constraints: structural (right/down) plus shear, stored as index pairs with rest length and an alive flag. Verlet step: pos += (pos-prev)*0.995 + gravity*dt^2 + wind. Wind = smoothly varying noise field (sum of sines over x,y,time) so the cloth billows. Solve constraints 5 iterations/frame (3 in preview). Pins: top row, every 4th point, anchored to a thin glowing rail.
+- Look: background gradient #05060a to #120a2a. Draw cloth as filled triangles/quads shaded by fake lighting from the quad's edge-vector cross product / stretch; colour gradient magenta #ff3d9a to cyan #3de7ff across the cloth; plus an additive 'lighter' pass of thin lines along constraints for glow; bright highlights at folds. shadowBlur only on the rail, never per-quad.
+- Attract mode: a gust sweeps across every few seconds, and an invisible 'wind ghost' circle drifts through the cloth pushing points.
+- Interaction: pointer drag grabs the nearest point (within 40px) and pulls it; right-click-drag or holding key X cuts constraints near the pointer; R resets/mends; W triggers a big gust. Dead constraints are skipped (no memory growth).
+- Preview: 36x22 grid, 3 iterations, no HUD, ghost + gust only.
+- Pitfalls: no per-frame allocation; recompute layout on resize (cloth ~70% of viewport width, centred); clamp points to the screen bottom; avoid NaN on dt spikes; disable the context menu on the canvas.
+- Accent colour: #ff3d9a

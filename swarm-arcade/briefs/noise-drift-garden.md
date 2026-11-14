@@ -1,0 +1,22 @@
+# Builder brief: Drift Garden (noise-drift-garden)
+
+Output file (write exactly this one file): /home/user/Nassau/swarm-arcade/demos/noise-drift-garden.html
+
+## Process
+Read /home/user/Nassau/swarm-arcade/HOUSE_RULES.md first (binding). Write ONE self-contained file at the path above. Run `node swarm-arcade/tools/check.cjs swarm-arcade/demos/noise-drift-garden.html` from /home/user/Nassau until pass is true, open the saved screenshots with the Read tool and fix anything blank, static or ugly. Do not run git, touch no other files. Report back in 3 lines.
+
+## Shared audio and visual rules
+Vanilla JS, Web Audio only, no samples or external files. Create the AudioContext only on the first pointerdown or keydown (and resume() if suspended). Before that, and whenever location.hash contains "preview", skip every sound call but keep the visuals and music logic running. Master chain: voices -> master GainNode (0.22) -> DynamicsCompressor (threshold -18, ratio 8, knee 10, attack .005, release .2) -> destination. Build the reverb from a ConvolverNode filled with a generated decaying-noise buffer (about 2.5 s stereo, exponential decay), at 25-35% wet. A feedback delay (DelayNode 0.3-0.4 s, feedback gain <= 0.4, lowpass in the loop) is the other send. Schedule using ctx.currentTime. Envelopes: gain.setValueAtTime(0, t), then linearRamp to peak over 5-15 ms, then setTargetAtTime decay; never start or stop at full gain. Stop each osc at release end + 0.1 s and onended -> disconnect all its nodes. Cap polyphony (drop or steal the oldest voice beyond the cap). Include a small mute button (top-left HUD area, not top-right) that ramps master gain to 0 or back. Wrap audio calls in try/catch so nothing throws. Keep to a pentatonic scale so any note combination sounds consonant. Visuals: canvas 2D, DPR capped at 2, dt clamped to 1/30, full-viewport, resize handler, background #05060a with trail fading via a semi-transparent fillRect, additive 'lighter' glow. HUD top-left only, 12px ui-monospace, rgba(255,255,255,.7), a "click to start sound" hint that fades after audio starts, and the top-right 120x40 corner empty. Hide the HUD in preview mode. In preview mode reduce particle counts by about 50%.
+
+## Demo: Drift Garden
+A generative ambient machine. 14-18 "orbs" (radius 10-26 px) drift slowly over the canvas on smooth noise-like velocity (sum of sines per orb, speed about 20-50 px/s), with soft bounces off the edges. Each orb has a fixed pitch from D major pentatonic (D E F# A B) spread over 3 octaves (D3 up to B5), with lower notes for larger orbs. Palette: deep indigo background with a faint vertical gradient, orbs coloured by pitch (hue 150 to 300, i.e. teal to violet), each drawn as a radial-gradient glow with a bright core. Each orb leaves a fading trail by using a translucent fillRect fade (alpha about 0.08) rather than clearing. Whenever two orbs come within the sum of their radii plus 30 px, draw a thin glowing line between them. When they actually touch (and per-pair cooldown 1.2 s has passed), the pair "sings": the visuals emit an expanding ring (lifetime 1.5 s, additive, fading) plus 6-10 small spark particles (cap 300 particles), and the sound plays the pitch of the orb with the larger radius, plus a quieter note a pentatonic step up from the other orb.
+
+Voice: two detuned triangle oscillators (+/-6 cents) into a lowpass filter (cutoff 1800 Hz, Q 0.7) into a gain envelope (attack 12 ms, decay setTargetAtTime tau 0.6 s, release done by about 2.5 s); send 40% to the reverb and 25% to the delay. Also run a very quiet sustained drone: two sine oscillators on D2 and A2 at gain 0.03 with a slow LFO (0.07 Hz) on the gain, started when audio starts. Cap polyphony at 10 voices.
+
+Attract mode: everything above runs with no input; with no audio the rings and sparks still fire, so it looks alive from second 0.
+
+Interaction: pointer down spawns a new orb at the pointer (max 24, oldest is removed with a fade-out) with a random pentatonic pitch, and it immediately chimes. Pointer move gently attracts orbs within 160 px (small acceleration) and draws a faint halo at the cursor. Space or key press: all orbs get a random velocity kick.
+
+Preview mode: 9 orbs, no HUD, no audio.
+
+Pitfalls: do not retrigger a pair each frame (use a cooldown Map keyed by i*100+j), clamp velocities, and make sure removed orbs are deleted from the array and any pair cooldown keys are cleaned or limited.

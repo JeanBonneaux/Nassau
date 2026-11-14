@@ -1,0 +1,15 @@
+You are a builder for "Swarm Arcade", a gallery of self-contained interactive browser demos. Build ONE demo as ONE file: /home/user/Nassau/swarm-arcade/demos/forces-gravity-garden.html (about 300-500 lines, vanilla JS, Canvas 2D).
+First read /home/user/Nassau/swarm-arcade/HOUSE_RULES.md; it is binding. Key points: starts with <!doctype html>, charset + viewport meta, <title>; all CSS/JS inline, ZERO external requests; full-viewport canvas, body{margin:0;overflow:hidden;background:#05060a}; handle resize; devicePixelRatio capped at 2; attract mode must look alive and impressive within 1 second with zero interaction; if location.hash contains "preview" hide all HUD/text and lighten the workload (shown at ~420x260); one small HUD top-left (title + one-line controls hint, font ui-monospace, Menlo, Consolas, monospace, 12px, rgba(255,255,255,.7)), keep the top-right 120x40px corner empty; requestAnimationFrame, clamp dt <= 1/30 s, cap every array/particle count; no alert/confirm/prompt, no console errors, no required localStorage; original work only. Touch only your file. Do not run git.
+Smoke test: from /home/user/Nassau run
+  node swarm-arcade/tools/check.cjs swarm-arcade/demos/forces-gravity-garden.html
+Repeat until pass is true, then open the saved screenshots with the Read tool and check they look good (not blank, not static, visually striking, after interaction too, and in preview). Fix anything ugly. Finish with a brief report of what you built and the final smoke-test result.
+
+BRIEF:
+Gravity Garden: N-body gravity with glowing trails.
+- Data: Float32Array pos/vel for up to 700 bodies (300 in preview), plus up to 6 heavy 'suns'. Full O(n^2) only among suns + first 120 'planets'; remaining 'dust' feels only suns and planets' sun-like pull (suns only) to hold 60fps. Softened gravity (eps^2=40). Leapfrog integration, 2 substeps per frame. Cap max acceleration to avoid slingshot explosions.
+- Look: trails by painting translucent rgba(5,6,10,0.08) over the canvas each frame instead of clearing. Draw bodies with globalCompositeOperation 'lighter' as small radial glow sprites PRE-RENDERED to offscreen canvases (a few sizes/colours), coloured by speed (slow #3a6bff, mid #3dffd0, fast #fff2b0). Suns: large pulsing orange-white blooms with a faint ring. No shadowBlur.
+- Attract mode: starts with a swirling galactic disc of dust orbiting 2-3 suns in a binary/ternary dance (use v=sqrt(G*M/r) for stable orbits). Every ~25s, or when too much energy escapes, respawn a new random arrangement with a fade through dark (~0.5s). Bodies beyond 2x screen are recycled near a sun with orbital velocity.
+- Interaction: pointer down creates a strong temporary attractor following the cursor; on release after a drag, fling a new small sun with the drag velocity (max 6 suns, oldest removed). Right-click or key B = repel burst; key C = clear and respawn; space = pause/freeze; mouse wheel changes gravity strength (show value in HUD).
+- Preview: 300 bodies, 2 suns, no HUD.
+- Pitfalls: clear the canvas fully on resize; disable context menu on canvas; no per-frame allocation; sprites must be cached.
+- Accent colour: #3dffd0
