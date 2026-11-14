@@ -105,8 +105,9 @@ void main(){
   vec3 up = up0 * cr - rt0 * sr;
   vec3 rd = normalize(p.x * rt + p.y * up + 1.6 * fw);
 
-  vec3 fogCol = vec3(0.0275, 0.0706, 0.145);               // #071225
-  vec3 c = mix(fogCol * 0.6, fogCol * 1.2, clamp(q.y, 0.0, 1.0));
+  float fa = pow(clamp(dot(rd, fw), 0.0, 1.0), 6.0);       // looking down the corridor -> glowing far end
+  vec3 fogCol = mix(vec3(0.03, 0.08, 0.2), mix(uWarm, vec3(1.0), 0.25) * 0.85, fa);
+  vec3 c = fogCol;
 
   /* march */
   float t = 0.0, tHit = 0.0, steps = 0.0, glow = 0.0, hit = 0.0;
@@ -139,10 +140,17 @@ void main(){
     float blk = hash3(floor(pos * 0.5));
     base *= mix(vec3(1.0), 0.5 + 0.5 * cos(6.2831 * (uHue + blk)), 0.12);  // per-block tint
 
+    float aoL = 0.0, aw = 1.0;
+    for (int k = 1; k <= 3; k++){ float h = 0.06 * float(k); aoL += aw * (h - DE(pos + n * h)); aw *= 0.5; }
+    aoL = clamp(1.0 - aoL * 6.0, 0.0, 1.0);
+    ao *= 0.4 + 0.6 * aoL;
     vec3 lit = uWarm * dif * 1.5 + uCool * fil * 0.55 + uWarm * lamp * 0.6 + uCool * 0.05;
     c = base * lit * (0.03 + 0.97 * ao);
-
-    float fogK = exp(-tHit * 0.08);
+    float rimF = pow(1.0 - clamp(dot(n, -rd), 0.0, 1.0), 3.0);
+    float spc = pow(clamp(dot(reflect(rd, n), key), 0.0, 1.0), 24.0);
+    c += uCool * rimF * 0.35 * ao + vec3(1.0, 0.85, 0.65) * spc * 0.35 * ao;
+    c += uWarm * pow(1.0 - aoL, 2.0) * 0.55;                 // warm light glowing from inside the recesses
+    float fogK = exp(-tHit * 0.11);
     c = mix(fogCol, c, fogK);
   }
 
