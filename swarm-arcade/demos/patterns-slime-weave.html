@@ -41,7 +41,7 @@ const glow = document.createElement('canvas');
 const gctx = glow.getContext('2d');
 
 const TWO_PI = Math.PI * 2;
-const N = PREVIEW ? 4000 : 12000;     // agent count (typed arrays, fixed)
+const N = PREVIEW ? 9000 : 12000;     // agent count (typed arrays, fixed)
 const TURN = 0.3;                     // turn rate toward strongest sensor
 const JITTER = 0.06;                  // tiny random wobble per step (low = crisp veins)
 const STEP = 1.1;                     // cells moved per step
@@ -104,11 +104,11 @@ let vig = null;                       // full-mode vignette gradient (built on r
 
 function gridSize() {
   const iw = Math.max(1, innerWidth), ih = Math.max(1, innerHeight);
-  let gw = Math.min(PREVIEW ? 240 : 640, Math.max(64, Math.floor(iw / 2)));
+  let gw = Math.min(PREVIEW ? 480 : 640, Math.max(64, Math.floor(PREVIEW ? iw : iw / 2)));
   let gh = Math.max(48, Math.round(gw * ih / iw));
   if (gh > 400) {
     gh = 400;
-    gw = Math.min(PREVIEW ? 240 : 640, Math.max(64, Math.round(gh * iw / ih)));
+    gw = Math.min(PREVIEW ? 480 : 640, Math.max(64, Math.round(gh * iw / ih)));
   }
   return { W: gw, H: gh };
 }

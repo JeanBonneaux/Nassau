@@ -400,8 +400,7 @@ function fillBand(b, pad, alpha) {
 
 function drawAurora() {
   for (const b of BANDS) {
-    fillBand(b, H * 0.035, b.a * 0.45);   // soft wide halo
-    fillBand(b, 0, b.a);                  // core curtain
+    fillBand(b, 0, b.a * 1.25);                  // core curtain
   }
 }
 

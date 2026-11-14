@@ -538,12 +538,14 @@ function draw() {
 
   // ambient centre glow plus the kick-driven brightness pulse (normal blend: additive here would haze up over the trails)
   const R = maxR * 1.15;
-  const gr = g.createRadialGradient(cxC, cyC, 0, cxC, cyC, R);
-  gr.addColorStop(0, col(RGB[KICK], (0.02 + 0.23 * bgPulse).toFixed(3)));
-  gr.addColorStop(1, col(RGB[KICK], 0));
   g.globalCompositeOperation = 'source-over';
-  g.fillStyle = gr;
-  g.fillRect(0, 0, W, H);
+  if (bgPulse > 0.02) {
+    const gr = g.createRadialGradient(cxC, cyC, 0, cxC, cyC, R);
+    gr.addColorStop(0, col(RGB[KICK], (0.02 + 0.23 * bgPulse).toFixed(3)));
+    gr.addColorStop(1, col(RGB[KICK], 0));
+    g.fillStyle = gr;
+    g.fillRect(0, 0, W, H);
+  }
   g.globalCompositeOperation = 'lighter';
 
   // drifting stars

@@ -60,7 +60,7 @@ body.preview #hud { display: none; }
 
   var DU = 1.0, DV = 0.5, RELIEF = 14;
   var VMAX = 0.4;
-  var WARM = 200;
+  var WARM = PREVIEW ? 900 : 600;
 
   var cv = document.getElementById('c');
   var ctx = cv.getContext('2d', { alpha: false });
@@ -77,7 +77,7 @@ body.preview #hud { display: none; }
   var U, V, U2, V2, img, img32, VIG;
   var cw = 1, ch = 1, dpr = 1;
 
-  var presetIdx = 0, Fb = PRESETS[0].F, kb = PRESETS[0].k, paletteIdx = 0;
+  var presetIdx = 3, Fb = PRESETS[3].F, kb = PRESETS[3].k, paletteIdx = 0;
   var userUntil = 0, time = 0, blobT = 0, presetT = 0, meanT = 0, hudT = 0, lastWheel = 0;
   var steps = PREVIEW ? 4 : 8, BASE_STEPS = PREVIEW ? 4 : 8, simEMA = 0;
   var lastT = performance.now();
@@ -142,7 +142,7 @@ body.preview #hud { display: none; }
 
   function reset(warm) {
     U.fill(1); V.fill(0);
-    for (var i = 0; i < 12; i++) randomBlob();
+    for (var i = 0, nb = Math.max(12, (N / 450) | 0); i < nb; i++) randomBlob();
     for (var s = 0; s < warm; s++) step(effF(), effK());
   }
 
@@ -361,7 +361,7 @@ body.preview #hud { display: none; }
 
     if (autoMode()) {
       blobT += dt;
-      if (blobT >= 2.5) { blobT = 0; randomBlob(); }
+      if (blobT >= 1.6) { blobT = 0; randomBlob(); }
       presetT += dt;
       if (presetT >= 20) { presetT = 0; setPreset((presetIdx + 1) % PRESETS.length); }
     }
@@ -399,7 +399,7 @@ body.preview #hud { display: none; }
 
   buildLUT();
   resize();
-  setPreset(0);
+  setPreset(3);
   requestAnimationFrame(frame);
 })();
 </script>

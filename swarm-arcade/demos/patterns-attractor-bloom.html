@@ -22,8 +22,8 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
 
   var PREVIEW = /preview/.test(location.hash);
   var NW = 2048;                 // walker pool
-  var ITERS = PREVIEW ? 8 : 40; // iterations per walker per frame (~16k pts in preview, ~80k otherwise)
-  var DECAY = 0.9;
+  var ITERS = PREVIEW ? 24 : 40; // iterations per walker per frame (~16k pts in preview, ~80k otherwise)
+  var DECAY = PREVIEW ? 0.95 : 0.9;
   var MAX_W = 1280, MAX_H = 800;
   var LUT_N = 4096;
 
@@ -160,7 +160,7 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
           dsc--;
         } else {
           var dx = nx - x, dy = ny - y;
-          var hv = Math.sqrt(dx * dx + dy * dy) * 0.7;
+          var hv = Math.sqrt(dx * dx + dy * dy) * 0.3;
           if (hv > 1) hv = 1;
           var rx = nx * cr - ny * sr, ry = nx * sr + ny * cr;
           var ix = (cx + rx * scale) | 0, iy = (cy + ry * scale) | 0;
