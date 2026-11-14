@@ -45,6 +45,11 @@ canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-actio
     '  return vec2(sin(z*0.17)*1.6 + sin(z*0.31)*0.7, cos(z*0.13)*1.2);',
     '}',
 
+    'float ribs2D(vec3 p){',
+    '  float q2 = mod(p.z, 0.5) - 0.25;',
+    '  float r2 = length(p.xy - path(p.z));',
+    '  return max(abs(q2) - 0.04, abs(r2 - 2.2) - 0.15);',
+    '}',
     'float scene(vec3 p, out float dRG){',
     '  vec2 c = path(p.z);',
     '  vec2 l = p.xy - c;',
@@ -55,9 +60,9 @@ canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-actio
     '  float q = mod(p.z, 2.0) - 1.0;',
     '  float ribs = max(abs(q) - 0.08, abs(r - 2.2) - 0.15);',
     '  float g = mod(p.z, 12.0) - 6.0;',
-    '  float gates = max(abs(r - 1.4) - 0.06, abs(g) - 0.05);',
+    '  float gates = max(abs(r - 1.4) - 0.06, abs(g) - 0.09);',
     '  dRG = min(ribs, gates);',
-    '  return 0.8*min(dTube, dRG);',
+    '  return 0.8*min(min(dTube, dRG), ribs2D(p));',
     '}',
 
     'vec3 calcN(vec3 p){',
@@ -118,7 +123,7 @@ canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-actio
     '  vec3 cv = cross(cw, cu);',
 
     '  float beat = pow(max(sin(uTime*2.0), 0.0), 8.0);',
-    '  float fz = 1.5 - 0.25*uBoost - 0.15*beat;',
+    '  float fz = 1.5 - 0.4*uBoost - 0.15*beat;',
     '  vec3 rd = normalize(uv.x*cu + uv.y*cv + fz*cw);',
 
     '  float tt = 0.0;',
@@ -130,7 +135,8 @@ canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-actio
     '    vec3 p = ro + rd*tt;',
     '    float d = scene(p, dRG);',
     '    float s = 0.5 + 0.5*sin(p.z*0.3 + uTime);',
-    '    gc += (0.006/(0.02 + abs(dRG))) * mix(A, B, s);',
+    '    float dR2 = ribs2D(p);',
+    '    gc += ((0.02/(0.03 + abs(dRG))) + (0.01/(0.03 + abs(dR2)))) * mix(A, B, s);',
     '    if (d < 0.002) { hit = 1.0; break; }',
     '    tt += d;',
     '    if (tt > 40.0) break;',
@@ -144,21 +150,28 @@ canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-actio
     '    float diff = max(dot(n, -rd), 0.0);',
     '    vec2 l = p.xy - path(p.z);',
     '    float a = atan(l.y, l.x);',
-    '    float s = 0.5 + 0.5*sin(p.z*0.4 + a*2.0);',
-    '    vec3 base = mix(A, B, s);',
-    '    col = base*(0.12 + 0.9*diff*diff) + C*pow(1.0 - diff, 4.0)*0.45;',
-    '    float fog = exp(-tt*0.11);',
+    '    scene(p, dRG);',
+    '    float lat1 = smoothstep(0.90, 0.985, sin(a*6.0));',
+    '    float lat2 = smoothstep(0.93, 0.995, cos(p.z*3.14159));',
+    '    float gridE = max(lat1, lat2);',
+    '    float isRib = step(dRG, 0.02);',
+    '    vec3 base = mix(A, B, 0.5 + 0.5*sin(p.z*0.4 + a*2.0));',
+    '    vec3 wall = BG*0.9 + base*0.05*diff;',
+    '    vec3 emit = base*gridE*2.2;',
+    '    vec3 ribC = mix(C, vec3(1.0), 0.5)*3.0;',
+    '    col = mix(wall + emit, ribC, isRib) + C*pow(1.0 - diff, 5.0)*0.12;',
+    '    float fog = exp(-tt*0.09);',
     '    col = mix(bgc, col, fog);',
     '  }',
 
     '  vec3 gr = hueRot(gc, 0.10);',
     '  vec3 gb = hueRot(gc, -0.10);',
-    '  col += vec3(gr.r, gc.g, gb.b) * 0.034;',
+    '  col += vec3(gr.r, gc.g, gb.b) * 0.06 * (1.0 + 1.5*uBoost);',
     '  col = hueRot(col, uBoost*0.5);',
     '  col *= 0.96 + 0.04*sin(gl_FragCoord.y*2.0944);',
     '  vec2 vc = scr - 0.5;',
     '  col *= 1.0 - 0.6*dot(vc, vc);',
-    '  col = 1.0 - exp(-max(col, 0.0)*1.1);',
+    '  col = 1.0 - exp(-max(col, 0.0)*1.4);',
     '  gl_FragColor = vec4(col, 1.0);',
     '}'
   ].join('\n');
@@ -194,7 +207,7 @@ canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-actio
   var uPal = gl.getUniformLocation(prog, 'uPal');
 
   // ---- render scale (fraction of CSS px * DPR) ----
-  var scale = preview ? 0.35 : 0.6;
+  var scale = preview ? 0.35 : 0.7;
   function dpr() { return Math.min(window.devicePixelRatio || 1, 2); }
   function resize() {
     var w = Math.max(1, Math.round(window.innerWidth * dpr() * scale));
