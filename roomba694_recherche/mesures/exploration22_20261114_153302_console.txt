@@ -1,0 +1,33 @@
+# exploration22_20261114_153302 — carte 192.168.18.25 — début 15:33:02.333 le 2026-11-14
+# cuisine, second passage pour creer des reperes (memes endroits, tour de l'ilot par la droite), puis passage vers la marche ; sans la touche e ; firmware v10
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794688382.442	15:33:02.442	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794688382.442	15:33:02.442	Client TCP connecté : 192.168.18.6
+1794688382.830	15:33:02.829	Impulsion BRC envoyée.
+1794688383.374	15:33:03.373	>> j
+1794688383.405	15:33:03.405	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794688386.920	15:33:06.920	Envoyé : Start (128) -> Passive
+1794688403.231	15:33:23.231	Envoyé : Safe (131)
+1794688404.759	15:33:24.759	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1794688416.114	15:33:36.113	Vitesse réglée à 75 mm/s (page web).
+1794688416.527	15:33:36.527	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794688417.993	15:33:37.992	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794688420.705	15:33:40.705	Tour sur place : 90° (25 mesures).
+1794688423.228	15:33:43.228	Tour sur place : 180° (48 mesures).
+1794688426.844	15:33:46.843	Tour sur place : 270° (82 mesures).
+1794688428.330	15:33:48.329	Tour sur place : 360° (97 mesures).
+1794688428.931	15:33:48.931	Tour sur place terminé : 380° en 10.9 s, 102 mesures. Roues arrêtées.
+1794688430.021	15:33:50.020	Mouvement 25 : rotation de -58.8°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794688431.727	15:33:51.726	Mouvement 25 : rotation de -57.3° pour -58.8° demandés, angle atteint. Roues arrêtées.
+1794688432.662	15:33:52.662	Mouvement 26 : avance de 333 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794688436.191	15:33:56.190	Mouvement 26 : 329 mm pour 333 mm demandés, cap +0.5°, distance atteinte. Roues arrêtées.
+1794688438.375	15:33:58.375	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794688444.439	15:34:04.439	Tour sur place interrompu après 0° : le robot ne répond plus. Roues arrêtées.
+1794688445.026	15:34:05.025	Roues arrêtées.
+1794688445.041	15:34:05.040	Vitesse réglée à 150 mm/s (page web).
+1794688690.281	15:38:10.280	Radar : arrêt, servo recentré puis relâché.
+1794688690.380	15:38:10.379	Envoyé : Start (128) -> Passive
+1794688692.115	15:38:12.114	Envoyé : Stop (173) -> OI fermée
+1794688694.431	15:38:14.430	>> j
+1794688694.547	15:38:14.546	Journal CSV désactivé.
+1794688695.564	15:38:15.563	## fin de l'enregistrement après 313.2 s

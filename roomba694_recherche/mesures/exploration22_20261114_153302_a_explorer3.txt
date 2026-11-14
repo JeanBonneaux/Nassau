@@ -1,0 +1,9 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (935, 165), cap 318°
+[  0.2 min]     filtre : position corrigée de (-32, +51) mm et -1.7° ; note 0.83, étalement 258 mm et 12.5°, gyroscope × 1.0045
+[  0.2 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.2 min]   porte possible : 1275 mm de large vers (16972, 6147), direction 188°
+[  0.2 min] station 0 : 7 paliers, 4 lignes de murs, axes de la pièce 8.5°
+[  0.2 min] cibles reçues (série 1) : [(937, 180), (975, 91), (984, 122), (984, 150), (1005, 70), (937, 81), (925, 106), (930, 129), (937, 142)]
+[  0.2 min]   vers la cible (937, 180) du plan : 1 étapes
+[  0.5 min]   tour impossible : tour arrêté : le robot ne répond plus
+[  0.5 min] fin : arrêt pendant un trajet vers une cible | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 2 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.4 m | batterie 1879 mAh

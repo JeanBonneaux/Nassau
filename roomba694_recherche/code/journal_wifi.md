@@ -1713,3 +1713,22 @@ Compilée sans avertissement : 1 141 818 octets, 87 % de la place. **La carte po
 - **Second passage dans la cuisine**, pour créer des repères : repasser par les huit tours du § 48 et faire le tour de l'îlot par la droite, le long du comptoir en inox. Le plan donne un chemin pour chaque étape (`plan_lidar/cuisine_chemin_passage2.png`) ; la bande à droite de l'îlot y fait 60 cm. Destinations, en pixels : (937, 180), (975, 91), (984, 122), (984, 150), (984, 176), (1005, 70), (937, 81), (925, 106), (930, 129), (937, 142).
 - **Vers la marche** : le passage entre la table aux bacs de recyclage et le mur ne fait que 49 cm sur le plan, de D31 à D34 (le planificateur n'y passe que grâce au trait vert de l'utilisateur) ; puis une porte en C29, où doit être la marche (`plan_lidar/cuisine_vers_marche.png`). À mesurer au capteur de distance avant de s'y engager.
 - **La marche** : sa hauteur et son sens ne sont pas connus. En mode Safe, une roue qui se soulève fait retomber le robot en mode passif : il faudra l'accord de l'utilisateur pour le remettre en mode Safe à chaque fois pendant cette leçon.
+
+## 50. Second passage dans la cuisine : arrêté au bout de trente secondes par les trous des lectures (2026-11-14, 15 h 31 à 15 h 40)
+
+Réponses de l'utilisateur : deux photos (les branchements de près ; la cuisine vue de l'autre bout, avec le robot), puis « Oui tu enchaîne seul » à ma question sur la marche : il m'autorise, pour la leçon de la marche, à remettre moi-même le robot en mode Safe quand il retombe en mode passif. Il n'a pas répondu à la question sur l'installation de la v11 ; je ne l'ai donc pas installée.
+
+### Ce que montrent les photos (non gardées)
+
+- **Branchements** : carte du cerveau allumée, câble USB enfoncé, batterie portable à deux voyants sur quatre. Les trois fils vers le robot sortent du cadre : leur prise n'est pas vérifiée. La batterie portable n'est pas fixée et son coin arrive au bord du bouton CLEAN. Vérifié dans les enregistrements du jour (`btn` de `/api/state` deux fois par seconde, et réponses à la touche `e`) : aucun appui sur un bouton l'après-midi, y compris avant le redémarrage du robot de 15 h 05 ; ce n'est donc pas un appui long sur CLEAN qui l'a fait redémarrer. Demandé à l'utilisateur : la fixer au ruban, loin du bouton, avant la marche (si elle glisse et débranche le cerveau, le robot garde son dernier ordre de roues).
+- **La pièce vue du haut du plan vers le bas** : le robot est entre l'îlot et des armoires blanches avec évier (le bloc de E34 à G35, plein jusqu'au sol), à une cinquantaine de centimètres d'une porte de balcon fermée, avec un seuil. C'est elle que le robot avait vue à 27 cm en G36 (§ 48). La position de fin du § 48 était donc juste à une dizaine de centimètres près, plutôt trop haute sur le plan, comme le laissaient attendre les 196 mm non comptés. Une boîte en carton est au sol à gauche de cette porte (H37). La première photo datait bien du moment où le robot avait été posé en C39.
+
+### Le passage
+
+Enregistrement `mesures/exploration22_20261114_153302_*`, sans la touche `e`, firmware v10, vitesse demandée 75 mm/s. Destinations : celles du § 49, sans (984, 176) à cause de la boîte en carton.
+
+- 15 h 33 min 40 : premier tour sur place, complet malgré un trou de 1,5 s. Filtre : G36, pixel (933, 162), note 0,83, correction (−32, +51) mm et −1,7°.
+- Avance de 33 cm vers (937, 180), faite.
+- 15 h 33 min 58 : second tour arrêté par le cerveau avant d'avoir tourné, « le robot ne répond plus » : 4,9 s sans lecture.
+
+Dans les quatre premières minutes de l'enregistrement : 24 trous de plus de 250 ms, dont 18 de plus d'une seconde ; 15 % du temps sans lecture (par minute : 4, 4, 11, 4, 1). Je n'ai pas relancé : avec la v10 et une liaison dans cet état, le robot roulerait sans surveillance une bonne partie du temps. La suite attend l'accord de l'utilisateur pour installer la v11.
