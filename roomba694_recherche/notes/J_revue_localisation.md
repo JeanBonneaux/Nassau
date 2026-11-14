@@ -1,6 +1,6 @@
 # J — Revue de la localisation : ce que le projet pourrait manquer
 
-Rédigé le 2026-11-14 par une session à part, à ta demande : « review les possibilités de localisation que je pourrais manquer ». **C'est une revue : rien n'a roulé, aucun ordre n'a été envoyé au robot ni au cerveau, aucun fichier existant n'a été modifié.** Elle part de l'audit du même jour ([note I](I_audit_regard_neuf.md)) et ne le refait pas.
+Rédigé le 2026-11-14 par une session à part, à ta demande : « review les possibilités de localisation que je pourrais manquer ». **C'est une revue : rien n'a roulé, aucun ordre n'a été envoyé au robot, aucun fichier existant n'a été modifié.** Le cerveau n'a été interrogé qu'après coup, le 14 à 17 h 43, une fois cette limite levée par toi : des lectures de son état, robot endormi sur sa base, rien de changé dans sa mémoire. Elle part de l'audit du même jour ([note I](I_audit_regard_neuf.md)) et ne le refait pas.
 
 Chaque affirmation porte une étiquette :
 
@@ -88,7 +88,8 @@ Lu en partie : `centrage.py`, `explorer3.py`, `carto.py`, `plan.py`, `balise_bas
   La carte cohérente explique donc 15 cm des 40. **Il reste 24 cm comptés en trop sur 9,1 m, soit 2,7 %**, alors que les roues comptent juste à 1 % en ligne droite. Je ne peux pas dire quelle part revient au couloir seul.
 - **Une piste écartée** (`rv_derive_pivot.py`, mesuré). Si le robot glissait un peu à chaque pivot, les tours sur place le montreraient : leurs vingt derniers degrés revoient les parois des vingt premiers. Sur 62 tours : −0,8 mm ± 1,0. **Un tour complet ne déplace pas le robot.**
 - **Ce qui reste possible** (supposé). Ce tronçon contient une vingtaine de séries de pivots (+90°, −180°, +90°) et des petits pivots de 3°, qui ne sont pas des tours complets. Un centimètre perdu par série suffirait. Les enregistrements ne permettent pas de le dire : devant, la cible change à chaque arrêt.
-- **L'essai qui tranche** (rotation seulement, deux minutes, ton accord comme pour tout mouvement). Robot face à une paroi à 1 m, lire vingt fois la distance ; faire dix fois la série +90°, −180°, +90° comme le fait `centrage.py` ; relire. **Oui, les pivots déplacent le robot** si la distance a changé de plus de 3 cm. Sinon la cause est ailleurs et il faudra refaire le couloir en enregistrant la lecture brute du capteur.
+- **L'essai qui tranche** (rotation seulement, trois minutes, ton accord comme pour tout mouvement). Robot face à une paroi à 1 m, lire la distance ; faire dix fois la série +90°, −180°, +90° comme le fait `centrage.py` (roues à 100, 75 et 100 mm/s, mêmes pauses), en relisant la distance après chaque série. **Oui, les pivots déplacent le robot** si la distance a changé de plus de 3 cm au bout des dix. Sinon la cause est ailleurs et il faudra refaire le couloir en enregistrant la lecture brute du capteur.
+- **Le programme est prêt, pas lancé** : `data_analysis/rv_essai_pivots.py`. Sans l'option `--go` il lit l'état et dit ce qu'il ferait (essayé le 14 à 17 h 44, robot sur sa base : « il refuserait »). Avec `--go` il passe par les rotations bornées du cerveau (`/api/mouv?rot=`), s'arrête à la première anomalie sans jamais remettre le mode Safe de lui-même, et finit par `s` puis `x`. Il écrit `mesures/revue_…_pivots.json`.
 
 ### 2.4 Le cap tiré de la « corde » entre deux tours
 
