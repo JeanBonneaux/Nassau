@@ -1470,3 +1470,25 @@ Demande de l'utilisateur, à ma question « je refais base → C28 → base pour
 **Non vérifié** : l'arrêt sur patinage en roulant (pas de patinage ce jour-là) ; la distance du robot à sa base à l'arrivée (99 cm de sa place sur la base d'après le filtre ; un objet à 50 cm dans la direction de la base au capteur de distance).
 
 **État à la fin** : robot en D16, devant sa base, dans son axe à quelques millimètres près, tourné vers elle (récepteurs du dessus et avant gauche « rouge et vert », avant droit « rouge »), pas posé dessus ; session fermée (`5`, `s`, `x`) à 9 h 29 min 57, capteur de distance au repos, vitesse 150, batterie 1 992 mAh.
+
+## 46. Accostage après la mesure : l'ordre du robot n'a pas abouti seul (2026-11-14, 9 h 34)
+
+Accord de l'utilisateur : « Oui, accoste-le ». Enregistrement : `mesures/exploration20_20261114_093358_*`. Robot au départ : en D16, dans l'axe de sa base à quelques millimètres près, tourné vers elle (§ 45), endormi.
+
+**Ce que l'enregistrement montre.**
+
+- 9 h 34 min 13 : réveil, mode passif, touche `h` (Seek Dock). Les trois récepteurs lisent la base (172, 172, 168).
+- 9 h 34 min 16 à 30 : le robot avance vers la base en louvoyant (cap de −29° à +27°), jusqu'à **215 mm/s** et **1,57 A**. **Le pare-chocs gauche s'enfonce trois fois en route**, à 44, 54 et 64 cm du départ : quelque chose se trouve sur le chemin de la base. Champ proche (161) reçu à partir de 70 cm. À 1,15 m du départ, pare-chocs gauche enfoncé de nouveau : la base.
+- 9 h 34 min 31 à 39 : il recule, tourne sur lui-même, touche encore (droit, puis les deux, puis gauche), et **s'arrête pour de bon à 9 h 34 min 39, à 94 cm du départ et 10 cm à droite de l'axe, tourné de 140° vers la droite**, moteurs coupés. Il n'est pas sur sa base.
+- 9 h 34 min 40 à 43 : le cap revient de −140° à +10° **sans que les roues tournent**, puis le sol devient sombre sous les deux capteurs de vide avant et les deux pare-chocs s'enfoncent : le robot a été tourné et poussé sur sa base à la main.
+- 9 h 34 min 48 : le robot ne répond plus aux lectures (toutes à zéro). 9 h 34 min 50 : dernière ligne reçue du cerveau ; ni page ni ping depuis.
+
+**Ce que cela dit.**
+
+- **L'ordre « rentre à la base » a échoué cette fois**, alors que le robot partait dans l'axe à moins d'un mètre. Le 13 (§ 40) il avait réussi en 21 s depuis le même genre de départ, avec un seul recul. La différence visible : trois contacts en route. L'objet vu au capteur de distance à l'est de l'axe (§ 42, pixel (419, 51)) ou autre chose gêne l'approche.
+- La distance : le robot a touché la base après 1,15 m de trajet. Le filtre le plaçait à 99 cm de sa place sur la base ; l'objet vu à 50 cm (§ 45) n'était donc pas la base.
+- Pendant cet ordre le robot roule plus vite et consomme six fois plus que quand le cerveau le conduit (§ 40) : confirmé.
+
+**Non vérifié** : que le robot charge (le cerveau s'est tu deux secondes après l'arrivée sur la base) ; pourquoi le cerveau s'est tu (débranché par l'utilisateur, comme la veille à 17 h 19, ou autre chose). La séance n'avait pas à être fermée : le robot est resté en mode passif pendant tout l'accostage.
+
+**À proposer** : dégager le devant de la base (rien à moins de 50 cm de chaque côté de l'axe sur 1,2 m) ; ou un accostage mené par le cerveau, lentement, sur les faisceaux.
