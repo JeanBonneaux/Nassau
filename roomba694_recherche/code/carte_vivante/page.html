@@ -4,97 +4,151 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="color-scheme" content="light">
-<title>Carte vivante — Roomba 694</title>
+<meta name="theme-color" content="#ffffff">
+<title>Carte vivante du Roomba 694</title>
 <style>
+  /* La page est dessinée comme une carte marine : le robot navigue à l'estime, se recale sur des repères et rentre
+     au port entre un feu rouge et un feu vert. Papier blanc là où il a roulé, brume là où il n'est jamais passé,
+     sable pour les meubles, encre pour les murs. Trois encres : sombre (ce qui est), cobalt (ce que le robot trace
+     et vise), magenta (ce qui demande attention). Le rouge et le vert ne servent qu'aux faisceaux de la base. */
   :root {
-    --fond: #f4f3ef; --surface: #fcfcfb; --encre: #0b0b0b; --doux: #52514e; --trait: #d9d7d0;
-    --bleu: #2a78d6; --orange: #eb6834; --vert: #1a8f4c; --rouge: #d03b3b; --violet: #7a5cc4; --ambre: #b57a00; --echo: #0d8f8f;
+    --papier: #ffffff; --brume: #dde9ee; --sable: #e3d3a2; --encre: #17212e; --cobalt: #1b4fa8; --magenta: #b4246e;
+    --babord: #c4362b; --tribord: #1c8750; --ocre: #c99700;
+    --encre-douce: rgba(23, 33, 46, .68); --filet: rgba(23, 33, 46, .16);
+    --police: "Bahnschrift", "Avenir Next Condensed", "Roboto Condensed", "sans-serif-condensed", "Arial Narrow", "Segoe UI", sans-serif;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--fond); color: var(--encre);
-    font: 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overscroll-behavior: none; }
+  html, body { margin: 0; height: 100%; background: var(--papier); color: var(--encre); font: 400 15px/1.4 var(--police);
+    font-stretch: 87.5%; font-variant-numeric: tabular-nums; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
   body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
-  header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 12px; row-gap: 4px; padding: 7px 12px;
-    padding-top: max(7px, env(safe-area-inset-top)); background: var(--surface); border-bottom: 1px solid var(--trait); }
-  #case { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; min-width: 62px; line-height: 1; font-variant-numeric: tabular-nums; }
-  #act { font-weight: 600; min-width: 0; }
-  #act small { display: block; font-weight: 400; color: var(--doux); font-size: 13px; }
-  #source { grid-column: 1 / -1; color: var(--doux); font-size: 13px; display: flex; align-items: baseline; gap: 6px; }
-  #source b { color: var(--encre); font-weight: 600; }
-  .pastille { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #9a9992; transform: translateY(-1px); }
-  .pastille.sur { background: var(--vert); } .pastille.estime { background: var(--ambre); } .pastille.inconnu { background: var(--rouge); }
-  #direct { flex: none; font-size: 12px; color: var(--doux); text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-  #voyant { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: var(--encre); }
-  #voyant i { width: 8px; height: 8px; border-radius: 50%; background: #9a9992; }
-  #voyant.vif i { background: var(--vert); animation: bat 1.4s ease-in-out infinite; }
-  #voyant.rejeu i { background: var(--bleu); } #voyant.panne i { background: var(--rouge); }
-  @keyframes bat { 50% { opacity: 0.25; } }
-  main { position: relative; flex: 1; min-height: 0; }
+  button, select, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+
+  /* le bandeau : où est le robot, ce qu'il fait, d'où vient sa position */
+  #bandeau { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "point fait veille" "source source source";
+    column-gap: 12px; row-gap: 7px; align-items: center; padding: max(10px, env(safe-area-inset-top)) 12px 9px; }
+  #point { grid-area: point; display: flex; align-items: center; gap: 7px; }
+  #rose { width: 30px; height: 30px; flex: none; }
+  #rose circle { fill: none; stroke: var(--filet); stroke-width: 1.5; }
+  #aiguille { fill: var(--encre); transform-origin: 15px 15px; transition: transform .25s; }
+  #case { font-size: 40px; font-weight: 700; line-height: 1; letter-spacing: -.01em; min-width: 1.6ch; }
+  #bandeau.perdu #case { color: var(--magenta); }
+  #bandeau.perdu #aiguille { display: none; }
+  #fait { grid-area: fait; min-width: 0; }
+  #act { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.2; }
+  #detail { margin: 2px 0 0; font-size: 13.5px; line-height: 1.25; color: var(--encre-douce); }
+  #detail:empty { display: none; }
+  #veille { grid-area: veille; text-align: right; font-size: 13.5px; line-height: 1.3; }
+  #voyant { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
+  #voyant::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--encre); }
+  #voyant.vif::before { background: var(--cobalt); border-color: var(--cobalt); animation: bat 1.6s ease-in-out infinite; }
+  #voyant.rejeu::before { border-radius: 0; background: var(--encre); }
+  #voyant.panne { color: var(--magenta); }
+  #voyant.panne::before { background: var(--magenta); border-color: var(--magenta); }
+  @keyframes bat { 50% { opacity: .25; } }
+  #horloge { display: block; color: var(--encre-douce); white-space: nowrap; }
+  #source { grid-area: source; margin: 0; display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.3; }
+  #marque { flex: none; width: 16px; height: 16px; margin-top: 1px; }
+  #srcTexte b { font-weight: 600; }
+  @media (min-width: 760px) {
+    #bandeau { grid-template-columns: auto auto minmax(0, 1fr) auto; grid-template-areas: "point fait source veille"; column-gap: 22px; }
+    #source { align-items: center; }
+  }
+
+  /* la carte */
+  main { position: relative; flex: 1; min-height: 0; background: #eef2f4; }
   canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
-  #boutons { position: absolute; right: 10px; bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
-  #boutons button { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--trait); background: var(--surface);
-    color: var(--encre); font-size: 20px; line-height: 1; box-shadow: 0 1px 3px rgba(0,0,0,.12); cursor: pointer; }
-  #boutons button.actif { background: var(--encre); color: #fff; border-color: var(--encre); }
-  #bulle { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); max-width: calc(100% - 24px); padding: 8px 12px;
-    border-radius: 10px; background: rgba(11,11,11,.9); color: #fff; font-size: 14px; text-align: center; pointer-events: none;
-    opacity: 0; transition: opacity .25s; }
-  #bulle.vue { opacity: 1; }
-  #bulle.cal { background: rgba(92,62,170,.95); } #bulle.contact { background: rgba(190,40,40,.95); }
-  #fiche { position: absolute; left: 10px; right: 64px; bottom: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface);
-    border: 1px solid var(--trait); box-shadow: 0 2px 8px rgba(0,0,0,.15); font-size: 14px; display: none; }
-  #fiche.vue { display: block; } #fiche b { display: block; margin-bottom: 2px; }
-  #calques { position: absolute; right: 62px; bottom: 12px; padding: 8px 12px 10px; border-radius: 12px; background: var(--surface);
-    border: 1px solid var(--trait); box-shadow: 0 2px 8px rgba(0,0,0,.15); font-size: 14px; display: none; max-width: calc(100% - 80px); }
-  #calques.vue { display: block; }
-  #calques b { display: block; margin-bottom: 4px; }
-  #calques label { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
-  #calques input { width: 18px; height: 18px; accent-color: var(--bleu); flex: none; }
-  #attente { position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); text-align: center; color: var(--doux);
-    background: rgba(252,252,251,.9); padding: 14px; border-radius: 12px; display: none; }
+  #outils { position: absolute; right: 10px; bottom: 12px; display: flex; flex-direction: column; background: var(--papier);
+    border: 1px solid var(--encre); border-radius: 4px; }
+  #outils button { width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-top: 1px solid var(--filet); background: transparent; padding: 0; }
+  #outils button:first-child { border-top: 0; border-radius: 3px 3px 0 0; }
+  #outils button:last-child { border-radius: 0 0 3px 3px; }
+  #outils button[aria-pressed="true"] { background: var(--encre); color: var(--papier); }
+  #outils button:focus-visible { outline-offset: -4px; }
+  #outils svg, #loch .chevron { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  @media (pointer: coarse) { #bPlus, #bMoins { display: none; } }
+  #avis { position: absolute; left: 50%; top: 34px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px); padding: 8px 13px;
+    background: var(--encre); color: var(--papier); font-size: 14.5px; line-height: 1.3; border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity .2s; }
+  #avis.vue { opacity: 1; }
+  #avis.alerte { background: var(--magenta); }
+  #fiche { position: absolute; left: 10px; right: 66px; bottom: 12px; max-width: 430px; padding: 10px 42px 11px 12px; background: var(--papier);
+    border: 1px solid var(--encre); border-radius: 4px; font-size: 14.5px; line-height: 1.35; display: none; }
+  #fiche.vue { display: block; }
+  #fiche h2 { margin: 0 0 3px; font-size: 15.5px; font-weight: 600; line-height: 1.25; }
+  #fiche p { margin: 0; }
+  #fiche p:empty { display: none; }
+  #fermeFiche { position: absolute; top: 2px; right: 2px; width: 38px; height: 38px; border: 0; background: none; font-size: 22px; line-height: 1; }
+  #attente { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100% - 32px)); padding: 13px 15px;
+    background: var(--papier); border: 1px solid var(--encre); border-radius: 4px; display: none; }
   #attente.vue { display: block; }
-  #rejeu { display: none; align-items: center; gap: 8px; padding: 6px 12px; background: var(--surface); border-top: 1px solid var(--trait); font-size: 13px; }
+
+  /* sous la carte : le rejeu, puis la dernière ligne du journal de bord */
+  #rejeu { display: none; align-items: center; gap: 10px; padding: 6px 12px; border-top: 1px solid var(--encre); background: var(--papier); font-size: 14px; }
   #rejeu.vue { display: flex; }
-  #rejeu button, #rejeu select { height: 34px; border-radius: 9px; border: 1px solid var(--trait); background: #fff; font: inherit; padding: 0 10px; }
-  #rejeu input { flex: 1; min-width: 0; accent-color: var(--bleu); }
-  #rejeu output { font-variant-numeric: tabular-nums; }
-  footer { background: var(--surface); border-top: 1px solid var(--trait); padding-bottom: env(safe-area-inset-bottom); }
-  #poignee { display: flex; align-items: center; gap: 8px; padding: 9px 12px; cursor: pointer; font-size: 14px; }
-  #dernier { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #dernier time, #journal time { color: var(--doux); font-variant-numeric: tabular-nums; margin-right: 6px; }
-  #chevron { color: var(--doux); transition: transform .2s; }
-  footer.ouvert #chevron { transform: rotate(180deg); }
-  #volet { display: none; max-height: 46vh; overflow-y: auto; border-top: 1px solid var(--trait); -webkit-overflow-scrolling: touch; }
-  footer.ouvert #volet { display: block; }
-  #mesures { padding: 8px 12px; color: var(--doux); font-size: 13px; border-bottom: 1px solid var(--trait); }
+  #rejeu button, #rejeu select { height: 36px; min-width: 40px; border: 1px solid var(--encre); border-radius: 4px; background: var(--papier); padding: 0 10px; }
+  #rejeu input { flex: 1; min-width: 0; accent-color: var(--cobalt); }
+  #loch { display: grid; grid-template-columns: auto 16px minmax(0, 1fr) auto; align-items: start; column-gap: 8px; width: 100%;
+    padding: 10px 12px max(10px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--encre); background: var(--papier);
+    text-align: left; font-size: 14.5px; line-height: 1.3; }
+  #loch time, #journal time { color: var(--encre-douce); }
+  #loch svg.signe, #journal svg { width: 16px; height: 16px; margin-top: 1.5px; }
+  #dernier { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #loch .chevron { margin-top: -1px; }
+
+  /* les deux feuilles qui montent du bas : journal de bord, légende */
+  .feuille { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; max-height: min(68dvh, 600px); display: none; flex-direction: column;
+    background: var(--papier); border-top: 2px solid var(--encre); }
+  .feuille.vue { display: flex; }
+  .entete { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 9px; }
+  .entete h2 { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.2; }
+  .entete button { height: 36px; padding: 0 13px; border: 1px solid var(--encre); border-radius: 4px; background: var(--papier); }
+  .corps { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: env(safe-area-inset-bottom); }
+  @media (min-width: 760px) {
+    .feuille { left: auto; right: 12px; bottom: 12px; width: 430px; max-height: 72dvh; border: 1px solid var(--encre); border-top-width: 2px; border-radius: 4px; }
+  }
+  #mesures { margin: 0; padding: 0 12px 10px; font-size: 13.5px; line-height: 1.35; color: var(--encre-douce); border-bottom: 1px solid var(--filet); }
   #journal { list-style: none; margin: 0; padding: 0; }
-  #journal li { padding: 8px 12px; border-bottom: 1px solid #eceae4; font-size: 14px; cursor: pointer; display: flex; gap: 8px; }
-  #journal li i { flex: none; width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; background: #9a9992; }
-  #journal li.cal i { background: var(--violet); } #journal li.contact i, #journal li.alerte i { background: var(--rouge); }
-  #journal li.cible i, #journal li.base i { background: var(--vert); } #journal li.pos i { background: var(--ambre); }
-  #legende { padding: 10px 12px 14px; font-size: 13px; color: var(--doux); display: grid; grid-template-columns: 26px 1fr; gap: 6px 8px; align-items: center; }
-  #legende svg { width: 26px; height: 14px; display: block; }
-  #legende h2 { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--encre); }
+  #journal li { display: grid; grid-template-columns: 4.4ch 16px minmax(0, 1fr); column-gap: 8px; align-items: start; padding: 9px 12px;
+    border-bottom: 1px solid var(--filet); font-size: 14.5px; line-height: 1.3; }
+  #journal li.ici { cursor: pointer; }
+  #journal li.vide { display: block; color: var(--encre-douce); }
+  #legende { padding: 0 12px 16px; }
+  #legende h3 { margin: 14px 0 2px; font-size: 14.5px; font-weight: 600; }
+  #legende h3:first-child { margin-top: 2px; }
+  #legende ul { list-style: none; margin: 0; padding: 0; }
+  #legende li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; column-gap: 10px; align-items: center; min-height: 36px; padding: 5px 0;
+    border-bottom: 1px solid var(--filet); font-size: 14px; line-height: 1.3; }
+  #legende svg { width: 30px; height: 18px; display: block; }
+  .bascule { appearance: none; -webkit-appearance: none; position: relative; width: 40px; height: 24px; margin: 0; border: 1.5px solid var(--encre);
+    border-radius: 12px; background: var(--papier); cursor: pointer; }
+  .bascule::after { content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 50%; background: var(--encre); transition: transform .15s; }
+  .bascule:checked { background: var(--encre); }
+  .bascule:checked::after { background: var(--papier); transform: translateX(16px); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<header>
-  <div id="case" title="Case où est le robot">—</div>
-  <div id="act">En attente des données…</div>
-  <div id="direct"><span id="voyant"><i></i><span id="voyantTexte">…</span></span><span id="horloge"></span></div>
-  <div id="source"><span class="pastille" id="pastille"></span><span id="srcTexte"></span></div>
+<header id="bandeau">
+  <div id="point">
+    <svg id="rose" viewBox="0 0 30 30" role="img" aria-label="Direction vers laquelle le robot est tourné"><circle cx="15" cy="15" r="13"/><path id="aiguille" d="M15 2.5 L19.6 19 L15 16.2 L10.4 19 Z"/></svg>
+    <span id="case" title="Case où est le robot">–</span>
+  </div>
+  <div id="fait"><p id="act">En attente des données</p><p id="detail"></p></div>
+  <div id="veille"><span id="voyant">…</span><time id="horloge"></time></div>
+  <p id="source"><svg id="marque" viewBox="0 0 16 16" aria-hidden="true"></svg><span id="srcTexte"></span></p>
 </header>
 <main>
-  <canvas id="carte" aria-label="Plan quadrillé de l'appartement avec la position du robot"></canvas>
-  <div id="bulle" role="status"></div>
+  <canvas id="carte" aria-label="Carte quadrillée de l'appartement avec la position du robot"></canvas>
+  <div id="avis" role="status"></div>
   <div id="attente"></div>
-  <div id="fiche"></div>
-  <div id="calques"><b>Ce que la carte garde en mémoire</b></div>
-  <div id="boutons">
-    <button id="bCalques" title="Choisir ce que la carte montre" aria-label="Choisir ce que la carte montre">≡</button>
-    <button id="bSuivre" title="Suivre le robot" aria-label="Suivre le robot">◎</button>
-    <button id="bTout" title="Voir tout l'appartement" aria-label="Voir tout l'appartement">▭</button>
-    <button id="bPlus" title="Agrandir" aria-label="Agrandir">+</button>
-    <button id="bMoins" title="Réduire" aria-label="Réduire">−</button>
+  <div id="fiche"><h2 id="ficheTitre"></h2><p id="ficheTexte"></p><button id="fermeFiche" aria-label="Fermer la fiche">×</button></div>
+  <div id="outils">
+    <button id="bLegende" aria-pressed="false" aria-controls="feuilleLegende" title="Légende et calques" aria-label="Légende et calques"><svg viewBox="0 0 24 24"><path d="M12 4 3 9l9 5 9-5-9-5Z"/><path d="m3 14 9 5 9-5"/></svg></button>
+    <button id="bSuivre" aria-pressed="true" title="Suivre le robot" aria-label="Suivre le robot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
+    <button id="bTout" title="Voir tout l'appartement" aria-label="Voir tout l'appartement"><svg viewBox="0 0 24 24"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/></svg></button>
+    <button id="bPlus" title="Agrandir" aria-label="Agrandir"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button id="bMoins" title="Réduire" aria-label="Réduire"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
   </div>
 </main>
 <div id="rejeu">
@@ -105,42 +159,69 @@
     <option value="1">× 1</option><option value="4">× 4</option><option value="8" selected>× 8</option><option value="20">× 20</option><option value="60">× 60</option>
   </select>
 </div>
-<footer id="bas">
-  <div id="poignee"><span id="dernier" aria-live="polite">Journal de l'essai</span><span id="chevron">▲</span></div>
-  <div id="volet">
-    <div id="mesures"></div>
-    <ol id="journal"></ol>
-    <div id="legende">
-      <h2>Ce que montre la carte</h2>
-      <svg viewBox="0 0 26 14"><line x1="1" y1="7" x2="25" y2="7" stroke="#2a78d6" stroke-width="2.5"/></svg><span>trajet calé : corrigé par le tour sur place qui l'a suivi</span>
-      <svg viewBox="0 0 26 14"><line x1="1" y1="7" x2="25" y2="7" stroke="#2a78d6" stroke-width="2.5" stroke-dasharray="5 4"/></svg><span>trajet à l'estime : compté par le robot depuis le dernier calage</span>
-      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="4.5" fill="#fff" stroke="#2a78d6" stroke-width="2"/></svg><span>tour sur place (le robot se recale sur le plan)</span>
-      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="4.5" fill="#fff" stroke="#2a78d6" stroke-width="2"/><circle cx="13" cy="7" r="1.7" fill="#2a78d6"/></svg><span>tour confirmé par des repères : précis à 2 ou 3 cm (le plan seul peut se tromper de 10 à 30 cm)</span>
-      <svg viewBox="0 0 26 14"><line x1="3" y1="11" x2="20" y2="4" stroke="#7a5cc4" stroke-width="2"/><path d="M23 3 L16 3.5 L18.6 8 Z" fill="#7a5cc4"/></svg><span>correction : d'où le robot se croyait à où le calage le place</span>
-      <svg viewBox="0 0 26 14"><path d="M8 2 L18 12 M18 2 L8 12" stroke="#d03b3b" stroke-width="2.6"/></svg><span>contact du pare-chocs</span>
-      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="5.5" fill="#fff" stroke="#c0661a" stroke-width="1.6"/><path d="M9 6 q2 -2 4 0 t4 0 M9 9 q2 -2 4 0 t4 0" fill="none" stroke="#c0661a" stroke-width="1.4"/></svg><span>une roue a patiné ici : le chemin compté en trop est retiré</span>
-      <svg viewBox="0 0 26 14"><circle cx="6" cy="7" r="1.6" fill="#0d8f8f"/><circle cx="13" cy="5" r="1.6" fill="#0d8f8f"/><circle cx="20" cy="8" r="1.6" fill="#0d8f8f"/></svg><span>échos du capteur de distance (ce qu'il a vu devant lui)</span>
-      <svg viewBox="0 0 26 14"><path d="M3 4 L11 3 M14 3.5 L22 6 M21 9 L23 13" stroke="#086e6e" stroke-width="2" stroke-linecap="round"/></svg><span>parois vues pendant un tour sur place : la carte que le robot dessine lui-même</span>
-      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="3" fill="#eb6834" stroke="#fff"/><circle cx="13" cy="7" r="5.5" fill="none" stroke="#eb6834"/></svg><span>objet frôlé (capteurs optiques du pare-chocs)</span>
-      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="5" fill="none" stroke="#1a8f4c" stroke-width="2"/><circle cx="13" cy="7" r="1.6" fill="#1a8f4c"/></svg><span>destination ; pleine une fois atteinte</span>
-      <svg viewBox="0 0 26 14"><rect x="3" y="2" width="9" height="9" fill="#1a8f4c"/><line x1="12" y1="6.5" x2="25" y2="6.5" stroke="#1a8f4c" stroke-width="1.6" stroke-dasharray="3 2"/></svg><span>base de recharge et son axe : le robot s'y aligne pour rentrer ; ses faisceaux portent à 2 m</span>
-      <svg viewBox="0 0 26 14"><circle cx="6" cy="7" r="2" fill="#d03b3b"/><circle cx="13" cy="7" r="2" fill="#c08a00"/><circle cx="20" cy="7" r="2" fill="#1a8f4c"/></svg><span>signal de la base reçu ici : faisceau rouge, les deux (dans l'axe), faisceau vert</span>
-      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="5.5" fill="rgba(208,59,59,.12)" stroke="rgba(208,59,59,.8)" stroke-dasharray="2.5 2"/><circle cx="13" cy="7" r="1.5" fill="#a52a2a"/></svg><span>obstacle connu de la navigation, absent du plan : elle le contourne</span>
-      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="6" fill="rgba(122,92,196,.18)"/><circle cx="11" cy="6" r="1.2" fill="#7a5cc4"/><circle cx="15" cy="8" r="1.2" fill="#7a5cc4"/></svg><span>repères : endroits où le robot a déjà fait des tours et se recale précisément</span>
-      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="5.5" fill="#33507f"/><rect x="12.2" y="6" width="1.6" height="4.4" fill="#fff"/><circle cx="13" cy="4.2" r="1" fill="#fff"/></svg><span>note de la navigation (touche-la pour la lire)</span>
-      <svg viewBox="0 0 26 14"><line x1="1" y1="7" x2="25" y2="7" stroke="rgba(42,120,214,.22)" stroke-width="9"/><line x1="1" y1="7" x2="25" y2="7" stroke="rgba(42,120,214,.5)" stroke-width="1"/></svg><span>en pâle : sol déjà parcouru, parois, contacts et signal de la base des essais précédents</span>
-      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="5.5" fill="rgba(120,120,116,.25)" stroke="#787874" stroke-dasharray="2.5 2"/></svg><span>en gris : dernière position connue (robot sans nouvelles, ou déplacé à la main)</span>
-      <svg viewBox="0 0 26 14"><rect x="2" y="2" width="22" height="10" fill="rgba(208,59,59,.12)" stroke="rgba(208,59,59,.75)"/></svg><span>pièces inaccessibles (ton dessin)</span>
-      <svg viewBox="0 0 26 14"><circle cx="13" cy="7" r="5.5" fill="none" stroke="#b57a00" stroke-dasharray="2 2"/></svg><span>marge de l'estime : 2 cm + 4 % du chemin roulé depuis le dernier calage</span>
-    </div>
+<button id="loch" aria-controls="feuilleJournal" aria-expanded="false" aria-label="Ouvrir le journal de bord">
+  <time id="dernierHeure"></time><span id="dernierSigne"></span><span id="dernier" aria-live="polite">Journal de bord</span>
+  <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>
+</button>
+
+<section class="feuille" id="feuilleJournal" role="dialog" aria-label="Journal de bord">
+  <div class="entete"><h2>Journal de bord</h2><button data-ferme>Fermer</button></div>
+  <div class="corps"><p id="mesures"></p><ol id="journal"></ol></div>
+</section>
+
+<section class="feuille" id="feuilleLegende" role="dialog" aria-label="Légende de la carte">
+  <div class="entete"><h2>Lire la carte</h2><button data-ferme>Fermer</button></div>
+  <div class="corps" id="legende">
+    <h3>Le robot</h3>
+    <ul>
+      <li><svg viewBox="0 0 30 18"><path d="M12 9h15" stroke="#17212e" stroke-width="1.4"/><circle cx="12" cy="9" r="6.6" fill="#17212e" stroke="#fff"/><path d="M17 9l-3.4-2.6v5.2z" fill="#fff"/></svg><span>Le robot, à sa taille réelle. Le trait montre vers où il est tourné.</span></li>
+      <li><svg viewBox="0 0 30 18"><path d="M3 9 26 3a24 24 0 0 1 0 12Z" fill="rgba(23,33,46,.1)"/><path d="M26 3a24 24 0 0 1 0 12" fill="none" stroke="#17212e" stroke-width="1.7"/></svg><span>Ce que son capteur de distance voit devant lui.</span></li>
+      <li><svg viewBox="0 0 30 18"><circle cx="15" cy="9" r="7" fill="none" stroke="rgba(23,33,46,.6)" stroke-dasharray="2.5 2.5"/></svg><span>Sa marge d'erreur : elle grandit tant qu'il roule sans calage.</span></li>
+      <li><svg viewBox="0 0 30 18"><circle cx="15" cy="9" r="7" fill="rgba(255,255,255,.7)" stroke="rgba(23,33,46,.7)" stroke-dasharray="2.5 2.5"/></svg><span>En clair : sa dernière position connue, s'il ne donne plus de nouvelles ou si on l'a déplacé à la main.</span></li>
+    </ul>
+    <h3>Son trajet</h3>
+    <ul>
+      <li><svg viewBox="0 0 30 18"><path d="M2 9h26" stroke="#1b4fa8" stroke-width="2.4"/></svg><span>Trajet corrigé par le calage qui l'a suivi.</span></li>
+      <li><svg viewBox="0 0 30 18"><path d="M2 9h26" stroke="#1b4fa8" stroke-width="2.4" stroke-dasharray="5 4"/></svg><span>Trajet à l'estime : compté par le robot depuis son dernier calage.</span></li>
+      <li><svg viewBox="0 0 30 18"><circle cx="15" cy="9" r="6" fill="#fff" stroke="#1b4fa8" stroke-width="1.8"/><circle cx="15" cy="9" r="2.1" fill="#1b4fa8"/></svg><span>Calage : un tour sur place confirmé par des repères, précis à 2 ou 3 cm. L'heure est écrite à côté.</span></li>
+      <li><svg viewBox="0 0 30 18"><circle cx="15" cy="9" r="6" fill="#fff" stroke="#1b4fa8" stroke-width="1.8"/></svg><span>Calage sur le plan seul : il peut se tromper de 10 à 30 cm. En tirets quand il est incertain.</span></li>
+      <li><svg viewBox="0 0 30 18"><rect x="9.5" y="3.5" width="11" height="11" fill="#fff" stroke="#1b4fa8" stroke-width="1.8"/><circle cx="15" cy="9" r="1.6" fill="#1b4fa8"/></svg><span>Position donnée au robot, pas mesurée.</span></li>
+      <li><svg viewBox="0 0 30 18"><path d="M4 14 21 5.5" stroke="#1b4fa8" stroke-width="1.5"/><path d="M26 3l-7.6 1 3.5 4.7z" fill="#1b4fa8"/></svg><span>Correction : d'où il se croyait à où le calage le place.</span></li>
+      <li><svg viewBox="0 0 30 18"><path d="M8 2 15 9 8 16 1 9Z" fill="#fff" stroke="#1b4fa8" stroke-width="1.8"/><circle cx="8" cy="9" r="1.6" fill="#1b4fa8"/><path d="M22 2 29 9 22 16 15 9Z" fill="#1b4fa8"/></svg><span>Destination : un losange, plein une fois atteinte.</span></li>
+    </ul>
+    <h3>À surveiller</h3>
+    <ul>
+      <li><svg viewBox="0 0 30 18"><path d="M10 4l10 10m0-10L10 14" stroke="#b4246e" stroke-width="2.4"/></svg><span>Contact du pare-chocs.</span></li>
+      <li><svg viewBox="0 0 30 18"><path d="M15 3.2 21.8 14.8H8.2Z" fill="#fff" stroke="#b4246e" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Chose vue droit devant par le capteur de distance : l'avance s'est arrêtée.</span></li>
+      <li><svg viewBox="0 0 30 18"><circle cx="15" cy="9" r="7" fill="rgba(180,36,110,.08)" stroke="#b4246e" stroke-width="1.5" stroke-dasharray="1 3" stroke-linecap="round"/><path d="M12 9h6M15 6v6" stroke="#b4246e" stroke-width="1.4"/></svg><label for="c-connus">Obstacle connu, absent du plan : la navigation le contourne.</label><input class="bascule" type="checkbox" role="switch" id="c-connus"></li>
+      <li><svg viewBox="0 0 30 18"><circle cx="15" cy="9" r="7" fill="#fff" stroke="#b4246e" stroke-width="1.4"/><path d="M11 7.7q2-2 4 0t4 0M11 11.2q2-2 4 0t4 0" fill="none" stroke="#b4246e" stroke-width="1.4"/></svg><span>Une roue a patiné ici : le chemin compté en trop est retiré.</span></li>
+      <li><svg viewBox="0 0 30 18"><circle cx="8" cy="10" r="2" fill="#b4246e"/><circle cx="15" cy="7" r="2" fill="#b4246e"/><circle cx="22" cy="10" r="2" fill="#b4246e"/></svg><span>Objet frôlé de très près.</span></li>
+      <li><svg viewBox="0 0 30 18"><path d="M6 15.5l7.5-13M13 15.5l7.5-13M20 15.5l7-12" stroke="rgba(180,36,110,.32)"/><rect x="3" y="2.5" width="24" height="13" fill="none" stroke="#b4246e" stroke-width="1.4" stroke-dasharray="5 3"/></svg><span>Pièces où le robot ne va pas (ton dessin).</span></li>
+    </ul>
+    <h3>La base</h3>
+    <ul>
+      <li><svg viewBox="0 0 30 18"><rect x="3" y="4.5" width="9" height="9" fill="#17212e"/><path d="M12 9h16" stroke="#17212e" stroke-width="1.3" stroke-dasharray="6 2 1.5 2"/></svg><span>La base et son axe : le robot s'y aligne, face à elle, pour rentrer.</span></li>
+      <li><svg viewBox="0 0 30 18"><path d="M5 15A13 13 0 0 1 13.6 4.2" fill="none" stroke="#1c8750" stroke-width="2.6"/><path d="M16.4 4.2A13 13 0 0 1 25 15" fill="none" stroke="#c4362b" stroke-width="2.6"/><circle cx="15" cy="12.5" r="1.7" fill="#c99700"/></svg><label for="c-signal">Ses deux faisceaux, jusqu'à 2 m, et les points où le robot les a reçus : rouge, vert, ocre dans l'axe.</label><input class="bascule" type="checkbox" role="switch" id="c-signal"></li>
+    </ul>
+    <h3>Ce que la carte retient</h3>
+    <ul>
+      <li><svg viewBox="0 0 30 18"><rect width="30" height="18" fill="#dde9ee"/><path d="M0 13C11 13 13 5 30 5" stroke="#fff" stroke-width="7" fill="none"/></svg><label for="c-sol">Sol déjà parcouru en blanc, jamais parcouru en bleu pâle.</label><input class="bascule" type="checkbox" role="switch" id="c-sol"></li>
+      <li><svg viewBox="0 0 30 18"><path d="M3 5l8-1.5M14 4l8 2.5M24.5 9l2 6" stroke="#17212e" stroke-width="1.7" stroke-linecap="round"/></svg><label for="c-echos">Parois vues par le capteur de distance pendant les tours sur place.</label><input class="bascule" type="checkbox" role="switch" id="c-echos"></li>
+      <li><svg viewBox="0 0 30 18"><circle cx="15" cy="9" r="7.5" fill="none" stroke="rgba(27,79,168,.6)" stroke-dasharray="2.5 2.5"/><circle cx="12.5" cy="8" r="1.2" fill="#1b4fa8"/><circle cx="17" cy="10.5" r="1.2" fill="#1b4fa8"/></svg><label for="c-reperes">Repères : à l'intérieur du contour, un tour sur place se recale à 2 ou 3 cm.</label><input class="bascule" type="checkbox" role="switch" id="c-reperes"></li>
+      <li><svg viewBox="0 0 30 18"><rect x="9" y="3" width="12" height="12" fill="#fff" stroke="#17212e" stroke-width="1.4"/><path d="M15 8.2v4" stroke="#17212e" stroke-width="1.7"/><circle cx="15" cy="5.9" r="1" fill="#17212e"/></svg><label for="c-notes">Notes de la navigation : touche-les pour les lire.</label><input class="bascule" type="checkbox" role="switch" id="c-notes"></li>
+    </ul>
   </div>
-</footer>
+</section>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
 const cv = $('carte'), ctx = cv.getContext('2d');
-const C = { bleu: '#2a78d6', orange: '#eb6834', vert: '#1a8f4c', rouge: '#d03b3b', violet: '#7a5cc4', ambre: '#b57a00', echo: '#0d8f8f',
-            grille: '#3b6fb5', encre: '#0b0b0b', doux: '#52514e', surface: '#fcfcfb' };
+// les encres de la carte (les mêmes que dans la feuille de style)
+const K = { papier: '#ffffff', brume: '#dde9ee', marge: '#eef2f4', encre: '#17212e', cobalt: '#1b4fa8', magenta: '#b4246e',
+            babord: '#c4362b', tribord: '#1c8750', ocre: '#c99700', sable: [227, 211, 162], noir: [23, 33, 46] };
+const ENCRE = a => 'rgba(23,33,46,' + a + ')', COBALT = a => 'rgba(27,79,168,' + a + ')', MAGENTA = a => 'rgba(180,36,110,' + a + ')';
+const POLICE = 'Bahnschrift, "Avenir Next Condensed", "Roboto Condensed", sans-serif-condensed, "Arial Narrow", "Segoe UI", sans-serif';
+const CALME = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;      // pas d'animation si l'appareil le demande
 const O = new Map();                       // ce que le serveur publie : clé -> données
 let E = -1, V = 0, NT = 0, robot = null, horloge = null, decor = null;
 let premiere = true, panne = false, sale = true, dernierDessin = 0;
@@ -149,31 +230,75 @@ const vue = { cx: 600, cy: 217, z: 0.3, suivre: true, pret: false, zAuto: true }
 let mesure = false;                                  // la taille de la carte à l'écran est-elle connue ?
 const aff = { u: 0, v: 0, cap: 0, ok: false };        // le robot tel qu'il est dessiné (lissé)
 let anim = null;                                     // dernière correction ou dernier contact, à animer
-let fiche = null;
-const plan = new Image();
-plan.onload = () => { sale = true; };
-plan.src = 'plan.png';
 // ce que la carte garde en mémoire et que l'on peut cacher (le choix reste dans ce navigateur)
-const CALQUES = [['sol', 'Sol déjà parcouru'], ['echos', 'Parois vues par le capteur de distance'], ['signal', 'Signal de la base'],
-                 ['reperes', 'Repères'], ['connus', 'Obstacles connus'], ['notes', 'Notes de la navigation']];
+const CALQUES = ['sol', 'echos', 'signal', 'reperes', 'connus', 'notes'];
 const calques = {};
-for (const [c] of CALQUES) calques[c] = true;
+for (const c of CALQUES) calques[c] = true;
 try { Object.assign(calques, JSON.parse(localStorage.getItem('calques') || '{}')); } catch (err) { /* stockage refusé : tout reste affiché */ }
-const fond = document.createElement('canvas');        // les calques pâles, dessinés une fois pour toutes puis recopiés
-let fondSale = true, fondPret = false;
-const COUL_SIGNAL = ['#d03b3b', '#1a8f4c', '#c08a00', '#6b7fa8'];        // faisceau rouge, vert, les deux, champ proche
+const COUL_SIGNAL = [K.babord, K.tribord, K.ocre, ENCRE(.5)];        // faisceau rouge, vert, les deux, champ proche
 function genreSignal(code) {                          // code infrarouge de la base -> 0 rouge, 1 vert, 2 les deux, 3 champ proche
   const n = code - 160;
   if (!(n > 0 && n < 16)) return -1;
   return (n & 8) && (n & 4) ? 2 : (n & 8) ? 0 : (n & 4) ? 1 : 3;
 }
-const MOT_SIGNAL = ['faisceau rouge', 'faisceau vert', 'rouge et vert (dans l\'axe)', 'champ proche'];
+const MOT_SIGNAL = ['faisceau rouge', 'faisceau vert', 'rouge et vert, dans l\'axe', 'champ proche'];
+
+// ------------------------------------------------------------ le plan, aux encres de la carte
+// Le plan LiDAR est un nuage de points gris sur fond blanc : des meubles en pointillé, des murs en traits sombres.
+// Il est repeint une fois. Le blanc devient transparent (le sol se voit dessous, blanc ou brume). Les meubles
+// deviennent des masses de sable : la densité des points, lissée sur 13 cm. Les murs restent des traits d'encre :
+// ce qui est sombre de près mais pas alentour, donc une ligne et non une trame.
+const plan = new Image();
+let planTeinte = null;
+plan.onload = () => { teinter(); sale = true; };
+plan.src = 'plan.png';
+function lisser(src, w, h, r, passes) {               // moyenne glissante en largeur puis en hauteur, bords prolongés
+  let a = src;
+  for (let p = 0; p < passes; p++) {
+    const b = new Float32Array(w * h), c = new Float32Array(w * h), n = 2 * r + 1;
+    for (let y = 0; y < h; y++) {
+      const o = y * w; let s = 0;
+      for (let x = -r; x <= r; x++) s += a[o + Math.min(w - 1, Math.max(0, x))];
+      for (let x = 0; x < w; x++) { b[o + x] = s / n; s += a[o + Math.min(w - 1, x + r + 1)] - a[o + Math.max(0, x - r)]; }
+    }
+    for (let x = 0; x < w; x++) {
+      let s = 0;
+      for (let y = -r; y <= r; y++) s += b[Math.min(h - 1, Math.max(0, y)) * w + x];
+      for (let y = 0; y < h; y++) { c[y * w + x] = s / n; s += b[Math.min(h - 1, y + r + 1) * w + x] - b[Math.max(0, y - r) * w + x]; }
+    }
+    a = c;
+  }
+  return a;
+}
+function teinter() {
+  try {
+    const c = document.createElement('canvas'), w = c.width = plan.naturalWidth, h = c.height = plan.naturalHeight;
+    const g = c.getContext('2d', { willReadFrequently: true });      // lu point par point : inutile de passer par la carte graphique
+    g.drawImage(plan, 0, 0);
+    const im = g.getImageData(0, 0, w, h), d = im.data, S = K.sable, N = K.noir;
+    const D = new Float32Array(w * h);                 // 0 : blanc, 1 : noir
+    for (let i = 0, q = 0; q < D.length; i += 4, q++) D[q] = (1 - (0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]) / 255) * d[i + 3] / 255;
+    const fin = lisser(D, w, h, 1, 1), large = lisser(D, w, h, 3, 2);
+    const marche = (x, a, b) => { const t = x <= a ? 0 : x >= b ? 1 : (x - a) / (b - a); return t * t * (3 - 2 * t); };
+    for (let i = 0, q = 0; q < D.length; i += 4, q++) {
+      const sable = Math.min(0.95, Math.max(0, (large[q] - 0.07) * 3.2));
+      const mur = 0.92 * marche(fin[q] - 0.9 * large[q], 0.12, 0.3) * marche(D[q], 0.3, 0.55);
+      d[i] = S[0] + (N[0] - S[0]) * mur; d[i + 1] = S[1] + (N[1] - S[1]) * mur; d[i + 2] = S[2] + (N[2] - S[2]) * mur;
+      d[i + 3] = 255 * Math.max(sable, mur);
+    }
+    g.putImageData(im, 0, 0);
+    planTeinte = c;
+  } catch (err) { planTeinte = null; }                 // image illisible point par point : le plan gris d'origine sert tel quel
+}
+const sol = document.createElement('canvas');          // le sol : brume, et blanc là où le robot a roulé
+const memoire = document.createElement('canvas');      // parois et signal de la base des essais précédents
+let solSale = true, memoireSale = true;
 
 // ------------------------------------------------------------ mots et nombres
 const DIRS = ['la droite', 'le haut et la droite', 'le haut', 'le haut et la gauche', 'la gauche', 'le bas et la gauche', 'le bas', 'le bas et la droite'];
 const versMot = cap => 'vers ' + DIRS[Math.round((((cap % 360) + 360) % 360) / 45) % 8];
 const nb = (x, n = 0) => x.toFixed(n).replace('.', ',');
-const hm = h => h ? h.slice(0, 2) + ' h ' + h.slice(3, 5) : '';
+const hm = h => h ? h.slice(0, 2).replace(/^0/, '') + ' h ' + h.slice(3, 5) : '';
 const cm = o => o.cm >= 1 ? o.cm + ' cm' : 'moins de 1 cm';        // une correction, arrondie comme dans le journal
 const longueur = mm => mm < 995 ? nb(mm / 10) + ' cm' : nb(mm / 1000, 1) + ' m';
 function duree(s) {
@@ -182,7 +307,6 @@ function duree(s) {
   if (s < 5400) return Math.round(s / 60) + ' min';
   return Math.floor(s / 3600) + ' h ' + String(Math.round((s % 3600) / 60)).padStart(2, '0');
 }
-const echappe = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 function quand(t) {                                   // « aujourd'hui à 17 h 19 », « hier à 17 h 19 », « le 13 nov. à 17 h 19 »
   const d = new Date(t * 1000), n = new Date();
@@ -198,26 +322,30 @@ const X = u => (u - vue.cx) * vue.z + Wc / 2, Y = v => (v - vue.cy) * vue.z + Hc
 const versPlan = (x, y) => [(x - Wc / 2) / vue.z + vue.cx, (y - Hc / 2) / vue.z + vue.cy];
 function repereplan() { ctx.setTransform(dpr * vue.z, 0, 0, dpr * vue.z, dpr * (Wc / 2 - vue.cx * vue.z), dpr * (Hc / 2 - vue.cy * vue.z)); }
 function repereecran() { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
-function zMin() { return decor ? Math.min(Wc / decor.W, Hc / decor.H) * 0.92 : 0.2; }
+const BANDE = 24;                                     // épaisseur du cadre gradué, en haut et à gauche : la carte se cadre dans ce qui reste
+function zMin() { return decor ? Math.min((Wc - BANDE) / decor.W, (Hc - BANDE) / decor.H) * 0.95 : 0.2; }
 function zSuivi() {
   // en suivant le robot : environ 4,6 m en travers de l'écran ; sur un téléphone tenu debout, tout le plan en hauteur
   if (!decor) return 1;
-  const z = Hc > Wc ? Math.max(Hc / (decor.H + 30), Wc / (7 * decor.px_par_m)) : Math.min(Wc, Hc) / (4.6 * decor.px_par_m);
+  const z = Hc > Wc ? Math.max((Hc - BANDE) / (decor.H + 30), Wc / (7 * decor.px_par_m)) : Math.min(Wc, Hc) / (4.6 * decor.px_par_m);
   return Math.max(zMin(), z);
 }
 function centreBorne(u, v) {
-  // le plan remplit l'écran autant que possible : pas de grande marge vide quand le robot est près d'un bord
+  // (u, v) : ce que l'on veut voir au milieu de la partie libre de l'écran (sous et à droite du cadre gradué). Le plan
+  // remplit l'écran autant que possible : pas de grande marge vide quand le robot est près d'un bord. Renvoie le centre
+  // de la vue, décalé d'une demi-bande.
   if (!decor) return [u, v];
-  const mx = Wc / 2 / vue.z, my = Hc / 2 / vue.z, m = 26 / vue.z;
+  const d = BANDE / 2 / vue.z, mx = (Wc - BANDE) / 2 / vue.z, my = (Hc - BANDE) / 2 / vue.z, m = 12 / vue.z;
   const cx = 2 * mx >= decor.W + 2 * m ? decor.W / 2 : Math.max(mx - m, Math.min(decor.W - mx + m, u));
   const cy = 2 * my >= decor.H + 2 * m ? decor.H / 2 : Math.max(my - m, Math.min(decor.H - my + m, v));
-  return [cx, cy];
+  return [cx - d, cy - d];
 }
 function borner() {
   vue.z = Math.max(zMin() * 0.8, Math.min(14, vue.z));
-  [vue.cx, vue.cy] = centreBorne(vue.cx, vue.cy);
+  const d = BANDE / 2 / vue.z;
+  [vue.cx, vue.cy] = centreBorne(vue.cx + d, vue.cy + d);
 }
-function toutVoir() { if (!decor) return; vue.suivre = false; vue.z = zMin(); vue.cx = decor.W / 2; vue.cy = decor.H / 2; majBoutons(); sale = true; }
+function toutVoir() { if (!decor) return; vue.suivre = false; vue.z = zMin(); [vue.cx, vue.cy] = centreBorne(decor.W / 2, decor.H / 2); majBoutons(); sale = true; }
 function suivre(oui) {
   vue.suivre = oui;
   if (oui) { if (vue.z < zSuivi() * 0.7) { vue.z = zSuivi(); vue.zAuto = true; } if (aff.ok) [vue.cx, vue.cy] = centreBorne(aff.u, aff.v); }
@@ -230,7 +358,7 @@ function zoomer(f, x = Wc / 2, y = Hc / 2) {
   if (!vue.suivre) { vue.cx = u - (x - Wc / 2) / vue.z; vue.cy = v - (y - Hc / 2) / vue.z; borner(); }
   sale = true;
 }
-function majBoutons() { $('bSuivre').classList.toggle('actif', vue.suivre); }
+function majBoutons() { $('bSuivre').setAttribute('aria-pressed', vue.suivre ? 'true' : 'false'); }
 function taille() {
   const r = cv.getBoundingClientRect();
   dpr = Math.min(window.devicePixelRatio || 1, 3);
@@ -248,17 +376,20 @@ window.addEventListener('load', taille);
 // ------------------------------------------------------------ doigts et souris
 const doigts = new Map();
 let pince = null, bouge = false;
+// où est le doigt, en pixels depuis le coin de la carte (mesuré depuis le bord de la carte : le même calcul partout)
+function ou(e) { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
 cv.addEventListener('pointerdown', e => {
-  cv.setPointerCapture(e.pointerId);
-  doigts.set(e.pointerId, { x: e.offsetX, y: e.offsetY, x0: e.offsetX, y0: e.offsetY });
+  try { cv.setPointerCapture(e.pointerId); } catch (err) { /* sans capture, le geste marche quand même tant que le doigt reste sur la carte */ }
+  const [x, y] = ou(e);
+  doigts.set(e.pointerId, { x, y, x0: x, y0: y });
   bouge = false;
   if (doigts.size === 2) { const [a, b] = [...doigts.values()]; pince = { d: Math.hypot(a.x - b.x, a.y - b.y), z: vue.z }; }
 });
 cv.addEventListener('pointermove', e => {
   const d = doigts.get(e.pointerId);
   if (!d) return;
-  const dx = e.offsetX - d.x, dy = e.offsetY - d.y;
-  d.x = e.offsetX; d.y = e.offsetY;
+  const [x, y] = ou(e), dx = x - d.x, dy = y - d.y;
+  d.x = x; d.y = y;
   if (Math.hypot(d.x - d.x0, d.y - d.y0) > 6) bouge = true;
   if (doigts.size === 1 && bouge) {
     if (vue.suivre) { vue.suivre = false; majBoutons(); }
@@ -280,38 +411,69 @@ function lacher(e) {
 }
 cv.addEventListener('pointerup', lacher);
 cv.addEventListener('pointercancel', lacher);
-cv.addEventListener('wheel', e => { e.preventDefault(); zoomer(Math.exp(-e.deltaY * 0.0015), e.offsetX, e.offsetY); }, { passive: false });
+cv.addEventListener('wheel', e => { e.preventDefault(); zoomer(Math.exp(-e.deltaY * 0.0015), ...ou(e)); }, { passive: false });
 $('bSuivre').onclick = () => suivre(!vue.suivre);
 $('bTout').onclick = toutVoir;
-for (const [c, nom] of CALQUES) {
-  const l = document.createElement('label'), b = document.createElement('input');
-  b.type = 'checkbox'; b.checked = calques[c];
-  b.onchange = () => {
-    calques[c] = b.checked; fondSale = sale = true;
-    try { localStorage.setItem('calques', JSON.stringify(calques)); } catch (err) { /* stockage refusé : le choix vaut pour cette fois */ }
-  };
-  l.append(b, nom); $('calques').append(l);
-}
-$('bCalques').onclick = () => { const o = $('calques').classList.toggle('vue'); $('bCalques').classList.toggle('actif', o); $('fiche').classList.remove('vue'); };
 $('bPlus').onclick = () => zoomer(1.5);
 $('bMoins').onclick = () => zoomer(1 / 1.5);
-$('poignee').onclick = () => $('bas').classList.toggle('ouvert');
+for (const c of CALQUES) {
+  const b = $('c-' + c);
+  b.checked = calques[c];
+  b.onchange = () => {
+    calques[c] = b.checked; solSale = memoireSale = sale = true;
+    try { localStorage.setItem('calques', JSON.stringify(calques)); } catch (err) { /* stockage refusé : le choix vaut pour cette fois */ }
+  };
+}
 
-// toucher un repère de la carte : sa fiche
+// ------------------------------------------------------------ les deux feuilles : journal de bord, légende
+const FEUILLES = { journal: [$('feuilleJournal'), $('loch')], legende: [$('feuilleLegende'), $('bLegende')] };
+let ouverte = null;
+function fermer(rendre = true) {
+  if (!ouverte) return;
+  const [f, b] = FEUILLES[ouverte];
+  f.classList.remove('vue');
+  b.setAttribute(b.hasAttribute('aria-pressed') ? 'aria-pressed' : 'aria-expanded', 'false');
+  if (rendre) b.focus({ preventScroll: true });
+  ouverte = null;
+}
+function ouvrir(nom) {
+  const deja = ouverte === nom;
+  fermer(false);
+  if (deja) return;
+  const [f, b] = FEUILLES[nom];
+  ouverte = nom;
+  f.classList.add('vue');
+  b.setAttribute(b.hasAttribute('aria-pressed') ? 'aria-pressed' : 'aria-expanded', 'true');
+  fermerFiche();
+  f.querySelector('[data-ferme]').focus({ preventScroll: true });
+}
+$('loch').onclick = () => ouvrir('journal');
+$('bLegende').onclick = () => ouvrir('legende');
+for (const b of document.querySelectorAll('[data-ferme]')) b.onclick = () => fermer();
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { fermer(); fermerFiche(); } });
+
+// ------------------------------------------------------------ toucher un signe de la carte : sa fiche
+function fermerFiche() { $('fiche').classList.remove('vue'); }
+$('fermeFiche').onclick = fermerFiche;
 function toucher(x, y) {
+  if (!decor) return;
   let mieux = null, dm = 22;
   const essai = (u, v, titre, texte) => { const d = Math.hypot(X(u) - x, Y(v) - y); if (d < dm) { dm = d; mieux = { titre, texte }; } };
+  for (const o of O.get('obstacles') || []) {
+    if (o[2] === 'sombre') essai(o[0], o[1], 'Bord sombre au sol, en ' + nomCase(o[0], o[1]), 'Sans doute le bord d\'un tapis. Le robot le prendrait pour un vide : la navigation l\'évite.');
+    else essai(o[0], o[1], 'Vu droit devant, en ' + nomCase(o[0], o[1]), 'Le capteur de distance a vu quelque chose ici pendant une avance, et l\'avance s\'est arrêtée.');
+  }
   for (const [k, o] of O) {
     if (!o) continue;
     if (k.startsWith('cal/') && !o.muet) essai(o.u, o.v, titreCalage(o), texteCalage(o));
-    else if (k.startsWith('ct/')) essai(o.u, o.v, 'Contact du pare-chocs, ' + hm(o.h), (o.cote === 'devant' ? 'De face' : 'Côté ' + o.cote) + ', robot en ' + o.case + '. Le point marque l\'endroit touché, à 20 cm du centre du robot.');
-    else if (k.startsWith('pt/')) essai(o.u, o.v, 'Roue ' + o.cote + ' qui patine, ' + hm(o.h), 'En ' + o.case + ', pendant ' + nb(o.s, 1) + ' s : elle a tourné ' + longueur(o.mm) + ' de plus que le sol n\'a défilé. Les ' + longueur(o.retire) + ' comptés en trop sont retirés du trajet.');
+    else if (k.startsWith('ct/')) essai(o.u, o.v, 'Contact du pare-chocs à ' + hm(o.h), (o.cote === 'devant' ? 'De face' : 'Côté ' + o.cote) + ', robot en ' + o.case + '. La croix marque l\'endroit touché, à 20 cm du centre du robot.');
+    else if (k.startsWith('pt/')) essai(o.u, o.v, 'Roue ' + o.cote + ' qui patine à ' + hm(o.h), 'En ' + o.case + ', pendant ' + nb(o.s, 1) + ' s : elle a tourné ' + longueur(o.mm) + ' de plus que le sol n\'a défilé. Les ' + longueur(o.retire) + ' comptés en trop sont retirés du trajet.');
     else if (k.startsWith('pd/') && o.u != null) {
-      const texte = ({ 'soulevé': 'Soulevé ici, en ' + o.case + ' (ses deux roues en l\'air).',
-        'tourné': 'Tourné ou poussé à la main ici, en ' + o.case + ' (son cap a changé sans que ses roues tournent).' }[o.cause] || 'Tiré de sa base.') + ' Sa position n\'est plus connue jusqu\'au calage suivant.';
+      const texte = ({ 'soulevé': 'Soulevé ici, en ' + o.case + ', ses deux roues en l\'air.',
+        'tourné': 'Tourné ou poussé à la main ici, en ' + o.case + ' : son cap a changé sans que ses roues tournent.' }[o.cause] || 'Tiré de sa base.') + ' Sa position n\'est plus connue jusqu\'au calage suivant.';
       const dq = Math.max(decor.rayon, 8 / vue.z);             // le « ? » est dessiné au bord du cercle, en haut à droite
-      essai(o.u + dq, o.v - dq, 'Robot déplacé à la main, ' + hm(o.h), texte);
-      essai(o.u, o.v, 'Robot déplacé à la main, ' + hm(o.h), texte);
+      essai(o.u + dq, o.v - dq, 'Robot déplacé à la main à ' + hm(o.h), texte);
+      essai(o.u, o.v, 'Robot déplacé à la main à ' + hm(o.h), texte);
     }
   }
   const A = O.get('anciens') || {};
@@ -319,26 +481,24 @@ function toucher(x, y) {
     essai(p[0], p[1], 'Contact lors d\'un essai précédent', 'Le ' + p[3] + ', ' + (p[2] === 'devant' ? 'de face' : 'côté ' + p[2]) + ', en ' + nomCase(p[0], p[1]) + '.');
   for (const p of A.patine || [])
     essai(p[0], p[1], 'Roue ' + p[2] + ' qui a patiné', 'Le ' + p[5] + ', en ' + nomCase(p[0], p[1]) + ' : ' + longueur(p[3]) + ' de trop, ' + longueur(p[4]) + ' retirés du trajet compté.');
-  if (calques.connus) for (const o of O.get('connus') || []) essai(o.u, o.v, 'Obstacle connu, en ' + o.case, (o.x || 'Trouvé par le robot, absent du plan.') + ' La navigation le contourne.');
+  if (calques.connus) for (const o of O.get('connus') || []) essai(o.u, o.v, 'Obstacle connu en ' + o.case, (o.x || 'Trouvé par le robot, absent du plan.') + ' La navigation le contourne.');
   const N = O.get('notes');
-  if (calques.notes && N) for (const o of N.p) essai(o.u, o.v, 'Note de la navigation, ' + N.jour + ' — ' + o.case, o.x);
-  for (const c of O.get('cibles') || []) essai(c.u, c.v, 'Destination ' + c.case, 'État : ' + c.etat + '.');
-  if (decor && decor.base) essai(decor.base.u, decor.base.v, 'Base de recharge — ' + decor.base.case,
-    'Tournée ' + versMot(decor.base.cap) + '. Le trait vert est son axe : le robot s\'y aligne, face à elle, pour rentrer. Ses faisceaux portent à 2 m ; face à elle, le rouge est à droite et le vert à gauche.');
+  if (calques.notes && N) for (const o of N.p) essai(o.u, o.v, 'Note de la navigation en ' + o.case + ', le ' + N.jour, o.x);
+  for (const c of O.get('cibles') || []) essai(c.u, c.v, 'Destination ' + c.case, ({ 'atteinte': 'Atteinte.', 'en cours': 'Le robot y va.', 'laissée': 'Abandonnée.', 'à venir': 'À venir.', 'donnée': 'Donnée, pas encore prise par le programme.' })[c.etat] || '');
+  if (decor && decor.base) essai(decor.base.u, decor.base.v, 'Base de recharge, en ' + decor.base.case, texteBase());
   if (aff.ok && robot && robot.connu) essai(aff.u, aff.v, (muet() ? 'Dernière position connue : ' : 'Robot en ') + robot.case, texteRobot());
-  else if (robot && !robot.connu && robot.dernier) essai(robot.dernier.u, robot.dernier.v, 'Vu ici pour la dernière fois, ' + hm(robot.dernier.h), 'En ' + robot.dernier.case + '. Sa position n\'est plus connue depuis.');
+  else if (robot && !robot.connu && robot.dernier) essai(robot.dernier.u, robot.dernier.v, 'Vu ici pour la dernière fois à ' + hm(robot.dernier.h), 'En ' + robot.dernier.case + '. Sa position n\'est plus connue depuis.');
   if (!mieux && decor) {
     const [u, v] = versPlan(x, y), R = O.get('reperes');
     const pres = calques.reperes && R ? R.p.filter(p => Math.hypot(p[0] - u, p[1] - v) <= R.r).length : 0;
-    if (pres) mieux = { titre: 'Repères — case ' + nomCase(u, v), texte: pres + (pres > 1 ? ' tours sur place déjà faits' : ' tour sur place déjà fait') + ' à moins de 35 cm d\'ici. Un nouveau tour fait ici se compare à eux et se recale à 2 ou 3 cm.' };
+    if (pres) mieux = { titre: 'Repères en ' + nomCase(u, v), texte: pres + (pres > 1 ? ' tours sur place déjà faits' : ' tour sur place déjà fait') + ' à moins de 35 cm d\'ici. Un nouveau tour fait ici se compare à eux et se recale à 2 ou 3 cm.' };
     else if (u >= 0 && v >= 0 && u < decor.W && v < decor.H) mieux = { titre: 'Case ' + nomCase(u, v), texte: '' };
   }
-  fiche = mieux;
-  const f = $('fiche');
-  f.classList.toggle('vue', !!mieux);
-  if (mieux) { f.innerHTML = '<b>' + echappe(mieux.titre) + '</b>' + echappe(mieux.texte); $('calques').classList.remove('vue'); $('bCalques').classList.remove('actif'); }
+  if (!mieux) return fermerFiche();
+  $('ficheTitre').textContent = mieux.titre; $('ficheTexte').textContent = mieux.texte;
+  $('fiche').classList.add('vue');
+  fermer(false);
 }
-$('fiche').onclick = () => { $('fiche').classList.remove('vue'); };
 function nomCase(u, v) {
   const col = Math.min(decor.n_col - 1, Math.max(0, Math.floor(u / decor.case))), lig = Math.min(decor.n_lig - 1, Math.max(0, Math.floor(v / decor.case)));
   return decor.lettres[lig] + (col + 1);
@@ -347,26 +507,28 @@ const estTour = o => o.src === 'filtre' || o.src === 'plan';
 const repDe = o => (o.info && o.info.rep && o.info.rep.n) ? o.info.rep : null;      // tour confirmé par des repères
 const douteux = o => estTour(o) && !repDe(o) && o.info && o.info.note != null && o.info.note < 0.6;
 function titreCalage(o) {
-  if (estTour(o)) return 'Tour sur place, ' + hm(o.h) + ' — ' + o.case;
-  if (o.src === 'base') return 'Robot posé sur sa base, ' + hm(o.h);
-  return 'Position donnée, ' + hm(o.h) + ' — ' + o.case;
+  if (estTour(o)) return 'Tour sur place en ' + o.case + ', à ' + hm(o.h);
+  if (o.src === 'base') return 'Robot posé sur sa base à ' + hm(o.h);
+  return 'Position donnée en ' + o.case + ', à ' + hm(o.h);
 }
 function ecartDit(o, quoi) {                           // « confirme la position », « déplace la position de 6 cm vers… »
   if (!o.av) return '';
   if (o.d < 20) return quoi + ' confirme la position (écart de ' + nb(o.d / 10, 1) + ' cm)' + (Math.abs(o.dc) >= 1 ? ' et tourne le cap de ' + nb(Math.abs(o.dc), 1) + '°.' : '.');
   return quoi + ' déplace la position de ' + cm(o) + ' ' + versMot(o.dir) + ' et tourne le cap de ' + nb(Math.abs(o.dc), 1) + '°.';
 }
+function texteBase() {
+  return decor && decor.base ? 'Tournée ' + versMot(decor.base.cap) + '. Le trait est son axe : le robot s\'y aligne, face à elle, pour rentrer. Ses faisceaux portent à 2 m ; face à elle, le rouge est à droite et le vert à gauche. Leurs limites sur les côtés sont approximatives.' : '';
+}
 function texteCalage(o) {
   let t = '';
   if (estTour(o)) {
     t = o.av ? ecartDit(o, 'Le tour') : 'Première position mesurée sur le plan.';
     const rep = repDe(o);
-    if (rep) t += ' Recalé sur ' + rep.n + ' repères (tours déjà faits ici) : ' + nb(rep.mm / 10) + ' cm d\'écart avec le plan seul.' + (rep.cap != null ? ' Cap repris sur les repères : ' + nb(rep.cap, 1) + '°.' : '');
-    else t += ' Jugé par le plan seul, sans repère ici : il peut se tromper de 10 à 30 cm.';
-    if (o.info && o.info.note != null) t += ' Note du calage : ' + nb(o.info.note, 2) + (douteux(o) ? ' (incertain).' : '.');
+    if (rep) t += ' Recalé sur ' + rep.n + ' repères, des tours déjà faits ici : ' + nb(rep.mm / 10) + ' cm d\'écart avec le plan seul.' + (rep.cap != null ? ' Cap repris sur les repères : ' + nb(rep.cap, 1) + '°.' : '');
+    else t += ' Jugé sur le plan seul, sans repère ici : il peut se tromper de 10 à 30 cm.';
+    if (o.info && o.info.note != null) t += ' Note du calage : ' + nb(o.info.note, 2) + (douteux(o) ? ', incertain.' : '.');
   } else if (o.src === 'base') {
-    t = 'Sur sa base, la position du robot est connue sans aucune mesure. ' + (o.av ? ecartDit(o, 'La base') + ' ' : '')
-      + (decor && decor.base ? 'La base est tournée ' + versMot(decor.base.cap) + ' ; le trait vert est son axe, ses faisceaux portent à 2 m.' : '');
+    t = 'Sur sa base, la position du robot est connue sans aucune mesure. ' + (o.av ? ecartDit(o, 'La base') + ' ' : '') + texteBase();
   } else {
     t = ({ depart: 'Position de départ donnée au programme de navigation.', annonce: 'Position de départ annoncée par le programme de navigation.',
            pose: 'Position tenue à l\'estime par la navigation (' + ((o.info && o.info.nom) || 'passage.py') + ').', report: 'Position reprise de l\'enregistrement précédent, à l\'estime.' })[o.src] || 'Position donnée.';
@@ -389,41 +551,59 @@ function signalDit(ir) {                               // ce que reçoivent les 
   return av.length ? 'base droit devant (' + MOT_SIGNAL[av[0]] + ')' : 'reçu';
 }
 
-// ------------------------------------------------------------ les calques pâles, dessinés à part
-function refaireFond() {
-  fondSale = false; fondPret = false;
-  if (!decor) return;
+// ------------------------------------------------------------ les fonds, dessinés à part puis recopiés
+// Le sol : brume partout, blanc là où le robot est déjà passé (essais précédents et essai en cours), sur la largeur
+// de son corps. Refait quand le trajet change, quatre fois par seconde au plus.
+function refaireSol() {
+  solSale = false;
+  if (sol.width !== decor.W || sol.height !== decor.H) { sol.width = decor.W; sol.height = decor.H; }
+  const g = sol.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = calques.sol ? K.brume : K.papier; g.fillRect(0, 0, sol.width, sol.height);
+  if (calques.sol) {
+    const A = O.get('anciens');
+    g.lineJoin = g.lineCap = 'round'; g.lineWidth = 2 * decor.rayon; g.strokeStyle = K.papier;
+    g.beginPath();
+    if (A && A.traces) for (const t of A.traces) { g.moveTo(t[0], t[1]); for (let i = 2; i < t.length; i += 2) g.lineTo(t[i], t[i + 1]); }
+    for (let k = 0; k < NT; k++) {
+      const t = O.get('t/' + k);
+      if (t && t.p.length) { g.moveTo(t.p[0][0], t.p[0][1]); for (let i = 1; i < t.p.length; i++) g.lineTo(t.p[i][0], t.p[i][1]); g.lineTo(t.p[t.p.length - 1][0] + 0.01, t.p[t.p.length - 1][1]); }
+    }
+    g.stroke();
+  }
+}
+function refaireMemoire() {
+  memoireSale = false;
   const k = 2;                                            // deux points de dessin par pixel du plan
-  if (fond.width !== decor.W * k || fond.height !== decor.H * k) { fond.width = decor.W * k; fond.height = decor.H * k; }
-  const g = fond.getContext('2d');
-  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, fond.width, fond.height); g.setTransform(k, 0, 0, k, 0, 0);
+  if (memoire.width !== decor.W * k || memoire.height !== decor.H * k) { memoire.width = decor.W * k; memoire.height = decor.H * k; }
+  const g = memoire.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, memoire.width, memoire.height); g.setTransform(k, 0, 0, k, 0, 0);
   const A = O.get('anciens'), R = O.get('reperes');
-  if (calques.reperes && R && R.p.length) {                // repères : les endroits où un tour se recale sur des tours déjà faits
+  if (calques.reperes && R && R.p.length) {
+    // repères : le contour des endroits où un tour se recale sur des tours déjà faits. Tous les cercles sont tracés,
+    // puis leur intérieur est effacé : il ne reste que le bord de l'ensemble. Puis un point par repère.
     g.beginPath();
     for (const p of R.p) { g.moveTo(p[0] + R.r, p[1]); g.arc(p[0], p[1], R.r, 0, 2 * Math.PI); }
-    g.fillStyle = 'rgba(122,92,196,.10)'; g.fill();
-    g.fillStyle = 'rgba(122,92,196,.8)';
-    for (const p of R.p) { g.beginPath(); g.arc(p[0], p[1], 1.1, 0, 2 * Math.PI); g.fill(); }
-  }
-  if (A && calques.sol && A.traces) {                      // sol déjà parcouru : une bande de la largeur du robot
-    g.lineJoin = g.lineCap = 'round';
+    g.setLineDash([2.5, 2.5]); g.strokeStyle = COBALT(.4); g.lineWidth = 1; g.stroke(); g.setLineDash([]);
+    g.globalCompositeOperation = 'destination-out';
     g.beginPath();
-    for (const t of A.traces) { g.moveTo(t[0], t[1]); for (let i = 2; i < t.length; i += 2) g.lineTo(t[i], t[i + 1]); }
-    g.lineWidth = 2 * decor.rayon; g.strokeStyle = 'rgba(42,120,214,.11)'; g.stroke();
-    g.lineWidth = 0.8; g.strokeStyle = 'rgba(42,120,214,.38)'; g.stroke();
+    for (const p of R.p) { g.moveTo(p[0] + R.r - 0.7, p[1]); g.arc(p[0], p[1], R.r - 0.7, 0, 2 * Math.PI); }
+    g.fill();
+    g.globalCompositeOperation = 'source-over';
+    g.fillStyle = COBALT(.7);
+    for (const p of R.p) { g.beginPath(); g.arc(p[0], p[1], 1, 0, 2 * Math.PI); g.fill(); }
   }
   if (A && calques.echos && A.parois) {                    // parois vues pendant les tours sur place : un petit trait par paroi
-    g.lineCap = 'round'; g.lineWidth = 1.3; g.strokeStyle = 'rgba(8,110,110,.55)';
+    g.lineCap = 'round'; g.lineWidth = 1; g.strokeStyle = ENCRE(.3);
     g.beginPath();
     for (let i = 0; i < A.parois.length; i += 4) { g.moveTo(A.parois[i], A.parois[i + 1]); g.lineTo(A.parois[i + 2], A.parois[i + 3]); }
     g.stroke();
   }
-  if (A && calques.signal && A.ir) {                       // là où le signal de la base a été reçu
-    g.globalAlpha = 0.5;
-    for (let i = 0; i < A.ir.length; i += 3) { g.fillStyle = COUL_SIGNAL[A.ir[i + 2]] || '#888'; g.fillRect(2 * A.ir[i] - 1, 2 * A.ir[i + 1] - 1, 2, 2); }
+  if (A && calques.signal && A.ir) {                       // là où le signal de la base a été reçu : un semis de petits points
+    g.globalAlpha = 0.62;
+    for (let i = 0; i < A.ir.length; i += 3) { g.fillStyle = COUL_SIGNAL[A.ir[i + 2]] || '#888'; g.beginPath(); g.arc(2 * A.ir[i], 2 * A.ir[i + 1], 0.62, 0, 6.3); g.fill(); }
     g.globalAlpha = 1;
   }
-  fondPret = true;
 }
 
 // ------------------------------------------------------------ le dessin
@@ -434,62 +614,85 @@ function fleche(x0, y0, x1, y1, t) {
   ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - Math.cos(a - 0.45) * p, y1 - Math.sin(a - 0.45) * p);
   ctx.lineTo(x1 - Math.cos(a + 0.45) * p, y1 - Math.sin(a + 0.45) * p); ctx.closePath(); ctx.fill();
 }
-function etiquette(texte, x, y, opts = {}) {
-  ctx.font = (opts.gras ? '600 ' : '') + (opts.t || 12) + 'px system-ui, sans-serif';
-  const w = ctx.measureText(texte).width, h = (opts.t || 12) + 4;
-  const ax = opts.centre ? x - w / 2 : x;
-  ctx.fillStyle = 'rgba(252,252,251,.88)'; ctx.fillRect(ax - 3, y - h / 2, w + 6, h);
-  ctx.fillStyle = opts.c || C.encre; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillText(texte, ax, y + 0.5);
+function croix(u, v, r) { ctx.moveTo(u - r, v - r); ctx.lineTo(u + r, v + r); ctx.moveTo(u + r, v - r); ctx.lineTo(u - r, v + r); }
+const police = (px, o = {}) => (o.ital ? 'italic ' : '') + (o.gras ? '600 ' : '400 ') + px + 'px ' + POLICE;
+function ecrire(texte, x, y, o = {}) {                // un mot sur la carte, liseré de blanc pour rester lisible sur tout
+  ctx.font = police(o.t || 12, o);
+  ctx.textAlign = o.align || 'left'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3.4; ctx.strokeStyle = 'rgba(255,255,255,.92)'; ctx.strokeText(texte, x, y);
+  ctx.fillStyle = o.c || K.encre; ctx.fillText(texte, x, y);
 }
 
 function dessiner(maintenant) {
   repereecran();
-  ctx.fillStyle = '#e9e7e1'; ctx.fillRect(0, 0, Wc, Hc);
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.setLineDash([]);      // rien ne reste d'une image interrompue
+  ctx.fillStyle = K.marge; ctx.fillRect(0, 0, Wc, Hc);
   if (!decor) return;
-  const z = vue.z, e = 1 / z;                               // e : un pixel d'écran, en pixels du plan
+  if ('fontStretch' in ctx) ctx.fontStretch = 'semi-condensed';
+  // e : un pixel d'écran, en pixels du plan. Vue de loin (tout l'appartement sur un téléphone), les signes rapetissent
+  // jusqu'à 55 % pour ne pas recouvrir la carte.
+  const z = vue.z, e = Math.min(1, Math.max(0.55, z / 0.75)) / z;
   const s = decor.px_par_m / 1000;                          // pixels du plan par millimètre
   const [u0, v0] = versPlan(0, 0), [u1, v1] = versPlan(Wc, Hc);
   repereplan();
-  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, decor.W, decor.H);
-  if (plan.complete && plan.naturalWidth) { ctx.globalAlpha = 0.82; ctx.imageSmoothingEnabled = true; ctx.drawImage(plan, 0, 0, decor.W, decor.H); ctx.globalAlpha = 1; }
+  ctx.imageSmoothingEnabled = true;
+  // le sol (brume, blanc là où le robot a roulé), puis le plan aux encres de la carte
+  if (solSale) refaireSol();
+  ctx.drawImage(sol, 0, 0, decor.W, decor.H);
+  if (planTeinte) ctx.drawImage(planTeinte, 0, 0, decor.W, decor.H);
+  else if (plan.complete && plan.naturalWidth) { ctx.globalAlpha = 0.8; ctx.drawImage(plan, 0, 0, decor.W, decor.H); ctx.globalAlpha = 1; }
+  // pièces où le robot ne va pas : liseré magenta à tirets, hachures légères
   for (const [x0, y0, x1, y1] of decor.zones) {
-    ctx.fillStyle = 'rgba(208,59,59,.10)'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
-    ctx.strokeStyle = 'rgba(208,59,59,.75)'; ctx.lineWidth = 1.3 * e; ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+    const h = y1 - y0, pas = 9 * e;
+    ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, x1 - x0, h); ctx.clip();
+    ctx.beginPath();
+    for (let d = x0 - h * 0.6; d < x1; d += pas) { ctx.moveTo(d, y1); ctx.lineTo(d + h * 0.6, y0); }
+    ctx.strokeStyle = MAGENTA(.2); ctx.lineWidth = 1 * e; ctx.stroke();
+    ctx.restore();
+    ctx.setLineDash([7 * e, 4 * e]); ctx.strokeStyle = K.magenta; ctx.lineWidth = 1.4 * e; ctx.strokeRect(x0, y0, x1 - x0, h); ctx.setLineDash([]);
   }
-  // ce que la carte garde des essais précédents (sol parcouru, échos, signal de la base) et les repères
-  if (fondSale) refaireFond();
-  if (fondPret) { ctx.imageSmoothingEnabled = true; ctx.drawImage(fond, 0, 0, decor.W, decor.H); }
-  // le quadrillage : une case = 50 cm
+  // ce que la carte garde des essais précédents : parois vues, signal de la base
+  if (memoireSale) refaireMemoire();
+  ctx.drawImage(memoire, 0, 0, decor.W, decor.H);
+  // le quadrillage : une case = 50 cm ; puis le bord de la feuille
   const c = decor.case;
   for (const fort of [false, true]) {
     ctx.beginPath();
     for (let j = 0; j <= decor.n_col; j++) if ((j % 5 === 0) === fort) { const x = Math.min(j * c, decor.W); ctx.moveTo(x, 0); ctx.lineTo(x, decor.H); }
     for (let i = 0; i <= decor.n_lig; i++) if ((i % 5 === 0) === fort) { const y = Math.min(i * c, decor.H); ctx.moveTo(0, y); ctx.lineTo(decor.W, y); }
-    ctx.strokeStyle = fort ? 'rgba(59,111,181,.55)' : 'rgba(59,111,181,.30)'; ctx.lineWidth = (fort ? 1.1 : 0.7) * e; ctx.stroke();
+    ctx.strokeStyle = ENCRE(fort ? .26 : .1); ctx.lineWidth = (fort ? 0.9 : 0.7) * e; ctx.stroke();
   }
-  // la base : son axe (le robot s'y aligne pour rentrer) et la portée de ses faisceaux, 2 m
+  ctx.strokeStyle = K.encre; ctx.lineWidth = 1.2 * e; ctx.strokeRect(0, 0, decor.W, decor.H);
+  // la base : ses deux feux (arcs rouge et vert à leur portée, limites en tirets) et son axe, la route pour rentrer
   const bs = decor.base;
   if (bs) {
-    const ab = -bs.cap * Math.PI / 180;
+    const ab = -bs.cap * Math.PI / 180, R = bs.portee;
     if (calques.signal) {
-      ctx.beginPath(); ctx.moveTo(bs.u, bs.v); ctx.arc(bs.u, bs.v, bs.portee, ab - 0.44, ab + 0.44); ctx.closePath();
-      ctx.setLineDash([1.5 * e, 3.5 * e]); ctx.strokeStyle = 'rgba(26,143,76,.45)'; ctx.lineWidth = 1 * e; ctx.stroke();
+      const cote = 0.4, axe = 0.035;                        // demi-ouverture d'environ 23°, couloir « les deux » de 2° de part et d'autre
+      ctx.lineWidth = 3 * e; ctx.lineCap = 'butt';
+      ctx.strokeStyle = K.babord; ctx.beginPath(); ctx.arc(bs.u, bs.v, R, ab - cote, ab - axe); ctx.stroke();
+      ctx.strokeStyle = K.tribord; ctx.beginPath(); ctx.arc(bs.u, bs.v, R, ab + axe, ab + cote); ctx.stroke();
+      ctx.strokeStyle = K.ocre; ctx.beginPath(); ctx.arc(bs.u, bs.v, R, ab - axe, ab + axe); ctx.stroke();
+      ctx.beginPath();
+      for (const a of [ab - cote, ab + cote]) { ctx.moveTo(bs.u, bs.v); ctx.lineTo(bs.u + R * Math.cos(a), bs.v + R * Math.sin(a)); }
+      ctx.setLineDash([2 * e, 4 * e]); ctx.strokeStyle = ENCRE(.42); ctx.lineWidth = 1 * e; ctx.stroke();
     }
-    ctx.beginPath(); ctx.moveTo(bs.u, bs.v); ctx.lineTo(bs.u + bs.portee * Math.cos(ab), bs.v + bs.portee * Math.sin(ab));
-    ctx.setLineDash([6 * e, 4 * e]); ctx.strokeStyle = 'rgba(26,143,76,.85)'; ctx.lineWidth = 1.5 * e; ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(bs.u, bs.v); ctx.lineTo(bs.u + R * Math.cos(ab), bs.v + R * Math.sin(ab));
+    ctx.setLineDash([9 * e, 3 * e, 2 * e, 3 * e]); ctx.strokeStyle = K.encre; ctx.lineWidth = 1.3 * e; ctx.stroke(); ctx.setLineDash([]);
   }
-  // obstacles trouvés par le robot et absents du plan, tels que la navigation les garde
+  // obstacles trouvés par le robot et absents du plan : le cercle pointillé des dangers d'une carte
   if (calques.connus) for (const o of O.get('connus') || []) {
-    ctx.beginPath(); ctx.arc(o.u, o.v, o.r, 0, 6.3); ctx.fillStyle = 'rgba(208,59,59,.10)'; ctx.fill();
-    ctx.setLineDash([3 * e, 2.5 * e]); ctx.strokeStyle = 'rgba(208,59,59,.8)'; ctx.lineWidth = 1.2 * e; ctx.stroke(); ctx.setLineDash([]);
-    ctx.beginPath(); ctx.arc(o.u, o.v, 1.6 * e, 0, 6.3); ctx.fillStyle = '#a52a2a'; ctx.fill();
+    ctx.beginPath(); ctx.arc(o.u, o.v, o.r, 0, 6.3); ctx.fillStyle = MAGENTA(.07); ctx.fill();
+    ctx.lineCap = 'round'; ctx.setLineDash([0.1 * e, 3.4 * e]); ctx.strokeStyle = K.magenta; ctx.lineWidth = 1.7 * e; ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(o.u - 3 * e, o.v); ctx.lineTo(o.u + 3 * e, o.v); ctx.moveTo(o.u, o.v - 3 * e); ctx.lineTo(o.u, o.v + 3 * e); ctx.lineWidth = 1.4 * e; ctx.stroke();
+    ctx.lineCap = 'butt';
   }
   // les morceaux du tracé, dans l'ordre
   const T = [];
   for (let k = 0; k < NT; k++) { const t = O.get('t/' + k); if (t && t.p.length) T.push(t); }
-  // échos du capteur de distance : un point là où il a vu quelque chose
-  ctx.fillStyle = 'rgba(13,143,143,.55)';
-  const pt = Math.max(1.6 * e, 0.8);
+  // échos du capteur de distance pendant cet essai : un point là où il a vu quelque chose
+  ctx.fillStyle = ENCRE(.42);
+  const pt = Math.max(1.5 * e, 0.8);
   for (const t of T) for (const p of t.p) {
     if (p[3] > 0 && p[3] <= 3000) {
       const a = p[2] * Math.PI / 180, d = (p[3] + 27) * s;
@@ -499,152 +702,154 @@ function dessiner(maintenant) {
   // parois vues pendant les tours sur place de cet essai : la distance est restée la même sur une douzaine de degrés
   const parois = calques.echos ? O.get('parois') : null;
   if (parois && parois.length) {
-    ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1.5 * e, 1.2); ctx.strokeStyle = 'rgba(8,110,110,.9)';
+    ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1.7 * e, 0.9); ctx.strokeStyle = ENCRE(.82);
     ctx.beginPath();
     for (let i = 0; i < parois.length; i += 4) { ctx.moveTo(parois[i], parois[i + 1]); ctx.lineTo(parois[i + 2], parois[i + 3]); }
-    ctx.stroke();
+    ctx.stroke(); ctx.lineCap = 'butt';
   }
   // ce que les essais précédents ont touché ou frôlé : en plus pâle
   const anciens = O.get('anciens');
   if (anciens) {
-    ctx.fillStyle = 'rgba(235,104,52,.45)';
-    for (const p of anciens.proches) { ctx.beginPath(); ctx.arc(p[0], p[1], 2 * e, 0, 6.3); ctx.fill(); }
-    ctx.strokeStyle = 'rgba(208,59,59,.6)'; ctx.lineWidth = 2 * e; ctx.beginPath();
-    for (const p of anciens.contacts) { ctx.moveTo(p[0] - 4.5 * e, p[1] - 4.5 * e); ctx.lineTo(p[0] + 4.5 * e, p[1] + 4.5 * e); ctx.moveTo(p[0] + 4.5 * e, p[1] - 4.5 * e); ctx.lineTo(p[0] - 4.5 * e, p[1] + 4.5 * e); }
+    ctx.fillStyle = MAGENTA(.28);
+    for (const p of anciens.proches || []) { ctx.beginPath(); ctx.arc(p[0], p[1], 1.8 * e, 0, 6.3); ctx.fill(); }
+    ctx.strokeStyle = MAGENTA(.55); ctx.lineWidth = 1.7 * e; ctx.beginPath();
+    for (const p of anciens.contacts || []) croix(p[0], p[1], 4 * e);
     ctx.stroke();
   }
   // objets frôlés par les capteurs optiques du pare-chocs
-  for (const p of O.get('proches') || []) {
-    ctx.beginPath(); ctx.arc(p[0], p[1], 2.4 * e, 0, 6.3); ctx.fillStyle = C.orange; ctx.fill();
-    ctx.beginPath(); ctx.arc(p[0], p[1], 4.6 * e, 0, 6.3); ctx.strokeStyle = 'rgba(235,104,52,.6)'; ctx.lineWidth = 1 * e; ctx.stroke();
-  }
+  ctx.fillStyle = MAGENTA(.85);
+  for (const p of O.get('proches') || []) { ctx.beginPath(); ctx.arc(p[0], p[1], 2.2 * e, 0, 6.3); ctx.fill(); }
   // signal de la base reçu pendant cet essai : un point là où était le récepteur du dessus
   if (calques.signal) for (const p of O.get('ir') || []) {
     const g = genreSignal(p[2]);
     if (g >= 0) { ctx.beginPath(); ctx.arc(p[0], p[1], 1.9 * e, 0, 6.3); ctx.fillStyle = COUL_SIGNAL[g]; ctx.fill(); }
   }
-  // le tracé : plein quand un calage l'a corrigé, en tirets tant qu'il n'est tenu qu'à l'estime
+  // le tracé : plein quand une mesure l'a recalé, en tirets tant qu'il n'est tenu qu'à l'estime
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   let fin = null;
   for (const t of T) {
     const deb = t.p[0];
     if (fin && Math.hypot(deb[0] - fin[0], deb[1] - fin[1]) > 1.5) {          // repositionnement : pas un trajet
       ctx.beginPath(); ctx.moveTo(fin[0], fin[1]); ctx.lineTo(deb[0], deb[1]);
-      ctx.setLineDash([2 * e, 4 * e]); ctx.strokeStyle = 'rgba(122,92,196,.9)'; ctx.lineWidth = 1.6 * e; ctx.stroke(); ctx.setLineDash([]);
+      ctx.setLineDash([0.1 * e, 4.5 * e]); ctx.strokeStyle = COBALT(.8); ctx.lineWidth = 1.8 * e; ctx.stroke(); ctx.setLineDash([]);
     }
     trace(t.p);
-    ctx.lineWidth = 2.6 * e;
-    if (t.e === 'cale') { ctx.strokeStyle = C.bleu; ctx.setLineDash([]); }
-    else if (t.e === 'estime') { ctx.strokeStyle = C.bleu; ctx.setLineDash([6 * e, 5 * e]); }
-    else { ctx.strokeStyle = 'rgba(42,120,214,.55)'; ctx.setLineDash([1.5 * e, 4.5 * e]); }
+    ctx.lineWidth = 2.4 * e;
+    if (t.e === 'cale') { ctx.strokeStyle = K.cobalt; ctx.setLineDash([]); }
+    else if (t.e === 'estime') { ctx.strokeStyle = K.cobalt; ctx.setLineDash([6 * e, 5 * e]); }
+    else { ctx.strokeStyle = COBALT(.55); ctx.setLineDash([1.5 * e, 4.5 * e]); }
     ctx.stroke(); ctx.setLineDash([]);
     fin = t.p[t.p.length - 1];
   }
-  // obstacles notés par la navigation (vus devant, bord sombre)
+  ctx.lineCap = 'butt';
+  // ce que la navigation a noté en route : quelque chose vu droit devant, un bord sombre au sol
   for (const o of O.get('obstacles') || []) {
-    ctx.strokeStyle = o[2] === 'sombre' ? C.encre : C.orange; ctx.lineWidth = 2.2 * e;
-    ctx.beginPath(); ctx.moveTo(o[0] - 4 * e, o[1] + 3.5 * e); ctx.lineTo(o[0], o[1] - 4 * e); ctx.lineTo(o[0] + 4 * e, o[1] + 3.5 * e); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(o[0] - 4 * e, o[1] + 3.5 * e); ctx.lineTo(o[0], o[1] - 4 * e); ctx.lineTo(o[0] + 4 * e, o[1] + 3.5 * e); ctx.closePath();
+    ctx.fillStyle = K.papier; ctx.fill(); ctx.strokeStyle = o[2] === 'sombre' ? K.encre : K.magenta; ctx.lineWidth = 1.8 * e; ctx.stroke();
   }
-  // calages : la correction (flèche violette) puis le rond du tour sur place
+  // les mesures de position : la correction (d'où il se croyait à où la mesure le place), puis le signe du point
   const cals = [];
   for (const [k, o] of O) if (o && k.startsWith('cal/') && !o.muet) cals.push(o);
+  cals.sort((a, b) => a.t - b.t);
   for (const o of cals) {
     if (o.av && Math.hypot(o.u - o.av[0], o.v - o.av[1]) * z >= 7) {
-      ctx.strokeStyle = ctx.fillStyle = C.violet; ctx.lineWidth = 1.8 * e;
+      ctx.strokeStyle = ctx.fillStyle = K.cobalt; ctx.lineWidth = 1.4 * e;
       if (!o.rep) ctx.setLineDash([2 * e, 3 * e]);
       fleche(o.av[0], o.av[1], o.u, o.v, 7 * e); ctx.setLineDash([]);
     }
   }
   for (const o of cals) {
-    const tour = estTour(o), surBase = o.src === 'base', incertain = douteux(o);
+    const tour = estTour(o), surBase = o.src === 'base';
     ctx.beginPath();
-    if (tour || surBase) ctx.arc(o.u, o.v, (surBase ? 9 : 4.6) * e, 0, 6.3);
-    else { ctx.moveTo(o.u, o.v - 5 * e); ctx.lineTo(o.u + 5 * e, o.v); ctx.lineTo(o.u, o.v + 5 * e); ctx.lineTo(o.u - 5 * e, o.v); ctx.closePath(); }
-    if (!surBase) { ctx.fillStyle = '#fff'; ctx.fill(); }
-    ctx.strokeStyle = surBase ? C.vert : tour ? (incertain ? C.ambre : C.bleu) : C.ambre; ctx.lineWidth = 2 * e;
-    if (incertain) ctx.setLineDash([2.5 * e, 2 * e]);
+    if (tour || surBase) ctx.arc(o.u, o.v, (surBase ? 9.5 : 4.8) * e, 0, 6.3);
+    else ctx.rect(o.u - 4.3 * e, o.v - 4.3 * e, 8.6 * e, 8.6 * e);
+    if (!surBase) { ctx.fillStyle = K.papier; ctx.fill(); }
+    ctx.strokeStyle = K.cobalt; ctx.lineWidth = 1.8 * e;
+    if (douteux(o)) ctx.setLineDash([2.5 * e, 2 * e]);
     ctx.stroke(); ctx.setLineDash([]);
-    if (tour && repDe(o)) { ctx.beginPath(); ctx.arc(o.u, o.v, 1.9 * e, 0, 6.3); ctx.fillStyle = C.bleu; ctx.fill(); }      // confirmé par des repères
+    if ((tour && repDe(o)) || (!tour && !surBase)) {           // point au milieu : repères d'accord (rond), ou position donnée (carré)
+      ctx.beginPath(); ctx.arc(o.u, o.v, (tour ? 1.9 : 1.4) * e, 0, 6.3); ctx.fillStyle = K.cobalt; ctx.fill();
+    }
   }
   // contacts du pare-chocs
   for (const [k, o] of O) if (o && k.startsWith('ct/')) {
-    for (const [coul, larg] of [['#fff', 5.5], [C.rouge, 2.8]]) {
-      ctx.strokeStyle = coul; ctx.lineWidth = larg * e; ctx.beginPath();
-      ctx.moveTo(o.u - 5 * e, o.v - 5 * e); ctx.lineTo(o.u + 5 * e, o.v + 5 * e); ctx.moveTo(o.u + 5 * e, o.v - 5 * e); ctx.lineTo(o.u - 5 * e, o.v + 5 * e); ctx.stroke();
+    for (const [coul, larg] of [[K.papier, 5.4], [K.magenta, 2.6]]) {
+      ctx.strokeStyle = coul; ctx.lineWidth = larg * e; ctx.beginPath(); croix(o.u, o.v, 5 * e); ctx.stroke();
     }
   }
-  // base de recharge : un carré, avec une pointe du côté où elle est tournée
+  // la base : un carré d'encre, avec une pointe du côté où elle est tournée
   if (bs) {
     const t = 5 * e;
     ctx.save(); ctx.translate(bs.u, bs.v); ctx.rotate(-bs.cap * Math.PI / 180);
-    ctx.fillStyle = C.vert; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2 * e;
+    ctx.fillStyle = K.encre; ctx.strokeStyle = K.papier; ctx.lineWidth = 1.3 * e;
     ctx.beginPath(); ctx.moveTo(t + 4.5 * e, 0); ctx.lineTo(t, -3.4 * e); ctx.lineTo(t, 3.4 * e); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.rect(-t, -t, 2 * t, 2 * t); ctx.fill(); ctx.stroke();
     ctx.restore();
   }
-  // là où le robot a été vu pour la dernière fois avant d'être déplacé à la main
-  for (const [k, o] of O) if (o && k.startsWith('pd/') && o.u != null) {
-    ctx.beginPath(); ctx.arc(o.u, o.v, Math.max(decor.rayon, 8 * e), 0, 6.3);
-    ctx.setLineDash([3 * e, 3 * e]); ctx.strokeStyle = 'rgba(90,90,86,.85)'; ctx.lineWidth = 1.4 * e; ctx.stroke(); ctx.setLineDash([]);
-  }
-  // repères ronds à toucher, sous le robot : notes de la navigation, patinages, endroits d'où il a été déplacé à la main
-  const rond = (u, v, r, fondC, bord, signe, coul) => {
-    ctx.beginPath(); ctx.arc(u, v, r * e, 0, 6.3); ctx.fillStyle = fondC; ctx.fill(); ctx.strokeStyle = bord; ctx.lineWidth = 1.4 * e; ctx.stroke();
-    ctx.fillStyle = coul; ctx.font = '700 ' + (r * 1.55 * e) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(signe, u, v + 0.5 * e);
+  // petits signes à toucher, sous le robot : notes, patinages, endroits d'où il a été déplacé à la main
+  const signe = (u, v, r, forme, fond, bord, glyphe, coul) => {
+    ctx.beginPath();
+    if (forme === 'carre') ctx.rect(u - r * e, v - r * e, 2 * r * e, 2 * r * e); else ctx.arc(u, v, r * e, 0, 6.3);
+    ctx.fillStyle = fond; ctx.fill(); ctx.strokeStyle = bord; ctx.lineWidth = 1.4 * e; ctx.stroke();
+    ctx.fillStyle = coul; ctx.font = '700 ' + (r * 1.6 * e) + 'px ' + POLICE; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(glyphe, u, v + 0.6 * e);
   };
-  if (calques.notes) for (const o of (O.get('notes') || { p: [] }).p) rond(o.u, o.v, 7, '#33507f', '#fff', 'i', '#fff');
-  for (const p of (anciens && anciens.patine) || []) rond(p[0], p[1], 7, 'rgba(255,255,255,.8)', 'rgba(192,102,26,.7)', '≈', 'rgba(192,102,26,.85)');
-  for (const [k, o] of O) {
-    if (!o) continue;
-    if (k.startsWith('pt/')) rond(o.u, o.v, 8, '#fff', '#c0661a', '≈', '#c0661a');
-    else if (k.startsWith('pd/') && o.u != null) rond(o.u + Math.max(decor.rayon, 8 * e), o.v - Math.max(decor.rayon, 8 * e), 6, 'rgba(255,255,255,.9)', '#5a5a56', '?', '#5a5a56');
+  for (const [k, o] of O) if (o && k.startsWith('pd/') && o.u != null) {
+    const rr = Math.max(decor.rayon, 8 * e);
+    ctx.beginPath(); ctx.arc(o.u, o.v, rr, 0, 6.3);
+    ctx.setLineDash([3 * e, 3 * e]); ctx.strokeStyle = ENCRE(.6); ctx.lineWidth = 1.4 * e; ctx.stroke(); ctx.setLineDash([]);
+    signe(o.u + rr, o.v - rr, 6, 'rond', K.papier, K.encre, '?', K.encre);
   }
-  // destinations
+  if (calques.notes) for (const o of (O.get('notes') || { p: [] }).p) signe(o.u, o.v, 6, 'carre', K.papier, K.encre, 'i', K.encre);
+  for (const p of (anciens && anciens.patine) || []) signe(p[0], p[1], 7, 'rond', 'rgba(255,255,255,.85)', MAGENTA(.6), '≈', MAGENTA(.75));
+  for (const [k, o] of O) if (o && k.startsWith('pt/')) signe(o.u, o.v, 8, 'rond', K.papier, K.magenta, '≈', K.magenta);
+  // destinations : la route en tirets, puis l'anneau
   const cibles = O.get('cibles') || [];
-  const battement = 0.5 + 0.5 * Math.sin(maintenant / 260);
+  const battement = CALME ? 0.5 : 0.5 + 0.5 * Math.sin(maintenant / 260);
   for (const q of cibles) {
     const fait = q.etat === 'atteinte', perdu = q.etat === 'laissée', cours = q.etat === 'en cours';
     if (cours && aff.ok) {
       ctx.beginPath(); ctx.moveTo(aff.u, aff.v); ctx.lineTo(q.u, q.v); ctx.setLineDash([3 * e, 5 * e]);
-      ctx.strokeStyle = 'rgba(26,143,76,.75)'; ctx.lineWidth = 1.6 * e; ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = COBALT(.8); ctx.lineWidth = 1.5 * e; ctx.stroke(); ctx.setLineDash([]);
     }
-    const coul = perdu ? '#8d8c86' : C.vert;
-    ctx.beginPath(); ctx.arc(q.u, q.v, (cours ? 7 + 2.5 * battement : 7) * e, 0, 6.3);
-    ctx.fillStyle = fait ? 'rgba(26,143,76,.22)' : 'rgba(255,255,255,.7)'; ctx.fill();
-    ctx.strokeStyle = coul; ctx.lineWidth = 2.2 * e; ctx.stroke();
-    ctx.beginPath(); ctx.arc(q.u, q.v, (fait ? 4 : 2) * e, 0, 6.3); ctx.fillStyle = coul; ctx.fill();
-    if (perdu) { ctx.beginPath(); ctx.moveTo(q.u - 6 * e, q.v + 6 * e); ctx.lineTo(q.u + 6 * e, q.v - 6 * e); ctx.stroke(); }
+    const coul = perdu ? ENCRE(.45) : K.cobalt, r = (cours ? 8 + 2.5 * battement : 8) * e;      // un losange : ni un calage, ni un obstacle
+    ctx.beginPath(); ctx.moveTo(q.u, q.v - r); ctx.lineTo(q.u + r, q.v); ctx.lineTo(q.u, q.v + r); ctx.lineTo(q.u - r, q.v); ctx.closePath();
+    ctx.fillStyle = fait ? K.cobalt : 'rgba(255,255,255,.85)'; ctx.fill();
+    ctx.strokeStyle = coul; ctx.lineWidth = 2 * e; ctx.lineJoin = 'miter'; ctx.stroke();
+    if (!fait) { ctx.beginPath(); ctx.arc(q.u, q.v, 1.7 * e, 0, 6.3); ctx.fillStyle = coul; ctx.fill(); }
+    if (perdu) { ctx.beginPath(); ctx.moveTo(q.u - 7 * e, q.v + 7 * e); ctx.lineTo(q.u + 7 * e, q.v - 7 * e); ctx.stroke(); }
   }
-  // le robot
+  // le robot : un disque d'encre à sa taille réelle, un trait vers où il est tourné
   if (aff.ok && robot && robot.connu) {
     const a = -aff.cap * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
     const rr = Math.max(decor.rayon, 8 * e);
-    const gris = muet();                                       // plus de nouvelles : dernière position connue, en gris
+    const gris = muet();                                       // plus de nouvelles : dernière position connue, en clair
     // ce que voit le capteur de distance, à l'instant
     if (!gris && robot.us >= 0 && robot.age < 5) {
       const ox = aff.u + decor.dx_capteur * ca, oy = aff.v + decor.dx_capteur * sa, R = (robot.us > 0 ? robot.us : 3000) * s, o = 0.21;
       ctx.beginPath(); ctx.moveTo(ox, oy); ctx.arc(ox, oy, R, a - o, a + o); ctx.closePath();
-      ctx.fillStyle = robot.us > 0 ? 'rgba(13,143,143,.16)' : 'rgba(13,143,143,.05)'; ctx.fill();
-      if (robot.us > 0) { ctx.beginPath(); ctx.arc(ox, oy, R, a - o, a + o); ctx.strokeStyle = C.echo; ctx.lineWidth = 2.4 * e; ctx.stroke(); }
+      ctx.fillStyle = ENCRE(robot.us > 0 ? .1 : .035); ctx.fill();
+      if (robot.us > 0) { ctx.beginPath(); ctx.arc(ox, oy, R, a - o, a + o); ctx.strokeStyle = K.encre; ctx.lineWidth = 2.2 * e; ctx.stroke(); }
     }
-    // marge de l'estime depuis le dernier calage
+    // marge d'erreur depuis la dernière mesure
     if (!gris && robot.src) {
       const m = (20 + 0.04 * robot.src.mm) * s;
-      if (rr + m > rr * 1.25) { ctx.beginPath(); ctx.arc(aff.u, aff.v, rr + m, 0, 6.3); ctx.setLineDash([3 * e, 3 * e]); ctx.strokeStyle = 'rgba(181,122,0,.8)'; ctx.lineWidth = 1.2 * e; ctx.stroke(); ctx.setLineDash([]); }
+      if (rr + m > rr * 1.25) { ctx.beginPath(); ctx.arc(aff.u, aff.v, rr + m, 0, 6.3); ctx.setLineDash([3 * e, 3 * e]); ctx.strokeStyle = ENCRE(.55); ctx.lineWidth = 1.1 * e; ctx.stroke(); ctx.setLineDash([]); }
     }
-    if (robot.act === 'tour') {                                // tour de mesure : un anneau qui tourne
-      ctx.beginPath(); ctx.arc(aff.u, aff.v, rr + 6 * e, maintenant / 300, maintenant / 300 + 4.4);
-      ctx.strokeStyle = C.bleu; ctx.lineWidth = 2.4 * e; ctx.stroke();
+    if (!gris && robot.act === 'tour') {                       // tour de mesure : un arc qui tourne autour du robot
+      const d = CALME ? 0 : maintenant / 300;
+      ctx.beginPath(); ctx.arc(aff.u, aff.v, rr + 6 * e, d, d + 4.4);
+      ctx.strokeStyle = K.cobalt; ctx.lineWidth = 2.4 * e; ctx.stroke();
     }
-    ctx.beginPath(); ctx.arc(aff.u, aff.v, rr, 0, 6.3); ctx.fillStyle = gris ? 'rgba(140,140,136,.8)' : C.orange; ctx.fill();
+    if (!gris) { ctx.beginPath(); ctx.moveTo(aff.u, aff.v); ctx.lineTo(aff.u + rr * 2.1 * ca, aff.v + rr * 2.1 * sa); ctx.strokeStyle = K.encre; ctx.lineWidth = 1.5 * e; ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(aff.u, aff.v, rr, 0, 6.3); ctx.fillStyle = gris ? 'rgba(255,255,255,.75)' : K.encre; ctx.fill();
     if (gris) ctx.setLineDash([3 * e, 3 * e]);
-    ctx.strokeStyle = gris ? '#5a5a56' : '#fff'; ctx.lineWidth = 1.6 * e; ctx.stroke(); ctx.setLineDash([]);
-    // pare-chocs : la moitié touchée passe au rouge
+    ctx.strokeStyle = gris ? ENCRE(.7) : K.papier; ctx.lineWidth = 1.6 * e; ctx.stroke(); ctx.setLineDash([]);
+    // pare-chocs : la moitié touchée passe au magenta
     for (const [cote, a0, a1] of [[0, a - 1.4, a], [1, a, a + 1.4]]) {
       const touche = robot.pc[cote] && !gris && !robot.base;      // sur sa base le pare-chocs est enfoncé : rien d'anormal
-      ctx.beginPath(); ctx.arc(aff.u, aff.v, rr - 1.2 * e, a0, a1);
-      ctx.strokeStyle = touche ? C.rouge : 'rgba(11,11,11,.55)'; ctx.lineWidth = (touche ? 4.5 : 2.4) * e; ctx.stroke();
+      ctx.beginPath(); ctx.arc(aff.u, aff.v, rr - 1.6 * e, a0, a1);
+      ctx.strokeStyle = touche ? K.magenta : gris ? ENCRE(.3) : 'rgba(255,255,255,.42)'; ctx.lineWidth = (touche ? 4.5 : 1.6) * e; ctx.stroke();
     }
     // les six capteurs optiques du pare-chocs, quand la carte est assez agrandie
     if (!gris && rr * z >= 13 && robot.lb) {
@@ -652,40 +857,40 @@ function dessiner(maintenant) {
       for (let k = 0; k < 6; k++) if (robot.lb[k] >= 80) {
         const b = a - angles[k] * Math.PI / 180;
         ctx.beginPath(); ctx.arc(aff.u + (rr + 4 * e) * Math.cos(b), aff.v + (rr + 4 * e) * Math.sin(b), 2.6 * e, 0, 6.3);
-        ctx.fillStyle = robot.lb[k] >= 200 ? C.rouge : C.ambre; ctx.fill();
+        ctx.fillStyle = robot.lb[k] >= 200 ? K.magenta : K.ocre; ctx.fill();
       }
     }
-    ctx.beginPath(); ctx.moveTo(aff.u + rr * 0.78 * ca, aff.v + rr * 0.78 * sa);
+    ctx.beginPath(); ctx.moveTo(aff.u + rr * 0.8 * ca, aff.v + rr * 0.8 * sa);
     ctx.lineTo(aff.u + rr * 0.42 * Math.cos(a + 2.5), aff.v + rr * 0.42 * Math.sin(a + 2.5));
     ctx.lineTo(aff.u + rr * 0.42 * Math.cos(a - 2.5), aff.v + rr * 0.42 * Math.sin(a - 2.5)); ctx.closePath();
-    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.fillStyle = gris ? ENCRE(.5) : K.papier; ctx.fill();
     // le récepteur du dessus reçoit la base : une pastille de la couleur du faisceau, à sa place sur le robot
     const sg = !gris && robot.ir ? genreSignal(robot.ir[0]) : -1;
     if (sg >= 0) {
       const ri = decor.rayon_ir * rr / decor.rayon;
       ctx.beginPath(); ctx.arc(aff.u + ri * ca, aff.v + ri * sa, 3.2 * e, 0, 6.3); ctx.fillStyle = COUL_SIGNAL[sg]; ctx.fill();
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.1 * e; ctx.stroke();
+      ctx.strokeStyle = K.papier; ctx.lineWidth = 1.1 * e; ctx.stroke();
     }
   } else if (robot && !robot.connu && robot.dernier) {
-    // position inconnue (robot déplacé à la main) : en gris, là où il a été vu pour la dernière fois
+    // position inconnue (robot déplacé à la main) : en clair, là où il a été vu pour la dernière fois
     const d = robot.dernier, rr = Math.max(decor.rayon, 8 * e);
-    ctx.beginPath(); ctx.arc(d.u, d.v, rr, 0, 6.3); ctx.fillStyle = 'rgba(140,140,136,.4)'; ctx.fill();
-    ctx.setLineDash([3 * e, 3 * e]); ctx.strokeStyle = '#5a5a56'; ctx.lineWidth = 1.6 * e; ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(d.u, d.v, rr, 0, 6.3); ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fill();
+    ctx.setLineDash([3 * e, 3 * e]); ctx.strokeStyle = ENCRE(.7); ctx.lineWidth = 1.6 * e; ctx.stroke(); ctx.setLineDash([]);
   }
-  // une correction qui vient d'arriver : d'où le robot se croyait (cercle violet) à où le calage le place
+  // une mesure qui vient d'arriver : d'où le robot se croyait (cercle en tirets), et une onde autour du point
   if (anim) {
     const age = (maintenant - anim.t) / 1000;
     if (age > 7) anim = null;
     else if (anim.genre === 'cal' && anim.o.av) {
-      const o = anim.o, rr = Math.max(decor.rayon, 8 * e), k = Math.min(1, age / 0.6);
+      const o = anim.o, rr = Math.max(decor.rayon, 8 * e), k = CALME ? 1 : Math.min(1, age / 0.6);
       ctx.globalAlpha = Math.max(0, 1 - age / 7);
-      ctx.beginPath(); ctx.arc(o.av[0], o.av[1], rr, 0, 6.3); ctx.setLineDash([4 * e, 3 * e]); ctx.strokeStyle = C.violet; ctx.lineWidth = 2 * e; ctx.stroke(); ctx.setLineDash([]);
-      ctx.beginPath(); ctx.arc(o.u, o.v, rr + (4 + 14 * k) * e, 0, 6.3); ctx.strokeStyle = C.violet; ctx.lineWidth = 2.4 * e * (1 - 0.6 * k); ctx.stroke();
+      ctx.beginPath(); ctx.arc(o.av[0], o.av[1], rr, 0, 6.3); ctx.setLineDash([4 * e, 3 * e]); ctx.strokeStyle = K.cobalt; ctx.lineWidth = 1.8 * e; ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(o.u, o.v, rr + (4 + 14 * k) * e, 0, 6.3); ctx.strokeStyle = K.cobalt; ctx.lineWidth = 2.4 * e * (1 - 0.6 * k); ctx.stroke();
       ctx.globalAlpha = 1;
     } else if (anim.genre === 'contact') {
-      const o = anim.o, k = (age * 1.5) % 1;
+      const o = anim.o, k = CALME ? 0.5 : (age * 1.5) % 1;
       ctx.globalAlpha = Math.max(0, 1 - age / 5);
-      ctx.beginPath(); ctx.arc(o.u, o.v, (6 + 18 * k) * e, 0, 6.3); ctx.strokeStyle = C.rouge; ctx.lineWidth = 2.4 * e; ctx.stroke();
+      ctx.beginPath(); ctx.arc(o.u, o.v, (6 + 18 * k) * e, 0, 6.3); ctx.strokeStyle = K.magenta; ctx.lineWidth = 2.4 * e; ctx.stroke();
       ctx.globalAlpha = 1;
     }
   }
@@ -693,46 +898,88 @@ function dessiner(maintenant) {
   // ---------------- le texte, en pixels d'écran
   repereecran();
   const cz = c * z;
-  if (cz >= 32) {                                            // le nom de chaque case, dans son coin
-    ctx.font = (cz >= 44 ? 11 : 10) + 'px system-ui, sans-serif'; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(31,61,102,.62)';
+  if (cz >= 32) {                                            // le nom de chaque case dans son coin, en italique comme les sondes d'une carte
+    ctx.font = police(cz >= 44 ? 11 : 10, { ital: true }); ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = ENCRE(.46);
     for (let i = Math.max(0, Math.floor(v0 / c)); i < Math.min(decor.n_lig, Math.ceil(v1 / c)); i++)
       for (let j = Math.max(0, Math.floor(u0 / c)); j < Math.min(decor.n_col, Math.ceil(u1 / c)); j++)
         ctx.fillText(decor.lettres[i] + (j + 1), X(j * c) + 4, Y(i * c) + 3);
   }
-  if (bs) etiquette('base', X(bs.u) + 12, Y(bs.v) - 9, { t: 12 });
-  if (robot && !robot.connu && robot.dernier) etiquette('vu ici à ' + hm(robot.dernier.h), X(robot.dernier.u), Y(robot.dernier.v) + Math.max(decor.rayon * z, 8) + 12, { t: 12, c: C.doux, centre: true });
-  else if (aff.ok && robot && robot.connu && muet()) etiquette('dernière position connue', X(aff.u), Y(aff.v) + Math.max(decor.rayon * z, 8) + 12, { t: 12, c: C.doux, centre: true });
-  for (const q of cibles) etiquette(q.case, X(q.u) + 12, Y(q.v) - 10, { t: 12, gras: true, c: q.etat === 'laissée' ? C.doux : C.vert });
+  const posees = [];                                         // les mots déjà écrits : [milieu, hauteur, largeur]
+  const libre = (x, y, w) => { for (const p of posees) if (Math.abs(p[0] - x) < (p[2] + w) / 2 + 3 && Math.abs(p[1] - y) < 13) return false; posees.push([x, y, w]); return true; };
+  // le nom des destinations, en haut à gauche du losange (l'heure du calage fait à l'arrivée s'écrit en haut à droite) ;
+  // celle en cours d'abord : vue de loin, deux noms qui se toucheraient ne sont pas écrits tous les deux
+  for (const q of cibles.slice().sort((a, b) => (b.etat === 'en cours') - (a.etat === 'en cours'))) {
+    const x = X(q.u) - 12, y = Y(q.v) - 11;
+    ctx.font = police(12.5, { gras: true }); const w = ctx.measureText(q.case).width;
+    if (libre(x - w / 2, y, w)) ecrire(q.case, x, y, { t: 12.5, gras: true, align: 'right', c: q.etat === 'laissée' ? ENCRE(.6) : K.cobalt });
+  }
+  // l'heure des mesures de position, à côté de leur signe : les trois dernières, toutes quand la carte est agrandie,
+  // aucune quand tout l'appartement tient sur un petit écran
+  for (let n = cals.length - 1; n >= 0 && z >= 0.5; n--) {
+    if (z < 2.2 && n < cals.length - 3) break;
+    const o = cals[n], x = X(o.u) + 9, y = Y(o.v) - 9, texte = o.h.slice(0, 5);
+    if (x < 24 || y < 24 || x > Wc || y > Hc) continue;
+    ctx.font = police(11); const w = ctx.measureText(texte).width;
+    if (libre(x + w / 2, y, w)) ecrire(texte, x, y, { t: 11, c: K.cobalt });
+  }
+  if (bs) ecrire('base', X(bs.u) - 13, Y(bs.v) - 10, { t: 12, ital: true, align: 'right' });
+  if (robot && !robot.connu && robot.dernier) ecrire('vu ici à ' + hm(robot.dernier.h), X(robot.dernier.u), Y(robot.dernier.v) + Math.max(decor.rayon * z, 8) + 12, { t: 12, align: 'center' });
+  else if (aff.ok && robot && robot.connu && muet()) ecrire('dernière position connue', X(aff.u), Y(aff.v) + Math.max(decor.rayon * z, 8) + 12, { t: 12, align: 'center' });
   if (anim && anim.genre === 'cal' && anim.o.av && (maintenant - anim.t) < 7000)
-    etiquette('corrigé de ' + cm(anim.o), X(anim.o.u), Y(anim.o.v) + Math.max(decor.rayon * z, 8) + 26, { t: 12, gras: true, c: C.violet, centre: true });
-  // règles : numéros des colonnes en haut, lettres des lignes à gauche, toujours visibles
-  const B = 19;
-  ctx.fillStyle = 'rgba(252,252,251,.93)'; ctx.fillRect(0, 0, Wc, B); ctx.fillRect(0, 0, B, Hc);
-  ctx.fillStyle = C.encre; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    ecrire('recalé de ' + cm(anim.o), X(anim.o.u), Y(anim.o.v) + Math.max(decor.rayon * z, 8) + 26, { t: 12.5, gras: true, c: K.cobalt, align: 'center' });
+  // le cadre gradué : numéros des colonnes en haut, lettres des lignes à gauche, une case sur deux à l'encre
+  const B = BANDE, G = 5;
+  ctx.fillStyle = K.papier; ctx.fillRect(0, 0, Wc, B); ctx.fillRect(0, 0, B, Hc);
+  ctx.fillStyle = K.encre;
+  const j0 = Math.max(0, Math.floor(u0 / c)), j1 = Math.min(decor.n_col, Math.ceil(u1 / c));
+  const i0 = Math.max(0, Math.floor(v0 / c)), i1 = Math.min(decor.n_lig, Math.ceil(v1 / c));
+  for (let j = j0; j < j1; j++) if (j % 2 === 0) {
+    const xa = Math.max(B, X(j * c)), xb = Math.min(Wc, X(Math.min((j + 1) * c, decor.W)));
+    if (xb > xa) ctx.fillRect(xa, B - G, xb - xa, G);
+  }
+  for (let i = i0; i < i1; i++) if (i % 2 === 0) {
+    const ya = Math.max(B, Y(i * c)), yb = Math.min(Hc, Y(Math.min((i + 1) * c, decor.H)));
+    if (yb > ya) ctx.fillRect(B - G, ya, G, yb - ya);
+  }
+  ctx.strokeStyle = K.encre; ctx.lineWidth = 1; ctx.beginPath();
+  const xg = Math.max(B, X(0)), xd = Math.min(Wc, X(decor.W)), yh = Math.max(B, Y(0)), yb2 = Math.min(Hc, Y(decor.H));
+  if (xd > xg) { ctx.moveTo(xg, B - G - 0.5); ctx.lineTo(xd, B - G - 0.5); ctx.moveTo(xg, B - 0.5); ctx.lineTo(xd, B - 0.5); }
+  if (yb2 > yh) { ctx.moveTo(B - G - 0.5, yh); ctx.lineTo(B - G - 0.5, yb2); ctx.moveTo(B - 0.5, yh); ctx.lineTo(B - 0.5, yb2); }
+  ctx.stroke();
+  ctx.fillStyle = K.encre; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   const pasCol = cz >= 17 ? 1 : cz >= 7 ? 5 : 10;
-  ctx.font = '600 ' + (cz >= 24 ? 12 : 10.5) + 'px system-ui, sans-serif';
+  ctx.font = police(cz >= 24 ? 12.5 : 11, { gras: true });
   for (let j = 0; j < decor.n_col; j++) {
     if ((j + 1) % pasCol && pasCol > 1) continue;
-    const x = X((j + 0.5) * c); if (x > B + 4 && x < Wc - 4) ctx.fillText(String(j + 1), x, B / 2 + 0.5);
+    const x = X((j + 0.5) * c); if (x > B + 4 && x < Wc - 4) ctx.fillText(String(j + 1), x, (B - G) / 2 + 0.5);
   }
   const pasLig = cz >= 12 ? 1 : 2;
   for (let i = 0; i < decor.n_lig; i++) {
     if (i % pasLig) continue;
-    const y = Y(Math.min((i + 0.5) * c, (i * c + decor.H) / 2)); if (y > B + 4 && y < Hc - 4) ctx.fillText(decor.lettres[i], B / 2, y);
+    const y = Y(Math.min((i + 0.5) * c, (i * c + decor.H) / 2)); if (y > B + 6 && y < Hc - 4) ctx.fillText(decor.lettres[i], (B - G) / 2, y + 0.5);
   }
-  ctx.fillStyle = 'rgba(252,252,251,1)'; ctx.fillRect(0, 0, B, B);
-  ctx.strokeStyle = '#d9d7d0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, B + 0.5); ctx.lineTo(Wc, B + 0.5); ctx.moveTo(B + 0.5, 0); ctx.lineTo(B + 0.5, Hc); ctx.stroke();
-  // vue d'ensemble, en bas à gauche : où est le robot dans l'appartement, et ce que montre l'écran
+  ctx.fillStyle = K.papier; ctx.fillRect(0, 0, B, B);
+  // en bas à gauche : l'échelle, et la vue d'ensemble quand la carte est agrandie
+  let bas = Hc - 12;
   if (z > zMin() * 1.5 && plan.complete && plan.naturalWidth) {
     const mw = Math.min(170, Wc * 0.42), mh = mw * decor.H / decor.W, mx = B + 8, my = Hc - mh - 10, k = mw / decor.W;
-    ctx.fillStyle = '#fff'; ctx.fillRect(mx, my, mw, mh);
-    ctx.globalAlpha = 0.9; ctx.drawImage(plan, mx, my, mw, mh); ctx.globalAlpha = 1;
-    ctx.strokeStyle = '#8a8a86'; ctx.lineWidth = 1; ctx.strokeRect(mx + 0.5, my + 0.5, mw, mh);
-    ctx.strokeStyle = C.encre; ctx.lineWidth = 1.5;
+    ctx.fillStyle = K.papier; ctx.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
+    ctx.drawImage(sol, mx, my, mw, mh);
+    ctx.drawImage(planTeinte || plan, mx, my, mw, mh);
+    ctx.strokeStyle = K.encre; ctx.lineWidth = 1; ctx.strokeRect(mx - 0.5, my - 0.5, mw + 1, mh + 1);
+    ctx.strokeStyle = K.cobalt; ctx.lineWidth = 1.6;
     const rx0 = Math.max(0, u0), ry0 = Math.max(0, v0), rx1 = Math.min(decor.W, u1), ry1 = Math.min(decor.H, v1);
     ctx.strokeRect(mx + rx0 * k, my + ry0 * k, Math.max(2, (rx1 - rx0) * k), Math.max(2, (ry1 - ry0) * k));
-    if (aff.ok && robot && robot.connu) { ctx.beginPath(); ctx.arc(mx + aff.u * k, my + aff.v * k, 3.5, 0, 6.3); ctx.fillStyle = C.orange; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke(); }
+    if (aff.ok && robot && robot.connu) { ctx.beginPath(); ctx.arc(mx + aff.u * k, my + aff.v * k, 3.4, 0, 6.3); ctx.fillStyle = K.encre; ctx.fill(); ctx.strokeStyle = K.papier; ctx.lineWidth = 1.2; ctx.stroke(); }
+    bas = my - 12;
   }
+  const pm = decor.px_par_m * z, metres = [0.5, 1, 2, 5, 10].find(m => m * pm >= 64) || 10, Le = metres * pm, xe = B + 10;
+  ctx.fillStyle = 'rgba(255,255,255,.88)'; ctx.fillRect(xe - 4, bas - 9, Le + 46, 16);
+  ctx.fillStyle = K.papier; ctx.fillRect(xe, bas - 2.5, Le, 5);
+  ctx.fillStyle = K.encre; ctx.fillRect(xe, bas - 2.5, Le / 4, 5); ctx.fillRect(xe + Le / 2, bas - 2.5, Le / 4, 5);
+  ctx.strokeStyle = K.encre; ctx.lineWidth = 1; ctx.strokeRect(xe - 0.5, bas - 3, Le + 1, 6);
+  ctx.font = police(11.5); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = K.encre;
+  ctx.fillText(metres < 1 ? '50 cm' : metres + ' m', xe + Le + 6, bas + 0.5);
 }
 
 // ------------------------------------------------------------ l'animation
@@ -758,10 +1005,13 @@ function cadre(t, force) {
         const k = 1 - Math.exp(-dt / 0.35); vue.cx += (tx - vue.cx) * k; vue.cy += (ty - vue.cy) * k; mouvement = true;
       }
     }
-  } else if (decor && mesure && !vue.pret && !vue.attente) {     // position pas encore connue : tout l'appartement
-    vue.z = zMin(); vue.cx = decor.W / 2; vue.cy = decor.H / 2; vue.attente = true; sale = true;
+  } else if (decor && mesure && !vue.pret && !vue.attente) {
+    // position inconnue à l'ouverture de la page : l'endroit où le robot a été vu pour la dernière fois, sinon tout l'appartement
+    if (robot && robot.dernier) { vue.z = zSuivi(); [vue.cx, vue.cy] = centreBorne(robot.dernier.u, robot.dernier.v); }
+    else { vue.z = zMin(); [vue.cx, vue.cy] = centreBorne(decor.W / 2, decor.H / 2); }
+    vue.attente = true; sale = true;
   }
-  const vivant = anim || (robot && robot.act === 'tour') || (O.get('cibles') || []).some(q => q.etat === 'en cours');
+  const vivant = !CALME && (anim || (robot && robot.act === 'tour') || (O.get('cibles') || []).some(q => q.etat === 'en cours'));
   if (sale || mouvement || force || (vivant && t - dernierDessin > 50)) { sale = false; dernierDessin = t; dessiner(t); }
 }
 function image(t) {
@@ -770,77 +1020,112 @@ function image(t) {
 requestAnimationFrame(image);
 
 // ------------------------------------------------------------ le texte autour de la carte
-let bulleFin = 0;
-function bulle(texte, genre) {
-  const b = $('bulle'); b.textContent = texte; b.className = 'vue ' + genre; bulleFin = performance.now() + 5000;
-  setTimeout(() => { if (performance.now() >= bulleFin - 50) b.className = genre; }, 5050);
+let avisFin = 0;
+function avis(texte, genre) {
+  const b = $('avis'); b.textContent = texte; b.className = 'vue ' + genre; avisFin = performance.now() + 5000;
+  setTimeout(() => { if (performance.now() >= avisFin - 50) b.className = genre; }, 5050);
 }
+// le petit signe devant un événement ou devant la phrase « d'où vient la position »
+const SIGNES = {
+  sur: '<circle cx="8" cy="8" r="5.8" fill="none" stroke="#1b4fa8" stroke-width="1.8"/><circle cx="8" cy="8" r="2.1" fill="#1b4fa8"/>',
+  plan: '<circle cx="8" cy="8" r="5.8" fill="none" stroke="#1b4fa8" stroke-width="1.8"/>',
+  doute: '<circle cx="8" cy="8" r="5.8" fill="none" stroke="#1b4fa8" stroke-width="1.8" stroke-dasharray="2.6 2.2"/>',
+  donne: '<rect x="2.6" y="2.6" width="10.8" height="10.8" fill="none" stroke="#1b4fa8" stroke-width="1.8"/><circle cx="8" cy="8" r="1.6" fill="#1b4fa8"/>',
+  base: '<rect x="3" y="3" width="10" height="10" fill="#17212e"/>',
+  perdu: '<circle cx="8" cy="8" r="5.8" fill="none" stroke="#b4246e" stroke-width="1.8" stroke-dasharray="2.6 2.2"/><circle cx="8" cy="8" r="1.4" fill="#b4246e"/>',
+  cible: '<path d="M8 1.6 14.4 8 8 14.4 1.6 8Z" fill="#1b4fa8"/>',
+  contact: '<path d="M3.5 3.5l9 9m0-9l-9 9" stroke="#b4246e" stroke-width="2.3" fill="none"/>',
+  alerte: '<path d="M8 2.6 14 13H2Z" fill="none" stroke="#b4246e" stroke-width="1.8" stroke-linejoin="round"/>',
+  info: '<path d="M4 8h8" stroke="rgba(23,33,46,.55)" stroke-width="1.8"/>' };
+function genreSigne(e) {                              // une ligne du journal qui parle d'un calage porte le même signe que lui sur la carte
+  if (e.g !== 'cal' && e.g !== 'pos') return e.g;
+  for (const [k, o] of O) if (o && k.startsWith('cal/') && o.t === e.t) return o.src === 'base' ? 'base' : !estTour(o) ? 'donne' : repDe(o) ? 'sur' : douteux(o) ? 'doute' : 'plan';
+  return e.g === 'cal' ? 'plan' : 'donne';
+}
+const signeJournal = e => '<svg class="signe" viewBox="0 0 16 16" aria-hidden="true">' + (SIGNES[genreSigne(e)] || SIGNES.info) + '</svg>';
+let angleRose = 0;
 function majTexte() {
-  const r = robot, h = horloge;
-  const voyant = $('voyant');
-  if (panne) { voyant.className = 'panne'; $('voyantTexte').textContent = 'serveur injoignable'; }
-  else if (h && h.mode === 'rejeu') { voyant.className = 'rejeu'; $('voyantTexte').textContent = 'rejeu × ' + nb(h.vitesse, h.vitesse < 1 ? 2 : 0) + (h.pause ? ' (pause)' : ''); }
-  else if (r && r.age != null && r.age <= 3) { voyant.className = 'vif'; $('voyantTexte').textContent = 'en direct'; }
-  else { voyant.className = ''; $('voyantTexte').textContent = r && r.age != null ? 'sans nouvelles depuis ' + duree(r.age) : 'pas d\'enregistrement'; }
-  $('horloge').textContent = h ? h.h : '';
-  const att = $('attente');
+  const r = robot, h = horloge, voyant = $('voyant');
+  const frais = r && r.age != null && r.age <= 3;
+  if (panne) { voyant.className = 'panne'; voyant.textContent = 'PC injoignable'; }
+  else if (h && h.mode === 'rejeu') { voyant.className = 'rejeu'; voyant.textContent = h.pause ? 'rejeu en pause' : 'rejeu × ' + nb(h.vitesse, h.vitesse < 1 ? 2 : 0); }
+  else if (frais) { voyant.className = 'vif'; voyant.textContent = 'en direct'; }
+  else { voyant.className = ''; voyant.textContent = r && r.age != null ? 'sans nouvelles' : 'aucun essai'; }
+  $('horloge').textContent = panne ? '' : h && (h.mode === 'rejeu' || frais) ? h.h : r && r.age != null ? 'depuis ' + duree(r.age) : '';
+  const att = $('attente'), bandeau = $('bandeau');
   if (!r || !r.connu) {
     const porte = r && r.pourquoi === 'porte';
+    bandeau.classList.add('perdu');
     $('case').textContent = '?';
-    $('act').innerHTML = (porte ? 'Déplacé à la main' : 'Position inconnue') + (r && r.dernier ? '<small>vu pour la dernière fois en ' + echappe(r.dernier.case) + ', à ' + hm(r.dernier.h) + '</small>' : '');
-    $('pastille').className = 'pastille inconnu';
-    const pourquoi = !r || r.pourquoi === 'aucune ligne du journal' ? 'aucune donnée du robot pour l\'instant'
-      : r.pourquoi === 'rupture' ? 'le cerveau a redémarré ou sa position a été remise à zéro'
-      : porte ? ({ 'soulevé': 'le robot a été soulevé et déplacé à la main', 'tourné': 'le robot a été tourné ou poussé à la main' }[r.cause] || 'le robot a été tiré de sa base à la main')
-      : 'aucun calage sur le plan pour l\'instant';
-    $('srcTexte').textContent = 'En attente : ' + pourquoi + '.';
-    att.textContent = porte ? 'Le robot a été déplacé à la main : il réapparaîtra au prochain calage (position donnée par la navigation, tour sur place, ou retour sur sa base).'
-      : 'Le robot apparaîtra dès que la navigation aura donné sa position sur le plan (départ donné ou premier tour sur place).';
+    $('act').textContent = porte ? 'Déplacé à la main' : 'Position inconnue';
+    $('detail').textContent = r && r.dernier ? 'vu pour la dernière fois en ' + r.dernier.case + ', à ' + hm(r.dernier.h) : '';
+    $('marque').innerHTML = SIGNES.perdu;
+    $('srcTexte').textContent = !r || r.pourquoi === 'aucune ligne du journal' ? 'Aucune donnée du robot pour l\'instant.'
+      : r.pourquoi === 'rupture' ? 'Le cerveau a redémarré : la position reviendra au prochain calage.'
+      : porte ? ({ 'soulevé': 'Le robot a été soulevé', 'tourné': 'Le robot a été tourné ou poussé à la main' }[r.cause] || 'Le robot a été tiré de sa base') + ' : il réapparaîtra au prochain calage.'
+      : 'En attente d\'une première position sur le plan.';
+    att.textContent = porte ? 'Le robot a été déplacé à la main. Il réapparaîtra dès que la navigation donnera sa position, qu\'il fera un tour sur place ou qu\'il sera posé sur sa base.'
+      : 'Le robot apparaîtra dès que la navigation aura donné sa position sur le plan : un départ, ou un premier tour sur place.';
     att.classList.toggle('vue', !(porte && r.dernier));        // déplacé à la main : la carte montre où il a été vu, rien ne la cache
     return;
   }
   att.classList.remove('vue');
+  bandeau.classList.remove('perdu');
   $('case').textContent = r.case;
+  angleRose += ((90 - r.cap - angleRose + 540) % 360) - 180;     // l'aiguille prend le plus court chemin
+  $('aiguille').style.transform = 'rotate(' + angleRose.toFixed(1) + 'deg)';
+  $('rose').setAttribute('aria-label', 'Le robot est tourné ' + versMot(r.cap));
   const v = Math.abs(r.vit) / 10, gris = muet();
-  let act = gris ? 'Dernière position connue'
-    : r.roue === 3 ? 'Soulevé, les roues en l\'air'
-    : (r.base && r.act === 'arret') ? 'Sur sa base' + (r.chg >= 1 && r.chg <= 3 ? ', en charge' : '')
-    : ({ avance: 'Avance à ' + nb(v) + ' cm/s', recule: 'Recule à ' + nb(v) + ' cm/s', tourne: 'Tourne sur place',
-         tour: 'Tour de mesure sur place', arret: 'À l\'arrêt' })[r.act];
-  if (!gris && !r.base && (r.pc[0] || r.pc[1])) act += ' — pare-chocs enfoncé';
-  if (!gris && r.patine) act += ' — une roue patine';
-  $('act').innerHTML = echappe(act) + '<small>' + echappe(gris ? quand(r.t) + (r.base ? ', sur sa base' : '')
-    : 'tourné ' + versMot(r.cap) + (r.ir && !r.base ? ' · signal de la base : ' + signalDit(r.ir) : '')) + '</small>';
+  $('act').textContent = gris ? 'Dernière position'
+    : r.roue === 3 ? 'Soulevé'
+    : (r.base && r.act === 'arret') ? (r.chg >= 1 && r.chg <= 3 ? 'En charge sur sa base' : 'Sur sa base')
+    : ({ avance: 'Avance à ' + nb(v) + ' cm/s', recule: 'Recule à ' + nb(v) + ' cm/s', tourne: 'Tourne sur place', tour: 'Tour de mesure', arret: 'À l\'arrêt' })[r.act];
+  const details = [];
+  if (!gris) {
+    if (!r.base && (r.pc[0] || r.pc[1])) details.push('pare-chocs enfoncé');
+    if (r.patine) details.push('une roue patine');
+    if (r.ir && !r.base) details.push('reçoit la base : ' + signalDit(r.ir));
+  }
+  $('detail').textContent = details.join(', ');
   const sc = r.src, tour = sc.src === 'filtre' || sc.src === 'plan', incertain = tour && !sc.rep && sc.note != null && sc.note < 0.6;
-  const depuis = sc.mm >= 30 ? ' · <b>' + longueur(sc.mm) + '</b> à l\'estime depuis' : ' · pas bougé depuis';
-  let t;
-  if (gris) t = 'Le robot ne donne plus de nouvelles : il a pu être déplacé depuis.';
-  else if (tour) t = 'Calé à <b>' + hm(sc.h) + '</b> par un tour sur place' + (sc.rep ? ', sur <b>' + sc.rep + ' repères</b>' : incertain ? ' (incertain)' : '') + depuis;
-  else if (sc.src === 'base') t = 'Posé sur sa base à <b>' + hm(sc.h) + '</b> : position sûre' + depuis;
-  else t = ({ depart: 'Position de départ donnée à ', annonce: 'Position de départ donnée à ', pose: 'Position donnée par la navigation à ',
-              report: 'Position reprise de l\'enregistrement précédent à ' })[sc.src] + '<b>' + hm(sc.h) + '</b>, pas mesurée' + depuis;
+  const depuis = sc.mm >= 30 ? '<b>' + longueur(sc.mm) + '</b> parcourus depuis' : 'pas bougé depuis';
+  let t, genre;
+  if (gris) { t = 'Connue ' + quand(r.t) + (r.base ? ', sur sa base' : '') + '. Il a pu être déplacé depuis.'; genre = 'doute'; }
+  else if (tour && sc.rep) { t = 'Calé à <b>' + hm(sc.h) + '</b> sur <b>' + sc.rep + ' repères</b>, ' + depuis + '.'; genre = 'sur'; }
+  else if (tour) { t = (incertain ? 'Calage incertain à <b>' : 'Calé à <b>') + hm(sc.h) + '</b> sur le plan seul, ' + depuis + '.'; genre = incertain ? 'doute' : 'plan'; }
+  else if (sc.src === 'base') { t = 'Sur sa base depuis <b>' + hm(sc.h) + '</b> : position sûre.'; genre = 'base'; }
+  else {
+    t = ({ depart: 'Position de départ donnée à <b>' + hm(sc.h) + '</b>', annonce: 'Position de départ donnée à <b>' + hm(sc.h) + '</b>',
+           pose: 'Position donnée par la navigation à <b>' + hm(sc.h) + '</b>', report: 'Position reprise de l\'essai précédent' })[sc.src] + ', pas mesurée ; ' + depuis + '.';
+    genre = 'donne';
+  }
   $('srcTexte').innerHTML = t;
-  $('pastille').className = 'pastille ' + (gris ? 'inconnu' : ((tour && !incertain) || sc.src === 'base') && sc.mm < 2500 ? 'sur' : 'estime');
-  let m = 'Capteur de distance : ' + (r.us > 0 ? longueur(r.us) + ' devant' : r.us === 0 ? 'rien à portée' : 'éteint');
-  if (r.ir) m += ' · signal de la base : ' + signalDit(r.ir);
-  m += ' · mode ' + ({ 1: 'passif', 2: 'passif', 3: 'Safe', 4: 'Full' }[r.mode] || r.mode);
-  if (r.q != null && r.qmax) m += ' · batterie ' + Math.round(100 * r.q / r.qmax) + ' %';
-  m += ' · ' + nb(r.mv / 1000, 1) + ' V';
-  const sn = O.get('seance'); if (sn && sn.nom) m += ' · ' + sn.nom;
-  $('mesures').textContent = m;
+  $('marque').innerHTML = SIGNES[genre];
+  const m = [];
+  if (r.q != null && r.qmax) m.push('Batterie ' + Math.round(100 * r.q / r.qmax) + ' %, ' + nb(r.mv / 1000, 1) + ' V.');
+  m.push('Mode ' + ({ 1: 'passif', 2: 'passif', 3: 'Safe', 4: 'Full' }[r.mode] || r.mode) + '.');
+  m.push('Capteur de distance : ' + (r.us > 0 ? longueur(r.us) + ' devant.' : r.us === 0 ? 'rien à portée.' : 'éteint.'));
+  if (r.ir) m.push('Signal de la base : ' + signalDit(r.ir) + '.');
+  const sn = O.get('seance'); if (sn && sn.nom) m.push('Enregistrement ' + sn.nom + '.');
+  $('mesures').textContent = m.join(' ');
 }
 function majJournal() {
   const J = O.get('journal') || [];
-  const ol = $('journal');
-  ol.innerHTML = J.slice().reverse().map((e, i) => '<li class="' + e.g + '" data-i="' + (J.length - 1 - i) + '"><i></i><span><time>' + e.h + '</time>' + echappe(e.x) + '</span></li>').join('');
+  $('journal').innerHTML = J.length ? J.slice().reverse().map((e, i) => '<li' + (e.u != null ? ' class="ici" tabindex="0" title="Montrer sur la carte"' : '') + ' data-i="' + (J.length - 1 - i) + '"><time>' + e.h.slice(0, 5) + '</time>'
+    + signeJournal(e) + '<span>' + e.x.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) + '</span></li>').join('')
+    : '<li class="vide">Rien encore dans cet essai.</li>';
   const d = J[J.length - 1];
-  $('dernier').innerHTML = d ? '<time>' + d.h + '</time>' + echappe(d.x) : 'Journal de l\'essai : rien encore';
+  $('dernierHeure').textContent = d ? d.h.slice(0, 5) : '';
+  $('dernierSigne').innerHTML = d ? signeJournal(d) : '';
+  $('dernier').textContent = d ? d.x : 'Journal de bord : rien encore dans cet essai';
 }
-$('journal').onclick = ev => {
-  const li = ev.target.closest('li'); if (!li) return;
+function montrer(ev) {                                  // une ligne du journal : la carte va à l'endroit dont elle parle
+  const li = ev.target.closest('li'); if (!li || li.dataset.i == null) return;
   const e = (O.get('journal') || [])[+li.dataset.i];
-  if (e && e.u != null) { vue.suivre = false; vue.cx = e.u; vue.cy = e.v; if (vue.z < zSuivi()) vue.z = zSuivi(); majBoutons(); $('bas').classList.remove('ouvert'); sale = true; }
-};
+  if (e && e.u != null) { vue.suivre = false; if (vue.z < zSuivi()) vue.z = zSuivi(); [vue.cx, vue.cy] = centreBorne(e.u, e.v); majBoutons(); fermer(false); sale = true; }
+}
+$('journal').onclick = montrer;
+$('journal').onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); montrer(ev); } };
 
 // ------------------------------------------------------------ le rejeu
 async function ordreRejeu(q) { try { await fetch('api/rejeu?' + q, { cache: 'no-store' }); } catch (err) { /* le prochain sondage le dira */ } }
@@ -854,6 +1139,7 @@ function majRejeu() {
   bar.classList.toggle('vue', !!h && h.mode === 'rejeu');
   if (!h || h.mode !== 'rejeu') return;
   $('rJouer').textContent = h.pause ? '▶' : '⏸';
+  $('rJouer').setAttribute('aria-label', h.pause ? 'Reprendre le rejeu' : 'Mettre le rejeu en pause');
   $('rHeure').textContent = h.h;
   if (!glisse) $('rCurseur').value = Math.round(1000 * (h.t - h.t0) / Math.max(1, h.t1 - h.t0));
   const sel = $('rVitesse');
@@ -861,51 +1147,63 @@ function majRejeu() {
 }
 
 // ------------------------------------------------------------ le sondage du serveur, quatre fois par seconde
+// Une donnée inattendue ne doit ni arrêter le sondage, ni faire dire à la page que le PC ne répond plus : seule une
+// requête sans réponse allume « PC injoignable » ; le reste est fait pas à pas, chaque pas à l'abri des autres.
+const sansCasser = f => { try { f(); } catch (err) { console.error(err); } };
+function annoncer(k, val, neuf) {                     // ce qui vient d'arriver : un mot en travers de la carte, une onde autour du point
+  if (k.startsWith('cal/') && !val.muet && (estTour(val) || val.src === 'base')) {
+    anim = { genre: 'cal', o: val, t: performance.now() };
+    const ou = val.src === 'base' ? 'Posé sur sa base' : 'Tour sur place en ' + val.case + (repDe(val) ? ', sur ' + repDe(val).n + ' repères' : '');
+    if (val.av && val.d >= 20) avis(ou + ' : recalé de ' + cm(val) + ' ' + versMot(val.dir), 'cal');
+    else avis(ou + ' : position ' + (val.av ? 'confirmée' : 'sûre'), 'cal');
+  } else if (neuf && k.startsWith('ct/')) {
+    anim = { genre: 'contact', o: val, t: performance.now() };
+    avis('Contact du pare-chocs ' + (val.cote === 'devant' ? 'de face' : val.cote) + ' en ' + val.case, 'alerte');
+  } else if (neuf && k.startsWith('pt/')) {
+    avis('Roue ' + val.cote + ' qui patine en ' + val.case, 'alerte');
+  } else if (neuf && k.startsWith('pd/')) {
+    avis(({ 'soulevé': 'Robot soulevé', 'tourné': 'Robot tourné à la main' }[val.cause] || 'Robot tiré de sa base') + ' : position inconnue jusqu\'au prochain calage', 'alerte');
+  }
+}
 async function sonder() {
-  let delai = 250;
+  let delai = 250, d = null;
   try {
     const rep = await fetch('api/suite?e=' + E + '&v=' + V, { cache: 'no-store' });
     if (!rep.ok) throw new Error(rep.status);
-    const d = await rep.json();
-    if (d.e !== E) { O.clear(); E = d.e; premiere = true; aff.ok = false; anim = null; vue.pret = vue.attente = false; fondSale = true; }
+    d = await rep.json();
+    panne = false;
+  } catch (err) { panne = true; delai = 1500; }
+  if (d) {
+    if (d.e !== E) { O.clear(); E = d.e; premiere = true; aff.ok = false; anim = null; vue.pret = vue.attente = false; solSale = memoireSale = true; }
     let journal = false;
-    for (const [k, val] of Object.entries(d.obj)) {
+    for (const [k, val] of Object.entries(d.obj || {})) {
+      if (k.startsWith('t/')) solSale = true;                 // le trajet a changé : le sol parcouru aussi
       if (val === null) { O.delete(k); continue; }
       const neuf = !O.has(k);
       O.set(k, val);
-      if (k === 'decor') { decor = val; borner(); fondSale = true; }
-      else if (k === 'anciens' || k === 'reperes') fondSale = true;
+      if (k === 'decor') { decor = val; borner(); solSale = memoireSale = true; }
+      else if (k === 'anciens') solSale = memoireSale = true;
+      else if (k === 'reperes') memoireSale = true;
       else if (k === 'journal') journal = true;
-      else if (!premiere && k.startsWith('cal/') && !val.muet && (estTour(val) || val.src === 'base')) {
-        anim = { genre: 'cal', o: val, t: performance.now() };
-        const ou = val.src === 'base' ? 'Posé sur sa base' : 'Tour sur place en ' + val.case + (repDe(val) ? ', sur ' + repDe(val).n + ' repères' : '');
-        if (val.av && val.d >= 20) bulle(ou + ' : recalé de ' + cm(val) + ' ' + versMot(val.dir) + ', ' + nb(Math.abs(val.dc), 1) + '°', 'cal');
-        else bulle(ou + ' : position ' + (val.av ? 'confirmée' : 'sûre'), 'cal');
-      } else if (!premiere && neuf && k.startsWith('ct/')) {
-        anim = { genre: 'contact', o: val, t: performance.now() };
-        bulle('Contact du pare-chocs ' + (val.cote === 'devant' ? 'de face' : val.cote) + ' en ' + val.case, 'contact');
-      } else if (!premiere && neuf && k.startsWith('pt/')) {
-        bulle('Roue ' + val.cote + ' qui patine en ' + val.case, 'contact');
-      } else if (!premiere && neuf && k.startsWith('pd/')) {
-        bulle(({ 'soulevé': 'Robot soulevé', 'tourné': 'Robot tourné à la main' }[val.cause] || 'Robot tiré de sa base') + ' : position inconnue jusqu\'au prochain calage', 'contact');
-      }
+      else if (!premiere) sansCasser(() => annoncer(k, val, neuf));
     }
-    for (const k of [...O.keys()]) if (k.startsWith('t/') && +k.slice(2) >= d.nt) O.delete(k);
+    for (const k of [...O.keys()]) if (k.startsWith('t/') && +k.slice(2) >= d.nt) { O.delete(k); solSale = true; }
     V = d.v; NT = d.nt; robot = d.robot; horloge = d.horloge;
-    if (panne) panne = false;
-    if (journal || premiere) majJournal();
+    if (journal || premiere) sansCasser(majJournal);
     premiere = false;
-    majTexte(); majRejeu();
     sale = true;
+  }
+  sansCasser(majTexte);
+  if (d) {
+    sansCasser(majRejeu);
     // si le navigateur ne donne plus d'images (onglet en arrière-plan, écran en veille partielle), la carte est
     // quand même redessinée à chaque sondage
-    if (performance.now() - dernierDessin > 600) cadre(performance.now(), true);
-  } catch (err) {
-    panne = true; delai = 1500; majTexte();
+    if (performance.now() - dernierDessin > 600) sansCasser(() => cadre(performance.now(), true));
   }
   setTimeout(sonder, delai);
 }
 majBoutons();
+{ const f = new URLSearchParams(location.search).get('feuille'); if (f && FEUILLES.hasOwnProperty(f)) ouvrir(f); }      // « ?feuille=legende » ou « ?feuille=journal » : ouvrir sur cette feuille
 sonder();
 </script>
 </body>

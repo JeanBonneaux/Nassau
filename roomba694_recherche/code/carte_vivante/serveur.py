@@ -49,6 +49,7 @@ p_.add_argument("--base-cap", type=float, default=270.0, help="direction vers la
 p_.add_argument("--base-portee", type=float, default=2000.0, help="portée des faisceaux de la base, mm (2 m mesurés, § 38)")
 p_.add_argument("--connaissances", default=os.path.join(RACINE, "plan_lidar"), help="dossier où la navigation garde obstacles.json, reperes_tours.json et les notes de ses cartes")
 p_.add_argument("--port", type=int, default=8694)
+p_.add_argument("--page", default="page.html", help="fichier de la page à servir, dans ce dossier : pour essayer une autre page sur un autre port sans toucher à celle en service")
 p_.add_argument("--ouvert", action="store_true", help="écouter aussi sur l'adresse de ce PC sur le réseau de la maison (accord de l'utilisateur requis), pour le téléphone")
 p_.add_argument("--cerveau", default="192.168.18.25", help="adresse du cerveau : sert seulement à reconnaître le réseau de la maison pour --ouvert (celle des adresses de ce PC qui a les mêmes trois premiers nombres), rien ne lui est envoyé")
 a = p_.parse_args()
@@ -253,7 +254,7 @@ class Page(BaseHTTPRequestHandler):
         q = parse_qs(u.query)
         try:
             if u.path in ("/", "/index.html"):
-                with open(os.path.join(ICI, "page.html"), "rb") as f:
+                with open(os.path.join(ICI, os.path.basename(a.page)), "rb") as f:
                     return self.envoyer(200, "text/html; charset=utf-8", f.read())
             if u.path == "/plan.png":
                 return self.envoyer(200, "image/png", PLAN, cache="private, max-age=3600")
