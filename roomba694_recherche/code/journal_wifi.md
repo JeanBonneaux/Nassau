@@ -1843,3 +1843,56 @@ Le tour sur place d'arrivée, à 16 h 35, donnait la même chose (268 à 279 mm 
 À 16 h 43 min 07, pendant que j'analysais ces regards, les deux roues se sont levées : l'utilisateur a porté le robot (« je l<ai pos'e »). À 16 h 43 min 12 le pare-chocs est enfoncé des deux côtés et le courant remonte : le robot est sur sa base. Le cerveau a redémarré à ce moment-là (« mise sous tension » : son alimentation a été coupée un instant pendant le geste ; la batterie portable n'est pas fixée) ; il est reparti en v11.
 
 **État à la fin** : robot sur sa base, en charge (16,6 V, 1,29 A, état de charge 2, 1 768 mAh sur 2 068 à 16 h 45) ; `x` envoyé à 16 h 45 min 54 ; cerveau allumé (v11). L'objet devant la base n'est pas identifié et, à ma connaissance, pas enlevé.
+
+## 54. Revue de la localisation et du code par une session à part ; firmware v12 installé par elle (2026-11-14, 17 h 39 à 18 h 37)
+
+Rien de ce qui suit n'a été fait par la session de navigation, qui tient ce journal : je rapporte le travail d'une session à part, d'après son compte rendu et ses commits, en disant ce que j'ai vérifié moi-même. **Rien n'a roulé ; je n'ai rien envoyé au cerveau.**
+
+**La demande.** L'utilisateur : « propose moi une fork en mythos 5.2 pour review les possibilite de localisation que je pourrais manquer et les vulnerabilites dans mon code ». La session a été lancée avec une consigne qui lui interdisait toute requête au cerveau et toute modification d'un fichier existant. Il a levé la première limite peu après (« dit lui dans la nouvelle session quil peut parler a la carte et me demander de le faire rouler un peu si necessaireet faire les tes quil veut »). D'après le compte rendu de cette session, il lui a ensuite demandé les corrections (« tu peux faire les corrections suite à tes findings ») et a accepté l'installation (« Oui »).
+
+**Ce qu'elle a rendu.**
+
+- `notes/J_revue_localisation.md` (commits f2ec0c3, 1d33f5b, f53a934) et ses scripts `data_analysis/rv_…py` : ce que le projet pourrait manquer pour se localiser. En tête : le cap du cerveau gardé dans un nombre trop court (corrigé par la v12, ci-dessous) ; le courant de la batterie, qui a signalé sans fausse alerte les deux patinages connus sur 195 m d'avances des 13 et 14 ; le capteur de distance, qui s'accorde avec les roues à 0,2 % sur 29 m d'avances vers un mur de face et que personne ne lit pendant les avances ; l'échelle du plan, juste à 0,5 % près (0,995 ± 0,005 sur 70 trajets), donc hors de cause dans les 30 cm du couloir (§ 52).
+- Une revue de sécurité du code. Ce dépôt est public : son détail reste sur le PC de l'utilisateur, hors du dépôt, tant qu'il n'en a pas décidé autrement.
+- Onze lectures de l'état du cerveau le 14 à 17 h 43, robot endormi sur sa base, sans rien changer à ce que la carte garde en mémoire (en-tête de la note J).
+
+**Firmware v12** (commit 232dee5). Sept retouches indépendantes ; d'après son en-tête, aucune ne change la conduite du robot ni une sécurité existante. J'ai relu la différence entre la v11 et la v12 : elle contient ces sept retouches et rien d'autre dans le firmware, à part le numéro de version à trois endroits (dont la ligne d'information, qui disait encore « v5 »).
+
+| | Retouche | Où |
+|---|---|---|
+| 1 | Le cap du gyroscope est cumulé dans un `double` propre à la tâche du gyroscope ; `imu.yawDeg` n'en est plus que la copie. Jusqu'à la v11 le cumul se faisait dans un `float` jamais remis à zéro : au-delà de 16 384° cumulés (43 tours sur place) les rotations lentes étaient mal comptées, au-delà de 32 768° plus du tout sous 0,1 °/s. 44 562° atteints le 13 après-midi (note J § 3.1 : lu dans le code, simulé) | `roomba694_wifi.ino`, `imuTask` |
+| 2 | Au démarrage de la carte l'ordre d'arrêt des roues part trois fois, à 20 ms d'intervalle, au lieu d'une : si la carte s'était éteinte au milieu d'un ordre de roues, le robot prenait le début de l'unique arrêt pour la fin de cet ordre | `roomba694_wifi.ino`, `setup` |
+| 3 | `/api/mouv` répond 400 à une valeur `av`, `rot` ou `cap` qui n'est pas un nombre fini : « nan » passait les contrôles de distance | `mouv.ino` |
+| 4 | La page `/wifi` affiche ce qui vient de la carte comme du texte, jamais comme du HTML | `pages.h` |
+| 5 | `/api/essai` n'est plus compilé (`ESSAI_LIAISON` à 0) ; aucun outil ne s'en servait | `roomba694_wifi.ino`, `web.ino` |
+| 6 | La butée du servo ne peut plus dépasser `RADAR_BUTEE_MAX`, 30°, la valeur fixée par l'utilisateur le 9 : `/api/radar?butee=` n'accepte plus que 10 à 30, la page ne propose plus que 15, 20 et 30, et une mémoire vide redonne 30° et non 80° | `radar.ino`, `web.ino`, `pages.h` |
+| 7 | La touche `n` (test des trois fils) est refusée pendant que les roues tournent | `roomba694_wifi.ino` |
+
+Dans le même commit, hors firmware : `outils/monitor_wifi.py` masque le nom du réseau de la maison dans les lignes de console, comme le fait déjà `enregistreur.py` ; un chemin du PC est retiré de `journal_tests.md`. Hors dépôt, d'après son compte rendu : un fichier `secrets.h` a été créé sur le PC de l'utilisateur, de sorte que le point d'accès « Roomba694 » de la carte et ArduinoOTA ne prennent plus le mot de passe par défaut écrit dans ce dépôt (pas essayé depuis un téléphone).
+
+**Installation et vérification**, d'après son compte rendu :
+
+| Heure | |
+|---|---|
+| 17 h 58 | Compilation : 1 140 602 octets, 87 % de la place |
+| 18 h 34 min 54 | État avant l'envoi : v11, roues à l'arrêt, robot muet sur sa base |
+| 18 h 35 min 04 | `curl -F firmware=@…/build/roomba694_v12.bin http://192.168.18.25/update` : réussi au premier envoi, 1 140 752 octets en 9,9 s, « Mise à jour réussie » |
+| 18 h 35 min 15 | Lectures seules, robot immobile : « v12 Nov 14 2026 17:58:04 » ; raison du redémarrage « redémarrage logiciel (mise à jour) » ; gyroscope présent et calibré (zéro à −0,12 °/s, 310 retouches du zéro en 3 s, cap stable) ; butée 30° ; arrêt automatique actif, seuil 30 cm ; `/api/essai` en 404 ; `/api/mouv?av=nan` en 400 sans toucher à l'état du dernier mouvement ; pages `/` et `/wifi` servies |
+
+Aucune touche envoyée, console du port 23 non ouverte, rien n'a roulé.
+
+**Ce que j'ai vérifié moi-même, sans le cerveau** : les quatre commits sont sur la branche ; la différence du firmware (ci-dessus) ; `build/roomba694_v12.bin` fait bien 1 140 752 octets ; `secrets.h` et `build/` sont ignorés par git, seul `secrets.example.h` est suivi ; `explorer3.py` et la carte vivante lisent le numéro de version dans son premier mot (« v12 » donne 12), et `pilote.py` ne regarde pas la version mais la présence de `/api/mouv`. **Ce que je n'ai pas vérifié** : la version en service sur la carte et les lectures de 18 h 35. La session de revue m'a demandé de ne rien envoyer au cerveau pendant qu'elle prépare son essai.
+
+**Non vérifié sur le robot** : aucune rotation ni avance n'a été faite avec la v12. Les retouches 1 et 2 touchent le cap et le démarrage : le premier tour sur place et la première avance sont à regarder de près (cap du gyroscope comparé aux roues), avant tout trajet.
+
+**Ce que cela change pour la suite.**
+
+- Le conseil de la note J pour les firmwares d'avant la v12, redémarrer le cerveau au début de chaque séance, n'a plus lieu d'être.
+- Le cerveau a redémarré à 18 h 35 : sa position et son cap sont revenus à zéro.
+- Retour à la v11 si besoin : `curl -F firmware=@roomba694_recherche/code/roomba694_wifi/build/roomba694_v11.bin http://192.168.18.25/update`.
+- `pilote.get` lèvera une erreur HTTP 400 si un outil envoyait un jour `av`, `rot` ou `cap` non fini ; aucun mouvement dans ce cas.
+- Les scripts de l'audit qui trient les enregistrements par firmware (`y_cap_gyro_tours.py`, `z_estime_boucles.py`, `za_rejeu_cap.py`, `zb_carte_coherente.py`, `zf_inclinaison_gyro.py`) ne retiennent que « v9 » et « v10 » (vu dans leur code) : les enregistrements faits en v11 et en v12 en sont exclus tant que ce tri n'est pas élargi.
+- À faire dans les outils du PC, d'après la note J (§ 6) : l'arrêt d'une avance sur le courant de la batterie, avant de refaire le seuil vers la cuisine ; le capteur de distance comme règle pendant les avances ; le cap par la corde entre deux tours, une fois la carte des repères rendue cohérente.
+- Annoncé par la session de revue : un essai de séries de pivots sur place, trois minutes, robot face à un mur, avec l'accord de l'utilisateur, pour mesurer ce que les petits pivots du centrage font à la position (les 30 cm du couloir, § 52). Pas encore fait à l'heure où j'écris.
+
+**État à la fin** (18 h 45) : robot endormi sur sa base ; cerveau allumé, en v12 d'après la session de revue ; l'objet devant la base et la batterie portable non fixée restent à régler (§ 53).
