@@ -8,6 +8,28 @@ const fs = require('fs');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Only two checks run at once machine-wide: headless browsers starve each other on a small box
+// and screenshots then time out. Extra callers queue here.
+const LOCKS = [0, 1].map((i) => path.join(require('os').tmpdir(), 'swarm-arcade-check-' + i + '.lock'));
+let held = null;
+function release() { if (held) { try { fs.rmSync(held, { recursive: true, force: true }); } catch (e) {} held = null; } }
+async function acquire() {
+  for (;;) {
+    for (const l of LOCKS) {
+      try { fs.mkdirSync(l); fs.writeFileSync(path.join(l, 'pid'), String(process.pid)); held = l; return; }
+      catch (e) {
+        try {
+          const pid = Number(fs.readFileSync(path.join(l, 'pid'), 'utf8'));
+          try { process.kill(pid, 0); } catch (dead) { fs.rmSync(l, { recursive: true, force: true }); }
+        } catch (e2) { try { if (Date.now() - fs.statSync(l).mtimeMs > 5000) fs.rmSync(l, { recursive: true, force: true }); } catch (e3) {} }
+      }
+    }
+    await sleep(400 + Math.random() * 400);
+  }
+}
+process.on('exit', release);
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { release(); process.exit(130); });
+
 async function stats(browser, png) {
   const p = await browser.newPage();
   const res = await p.evaluate(async (b64) => {
@@ -98,6 +120,7 @@ async function checkOne(browser, file) {
 (async () => {
   const files = process.argv.slice(2);
   if (!files.length) { console.error('usage: check.cjs <file.html> ...'); process.exit(2); }
+  await acquire();
   const browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
   const results = [];
   for (const f of files) {

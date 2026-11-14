@@ -63,7 +63,7 @@ body.preview #hud { display: none; }
   var WARM = 200;
 
   var cv = document.getElementById('c');
-  var ctx = cv.getContext('2d');
+  var ctx = cv.getContext('2d', { alpha: false });
   var off = document.createElement('canvas');
   var octx = off.getContext('2d', { willReadFrequently: true });
   var presetRow = document.getElementById('presets');

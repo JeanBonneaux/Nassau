@@ -62,13 +62,22 @@ canvas{display:block;width:100vw;height:100vh}
     "}",
 
     // Ocean height: sum of directional sines, sharp-crest trick on the first two octaves.
+    // Fixed wave directions (cos/sin of i*1.7, precomputed for speed).
+    "vec2 wdir(float i){",
+    "  if(i < 0.5) return vec2(1.0, 0.0);",
+    "  if(i < 1.5) return vec2(-0.1288, 0.9917);",
+    "  if(i < 2.5) return vec2(-0.9668, -0.2555);",
+    "  if(i < 3.5) return vec2(0.3780, -0.9258);",
+    "  return vec2(0.8419, 0.5842);",
+    "}",
+
     "float waveH(vec2 p, float oct, float dist){",
     "  float amp = 0.85*exp(-dist*0.02);",
     "  float f = 0.18; float h = 0.0;",
     "  for(int i=0;i<5;i++){",
     "    if(float(i)>=oct) break;",
     "    float fi = float(i);",
-    "    vec2 d = vec2(cos(fi*1.7), sin(fi*1.7));",
+    "    vec2 d = wdir(fi);",
     "    float ph = dot(d,p)*f + uTime*sqrt(f)*1.6 + fi*0.7;",
     "    float w = (i<2) ? (1.0-2.0*abs(sin(ph))) : sin(ph);",
     "    h += amp*w;",

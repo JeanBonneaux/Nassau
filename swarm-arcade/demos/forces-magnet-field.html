@@ -74,6 +74,7 @@ const SPRITE_NEG = makeSprite('61,123,255');
 
 // ---------- state ----------
 let W = 0, H = 0, dpr = 1, time = 0;
+let bgCanvas = null;
 let showLines = true;
 let flipT = 2;
 let nextSign = -1;
@@ -241,6 +242,7 @@ function resize() {
   canvas.width = Math.round(W * dpr);
   canvas.height = Math.round(H * dpr);
   layoutFilings();
+  buildBackground();
 }
 window.addEventListener('resize', resize);
 resize();
@@ -349,15 +351,24 @@ function update(dt) {
 }
 
 // ---------- draw ----------
+// pre-rendered background vignette (rebuilt on resize only)
+function buildBackground() {
+  bgCanvas = document.createElement('canvas');
+  bgCanvas.width = canvas.width; bgCanvas.height = canvas.height;
+  const g = bgCanvas.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const grd = g.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.75);
+  grd.addColorStop(0, '#0b1126');
+  grd.addColorStop(0.6, '#060812');
+  grd.addColorStop(1, '#05060a');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, W, H);
+}
+
 function draw() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.globalCompositeOperation = 'source-over';
-  const bgG = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.75);
-  bgG.addColorStop(0, '#0b1126');
-  bgG.addColorStop(0.6, '#060812');
-  bgG.addColorStop(1, '#05060a');
-  ctx.fillStyle = bgG;
-  ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(bgCanvas, 0, 0, W, H);
 
   ctx.globalCompositeOperation = 'lighter';
 
@@ -393,22 +404,25 @@ function draw() {
     ctx.stroke();
   }
 
-  // sparks
+  // sparks: two batched paths (tails, heads)
   ctx.lineCap = 'round';
+  ctx.beginPath();
   for (let i = 0; i < nSparks; i++) {
-    const a = Math.min(1, sAge[i] * 3, (sLife[i] - sAge[i]) * 2);
-    if (a <= 0) continue;
     const len = 3 + 9 * sT[i];
     const x = sX[i], y = sY[i];
-    ctx.strokeStyle = `rgba(125,249,255,${(0.85 * a).toFixed(3)})`;
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
     ctx.moveTo(x - sDX[i] * len, y - sDY[i] * len);
     ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.fillStyle = `rgba(230,255,255,${a.toFixed(3)})`;
-    ctx.fillRect(x - 0.9, y - 0.9, 1.8, 1.8);
   }
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = 'rgba(125,249,255,0.7)';
+  ctx.stroke();
+  ctx.beginPath();
+  for (let i = 0; i < nSparks; i++) {
+    ctx.moveTo(sX[i] + 1.1, sY[i]);
+    ctx.arc(sX[i], sY[i], 1.1, 0, TAU);
+  }
+  ctx.fillStyle = 'rgba(230,255,255,0.9)';
+  ctx.fill();
 
   // pole glows (pre-rendered sprites)
   for (const p of poles) {
