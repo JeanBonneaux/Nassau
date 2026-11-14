@@ -30,7 +30,9 @@ PAS = 0.2                                                         # secondes sim
 
 
 def fabrique():
-    return suivi_mod.Suivi()
+    su = suivi_mod.Suivi()
+    su.pose_base = (405.0 / 0.053, (434 - 33.0) / 0.053, 90.0)       # le robot posé sur sa base : pixel (405, 33), nez vers le haut
+    return su
 
 
 def preparer(nom, tmp):
@@ -56,12 +58,14 @@ def preparer(nom, tmp):
 
     A.append((temps[0] - 0.01, lambda t: ecrire(dst + "_capteurs.csv", entete, t)))
     passages = sorted(glob.glob(glob.escape(src) + "_*_stations.json"), key=os.path.getmtime)
+    if os.path.exists(src + "_stations.json"):                    # dernier passage, resté sans lettre : la séance a été coupée avant relance.py
+        passages.append(src + "_stations.json")
     for q, chemin in enumerate(passages):
         tronc = chemin[:-len("_stations.json")]
         with open(chemin, encoding="utf-8") as f:
             J = json.load(f)
         t_fin_passage = os.path.getmtime(chemin)
-        ancres, _ = sources.faits_stations(J, lignes, Tl, 0.053, 434)
+        ancres, _, _ = sources.faits_stations(J, lignes, Tl, 0.053, 434)
         fins = [a["t"] for a in ancres if a["cle"].startswith("st|")]
         for k, t_st in enumerate(fins):                           # après chaque tour : le fichier des tours, tel qu'il était alors
             Jk = dict(J, stations=J["stations"][:k + 1], plan=J.get("plan", [])[:k + 1], contacts=[], fin=None,
@@ -90,13 +94,16 @@ def preparer(nom, tmp):
             for suf in ("_stations.json", "_explorer3.txt"):
                 if os.path.exists(dst + suf):
                     os.replace(dst + suf, f"{dst}_{lettre}{suf}")
-        A.append((max(t_fin_passage, t_fin_txt) + 20.0, ranger))
-    for suf in ("_essai_tours.json", "_CIBLES.json"):
-        if os.path.exists(src + suf):
-            def copier(t, suf=suf):
-                shutil.copyfile(src + suf, dst + suf)
-                os.utime(dst + suf, (os.path.getmtime(src + suf),) * 2)
-            A.append((os.path.getmtime(src + suf), copier))
+        if lettre:
+            A.append((max(t_fin_passage, t_fin_txt) + 20.0, ranger))
+    # fichiers écrits d'un coup : essais de tours, destinations, tours faits à la main, mesures par les faisceaux de la base
+    autres = [src + suf for suf in ("_essai_tours.json", "_CIBLES.json")] + glob.glob(glob.escape(src) + "_tour_*.json") + glob.glob(glob.escape(src) + "_*balise*.txt")
+    for chemin in autres:
+        if os.path.exists(chemin):
+            def copier(t, suf=chemin[len(src):], chemin=chemin):
+                shutil.copyfile(chemin, dst + suf)
+                os.utime(dst + suf, (os.path.getmtime(chemin),) * 2)
+            A.append((os.path.getmtime(chemin), copier))
     if os.path.exists(src + "_etat.jsonl"):
         with open(src + "_etat.jsonl", encoding="utf-8") as f:
             for l in f:
@@ -127,9 +134,22 @@ def comparer(nom, su):
     Pa, Pb = su.est[-1], ref.est[-1]
     d_fin = ((Pa[0] - Pb[0]) ** 2 + (Pa[1] - Pb[1]) ** 2) ** 0.5 if Pa and Pb else None
     ok &= pire_mm < 1.0 and pire_deg < 0.1 and d_fin is not None and d_fin < 1.0
+    if Pa is None and Pb is None:                                 # position inconnue à la fin des deux côtés (robot porté à la main)
+        d_fin, ok = 0.0, len(A) == len(B) and pire_mm < 1.0 and pire_deg < 0.1 and all(a["src"] == b["src"] for a, b in zip(A, B))
     ok &= [c[1] for c in su.contacts] == [c[1] for c in ref.contacts] and len(su.R) == len(ref.R)
+    ok &= su.patinage == ref.patinage and [round(e[2]) for e in su.patine] == [round(e[2]) for e in ref.patine]
+    # Ce qui est publié (sans son numéro de version ; rien et une liste vide se valent). Le signal de la base n'est
+    # comparé que si le direct n'a pas repris de position de l'enregistrement précédent : avec cette reprise il sait
+    # où était le robot dès la première ligne, et place donc des points que le rejeu d'un enregistrement seul ignore.
+    repris = any(b["type"] == "ancre" and b["src"] == "report" for b in su.bornes)
+    for cle in ("parois",) if repris else ("parois", "ir"):
+        ok &= ((su.obj.get(cle) or (0, None))[1] or []) == ((ref.obj.get(cle) or (0, None))[1] or [])
+    portes = [f"{suivi_mod.heure_de(b['t'])} {b['cause']}" for b in su.bornes if b["type"] == "porte"]
+    portes_ref = [f"{suivi_mod.heure_de(b['t'])} {b['cause']}" for b in ref.bornes if b["type"] == "porte"]
     print(f"  {nom} : {len(su.R)} lignes (rejeu {len(ref.R)}), {len(A)} ancres (rejeu {len(B)}), écart le plus grand {pire_mm:.2f} mm et {pire_deg:.3f}°,"
-          f" position finale à {d_fin if d_fin is None else round(d_fin, 2)} mm de celle du rejeu, contacts {[c[1] for c in su.contacts]}"
+          f" position finale à {d_fin if d_fin is None else round(d_fin, 2)} mm de celle du rejeu, contacts {[c[1] for c in su.contacts]},"
+          f" firmware v{su.firmware} (patinage retiré : {'oui' if su.patinage else 'non'}, {sum(1 for e in su.patine if abs(e[2]) >= 60)} patinage(s) de plus de 6 cm),"
+          f" {len(su.obj.get('parois', (0, []))[1]) // 4} parois vues, déplacé à la main : {portes or 'non'} (rejeu : {portes_ref or 'non'})"
           f" -> {'IDENTIQUE' if ok else 'DIFFÉRENT'}")
     return ok
 

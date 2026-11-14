@@ -8,8 +8,15 @@
 #   NOM_CIBLES.json             les destinations données à explorer3.py ;
 #   NOM_essai_tours.json        essai_tours.py : tours sur place faits au même endroit, jugés par le filtre ;
 #   NOM*passage*.txt            la sortie de passage.py, si elle a été gardée dans un fichier : lignes POSE=U,V,CAP ;
-#   NOM_etat.jsonl              /api/state relu par l'enregistreur : tour sur place en cours, charge de la batterie.
+#   NOM*balise*.txt             la sortie de balise_base.py : où passe l'axe de la base par rapport au robot ;
+#   NOM_tour_xxx.json           un tour sur place fait à la main par la navigation, avec la position qu'elle tenait alors ;
+#   NOM_etat.jsonl              /api/state relu par l'enregistreur : version du firmware, tour sur place en cours, charge
+#                               de la batterie, robot posé ou non sur sa base.
 # Le champ « sta » de /api/state (nom du réseau Wi-Fi de la maison) n'est jamais lu ici.
+# À côté du plan (plan_lidar/, hors dépôt), ce que la navigation a appris de l'appartement (classe Connaissances) :
+#   obstacles.json              les obstacles trouvés par le robot et absents du plan (explorer3.py --plan-ferme) ;
+#   reperes_tours.json          les repères : tours sur place déjà faits, sur lesquels un nouveau tour se recale ;
+#   reperes_AAAAMMJJ*.json      les notes de la dernière carte quadrillée envoyée (carte_grille.py --reperes).
 import bisect
 import datetime
 import glob
@@ -19,7 +26,7 @@ import os
 import re
 import time
 
-from suivi import ANGLES_OPTIQUES, C_, K_GYRO, MS_, RAYON, T_, X_, Y_, LecteurCsv
+from suivi import ANGLES_OPTIQUES, C_, K_GYRO, MS_, RAYON, RAYON_IR, T_, X_, Y_, LecteurCsv, carto_mod
 
 RE_MIN = re.compile(r"^\[\s*([\d.]+) min\]\s?(.*)$")
 RE_DEPART = re.compile(r"localisation : filtre à \d+ hypothèses autour du pixel \((-?[\d.]+), (-?[\d.]+)\), cap (-?[\d.]+)")
@@ -31,6 +38,8 @@ RE_ARRETE = re.compile(r"arrêté : (.*?)(?: ; robot en .*)?$")
 RE_FIN = re.compile(r"^fin : (.*?) \|")
 RE_NOM = re.compile(r"_(\d{8})_(\d{6})_capteurs\.csv$")
 RE_POSE = re.compile(r"^POSE=(-?[\d.]+),(-?[\d.]+),(-?[\d.]+)\s*$", re.M)
+RE_AXE = re.compile(r"AXE de la base à ([+-]?\d+) mm du centre du robot")
+RE_NOTES = re.compile(r"^reperes_(\d{4})(\d{2})(\d{2})[^/\\]*\.json$")
 
 
 def lire_csv(chemin):
@@ -62,12 +71,37 @@ def _pareil(r, q, tol_mm=3.0, tol_deg=0.25):
     return abs(r[C_] - q["cap_pos"]) <= tol_deg and abs(r[X_] - q["x_mm"]) <= tol_mm and abs(r[Y_] - q["y_mm"]) <= tol_mm
 
 
+def parois_tour(mesures, X, Y, cap, s, H):
+    """Les parois vues par le capteur de distance pendant un tour sur place, lues comme le fait la navigation
+    (carto.paliers_souples) : quand la distance reste la même sur une douzaine de degrés au moins, c'est une surface
+    vue de face, à cette distance, dans la direction du milieu. Renvoie une liste plate [u1, v1, u2, v2, …] : un trait
+    de 12 cm par surface, en travers du regard (un seul tour ne dit pas si c'est un mur ou un pied de meuble : ce sont
+    les traits de plusieurs tours, mis bout à bout, qui dessinent un mur). mesures : [[dixièmes de degré depuis le
+    début du tour, mm], …] ; X, Y, cap : position du robot sur le plan et cap au début du tour (mm, degrés)."""
+    if carto_mod is None or not mesures:
+        return []
+    try:
+        pal = carto_mod.paliers_souples([m[0] / 10.0 for m in mesures], [m[1] for m in mesures])
+    except Exception:                                             # mesures incomplètes : pas de parois pour ce tour
+        return []
+    seg = []
+    for a, dist, larg, _ in pal:
+        if larg < 12.0 or dist > 3500.0:
+            continue
+        ang = math.radians(cap + a)
+        px, py = X + dist * math.cos(ang), Y + dist * math.sin(ang)
+        tx, ty = -math.sin(ang) * 60.0, math.cos(ang) * 60.0
+        seg += [round((px - tx) * s, 1), round(H - (py - ty) * s, 1), round((px + tx) * s, 1), round(H - (py + ty) * s, 1)]
+    return seg
+
+
 def faits_stations(J, R, Tt, s, H):
     """Les tours sur place d'un passage d'explorer3.py guidé par le plan : une ancre à la fin de chaque tour (la position
-    que le filtre lui a donnée), et pour le premier une ancre au départ (la position donnée au programme)."""
-    ancres, obstacles = [], []
+    que le filtre lui a donnée), pour le premier une ancre au départ (la position donnée au programme), et les parois
+    vues pendant chaque tour."""
+    ancres, obstacles, parois = [], [], []
     if J.get("mode") != "exploration3" or "plan" not in J or not Tt:
-        return ancres, obstacles                                  # passage sans le plan : ses positions ne sont pas dans son repère
+        return ancres, obstacles, parois                          # passage sans le plan : ses positions ne sont pas dans son repère
     infos, t_fin = J.get("plan", []), None
     for q, st in enumerate(J.get("stations", [])):
         info = infos[q] if q < len(infos) else {}
@@ -100,15 +134,25 @@ def faits_stations(J, R, Tt, s, H):
                            "b": (av["x_mm"], av["y_mm"], av["cap_pos"]), "info": {"nom": "départ"}})
         if info.get("garde", True):
             echelle = info.get("echelle_gyro") or J.get("k_gyro") or K_GYRO
+            # Recalé sur les repères (reperes.py) : la pose du fichier en tient déjà compte. On garde le nombre de
+            # repères d'accord, l'écart avec le filtre seul, et le cap s'il a été repris sur eux.
+            rep = info.get("reperes") or None
+            if rep:
+                rep = {"n": rep.get("n"), "mm": round(math.hypot(rep.get("dx") or 0.0, rep.get("dy") or 0.0)),
+                       "cap": (rep.get("cap") or {}).get("corrige")}
             ancres.append({"cle": "st|" + cle, "t": t_fin, "src": "filtre" if info.get("filtre") else "plan",
                            "X": pose[0], "Y": pose[1], "C": pose[2] + echelle * (ap["cap_pos"] - av["cap_pos"]),
                            "b": (ap["x_mm"], ap["y_mm"], ap["cap_pos"]),
                            "info": {"nom": str(st.get("nom")), "genre": st.get("genre"), "note": info.get("note"), "etal": info.get("etalement_mm"),
-                                    "n": st.get("n"), "tapis": bool(st.get("tapis"))}})
+                                    "n": st.get("n"), "tapis": bool(st.get("tapis")), "rep": rep}})
+            if info.get("filtre") and st.get("mesures"):
+                seg = parois_tour(st["mesures"], pose[0], pose[1], pose[2], s, H)
+                if seg:
+                    parois.append((t_fin, "st|" + cle, seg))
     for c in J.get("contacts", []):
         if c[2] != "contact" and t_fin is not None:               # les contacts du pare-chocs sont déjà vus dans le journal
             obstacles.append((t_fin, round(c[0] * s, 1), round(H - c[1] * s, 1), c[2]))
-    return ancres, obstacles
+    return ancres, obstacles, parois
 
 
 def faits_essai_tours(J, R, Tt, s, H, mtime):
@@ -206,6 +250,8 @@ def faits_explorer3(texte, t0, cle, su):
                 ev(n, t, "alerte", f"Destination {nom(q[1], q[2])} abandonnée" + (" : pas de chemin libre sur le plan" if "pas de chemin" in q[3] else " après trois essais"), q[1], q[2])
         elif "quelque chose sur un passage déjà roulé" in x:
             ev(n, t, "info", "Quelque chose barre un passage déjà roulé : attente de 8 s, puis nouvel essai")
+        elif "avance arrêtée, la suite de ce trajet" in x:
+            ev(n, t, "info", "Avance arrêtée par la navigation : une roue patinait ; la suite du trajet se fait lentement")
         elif RE_ARRETE.search(x):
             if "pare-chocs" in x:
                 continue                                          # déjà dit par le contact vu dans le journal du cerveau
@@ -223,6 +269,54 @@ def faits_explorer3(texte, t0, cle, su):
     return {"evts": evts, "hist": hist, "ancres": ancres}
 
 
+def faits_tour(J, R, Tt, s, H, mtime, cle):
+    """Un tour sur place fait à la main par la navigation (fichier NOM_tour_xxx.json) : s'il porte la position qu'elle
+    tenait alors sur le plan (« pose_plan_avant » : pixel et cap) avec celle du cerveau au même instant (« depart »),
+    c'est une position donnée, datée par la dernière ligne du journal où le cerveau est à ce départ. Renvoie cette
+    ancre et les parois vues pendant le tour."""
+    p, d = J.get("pose_plan_avant"), J.get("depart")
+    if not p or not d or not Tt:
+        return [], []
+    q = {"x_mm": float(d[0]), "y_mm": float(d[1]), "cap_pos": float(d[2])}
+    j = bisect.bisect_right(Tt, mtime + 1.0) - 1
+    while j >= 0 and Tt[j] > mtime - 120.0:
+        if _pareil(R[j], q, 3.0, 0.3):
+            X, Y = float(p[0]) / s, (H - float(p[1])) / s
+            seg = parois_tour(J.get("points"), X, Y, float(p[2]), s, H)
+            return ([{"cle": "tour|" + cle, "t": Tt[j], "src": "pose", "X": X, "Y": Y, "C": float(p[2]),
+                      "b": (q["x_mm"], q["y_mm"], q["cap_pos"]), "info": {"nom": "la navigation, avant un tour fait à la main"}}],
+                    [(Tt[j], "tour|" + cle, seg)] if seg else [])
+        j -= 1
+    return [], []
+
+
+def faits_balise(texte, t, cle, su):
+    """La sortie de balise_base.py (un tour sur place dans les faisceaux de la base), gardée dans un fichier : ce
+    qu'elle dit de l'axe de la base, et la position POSE= qu'elle redonne. t : heure d'écriture du fichier."""
+    F = {"evts": {}, "ancres": []}
+    m = RE_AXE.search(texte)
+    if m:
+        a = int(m[1])                                             # positif : l'axe passe à gauche du robot tourné vers la base
+        x = (f"robot dans l'axe de sa base à {max(1, round(abs(a) / 10.0))} cm près" if abs(a) < 25
+             else f"l'axe de la base passe à {round(abs(a) / 10.0)} cm à {'gauche' if a > 0 else 'droite'} du robot tourné vers elle")
+    elif "rouge seulement" in texte:
+        x = "robot du côté rouge, l'axe de la base passe à sa gauche quand il lui fait face"
+    elif "vert seulement" in texte:
+        x = "robot du côté vert, l'axe de la base passe à sa droite quand il lui fait face"
+    elif "aucun code reçu" in texte:
+        x = "aucun signal reçu ici (à plus de 2 m de la base, ou trop de côté)"
+    else:
+        x = None
+    if x:
+        F["evts"][f"{cle}|axe"] = {"t": t, "g": "base", "x": "Mesure par les faisceaux de la base : " + x}
+    poses = RE_POSE.findall(texte)
+    if poses:
+        u, v, cap = (float(q) for q in poses[-1])
+        F["ancres"].append({"cle": f"pose|{cle}|{t:.1f}", "t": t, "src": "pose", "X": u / su.s, "Y": (su.H - v) / su.s, "C": cap,
+                            "b": None, "info": {"nom": "balise_base.py"}})
+    return F
+
+
 class Seance:
     """les fichiers qu'écrivent les programmes de navigation pour un enregistrement ; relus quand ils changent"""
 
@@ -238,7 +332,9 @@ class Seance:
             nom = chemin[len(self.prefixe):]
             genre = ("stations" if nom.endswith("_stations.json") else "explorer3" if nom.endswith("_explorer3.txt")
                      else "essai" if nom.endswith("_essai_tours.json") else "cibles" if nom == "_CIBLES.json"
-                     else "passage" if (nom.endswith(".txt") and "passage" in nom) else None)
+                     else "passage" if (nom.endswith(".txt") and "passage" in nom)
+                     else "balise" if (nom.endswith(".txt") and "balise" in nom)
+                     else "tour" if (nom.endswith(".json") and nom.startswith("_tour_")) else None)
             if genre is None:
                 continue
             presents.add(chemin)
@@ -251,7 +347,7 @@ class Seance:
                     texte = f.read()
                 F = {"genre": genre}
                 if genre == "stations":
-                    F["ancres"], F["obstacles"] = faits_stations(json.loads(texte), R, Tt, self.su.s, self.su.H)
+                    F["ancres"], F["obstacles"], F["parois"] = faits_stations(json.loads(texte), R, Tt, self.su.s, self.su.H)
                     F["tronc"] = chemin[:-len("_stations.json")]
                 elif genre == "essai":
                     F["ancres"] = faits_essai_tours(json.loads(texte), R, Tt, self.su.s, self.su.H, st.st_mtime)
@@ -259,9 +355,13 @@ class Seance:
                     # Heure de lancement du passage : l'heure d'écriture du fichier moins les minutes de sa dernière ligne
                     # (à 3 s près : les minutes n'ont qu'une décimale). L'heure de création du fichier ne convient pas :
                     # Windows redonne celle de l'ancien fichier à un fichier recréé sous le même nom dans les 15 s.
+                    # Si le fichier a été écrit après la fin du journal (cerveau éteint en route le 2026-11-13 à 17 h 19 :
+                    # le programme a encore écrit vingt minutes plus tard, avec des minutes arrêtées), c'est la fin du
+                    # journal qui sert de repère.
                     if chemin not in self.t0:
                         minutes = [float(m[1]) for m in map(RE_MIN.match, texte.splitlines()) if m]
-                        self.t0[chemin] = st.st_mtime - (minutes[-1] * 60.0 if minutes else 0.0)
+                        fin = min(st.st_mtime, Tt[-1] + 5.0) if Tt else st.st_mtime
+                        self.t0[chemin] = fin - (minutes[-1] * 60.0 if minutes else 0.0)
                     F.update(faits_explorer3(texte, self.t0[chemin], nom, self.su))
                     F["tronc"] = chemin[:-len("_explorer3.txt")]
                 elif genre == "cibles":
@@ -273,6 +373,10 @@ class Seance:
                         u, v, cap = (float(x) for x in poses[-1])
                         F["ancres"] = [{"cle": f"pose|{st.st_mtime:.1f}|{len(poses)}", "t": st.st_mtime, "src": "pose", "X": u / self.su.s,
                                         "Y": (self.su.H - v) / self.su.s, "C": cap, "b": None, "info": {"nom": "passage.py"}}]
+                elif genre == "balise":
+                    F.update(faits_balise(texte, st.st_mtime, nom, self.su))
+                elif genre == "tour":
+                    F["ancres"], F["parois"] = faits_tour(json.loads(texte), R, Tt, self.su.s, self.su.H, st.st_mtime, nom)
             except (OSError, ValueError, KeyError, TypeError, IndexError):
                 continue                                          # fichier en cours d'écriture ou incomplet : relu au prochain passage
             self.vus[chemin], self.par_fichier[chemin] = sig, F
@@ -285,7 +389,7 @@ class Seance:
         return change
 
     def faits(self):
-        ancres, evts, hist, obstacles, attente = {}, {}, [], {}, None
+        ancres, evts, hist, obstacles, attente, parois = {}, {}, [], {}, None, {}
         # le départ annoncé par explorer3.py (au pixel près) ne sert que tant que son premier tour n'est pas écrit :
         # ensuite le fichier des tours donne ce départ exactement, avec la position du cerveau au même instant
         precis = {F["tronc"] for F in self.par_fichier.values() if F["genre"] == "stations" and any(a["src"] == "depart" for a in F["ancres"])}
@@ -298,15 +402,28 @@ class Seance:
             hist.extend(F.get("hist", []))
             for o in F.get("obstacles", []):
                 obstacles[(o[1], o[2], o[3])] = o
+            for p in F.get("parois", []):
+                parois[p[1]] = p
             if F.get("attente"):
                 attente = F["attente"]
         hist.sort(key=lambda h: h[0])
         return {"ancres": sorted(ancres.values(), key=lambda a: a["t"]), "evts": evts, "hist": hist,
-                "obstacles": sorted(obstacles.values()), "attente": attente}
+                "obstacles": sorted(obstacles.values()), "attente": attente,
+                "parois": sorted(((p[0], p[2]) for p in parois.values()), key=lambda p: p[0])}
+
+
+def version_firmware(texte):
+    """« v10 Nov 13 2026 11:53:11 » -> 10, comme le lit explorer3.py ; None si ce n'est pas lisible"""
+    try:
+        return int("".join(c for c in str(texte).split()[0] if c.isdigit()))
+    except (ValueError, IndexError):
+        return None
 
 
 def lire_etats(chemin, pos=0):
-    """NOM_etat.jsonl à partir de l'octet pos : [(heure, tour en cours, charge, charge maximale)], nouvelle position"""
+    """NOM_etat.jsonl à partir de l'octet pos : une liste de dictionnaires (heure, tour en cours, charge, version du
+    firmware, robot sur sa base ou non), et la nouvelle position dans le fichier. « base » vaut None quand le robot
+    ne répond pas (endormi) : ce que le cerveau redit alors de la base est vieux."""
     etats = []
     try:
         with open(chemin, "rb") as f:
@@ -321,10 +438,61 @@ def lire_etats(chemin, pos=0):
         try:
             j = json.loads(ligne.decode("utf-8", "replace"))
             e = j["etat"]
-            etats.append({"t": j["pc_s"], "tour": e.get("tour", {}).get("etat"), "q": e.get("robot", {}).get("q"), "qmax": e.get("robot", {}).get("qmax")})
-        except (ValueError, KeyError, AttributeError):
+            r = e.get("robot") or {}
+            frais = bool(r.get("ok")) and (r.get("age") or 0) < 3000
+            etats.append({"t": j["pc_s"], "tour": (e.get("tour") or {}).get("etat"), "q": r.get("q"), "qmax": r.get("qmax"),
+                          "ver": version_firmware(e.get("ver")), "base": (bool(r["base"]) if frais and "base" in r else None),
+                          "chg": r.get("chg") if frais else None})
+        except (ValueError, KeyError, AttributeError, TypeError):
             continue
     return etats, pos + fin + 1
+
+
+def firmware_de(prefixe):
+    """version du firmware notée au début de NOM_etat.jsonl, ou None"""
+    try:
+        with open(prefixe + "_etat.jsonl", "rb") as f:
+            debut = f.read(20000)
+    except OSError:
+        return None
+    for ligne in debut.split(b"\n")[:5]:
+        try:
+            v = version_firmware(json.loads(ligne.decode("utf-8", "replace"))["etat"].get("ver"))
+        except (ValueError, KeyError, AttributeError, TypeError):
+            continue
+        if v is not None:
+            return v
+    return None
+
+
+class Base:
+    """Suit, seconde après seconde, ce que l'état du robot dit de sa base. Quand le robot est posé dessus, sa position
+    est connue sans aucun tour sur place : une ancre « base ». Quand il la quitte, c'est qu'on l'en a tiré à la main
+    (sur sa base alimentée il ignore les ordres de roues, journal_wifi.md § 32) : sa position n'est plus connue."""
+
+    def __init__(self, pose):
+        # sur : True ou False d'après le dernier état frais ; None : pas encore su ; « avant » : le robot était sur sa
+        # base à la fin de l'enregistrement précédent, et rien de frais ne l'a encore confirmé (il dort peut-être dessus)
+        self.pose, self.sur, self.t_vrai = pose, None, None
+
+    def suivre(self, etats):
+        """renvoie (ancres à poser, départs de la base : [(heure, clé, cause)]) pour ces nouveaux états"""
+        ancres, departs = [], []
+        if self.pose is None:
+            return ancres, departs
+        for e in etats:
+            b = e.get("base")
+            if b is None:
+                continue
+            if b and self.sur is not True:
+                ancres.append({"cle": f"base|{e['t']:.1f}", "t": e["t"], "src": "base", "X": self.pose[0], "Y": self.pose[1], "C": self.pose[2],
+                               "b": None, "info": {"nom": "base"}})
+            elif self.sur and not b:
+                departs.append((self.t_vrai, f"quitte|{self.t_vrai:.1f}", "base"))
+            if b:
+                self.t_vrai = e["t"]
+            self.sur = b
+        return ancres, departs
 
 
 def cibles_objet(su, liste):
@@ -372,6 +540,9 @@ class Direct:
         self.seance = Seance(prefixe, self.suivi) if prefixe else None
         self._cles = set()
         self._report_fait = False
+        self._base = Base(self.suivi.pose_base)
+        self._base_attente = []                                   # ancres « base » à poser dès que le journal a une ligne
+        self._departs = []                                        # départs de la base, de même
         self.suivi.fixer("seance", {"mode": "direct", "nom": os.path.basename(prefixe) if prefixe else None})
 
     def horloge(self, maintenant):
@@ -399,23 +570,21 @@ class Direct:
 
     def _report(self):
         """Position de départ reprise de l'enregistrement précédent, si le cerveau n'a pas redémarré entre les deux :
-        son repère est alors le même, et la dernière position connue plus ce qu'il a compté depuis vaut encore."""
+        son repère est alors le même, et la dernière position connue plus ce qu'il a compté depuis vaut encore.
+        Pas de reprise si le robot a été soulevé à la fin de l'enregistrement précédent : sa position y est inconnue.
+        S'il y était sur sa base, la reprise vaut tant que rien de frais ne dit le contraire (il dort peut-être
+        dessus) ; au premier état frais, la base confirme, ou bien il n'y est plus : on l'en a tiré à la main."""
         self._report_fait = True
         E = self._enregistrements()
         if self.prefixe not in E or E.index(self.prefixe) == 0:
             return
         avant = E[E.index(self.prefixe) - 1]
         try:
-            lignes = lire_csv(avant + "_capteurs.csv")
-            if not lignes:
-                return
-            su = self.fabrique()
-            su.ajouter_lignes(lignes)
-            se = Seance(avant, su)
-            se.lire(su.R, su.Tt)
-            su.poser(se.faits()["ancres"])
+            su, base, _ = rejouer(avant, self.fabrique)
         except (OSError, ValueError):
             return
+        if not su.R or (base.sur is True and self._base.sur is False):
+            return                                                # il était sur sa base, il n'y est plus : tiré à la main entre les deux
         P, a, r = su.est[-1], su.R[-1], self.suivi.R[0]
         dt, dms = r[T_] - a[T_], r[MS_] - a[MS_]
         if P is None or dms <= 0 or abs(dms / 1000.0 - dt) > max(5.0, 0.02 * dt) or abs(r[C_] - a[C_]) > 3000:
@@ -423,6 +592,8 @@ class Direct:
         P = su._pas(P, (a[X_], a[Y_], a[C_]), (r[X_], r[Y_], r[C_]))
         self.suivi.poser([{"cle": "report|" + os.path.basename(avant), "t": r[T_], "src": "report", "X": P[0], "Y": P[1], "C": P[2],
                            "b": (r[X_], r[Y_], r[C_]), "info": {"nom": os.path.basename(avant)}}])
+        if base.sur is True and self._base.sur is None:
+            self._base.sur, self._base.t_vrai = "avant", r[T_]
 
     def tick(self, maintenant):
         if maintenant - self._t_liste >= 1.0 and not self.force:
@@ -432,11 +603,25 @@ class Direct:
                 self._ouvrir(p)
         if not self.prefixe:
             return
+        # l'état d'abord : la version du firmware dit s'il faut retirer le patinage, avant de compter le chemin
+        etats, self.pos_etat = lire_etats(self.prefixe + "_etat.jsonl", self.pos_etat)
+        if etats:
+            self.suivi.etat = etats[-1]
+            self.suivi.fixer_firmware(next((e["ver"] for e in etats if e["ver"] is not None), None))
+            ancres, departs = self._base.suivre(etats)
+            self._base_attente.extend(ancres)
+            self._departs.extend(departs)
         lignes = self._lire_csv()
         if lignes:
             self.suivi.ajouter_lignes(lignes)
             if not self._report_fait:
                 self._report()
+        if self.suivi.R and (self._base_attente or self._departs):
+            if self._base_attente:
+                self.suivi.poser(self._base_attente)
+            for t, cle, cause in self._departs:
+                self.suivi.deplacer(t, cle, cause)
+            self._base_attente, self._departs = [], []
         if maintenant - self._t_fichiers >= 0.4:
             self._t_fichiers = maintenant
             if self.seance.lire(self.suivi.R, self.suivi.Tt):
@@ -452,9 +637,27 @@ class Direct:
                     cibles = F["attente"][1]
                 self.suivi.fixer("cibles", cibles_objet(self.suivi, cibles))
                 self.suivi.fixer("obstacles", obstacles_objet(F["obstacles"]))
-            etats, self.pos_etat = lire_etats(self.prefixe + "_etat.jsonl", self.pos_etat)
-            if etats:
-                self.suivi.etat = etats[-1]
+                self.suivi.fixer("parois", [x for _, seg in F["parois"] for x in seg])
+
+
+def rejouer(prefixe, fabrique):
+    """Un enregistrement terminé, donné d'un coup au suivi : journal, fichiers de la navigation, base. Renvoie le suivi,
+    ce que l'on sait de la base à la fin, et les faits tirés des fichiers de la navigation (None sans journal)."""
+    su = fabrique()
+    su.fixer_firmware(firmware_de(prefixe))
+    su.ajouter_lignes(lire_csv(prefixe + "_capteurs.csv"))
+    base, F = Base(su.pose_base), None
+    if su.R:
+        se = Seance(prefixe, su)
+        se.lire(su.R, su.Tt)
+        F = se.faits()
+        etats, _ = lire_etats(prefixe + "_etat.jsonl")
+        ancres, departs = base.suivre(etats)
+        su.poser(sorted(F["ancres"] + ancres, key=lambda a: a["t"]))
+        for t, cle, cause in departs:
+            su.deplacer(t, cle, cause)
+        su.fixer_evts(F["evts"])
+    return su, base, F
 
 
 class Rejeu:
@@ -472,9 +675,13 @@ class Rejeu:
         se = Seance(prefixe, su)
         se.lire(self.lignes, self.Tl)
         F = se.faits()
-        self.ancres, self.hist, self.obstacles = F["ancres"], F["hist"], F["obstacles"]
+        self.hist, self.obstacles, self.parois = F["hist"], F["obstacles"], F["parois"]
         self.evts = sorted(F["evts"].items(), key=lambda kv: kv[1]["t"])
         self.etats, _ = lire_etats(prefixe + "_etat.jsonl")
+        self._Te = [e["t"] for e in self.etats]
+        self.firmware = firmware_de(prefixe)
+        ancres_base, self.departs = Base(su.pose_base).suivre(self.etats)
+        self.ancres = sorted(F["ancres"] + ancres_base, key=lambda a: a["t"])
         self.T0, self.T1 = self.Tl[0], self.Tl[-1]
         self.vitesse, self.pause = vitesse, pause
         self.epoque = 0
@@ -485,8 +692,9 @@ class Rejeu:
     def _zero(self):
         self.epoque += 1
         self.suivi = self.fabrique()
+        self.suivi.fixer_firmware(self.firmware)
         self.suivi.fixer("seance", {"mode": "rejeu", "nom": os.path.basename(self.prefixe)})
-        self.iL = self.iA = self.iE = 0
+        self.iL = self.iA = self.iE = self.iD = 0
         self.T, self._mur = self.T0, None
         self._evts = {}
 
@@ -518,6 +726,9 @@ class Rejeu:
         if k > self.iA:
             su.poser(self.ancres[self.iA:k])
             self.iA = k
+        while self.iD < len(self.departs) and self.departs[self.iD][0] + 1.0 <= T:      # l'état n'arrive qu'une fois par seconde
+            su.deplacer(*self.departs[self.iD])
+            self.iD += 1
         k = self.iE
         while k < len(self.evts) and self.evts[k][1]["t"] <= T:
             self._evts[self.evts[k][0]] = self.evts[k][1]
@@ -531,60 +742,128 @@ class Rejeu:
                 cibles = c
         su.fixer("cibles", cibles_objet(su, cibles))
         su.fixer("obstacles", obstacles_objet([o for o in self.obstacles if o[0] <= T]))
-        k = bisect.bisect_right([e["t"] for e in self.etats], T) - 1 if self.etats else -1
+        su.fixer("parois", [x for t, seg in self.parois if t + 0.3 <= T for x in seg])
+        k = bisect.bisect_right(self._Te, T) - 1
         if k >= 0:
             su.etat = self.etats[k]
 
 
 MOIS = ("janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc.")
-VERSION_MEMOIRE = 1                     # à augmenter quand le calcul des positions change : les anciens résultats sont refaits
+VERSION_MEMOIRE = 7                     # à augmenter quand le calcul des positions change : les anciens résultats sont refaits
+
+
+def code_base(code):
+    """code infrarouge de la base -> 0 : faisceau rouge, 1 : vert, 2 : les deux, 3 : champ proche seul ; None sinon"""
+    n = int(code) - 160
+    if not 0 < n < 16:
+        return None
+    rouge, vert = bool(n & 8), bool(n & 4)
+    return 2 if rouge and vert else 0 if rouge else 1 if vert else 3
 
 
 class Memoire:
-    """Ce que le robot a touché ou frôlé pendant les enregistrements passés, placé sur le plan : la carte le garde d'un
-    essai à l'autre. Seuls comptent les endroits situés par un tour sur place jugé par le filtre (avant le 2026-11-13 le
-    calage dérivait de plusieurs dizaines de centimètres). Les résultats sont gardés dans un fichier hors dépôt, à côté
-    du plan : un enregistrement terminé n'est calculé qu'une fois."""
+    """Ce que les enregistrements passés ont appris, placé sur le plan, pour que la carte le garde d'un essai à l'autre :
+    le sol déjà parcouru, les parois vues par le capteur de distance pendant les tours sur place, là où le signal de
+    la base a été reçu, ce que le robot a touché ou frôlé, là où une roue a patiné. Seuls comptent les trajets situés
+    par un tour sur place jugé par le filtre ou par la base (avant le 2026-11-13 le calage dérivait de plusieurs dizaines de centimètres). Les résultats
+    sont gardés dans un fichier hors dépôt, à côté du plan : un enregistrement terminé n'est calculé qu'une fois."""
 
-    def __init__(self, dossier, fabrique, fichier):
-        self.dossier, self.fabrique, self.fichier = dossier, fabrique, fichier
+    def __init__(self, dossier, fabrique, fichier, oublis=None):
+        """oublis : fichier JSON, tenu à la main à côté du plan, des moments d'enregistrements passés à ne pas garder :
+        [{"enregistrement": NOM, "de": "HH:MM:SS", "a": "HH:MM:SS", "raison": "…"}]. Il sert quand on a compris après
+        coup que le calage de l'époque était faux (2026-11-13, 14 h 51 : une roue avait patiné, journal_wifi.md § 43)."""
+        self.dossier, self.fabrique, self.fichier, self.f_oublis = dossier, fabrique, fichier, oublis
 
-    def _un(self, prefixe):
-        su = self.fabrique()
-        su.ajouter_lignes(lire_csv(prefixe + "_capteurs.csv"))
-        se = Seance(prefixe, su)
-        se.lire(su.R, su.Tt)
-        su.poser(se.faits()["ancres"])
+    def _oublis(self):
+        try:
+            with open(self.f_oublis, encoding="utf-8") as f:
+                return [[str(o["enregistrement"]), str(o["de"]), str(o["a"])] for o in json.load(f)]
+        except (OSError, ValueError, KeyError, TypeError):
+            return []
+
+    def _un(self, prefixe, oublis=()):
+        su, _, F = rejouer(prefixe, self.fabrique)
+        if not su.R:
+            return {"contacts": [], "proches": [], "traces": [], "parois": [], "ir": [], "patine": []}
         B = su.bornes
+        fenetres = [(t_heure(de, su.Tt[0]), t_heure(a, su.Tt[0])) for nom, de, a in oublis if nom == os.path.basename(prefixe)]
 
-        def sur(i):
-            """la ligne i est-elle entre deux bornes dont l'une est un tour jugé par le filtre ?"""
+        def sur_troncon(s):
+            """le tronçon s (entre les bornes s − 1 et s) touche-t-il une ancre mesurée par le filtre ou par la base ?"""
+            return any(0 <= k < len(B) and B[k]["type"] == "ancre" and B[k]["src"] in ("filtre", "base") for k in (s - 1, s))
+
+        def garde(i):
+            """la ligne i est-elle bien située, et hors des moments à oublier ?"""
+            if su.pose_ligne(i) is None or any(t0 <= su.Tt[i] <= t1 for t0, t1 in fenetres):
+                return False
             k = 0
             while k < len(B) and B[k]["i"] <= i:
                 k += 1
-            return any(b is not None and b["type"] == "ancre" and b["src"] == "filtre" for b in (B[k - 1] if k else None, B[k] if k < len(B) else None))
+            return sur_troncon(k)
 
-        contacts, proches = [], []
+        def date(i):
+            d = datetime.datetime.fromtimestamp(su.Tt[i])
+            return f"{d.day} {MOIS[d.month - 1]}, {d.hour} h {d.minute:02d}"
+
+        contacts, proches, traces, parois, ir, patine = [], [], [], [], set(), []
+        for t, seg in F["parois"]:                                # les parois vues pendant les tours sur place bien situés
+            i = bisect.bisect_right(su.Tt, t) - 1
+            if i >= 0 and garde(i):
+                parois.extend(round(x) for x in seg)
         for i, cote in su.contacts:
-            P = su.pose_ligne(i)
-            if P is not None and sur(i):
-                ang = math.radians(P[2] + {"gauche": 50.0, "droit": -50.0}.get(cote, 0.0))
-                u, v = su.px(P[0] + 200.0 * math.cos(ang), P[1] + 200.0 * math.sin(ang))
-                d = datetime.datetime.fromtimestamp(su.Tt[i])
-                contacts.append([u, v, cote, f"{d.day} {MOIS[d.month - 1]}, {d.hour} h {d.minute:02d}"])
+            uv = su.point_contact(i, cote)
+            if uv is not None and garde(i):
+                contacts.append([uv[0], uv[1], cote, date(i)])
         for i, q, val in su.proches:
-            P = su.pose_ligne(i)
-            if P is not None and sur(i):
+            if garde(i):
+                P = su.pose_ligne(i)
                 ang = math.radians(P[2] + ANGLES_OPTIQUES[q])
                 proches.append(list(su.px(P[0] + (RAYON + 40.0) * math.cos(ang), P[1] + (RAYON + 40.0) * math.sin(ang))))
-        return {"contacts": contacts, "proches": proches}
+        for s in range(len(B) + 1):                               # le tracé, tronçon par tronçon : le sol parcouru
+            if not sur_troncon(s):
+                continue
+            i0, i1 = (B[s - 1]["i"] if s > 0 else 0), (B[s]["i"] if s < len(B) else len(su.R))
+            pts, ref, fin = [], None, None
+
+            def ranger():
+                if fin is not None and pts[-2:] != [round(fin[0]), round(fin[1])]:
+                    pts.extend([round(fin[0]), round(fin[1])])
+                if len(pts) >= 4:
+                    traces.append(list(pts))
+
+            for i in su.ech[bisect.bisect_left(su.ech, i0):bisect.bisect_left(su.ech, i1)]:
+                P = su.pose_ligne(i)
+                if P is None or any(t0 <= su.Tt[i] <= t1 for t0, t1 in fenetres):
+                    ranger()                                      # le tracé s'interrompt là où la position n'est pas à garder
+                    pts, ref, fin = [], None, None
+                    continue
+                fin = su.px(P[0], P[1])
+                if ref is None or abs(fin[0] - ref[0]) + abs(fin[1] - ref[1]) >= 4.0:        # un point tous les 7 cm environ
+                    pts.extend([round(fin[0]), round(fin[1])])
+                    ref = fin
+            ranger()
+        for i, code in su.ir:
+            c = code_base(code)
+            if c is not None and garde(i):
+                P = su.pose_ligne(i)
+                a = math.radians(P[2])
+                u, v = su.px(P[0] + RAYON_IR * math.cos(a), P[1] + RAYON_IR * math.sin(a))
+                ir.add((round(u / 2.0), round(v / 2.0), c))
+        for ep in su.patine:
+            if abs(ep[2]) >= 60.0 and garde(ep[0]):
+                P = su.pose_ligne(ep[0])
+                u, v = su.px(P[0], P[1])
+                patine.append([u, v, "droite" if ep[2] > 0 else "gauche", round(abs(ep[2])), round(ep[3]), date(ep[0])])
+        return {"contacts": contacts, "proches": proches, "traces": traces, "parois": parois,
+                "ir": [x for c in sorted(ir) for x in c], "patine": patine}
 
     def calculer(self, avant):
-        """l'objet « anciens » : contacts et objets frôlés des enregistrements plus anciens que le préfixe donné"""
+        """l'objet « anciens » : ce qu'ont appris les enregistrements plus anciens que le préfixe donné"""
+        base, oublis = list(self.fabrique().pose_base or []), self._oublis()
         try:
             with open(self.fichier, encoding="utf-8") as f:
                 cache = json.load(f)
-            if cache.get("version") != VERSION_MEMOIRE:
+            if cache.get("version") != VERSION_MEMOIRE or cache.get("base") != base or cache.get("oublis") != oublis:
                 cache = {}
         except (OSError, ValueError):
             cache = {}
@@ -596,26 +875,94 @@ class Memoire:
                 L.append((m[1] + m[2], c[:-len("_capteurs.csv")]))
         L.sort()
         cle_avant = next((k for k, p in L if p == avant), None)
-        contacts, proches, change = [], [], False
+        A = {"contacts": [], "proches": [], "traces": [], "parois": [], "patine": []}
+        ir, change = set(), False
         for k, p in L:
             if cle_avant is not None and k >= cle_avant:
                 break
             nom = os.path.basename(p)
             try:
-                sig = [os.path.getsize(p + "_capteurs.csv")] + sorted([os.path.basename(f), os.path.getsize(f)] for f in glob.glob(glob.escape(p) + "*.json"))
+                sig = [os.path.getsize(p + "_capteurs.csv")] + sorted([os.path.basename(f), os.path.getsize(f)] for f in glob.glob(glob.escape(p) + "*")
+                                                                     if f.endswith((".json", ".jsonl", "_explorer3.txt")) or "balise" in f or "passage" in f)
                 if garde.get(nom, {}).get("sig") != sig:
-                    garde[nom] = dict(self._un(p), sig=sig)
+                    garde[nom] = dict(self._un(p, oublis), sig=sig)
                     change = True
             except (OSError, ValueError, KeyError, IndexError, TypeError):
                 continue
-            contacts.extend(garde[nom]["contacts"])
-            proches.extend(garde[nom]["proches"])
+            for c in A:
+                A[c].extend(garde[nom][c])
+            r = garde[nom]["ir"]
+            ir.update(zip(r[0::3], r[1::3], r[2::3]))
         if change:
             try:
                 os.makedirs(os.path.dirname(self.fichier), exist_ok=True)
                 with open(self.fichier + ".tmp", "w", encoding="utf-8") as f:
-                    json.dump({"version": VERSION_MEMOIRE, "enregistrements": garde}, f, ensure_ascii=False)
+                    json.dump({"version": VERSION_MEMOIRE, "base": base, "oublis": oublis, "enregistrements": garde}, f, ensure_ascii=False)
                 os.replace(self.fichier + ".tmp", self.fichier)
             except OSError:
                 pass
-        return {"contacts": contacts, "proches": proches}
+        # le signal de la base est rangé sur une grille de 2 pixels (4 cm) : une case où il a été reçu cent fois ne compte qu'une fois
+        A["ir"] = [x for c in sorted(ir) for x in c]
+        return A
+
+
+class Connaissances:
+    """Ce que la navigation a appris de l'appartement et garde à côté du plan, hors dépôt : les obstacles absents du plan
+    (obstacles.json, donné à explorer3.py par --plan-ferme), les repères (reperes_tours.json, fabriqué par reperes.py)
+    et les notes de sa dernière carte quadrillée (le fichier reperes_AAAAMMJJ*.json le plus récent). Relus quand ils
+    changent ; un fichier absent ou illisible un instant ne vide pas la carte."""
+
+    def __init__(self, dossier, su, obstacles="obstacles.json", reperes="reperes_tours.json"):
+        self.dossier, self.su = dossier, su
+        self.f_obstacles, self.f_reperes = os.path.join(dossier, obstacles), os.path.join(dossier, reperes)
+        self._sig = {}
+        self.obj = {"connus": [], "reperes": {"r": round(350.0 * su.s, 1), "p": []}, "notes": {"jour": "", "p": []}}
+
+    def _change(self, cle, chemin):
+        try:
+            st = os.stat(chemin)
+            sig = (chemin, st.st_mtime, st.st_size)
+        except OSError:
+            sig = (chemin, None, None)
+        if self._sig.get(cle) == sig:
+            return False
+        self._sig[cle] = sig
+        return True
+
+    def objets(self):
+        su = self.su
+        if self._change("connus", self.f_obstacles):
+            try:
+                with open(self.f_obstacles, encoding="utf-8") as f:
+                    self.obj["connus"] = [{"u": float(o["u"]), "v": float(o["v"]), "r": round(float(o.get("rayon_mm", 250.0)) * su.s, 1),
+                                           "x": str(o.get("note") or ""), "case": su.gr.nom(float(o["u"]), float(o["v"]))} for o in json.load(f)]
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        if self._change("reperes", self.f_reperes):
+            try:
+                with open(self.f_reperes, encoding="utf-8") as f:
+                    pts = sorted({su.px(float(r["x"]), float(r["y"])) for r in json.load(f)["reperes"]})
+                self.obj["reperes"] = {"r": round(350.0 * su.s, 1), "p": [list(p) for p in pts]}
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        notes = None                                              # le fichier de notes le plus récent
+        try:
+            for nom in os.listdir(self.dossier):
+                m = RE_NOTES.match(nom)
+                if m:
+                    c = os.path.join(self.dossier, nom)
+                    cand = (os.path.getmtime(c), c, m)
+                    if notes is None or cand[:2] > notes[:2]:
+                        notes = cand
+        except OSError:
+            notes = None
+        if notes is not None and self._change("notes", notes[1]):
+            try:
+                with open(notes[1], encoding="utf-8") as f:
+                    P = [{"u": float(q["u"]), "v": float(q["v"]), "x": " ".join(str(q.get("texte") or "").split()),
+                          "case": su.gr.nom(float(q["u"]), float(q["v"]))} for q in json.load(f)]
+                m = notes[2]
+                self.obj["notes"] = {"jour": f"{int(m[3])} {MOIS[int(m[2]) - 1]}", "p": P}
+            except (OSError, ValueError, KeyError, TypeError, IndexError):
+                pass
+        return self.obj
