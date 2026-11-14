@@ -1,0 +1,31 @@
+tour : terminé, 382° en 265 lignes ; codes du dessus : rouge 61, vert 20, les deux 19 ; avant : rouge 31, 160 1
+récepteurs avant : base vue sur 32 lignes, de -20° à +20° autour du cap du cerveau 5.4°
+récepteur du dessus, selon l'écart à la direction de la base (positif : robot tourné à gauche) :
+   -120° à -110° : rouge 1 (sur 5 lignes)
+   -110° à -100° : rouge 2 (sur 6 lignes)
+   -100° à  -90° : rouge 3 (sur 6 lignes)
+    -90° à  -80° : rouge 4 (sur 6 lignes)
+    -80° à  -70° : rouge 3 (sur 6 lignes)
+    -70° à  -60° : rouge 3 (sur 6 lignes)
+    -60° à  -50° : rouge 3 (sur 6 lignes)
+    -50° à  -40° : rouge 3 (sur 5 lignes)
+    -40° à  -30° : rouge 3 (sur 6 lignes)
+    -30° à  -20° : rouge 4 (sur 6 lignes)
+    -20° à  -10° : rouge 3 (sur 6 lignes)
+    -10° à   +0° : rouge 20 (sur 36 lignes)
+     +0° à  +10° : rouge 5 (sur 9 lignes)
+    +10° à  +20° : rouge 4, les deux 2 (sur 12 lignes)
+    +20° à  +30° : les deux 12 (sur 23 lignes)
+    +30° à  +40° : les deux 3 (sur 5 lignes)
+    +40° à  +50° : les deux 2 (sur 4 lignes)
+    +50° à  +60° : vert 3 (sur 6 lignes)
+    +60° à  +70° : vert 2 (sur 6 lignes)
+    +70° à  +80° : vert 3 (sur 6 lignes)
+    +80° à  +90° : vert 3 (sur 6 lignes)
+    +90° à +100° : vert 3 (sur 6 lignes)
+   +100° à +110° : vert 3 (sur 6 lignes)
+   +110° à +120° : vert 3 (sur 5 lignes)
+couloir « rouge et vert » : commence à +17°, finit à +49°
+AXE de la base à +66 mm du centre du robot (positif : à gauche quand il fait face à la base) ; couloir large de 59 mm ici
+capteur de distance dans cette direction : 941 mm (de 603 à 950)
+fin : mode 3, roues en marche False, cap du cerveau 386.8°

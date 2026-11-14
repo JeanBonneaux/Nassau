@@ -1,0 +1,22 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (410, 79), cap 116°
+[  0.2 min]     filtre : position corrigée de (-3, +6) mm et -1.0° ; note 0.95, étalement 194 mm et 5.7°, gyroscope × 1.0045
+[  0.2 min]     repères : calé sur 4 tours déjà faits ici ; (-8, -102) mm par rapport au filtre
+[  0.2 min] station 0 : 8 paliers, 3 lignes de murs, axes de la pièce 30.5°
+[  0.2 min] cibles reçues (série 1) : [(368, 97), (314, 117), (299, 161)]
+[  0.2 min]   vers la cible (368, 97) du plan : 1 étapes
+[  0.6 min]     filtre : position corrigée de (+51, +14) mm et +0.6° ; note 0.81, étalement 231 mm et 6.7°, gyroscope × 1.0046
+[  0.6 min]     repères : calé sur 9 tours déjà faits ici ; (+4, -40) mm par rapport au filtre
+[  0.6 min]   porte possible : 711 mm de large vers (6618, 7061), direction 121°
+[  0.6 min] station 1 (vers une cible) en (7008, 6313) : 10 paliers
+[  0.6 min]   cible (368, 97) atteinte
+[  0.6 min]   vers la cible (314, 117) du plan : 2 étapes
+[  1.1 min]     filtre : position corrigée de (+23, -5) mm et -0.3° ; note 0.99, étalement 231 mm et 5.6°, gyroscope × 1.0046
+[  1.1 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  1.1 min] station 2 (vers une cible) en (5955, 5976) : 8 paliers
+[  1.1 min]   cible (314, 117) atteinte
+[  1.1 min]   vers la cible (299, 161) du plan : 1 étapes
+[  1.4 min]     filtre : position corrigée de (-41, +38) mm et -0.8° ; note 0.96, étalement 171 mm et 6.1°, gyroscope × 1.0045
+[  1.4 min]     repères : calé sur 6 tours déjà faits ici ; (-62, -103) mm par rapport au filtre
+[  1.4 min] station 3 (vers une cible) en (5563, 5084) : 6 paliers
+[  1.4 min]   cible (299, 161) atteinte
+[  1.4 min] fin : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 4 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 7 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 3.1 m | batterie 2061 mAh

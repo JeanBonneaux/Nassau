@@ -1414,3 +1414,59 @@ Hors dépôt : `plan_lidar/reperes_tours.json` refait avec les tours de l'après
 **Non vérifié sur le robot** (cerveau éteint) : le retrait du patinage et l'arrêt sur patinage en roulant ; le cap corrigé sur les repères ; `--depart-sigma` ; `re=` ; les nouveaux repères. **Non fait** : le retour de C9, l'accostage, la fermeture de la séance ; relier entre eux par le trajet compté les repères d'endroits différents (seuls ceux de devant la base l'ont été, à la main) ; automatiser la porte et le centrage dans un passage étroit.
 
 **État à la fin** : inconnu de moi. Dernière position sûre : C9, pixel (224, 67), à 17 h 19 min 55, en mode Safe, une rotation tout juste lancée ; batterie 1 370 mAh à 17 h 17. D'après son message, l'utilisateur a débranché le cerveau et rangé le robot. À vérifier à son retour : robot immobile et endormi, posé ou non sur sa base, voyant de charge.
+
+## 45. Mesure : base → C28 → base d'un trait, avec le code corrigé (2026-11-14, 9 h 04 à 9 h 30)
+
+Demande de l'utilisateur, à ma question « je refais base → C28 → base pour mesurer le gain sur le robot ? » : « oui mesure le je vais brancher et reculler quand tu es pret », puis « C'est fait ». Enregistrements : `mesures/exploration19_20261114_090420_*` (passages `a` à `g`, mesures par les faisceaux `_balise0.txt`, `_balise1.txt`, `_balise2.txt`), `mesures/position_20261114_092951.*`.
+
+**Avant de rouler**, hors robot : le recalage sur les repères et le cap lu sur les repères, qui n'avaient jamais tourné dans un trajet, ont été essayés en simulation avec des repères tirés de cinq trajets simulés. Trois trajets : 13 tours sur 13 calés, aucun cap corrigé quand le cap de départ est juste, un cap corrigé de −5,2° et de +6,0° quand il est donné faux de +8° et de −8° ; erreur finale 18 à 27 mm.
+
+### Le résultat
+
+| | Premier trajet (13, § 41) | Ce trajet |
+|---|---|---|
+| Durée, du départ à l'arrivée devant la base | 45,7 min | **22,9 min** |
+| Chemin | 38,7 m | 32,3 m |
+| Contacts (tous légers) | 7 | **5** |
+| Tours sur place calés sur les repères | 2 sur 23 | **16 sur 23** |
+| Pièce centrale, G26 → C28 → G26 | 5 contacts, 19 min dont 16 à la main | 3 contacts, 3,5 min, sans reprise à la main |
+| Porte H12 vers le nord | 10 min à la main | 3,3 min à la main |
+| Patinage | deux fois, 43 et 35 cm de roue en trop | aucun |
+| Arrivée : écart à l'axe de la base | 0,5 et 1,3 cm | 0,2 et 0,0 cm |
+| Arrivée : direction de la base, 90° attendus | 88,5° | 83,0° et 81,9° |
+
+**Deux fois plus vite, deux contacts de moins.** Le gain de temps vient surtout de ce qui avait été compris la veille (le vrai chemin de la pièce centrale, la méthode pour la porte) et des repères. **Le retrait du patinage et l'arrêt sur patinage n'ont pas servi : aucune roue n'a patiné**, alors que le robot a traversé à 135 mm/s demandés le sol sombre où la roue avait glissé deux fois la veille (33 mm retirés en tout sur 32 m, aucun arrêt). Ce code reste donc vérifié par rejeu seulement ; il n'a rien dérangé.
+
+### Par tronçon
+
+| Tronçon | Heures | Chemin | Contacts |
+|---|---|---|---|
+| Base → D14 → E12 → G12 (`a`) | 9 h 05 min 15 à 9 h 06 min 42 | 3,1 m | 0 |
+| Porte H12 vers le sud (`passage.py`) | 9 h 06 min 49 à 9 h 08 min 15 | 1,0 m | 0 |
+| Couloir → G26 (`b`) | 9 h 08 min 20 à 9 h 11 min 21 | 9,0 m | 1, en J16 |
+| G26 → C28 (`c`, `--voies-fortes 3`) | 9 h 11 min 45 à 9 h 12 min 36 | 2,5 m | 0 |
+| C28 → G26 (`d`) | 9 h 13 min 30 à 9 h 15 min 15 | 4,1 m | 3, au même objet, en E28 |
+| G26 → J24 → J20 (`e`) | 9 h 15 min 57 à 9 h 17 min 13 | 3,5 m | 0 |
+| J20 → J12, centré au capteur de distance (`passage.py`) | 9 h 17 min 21 à 9 h 22 min 40 | 3,9 m | 0 |
+| Porte H12 vers le nord (`passage.py`) | 9 h 22 min 57 à 9 h 26 min 15 | 0,8 m | 0 |
+| G12 → E12 → D14 → D16 (`g`) | 9 h 26 min 18 à 9 h 28 min 08 | 3,9 m | 1, en E13 |
+
+### Les cinq contacts, et leur cause
+
+1. **J16, pare-chocs gauche (côté nord), 9 h 09.** Mesuré au retour, regards à 90° et 270° tous les 20 cm : entre J15 et J17 le couloir ne laisse que 68 cm (un rebord de 10 cm au nord à partir de la colonne 16), soit 17 cm de chaque côté du robot. Le chemin prévu y passait 5 à 15 cm au nord du milieu, et deux obstacles que j'avais notés côté sud d'après des contacts l'y poussaient ; celui ajouté le matin même était mal placé (le mur sud est à 39 cm du milieu) : retiré. Au retour, centré au capteur de distance : aucun contact.
+2. **E28, pare-chocs gauche, trois fois de suite, 9 h 14. Ma faute.** En C28 le repère de la veille avait recalé le robot de 13 cm de travers ; j'en ai déduit une erreur de cap de 3° et je l'ai corrigée à la main avant le retour. C'était faux : le filtre a rendu +3,4° au tour suivant, et entre-temps le robot avait dévié de 9 cm vers l'est, contre quelque chose qui borde le passage de ce côté. Les deux contacts suivants sont le même essai refait deux fois (« passage déjà roulé »). À l'aller, sans cette correction : 2,5 m en 50 s, aucun contact.
+3. **E13, pare-chocs droit, 9 h 27.** Le même objet que la veille, au même endroit du robot (pixel (318, 122)) : il est plus près de la ligne suivie que je ne l'avais noté. Replacé en (325, 129), rayon 22 cm.
+
+### Ce que ce trajet apprend d'autre
+
+- **Passer par les endroits à repères.** Au retour je visais (370, 117) en D14, à 45 cm des repères de (368, 97) : aucun recalage sur le dernier tronçon (1 tour calé sur 4), et l'arrivée a un cap faux de 7 à 8° d'après les faisceaux. À l'aller, par (368, 97) : 3 tours calés sur 4.
+- **Un repère seul peut servir** : celui de C28, un seul tour fait la veille, a calé le robot deux fois (quatre parois communes au moins).
+- **Devant la porte H12 côté couloir, la position était encore fausse de 14 cm** (vers l'est), malgré le couloir roulé centré : c'est le regard vers la porte (mur à 35 ou 40 cm, ouverture à gauche) qui l'a montré. Décalage, nouveaux regards (ouverture de 80° à 120°, montant est à 45 cm vers 55°), passage au cap 100°, qui laisse 15 et 13 cm : aucun contact, en 3,3 min au lieu de 10.
+- **Ne pas corriger le cap à la main** d'après un seul écart de position : c'est précisément ce que la règle prudente de `Reperes.cap` refuse de faire (elle n'a jamais joué pendant ce trajet : écarts lus de −4,9° à +5,6° sur 7 à 26 parois, jamais nets).
+- Le cap lu sur les repères en G12 au retour (19 parois, −3,0°) n'a pas atteint le seuil de 4° ; l'erreur de cap à l'arrivée était de 7 à 8°. Le seuil est peut-être trop haut quand les parois sont nombreuses : à revoir avec plus de cas.
+
+**Hors dépôt** : `plan_lidar/obstacles.json` (14 entrées : objet de E13 replacé, côté est de la pièce centrale ajouté au pixel (724, 120), entrée fausse de J16 retirée) ; `plan_lidar/voies_piece_centrale.json` (le chemin de la veille) ; `plan_lidar/reperes_tours.json` (81 repères, avec les tours de C28 et de B22).
+
+**Non vérifié** : l'arrêt sur patinage en roulant (pas de patinage ce jour-là) ; la distance du robot à sa base à l'arrivée (99 cm de sa place sur la base d'après le filtre ; un objet à 50 cm dans la direction de la base au capteur de distance).
+
+**État à la fin** : robot en D16, devant sa base, dans son axe à quelques millimètres près, tourné vers elle (récepteurs du dessus et avant gauche « rouge et vert », avant droit « rouge »), pas posé dessus ; session fermée (`5`, `s`, `x`) à 9 h 29 min 57, capteur de distance au repos, vitesse 150, batterie 1 992 mAh.
