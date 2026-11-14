@@ -54,25 +54,25 @@
       "slug": "patterns-slime-weave",
       "squad": "patterns",
       "title": "Slime Weave",
-      "tagline": "Twelve thousand tiny agents spin veins of living light.",
-      "controls": "Drag to attract · right-drag to repel · Space scatter · 1-3 palette",
-      "note": ""
+      "tagline": "Thousands of blind agents spin glowing veins of living light.",
+      "controls": "Drag to attract · right-drag to repel · Space scatter · 1-3 palette · Up/Down sensor reach",
+      "note": "First build was one smooth ring with a few stubs. The lead ordered clustered seeding and bloom pulses, then fixed the sparse small-screen view by hand."
     },
     {
       "slug": "patterns-attractor-bloom",
       "squad": "patterns",
       "title": "Attractor Bloom",
-      "tagline": "Chaos plotted as a firework you can bend by hand.",
-      "controls": "Move to bend the shape · click or Space for the next · R random · 1-3 palette",
-      "note": ""
+      "tagline": "Chaos plotted as a morphing ribbon of ember and violet.",
+      "controls": "Move to bend the shape · click for a random preset · Space next · R random · 1-3 palette",
+      "note": "First build was flat violet sheets with a blown-out white core. A rework fixed the tone, and the lead traced the leftover violet to a saturated colour index and corrected it."
     },
     {
       "slug": "patterns-reaction-garden",
       "squad": "patterns",
       "title": "Reaction Garden",
-      "tagline": "Chemistry that sprouts coral and labyrinths where you touch.",
-      "controls": "Drag to seed growth · right-drag to erase · 1-5 presets · C palette",
-      "note": ""
+      "tagline": "Chemistry that grows glossy labyrinths wherever you touch.",
+      "controls": "Drag to grow · right-drag to erase · wheel tweaks the feed rate · 1-5 presets · C palette · Space reseed",
+      "note": "First build opened sparse and mostly empty. The lead switched the opening to the labyrinth recipe with dense seeding and a long warm-up, so it fills the screen from the first frame."
     },
     {
       "slug": "shaders-neon-tunnel",
@@ -123,6 +123,23 @@
       "note": "Passed review without rework. The lead removed a builder shortcut that would have forced slow rendering on real machines."
     }
   ],
-  "steps": [],
-  "fine": ""
+  "steps": [
+    [
+      "Leads write the orders.",
+      "Four Sonnet squad leads each chose three demos and wrote a build brief for every one."
+    ],
+    [
+      "Builders build.",
+      "Twelve Haiku builders each turned one brief into one HTML file and tested it in a headless browser."
+    ],
+    [
+      "Leads review.",
+      "Each lead read the code and the screenshots. Six of the twelve first drafts were rejected and went to a fresh builder with numbered rework orders."
+    ],
+    [
+      "Leads sign off.",
+      "Leads fixed what was left by hand. The orchestrator sent one sign-off back: the ocean had holes in it."
+    ]
+  ],
+  "fine": "18 builder runs · 6 reworks · 1 rejected sign-off · all 12 demos pass the smoke test: no script errors, no network requests, animating before you touch them."
 }
