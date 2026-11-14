@@ -14,7 +14,7 @@ Scripts et résultats : `research_notes/Roomba 694 sensor exploitation ideas/dat
 
 ## En bref
 
-1. **Le cap du cerveau s'abîme quand il reste allumé longtemps.** Il est gardé dans un nombre trop court, jamais remis à zéro. Au-delà de 16 384° accumulés (43 tours sur place), les rotations lentes sont mal comptées ; au-delà de 32 768°, elles ne le sont plus du tout. Le 13 après-midi il est monté à 44 562° (lu dans le code, simulé, mesuré pour les 44 562°). Correction : trois lignes du firmware, écrites dans la version 12 à ta demande le 14 au soir. Tant qu'elle n'est pas installée : redémarrer le cerveau avant chaque séance.
+1. **Le cap du cerveau s'abîme quand il reste allumé longtemps.** Il est gardé dans un nombre trop court, jamais remis à zéro. Au-delà de 16 384° accumulés (43 tours sur place), les rotations lentes sont mal comptées ; au-delà de 32 768°, elles ne le sont plus du tout. Le 13 après-midi il est monté à 44 562° (lu dans le code, simulé, mesuré pour les 44 562°). Correction : trois lignes du firmware, écrites à ta demande dans la version 12, installée le 14 à 18 h 35 ; pas encore essayée en mouvement.
 2. **Le courant de la batterie dit quand les roues forcent.** Sur 195 m d'avances des 13 et 14, il a dépassé son niveau normal de 250 mA pendant 1,5 s à quatre moments seulement : les deux patinages connus (une roue le 13 à 14 h 51, les deux roues sur le seuil de la cuisine le 14 à 16 h 19). Aucune fausse alerte (mesuré). Personne ne s'en sert.
 3. **Le capteur de distance est une règle que personne ne lit pendant les avances.** Sur 29 m d'avances vers un mur de face, il s'accorde avec les roues à 0,2 % en moyenne, à 1 % près d'un jour à l'autre (mesuré). Cela donne un étalon sans mètre ruban, et une correction de l'avance que le filtre n'utilise pas.
 4. **Le plan est à la bonne échelle** : 0,995 ± 0,005 contre les roues sur 70 trajets (rejoué). Ce n'est donc pas lui qui explique les 30 cm d'erreur du couloir.
@@ -130,8 +130,8 @@ Lu en partie : `centrage.py`, `explorer3.py`, `carto.py`, `plan.py`, `balise_bas
 
   Les tours sur place eux-mêmes ne sont pas touchés (0,13° d'erreur au pire à 40 000°). Ce sont les rotations lentes qui le sont : la dérive du robot en ligne droite, que la tenue du cap de `mouv.ino` est censée voir et corriger. Au-delà de 32 768°, le robot peut tourner de 0,1 °/s sans que le cerveau le sache : 1,5° sur une avance de quinze secondes, à chaque avance.
 - **Un indice dans les mesures de l'audit** (rejoué). L'échelle du gyroscope qui referme le mieux le cap de ses 22 boucles : 1,0052 en moyenne (écart-type 0,0011) pour les 15 boucles des enregistrements restés sous 16 384° ; 1,0025 (écart-type 0,0021, de 0,998 à 1,0047) pour les 7 boucles des enregistrements montés au-dessus. L'audit notait que l'échelle bouge d'une boucle à l'autre sans que l'inclinaison l'explique : ceci peut en être une part. Ce n'est qu'un indice : un seul après-midi est concerné, et les boucles d'un même enregistrement partagent des tours.
-- **Correction.** Dans `imuTask`, accumuler dans une variable `double` propre à la tâche et recopier sa valeur dans `imu.yawDeg` à chaque passage. Trois lignes. Les autres tâches continuent de lire un `float`, sans risque de lecture à moitié écrite. **Écrite le 14 au soir à ta demande, dans le firmware version 12** (`roomba694_wifi.ino`, `imuTask`) ; compilée, pas encore installée ni essayée sur la carte.
-- **En attendant, sans rien changer.** Redémarrer le cerveau au début de chaque séance et toutes les quarante rotations complètes environ. Le 14 c'est arrivé par hasard, et c'est le jour où tout a mieux marché ; je ne peux pas dire quelle part lui revient.
+- **Correction.** Dans `imuTask`, accumuler dans une variable `double` propre à la tâche et recopier sa valeur dans `imu.yawDeg` à chaque passage. Trois lignes. Les autres tâches continuent de lire un `float`, sans risque de lecture à moitié écrite. **Écrite le 14 au soir à ta demande, dans le firmware version 12** (`roomba694_wifi.ino`, `imuTask`), installé le 14 à 18 h 35 avec ton accord. Vérifié robot immobile : cap stable, zéro du gyroscope suivi. Pas encore essayé en mouvement : aucune rotation n'a été faite avec la version 12.
+- **Avec un firmware d'avant la version 12.** Redémarrer le cerveau au début de chaque séance et toutes les quarante rotations complètes environ. Le 14 c'est arrivé par hasard, et c'est le jour où tout a mieux marché ; je ne peux pas dire quelle part lui revient.
 - **Premier essai sans rouler.** Aucun sur le robot : le défaut ne se voit qu'après des dizaines de tours. `rv_cap_float32.py` le montre sur le PC. Après la correction : comparer, sur une séance longue, l'échelle des boucles du début et de la fin.
 - **Risque de la correction.** Faible. Les calculs en `double` sont plus lents sur cette puce, mais cent additions par seconde ne pèsent rien.
 
@@ -200,8 +200,8 @@ En intérieur une boussole est fausse de 5 à 10°, davantage près des moteurs 
 
 Je garde son ordre (les trous de lecture, puis le cap, puis la carte cohérente). J'y glisse :
 
-1. **Tout de suite, sans rien écrire** : redémarrer le cerveau avant chaque séance (§ 3.1).
-2. **Avec la correction du cap sur trois axes (B1 de l'audit)** : les trois lignes du § 3.1, dans le même envoi.
+1. **Fait le 14 au soir** : les trois lignes du § 3.1, dans la version 12. Il n'y a plus à redémarrer le cerveau avant chaque séance.
+2. **Reste à faire pour le cap** : sa lecture sur trois axes (B1 de l'audit).
 3. **Côté PC, avant de refaire le seuil de la cuisine** : l'arrêt sur le courant (§ 2.1).
 4. **Avec la carte cohérente (A1)** : le cap par la corde (§ 2.4).
 5. **Avant de refaire le couloir** : l'essai des dix séries de pivots (§ 2.3).
