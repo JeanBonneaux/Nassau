@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Drift Garden</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#05060a}
+canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
+#hud{position:fixed;top:12px;left:14px;z-index:2;max-width:calc(100vw - 150px);
+  font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7);
+  pointer-events:none;user-select:none;-webkit-user-select:none}
+#hud .t{letter-spacing:.2em;text-transform:uppercase}
+#hint{transition:opacity 1.2s ease}
+#mute{pointer-events:auto;margin-top:6px;font:inherit;color:inherit;background:transparent;
+  border:1px solid rgba(255,255,255,.28);border-radius:3px;padding:2px 9px;cursor:pointer}
+#mute:hover{border-color:rgba(255,255,255,.6)}
+body.preview #hud{display:none}
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="hud">
+  <div class="t">drift garden</div>
+  <div>move: attract · click: new orb · space: kick</div>
+  <div id="hint">click to start sound</div>
+  <button id="mute" type="button">sound on</button>
+</div>
+<script>
+(function () {
+  'use strict';
+
+  var canvas = document.getElementById('scene');
+  var ctx = canvas.getContext('2d');
+  var hint = document.getElementById('hint');
+  var muteBtn = document.getElementById('mute');
+
+  var TAU = Math.PI * 2;
+  var MAX_ORBS = 24;
+  var MAX_SPARKS = 300;
+  var MAX_RINGS = 60;
+  var COOLDOWN = 1.2;
+  var VOICE_CAP = 10;
+  var MASTER_LEVEL = 0.22;
+
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function hsla(h, s, l, a) {
+    return 'hsla(' + h.toFixed(1) + ',' + s + '%,' + l + '%,' + clamp(a, 0, 1).toFixed(3) + ')';
+  }
+
+  // D major pentatonic (D E F# A B) across D3..B5: 15 notes, MIDI numbers
+  var NOTES = [];
+  [50, 62, 74].forEach(function (base) {
+    [0, 2, 4, 7, 9].forEach(function (s) { NOTES.push(base + s); });
+  });
+  var NOTE_COUNT = NOTES.length;
+  function midiHz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function hueFor(idx) { return 150 + (idx / (NOTE_COUNT - 1)) * 150; }
+  function pitchForRadius(r) {
+    var t = clamp((r - 10) / 16, 0, 1);
+    return clamp(Math.round((1 - t) * (NOTE_COUNT - 1) + rnd(-1.5, 1.5)), 0, NOTE_COUNT - 1);
+  }
+
+  // ---- mode -------------------------------------------------------------
+  function isPreview() { return location.hash.indexOf('preview') !== -1; }
+  var preview = isPreview();
+
+  // ---- audio ------------------------------------------------------------
+  var audio = { ctx: null, ok: false, muted: false, master: null, revIn: null, delIn: null, voices: [] };
+
+  function makeImpulse(ac) {
+    var sr = ac.sampleRate;
+    var len = Math.floor(sr * 2.5);
+    var buf = ac.createBuffer(2, len, sr);
+    for (var c = 0; c < 2; c++) {
+      var d = buf.getChannelData(c);
+      for (var i = 0; i < len; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.exp(-6 * i / len);
+      }
+    }
+    return buf;
+  }
+
+  function buildAudio() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    var ac = new AC();
+    audio.ctx = ac;
+    var t0 = ac.currentTime;
+
+    var master = ac.createGain();
+    master.gain.value = audio.muted ? 0 : MASTER_LEVEL;
+    var comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -18;
+    comp.ratio.value = 8;
+    comp.knee.value = 10;
+    comp.attack.value = 0.005;
+    comp.release.value = 0.2;
+    master.connect(comp);
+    comp.connect(ac.destination);
+    audio.master = master;
+
+    // reverb send -> convolver -> wet (~30%) -> master
+    var revIn = ac.createGain();
+    var conv = ac.createConvolver();
+    conv.buffer = makeImpulse(ac);
+    var revOut = ac.createGain();
+    revOut.gain.value = 0.3;
+    revIn.connect(conv);
+    conv.connect(revOut);
+    revOut.connect(master);
+    audio.revIn = revIn;
+
+    // feedback delay send, lowpass inside the loop
+    var delIn = ac.createGain();
+    var delay = ac.createDelay(1.0);
+    delay.delayTime.value = 0.35;
+    var fb = ac.createGain();
+    fb.gain.value = 0.35;
+    var dlp = ac.createBiquadFilter();
+    dlp.type = 'lowpass';
+    dlp.frequency.value = 2200;
+    dlp.Q.value = 0.5;
+    var delOut = ac.createGain();
+    delOut.gain.value = 0.7;
+    delIn.connect(delay);
+    delay.connect(dlp);
+    dlp.connect(fb);
+    fb.connect(delay);
+    dlp.connect(delOut);
+    delOut.connect(master);
+    audio.delIn = delIn;
+
+    // very quiet drone: sines on D2 and A2, slow LFO on their gains
+    var droneBus = ac.createGain();
+    droneBus.gain.setValueAtTime(0, t0);
+    droneBus.gain.linearRampToValueAtTime(1, t0 + 4);
+    droneBus.connect(master);
+    var lfo = ac.createOscillator();
+    lfo.frequency.value = 0.07;
+    var lfoAmt = ac.createGain();
+    lfoAmt.gain.value = 0.01;
+    lfo.connect(lfoAmt);
+    [73.42, 110].forEach(function (f) {
+      var o = ac.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = f;
+      var g = ac.createGain();
+      g.gain.value = 0.03;
+      lfoAmt.connect(g.gain);
+      o.connect(g);
+      g.connect(droneBus);
+      o.start(t0);
+    });
+    lfo.start(t0);
+
+    audio.ok = true;
+    hint.style.opacity = '0';
+  }
+
+  function startAudio() {
+    if (isPreview()) return false;
+    try {
+      if (!audio.ctx) buildAudio();
+      if (audio.ctx && audio.ctx.state === 'suspended') {
+        var p = audio.ctx.resume();
+        if (p && p.catch) p.catch(function () {});
+      }
+    } catch (e) { /* audio is optional */ }
+    return audio.ok;
+  }
+
+  function rampMaster(target) {
+    if (!audio.master) return;
+    try {
+      var t = audio.ctx.currentTime;
+      audio.master.gain.cancelScheduledValues(t);
+      audio.master.gain.setValueAtTime(audio.master.gain.value, t);
+      audio.master.gain.linearRampToValueAtTime(target, t + 0.15);
+    } catch (e) {}
+  }
+
+  function setMuted(m) {
+    audio.muted = m;
+    muteBtn.textContent = m ? 'sound off' : 'sound on';
+    rampMaster(m || isPreview() ? 0 : MASTER_LEVEL);
+  }
+
+  function releaseVoice(v) {
+    if (v.dead) return;
+    v.dead = true;
+    var i = audio.voices.indexOf(v);
+    if (i !== -1) audio.voices.splice(i, 1);
+    v.nodes.forEach(function (n) { try { n.disconnect(); } catch (e) {} });
+  }
+
+  function stealOldest() {
+    var v = audio.voices[0];
+    if (!v) return;
+    try {
+      var now = audio.ctx.currentTime;
+      v.env.gain.cancelScheduledValues(now);
+      v.env.gain.setTargetAtTime(0, now, 0.01);
+      v.o1.stop(now + 0.06);
+      v.o2.stop(now + 0.06);
+    } catch (e) {}
+    releaseVoice(v);
+  }
+
+  // one plucked triangle voice: two detuned oscs -> lowpass -> envelope -> dry + reverb + delay sends
+  function playTone(midi, peak) {
+    if (!audio.ok || isPreview()) return;
+    try {
+      var ac = audio.ctx;
+      while (audio.voices.length >= VOICE_CAP) stealOldest();
+      var t = ac.currentTime + 0.01;
+      var f = midiHz(midi);
+
+      var o1 = ac.createOscillator();
+      var o2 = ac.createOscillator();
+      o1.type = 'triangle';
+      o2.type = 'triangle';
+      o1.frequency.value = f;
+      o2.frequency.value = f;
+      o1.detune.value = -6;
+      o2.detune.value = 6;
+
+      var mix = ac.createGain();
+      mix.gain.value = 0.5;
+      var lp = ac.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 1800;
+      lp.Q.value = 0.7;
+
+      var env = ac.createGain();
+      env.gain.setValueAtTime(0, t);
+      env.gain.linearRampToValueAtTime(peak, t + 0.012);
+      env.gain.setTargetAtTime(0, t + 0.012, 0.6);
+      env.gain.setTargetAtTime(0, t + 2.0, 0.12);
+
+      var sendRev = ac.createGain();
+      sendRev.gain.value = 0.4;
+      var sendDel = ac.createGain();
+      sendDel.gain.value = 0.25;
+
+      o1.connect(mix);
+      o2.connect(mix);
+      mix.connect(lp);
+      lp.connect(env);
+      env.connect(audio.master);
+      env.connect(sendRev);
+      sendRev.connect(audio.revIn);
+      env.connect(sendDel);
+      sendDel.connect(audio.delIn);
+
+      var stopAt = t + 2.6;
+      var v = { o1: o1, o2: o2, env: env, dead: false,
+                nodes: [o1, o2, mix, lp, env, sendRev, sendDel] };
+      o1.onended = function () { releaseVoice(v); };
+      o2.onended = function () { releaseVoice(v); };
+      o1.start(t);
+      o2.start(t);
+      o1.stop(stopAt);
+      o2.stop(stopAt);
+      audio.voices.push(v);
+    } catch (e) { /* never throw from audio */ }
+  }
+
+  // ---- canvas -----------------------------------------------------------
+  var W = 0, H = 0, DPR = 1;
+  var fadeGrad = null;
+
+  function makeBgGradient(alpha) {
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, 'rgba(20,13,50,' + alpha + ')');
+    g.addColorStop(0.55, 'rgba(9,8,30,' + alpha + ')');
+    g.addColorStop(1, 'rgba(3,4,13,' + alpha + ')');
+    return g;
+  }
+
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = makeBgGradient(1);
+    ctx.fillRect(0, 0, W, H);
+    fadeGrad = makeBgGradient(0.085);
+    orbs.forEach(function (o) {
+      o.x = clamp(o.x, o.r, Math.max(o.r, W - o.r));
+      o.y = clamp(o.y, o.r, Math.max(o.r, H - o.r));
+    });
+  }
+
+  // ---- state ------------------------------------------------------------
+  var orbs = [];
+  var sparks = [];
+  var rings = [];
+  var lines = [];
+  var cooldowns = new Map();
+  var nextId = 1;
+  var T = 0;
+  var pointer = { x: 0, y: 0, active: false };
+
+  function newOrb(x, y, idx) {
+    var r = rnd(10, 26);
+    var p = idx != null ? idx : pitchForRadius(r);
+    return {
+      id: nextId++, x: x, y: y, r: r, idx: p, hue: hueFor(p),
+      th0: rnd(0, TAU), speed: rnd(20, 50),
+      w1: rnd(0.10, 0.22), w2: rnd(0.22, 0.45),
+      p1: rnd(0, TAU), p2: rnd(0, TAU), ph: rnd(0, TAU),
+      kx: 0, ky: 0, flash: 0, fade: 1, dying: false
+    };
+  }
+
+  function seed() {
+    orbs = [];
+    var count = preview ? 9 : Math.floor(rnd(14, 19));
+    var spread = Math.min(W, H) * 0.2;
+    var centers = [];
+    for (var c = 0; c < 3; c++) centers.push([rnd(0.25, 0.75) * W, rnd(0.25, 0.75) * H]);
+    for (var i = 0; i < count; i++) {
+      var cen = centers[i % 3];
+      var o = newOrb(cen[0] + rnd(-spread, spread), cen[1] + rnd(-spread, spread));
+      o.x = clamp(o.x, o.r, W - o.r);
+      o.y = clamp(o.y, o.r, H - o.r);
+      orbs.push(o);
+    }
+  }
+
+  function spawnSpark(x, y, hue) {
+    var cap = preview ? MAX_SPARKS / 2 : MAX_SPARKS;
+    if (sparks.length >= cap) sparks.splice(0, sparks.length - cap + 1);
+    var a = rnd(0, TAU), s = rnd(40, 170);
+    sparks.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+                  age: 0, life: rnd(0.6, 1.3), hue: hue + rnd(-20, 20), size: rnd(1, 2.4) });
+  }
+
+  function addRing(x, y, maxR, hue, life) {
+    rings.push({ x: x, y: y, age: 0, life: life, maxR: maxR, hue: hue });
+    if (rings.length > MAX_RINGS) rings.splice(0, rings.length - MAX_RINGS);
+  }
+
+  function sing(a, b) {
+    var big = a.r >= b.r ? a : b;
+    var small = big === a ? b : a;
+    playTone(NOTES[big.idx], 0.5);
+    playTone(NOTES[Math.min(NOTE_COUNT - 1, small.idx + 1)], 0.2);
+    big.flash = 1;
+    small.flash = 0.8;
+    var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    var hue = (a.hue + b.hue) / 2;
+    addRing(mx, my, 70 + (a.r + b.r) * 1.2, hue, 1.5);
+    var n = preview ? Math.floor(rnd(3, 6)) : Math.floor(rnd(6, 11));
+    for (var k = 0; k < n; k++) spawnSpark(mx, my, hue);
+  }
+
+  function spawnAt(x, y) {
+    var alive = orbs.filter(function (o) { return !o.dying; });
+    if (alive.length >= MAX_ORBS) alive[0].dying = true;
+    var idx = Math.floor(rnd(0, NOTE_COUNT));
+    var o = newOrb(x, y, idx);
+    o.flash = 1;
+    orbs.push(o);
+    playTone(NOTES[idx], 0.45);
+    addRing(x, y, 60, o.hue, 1.0);
+  }
+
+  function kickAll() {
+    orbs.forEach(function (o) {
+      if (o.dying) return;
+      var a = rnd(0, TAU), m = rnd(120, 220);
+      o.kx += Math.cos(a) * m;
+      o.ky += Math.sin(a) * m;
+    });
+  }
+
+  // ---- simulation -------------------------------------------------------
+  function stepOrb(o, dt) {
+    var th = o.th0 + 1.1 * Math.sin(o.w1 * T + o.p1) + 0.5 * Math.sin(o.w2 * T + o.p2);
+    var vx = Math.cos(th) * o.speed;
+    var vy = Math.sin(th) * o.speed;
+
+    // soft edge push so orbs turn back before the wall
+    var mx = o.r + 40, my = o.r + 40;
+    if (o.x < mx) vx += (mx - o.x) * 2.2;
+    else if (o.x > W - mx) vx -= (o.x - (W - mx)) * 2.2;
+    if (o.y < my) vy += (my - o.y) * 2.2;
+    else if (o.y > H - my) vy -= (o.y - (H - my)) * 2.2;
+
+    var decay = Math.exp(-dt * 1.2);
+    o.kx *= decay;
+    o.ky *= decay;
+    var km = Math.hypot(o.kx, o.ky);
+    if (km > 260) { o.kx *= 260 / km; o.ky *= 260 / km; }
+    vx += o.kx;
+    vy += o.ky;
+
+    o.x += vx * dt;
+    o.y += vy * dt;
+
+    // hard bounds: reflect the kick softly
+    if (o.x < o.r) { o.x = o.r; if (o.kx < 0) o.kx = -o.kx * 0.6; }
+    if (o.x > W - o.r) { o.x = W - o.r; if (o.kx > 0) o.kx = -o.kx * 0.6; }
+    if (o.y < o.r) { o.y = o.r; if (o.ky < 0) o.ky = -o.ky * 0.6; }
+    if (o.y > H - o.r) { o.y = H - o.r; if (o.ky > 0) o.ky = -o.ky * 0.6; }
+
+    o.flash *= Math.exp(-dt * 3);
+    if (o.dying) o.fade -= dt / 0.9;
+  }
+
+  function update(dt) {
+    var i, o;
+    for (i = 0; i < orbs.length; i++) {
+      o = orbs[i];
+      if (!o.dying && pointer.active) {
+        var dx = pointer.x - o.x, dy = pointer.y - o.y;
+        var d = Math.hypot(dx, dy);
+        if (d < 160 && d > 2) {
+          var f = (1 - d / 160) * 110 * dt;
+          o.kx += dx / d * f;
+          o.ky += dy / d * f;
+        }
+      }
+      stepOrb(o, dt);
+    }
+    orbs = orbs.filter(function (q) { return !(q.dying && q.fade <= 0); });
+
+    // pairs: glowing lines when near, sing when touching
+    lines.length = 0;
+    for (i = 0; i < orbs.length; i++) {
+      var a = orbs[i];
+      if (a.dying) continue;
+      for (var j = i + 1; j < orbs.length; j++) {
+        var b = orbs[j];
+        if (b.dying) continue;
+        var ddx = b.x - a.x, ddy = b.y - a.y;
+        var dist = Math.hypot(ddx, ddy);
+        var sum = a.r + b.r;
+        if (dist < sum + 30) {
+          lines.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y, d: dist, sum: sum, hue: (a.hue + b.hue) / 2 });
+        }
+        if (dist <= sum) {
+          var key = a.id < b.id ? a.id * 1e6 + b.id : b.id * 1e6 + a.id;
+          var until = cooldowns.get(key);
+          if (until === undefined || T >= until) {
+            cooldowns.set(key, T + COOLDOWN);
+            sing(a, b);
+          }
+        }
+      }
+    }
+    cooldowns.forEach(function (until, key) { if (T >= until) cooldowns.delete(key); });
+
+    rings.forEach(function (r) { r.age += dt; });
+    rings = rings.filter(function (r) { return r.age < r.life; });
+
+    sparks.forEach(function (s) {
+      s.age += dt;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      var drag = Math.exp(-dt * 2.4);
+      s.vx *= drag;
+      s.vy *= drag;
+    });
+    sparks = sparks.filter(function (s) { return s.age < s.life; });
+  }
+
+  // ---- render -----------------------------------------------------------
+  function drawOrb(o, alpha) {
+    var R = o.r * (1 + 0.06 * Math.sin(T * 1.7 + o.ph) + o.flash * 0.35);
+    var glow = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, R * 3.2);
+    glow.addColorStop(0, hsla(o.hue, 100, 78, 0.55 * alpha));
+    glow.addColorStop(0.22, hsla(o.hue, 95, 62, 0.32 * alpha));
+    glow.addColorStop(0.55, hsla(o.hue, 90, 50, 0.10 * alpha));
+    glow.addColorStop(1, hsla(o.hue, 90, 50, 0));
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(o.x, o.y, R * 3.2, 0, TAU);
+    ctx.fill();
+
+    var body = ctx.createRadialGradient(o.x - R * 0.25, o.y - R * 0.25, R * 0.1, o.x, o.y, R);
+    body.addColorStop(0, hsla(o.hue, 100, 92, 0.95 * alpha));
+    body.addColorStop(0.35, hsla(o.hue, 100, 72, 0.85 * alpha));
+    body.addColorStop(1, hsla(o.hue, 90, 45, 0.3 * alpha));
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.arc(o.x, o.y, R, 0, TAU);
+    ctx.fill();
+  }
+
+  function render() {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = fadeGrad;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+
+    var i, L;
+    for (i = 0; i < lines.length; i++) {
+      L = lines[i];
+      var f = clamp(1 - (L.d - L.sum) / 30, 0, 1);
+      ctx.beginPath();
+      ctx.moveTo(L.ax, L.ay);
+      ctx.lineTo(L.bx, L.by);
+      ctx.strokeStyle = hsla(L.hue, 100, 70, 0.12 * f);
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.strokeStyle = hsla(L.hue, 100, 82, 0.6 * f);
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+
+    for (i = 0; i < orbs.length; i++) {
+      drawOrb(orbs[i], orbs[i].dying ? clamp(orbs[i].fade, 0, 1) : 1);
+    }
+
+    for (i = 0; i < rings.length; i++) {
+      var r = rings[i];
+      var p = clamp(r.age / r.life, 0, 1);
+      var e = 1 - Math.pow(1 - p, 3);
+      var a = (1 - p) * (1 - p);
+      var rad = 6 + r.maxR * e;
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, rad, 0, TAU);
+      ctx.strokeStyle = hsla(r.hue, 100, 70, 0.14 * a);
+      ctx.lineWidth = 8;
+      ctx.stroke();
+      ctx.strokeStyle = hsla(r.hue, 100, 80, 0.85 * a);
+      ctx.lineWidth = 0.6 + 2.2 * (1 - p);
+      ctx.stroke();
+    }
+
+    for (i = 0; i < sparks.length; i++) {
+      var s = sparks[i];
+      var sa = 1 - s.age / s.life;
+      ctx.fillStyle = hsla(s.hue, 100, 82, sa);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.size * (0.5 + 0.5 * sa), 0, TAU);
+      ctx.fill();
+    }
+
+    if (pointer.active) {
+      var hg = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, 70);
+      hg.addColorStop(0, 'rgba(190,240,255,0.16)');
+      hg.addColorStop(0.35, 'rgba(160,200,255,0.06)');
+      hg.addColorStop(1, 'rgba(160,200,255,0)');
+      ctx.fillStyle = hg;
+      ctx.beginPath();
+      ctx.arc(pointer.x, pointer.y, 70, 0, TAU);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(180,220,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(pointer.x, pointer.y, 160, 0, TAU);
+      ctx.stroke();
+    }
+
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  var lastNow = 0;
+  function frame(now) {
+    requestAnimationFrame(frame);
+    var dt = lastNow ? (now - lastNow) / 1000 : 1 / 60;
+    lastNow = now;
+    dt = clamp(dt, 0, 1 / 30);
+    T += dt;
+    update(dt);
+    render();
+  }
+
+  // ---- input ------------------------------------------------------------
+  function setPointer(e) {
+    pointer.x = e.clientX;
+    pointer.y = e.clientY;
+    pointer.active = true;
+  }
+
+  // audio starts on the first gesture only (capture, so it runs before anything else)
+  window.addEventListener('pointerdown', function () { startAudio(); }, true);
+  window.addEventListener('keydown', function () { startAudio(); }, true);
+
+  window.addEventListener('pointermove', setPointer, { passive: true });
+  window.addEventListener('pointerdown', function (e) {
+    setPointer(e);
+    spawnAt(e.clientX, e.clientY);
+  });
+  window.addEventListener('pointerup', function (e) {
+    if (e.pointerType === 'touch') pointer.active = false;
+  });
+  window.addEventListener('pointerout', function (e) {
+    if (!e.relatedTarget) pointer.active = false;
+  });
+  window.addEventListener('keydown', function (e) {
+    if (!e.repeat) kickAll();
+  });
+
+  muteBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  muteBtn.addEventListener('click', function () {
+    startAudio();
+    setMuted(!audio.muted);
+    muteBtn.blur();
+  });
+
+  function applyMode() {
+    preview = isPreview();
+    document.body.classList.toggle('preview', preview);
+    if (preview) rampMaster(0);
+    else if (audio.master) rampMaster(audio.muted ? 0 : MASTER_LEVEL);
+  }
+  window.addEventListener('hashchange', applyMode);
+
+  window.addEventListener('resize', resize);
+
+  applyMode();
+  resize();
+  seed();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

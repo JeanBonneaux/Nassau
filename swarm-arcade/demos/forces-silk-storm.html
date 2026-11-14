@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Silk Storm</title>
+<style>
+html,body{height:100%}
+body{margin:0;overflow:hidden;background:#05060a}
+canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair}
+#hud{position:fixed;left:12px;top:10px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7);pointer-events:none;user-select:none;white-space:nowrap}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">Silk Storm<br>drag pull · right-drag or hold X cut · W gust · R mend</div>
+<script>
+(() => {
+  'use strict';
+  const PREVIEW = /preview/.test(location.hash);
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const hud = document.getElementById('hud');
+  if (PREVIEW) hud.remove();
+
+  // ---- grid / capacity (all allocated once) ----
+  const COLS = PREVIEW ? 36 : 64, ROWS = PREVIEW ? 22 : 40, N = COLS * ROWS;
+  const ITER = PREVIEW ? 3 : 5;
+  const GRAD = 8, SHADES = 16, MAXC = N * 4;
+  const G = 0.22, DAMP = 0.995, GHOST_K = 1.1, GRAB_R = 40, CUT_R = 22, TOP = 92;
+
+  const X = new Float32Array(N), Y = new Float32Array(N);
+  const PX = new Float32Array(N), PY = new Float32Array(N);
+  const RX = new Float32Array(N), RY = new Float32Array(N); // rest / anchor positions
+  const PIN = new Uint8Array(N);
+  const CA = new Int32Array(MAXC), CB = new Int32Array(MAXC);
+  const CR = new Float32Array(MAXC);  // rest length in grid units
+  const CK = new Uint8Array(MAXC);    // 0 structural, 1 shear
+  const CG = new Uint8Array(MAXC);    // gradient bucket
+  const CL = new Uint8Array(MAXC);    // 1 alive, 0 cut
+  const NCELL = (COLS - 1) * (ROWS - 1), NB = GRAD * SHADES;
+  const CELLG = new Uint8Array(NCELL);
+  const CELLA = new Int32Array(NCELL);            // top-left corner index of each cell
+  const QS = new Uint8Array(NCELL), QOrder = new Int32Array(NCELL);
+  const QCount = new Int32Array(NB), QStart = new Int32Array(NB + 1), QFill = new Int32Array(NB);
+  let NC = 0;
+
+  // ---- colour tables (built once) ----
+  const col = (g) => {
+    const t = (g + 0.5) / GRAD;
+    return [255 + (61 - 255) * t, 61 + (231 - 61) * t, 154 + (255 - 154) * t].map((v) => Math.round(v));
+  };
+  const FILLS = new Array(GRAD * SHADES);
+  const LG = [], LC = [], LD = [];
+  for (let g = 0; g < GRAD; g++) {
+    const c = col(g);
+    for (let s = 0; s < SHADES; s++) {
+      const sh = (s / (SHADES - 1)) * 1.25, m = Math.min(sh, 1), ex = Math.max(0, sh - 1) * 200;
+      FILLS[g * SHADES + s] = `rgb(${Math.min(255, c[0] * m + ex) | 0},${Math.min(255, c[1] * m + ex) | 0},${Math.min(255, c[2] * m + ex) | 0})`;
+    }
+    LG[g] = `rgba(${c[0]},${c[1]},${c[2]},0.10)`;
+    LC[g] = `rgba(${c[0]},${c[1]},${c[2]},0.55)`;
+    LD[g] = `rgba(${c[0]},${c[1]},${c[2]},0.20)`;
+  }
+
+  // ---- build topology ----
+  function build() {
+    for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) PIN[j * COLS + i] = (j === 0 && i % 4 === 0) ? 1 : 0;
+    NC = 0;
+    const add = (a, b, r, kind) => {
+      CA[NC] = a; CB[NC] = b; CR[NC] = r; CK[NC] = kind; CL[NC] = 1;
+      const ia = a % COLS, ja = (a / COLS) | 0;
+      CG[NC] = Math.min(GRAD - 1, Math.floor(((ia / (COLS - 1) + ja / (ROWS - 1)) * 0.5) * GRAD));
+      NC++;
+    };
+    for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) {
+      const k = j * COLS + i;
+      if (i < COLS - 1) add(k, k + 1, 1, 0);
+      if (j < ROWS - 1) add(k, k + COLS, 1, 0);
+      if (i < COLS - 1 && j < ROWS - 1) { add(k, k + COLS + 1, Math.SQRT2, 1); add(k + 1, k + COLS, Math.SQRT2, 1); }
+    }
+    for (let j = 0; j < ROWS - 1; j++) for (let i = 0; i < COLS - 1; i++) {
+      const ci = j * (COLS - 1) + i;
+      CELLA[ci] = j * COLS + i;
+      CELLG[ci] = Math.min(GRAD - 1, Math.floor(((i + 0.5) / (COLS - 1) + (j + 0.5) / (ROWS - 1)) * 0.5 * GRAD));
+    }
+  }
+
+  // ---- layout (recomputed on resize, cloth mapped by uniform scale) ----
+  let W = 0, H = 0, dpr = 1, ox = 0, oy = TOP, sp = 10, clothW = 0, clothH = 0;
+  let bg = null, glowG = null, railG = null, inited = false;
+  function layout() {
+    W = innerWidth; H = innerHeight;
+    dpr = PREVIEW ? 1 : Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const nsp = Math.max(2, Math.min((W * 0.7) / (COLS - 1), (H - TOP - 24) / (ROWS - 1)));
+    const nox = (W - nsp * (COLS - 1)) / 2;
+    const oox = ox, ooy = oy, k = inited ? nsp / sp : 1;
+    for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) {
+      const q = j * COLS + i;
+      RX[q] = nox + i * nsp; RY[q] = TOP + j * nsp;
+      if (!inited) { X[q] = RX[q]; Y[q] = RY[q]; PX[q] = X[q]; PY[q] = Y[q]; }
+      else {
+        X[q] = nox + (X[q] - oox) * k; Y[q] = TOP + (Y[q] - ooy) * k;
+        PX[q] = nox + (PX[q] - oox) * k; PY[q] = TOP + (PY[q] - ooy) * k;
+      }
+    }
+    ox = nox; oy = TOP; sp = nsp;
+    clothW = sp * (COLS - 1); clothH = sp * (ROWS - 1);
+    bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#05060a'); bg.addColorStop(1, '#120a2a');
+    glowG = ctx.createRadialGradient(ox + clothW / 2, oy + clothH * 0.4, 0, ox + clothW / 2, oy + clothH * 0.4, Math.max(clothW, clothH) * 0.7);
+    glowG.addColorStop(0, 'rgba(255,61,154,0.12)'); glowG.addColorStop(1, 'rgba(255,61,154,0)');
+    railG = ctx.createLinearGradient(ox, 0, ox + clothW, 0);
+    railG.addColorStop(0, '#ff3d9a'); railG.addColorStop(1, '#3de7ff');
+    inited = true;
+  }
+
+  // ---- state ----
+  let simT = 0, gustOn = false, gp = 0, gustDur = 2.4, gustPeak = 0, gustAmp = 0, gustX = 0, gustWd = 1, nextGust = 2.0;
+  const ptr = { x: 0, y: 0, on: false };
+  let grab = -1, rightDown = false, xHeld = false;
+  let gX = 0, gY = 0, gR = 1;
+
+  function launchGust(peak, dur, wide) {
+    gustOn = true; gp = 0; gustPeak = peak; gustDur = dur; gustWd = clothW * 0.36 * wide;
+  }
+
+  function grabNearest() {
+    let best = GRAB_R * GRAB_R, bi = -1;
+    for (let q = 0; q < N; q++) {
+      if (PIN[q]) continue;
+      const dx = X[q] - ptr.x, dy = Y[q] - ptr.y, d2 = dx * dx + dy * dy;
+      if (d2 < best) { best = d2; bi = q; }
+    }
+    grab = bi;
+  }
+
+  function cutNear() {
+    const r2 = CUT_R * CUT_R, px = ptr.x, py = ptr.y;
+    for (let c = 0; c < NC; c++) {
+      if (!CL[c]) continue;
+      const a = CA[c], b = CB[c];
+      const mx = (X[a] + X[b]) * 0.5 - px, my = (Y[a] + Y[b]) * 0.5 - py;
+      if (mx * mx + my * my < r2) CL[c] = 0;
+    }
+  }
+
+  // ---- simulation: Verlet + constraint relaxation ----
+  function step(dt, t) {
+    const s = dt * 60, s2 = s * s;
+    gX = ox + clothW * (0.5 + 0.36 * Math.cos(t * 0.37));
+    gY = TOP + clothH * (0.42 + 0.3 * Math.sin(t * 0.53 + 1.0));
+    gR = sp * 5 + clothW * 0.05;
+    const gR2 = gR * gR;
+    const gsig2 = 2 * (gustWd * 0.4) * (gustWd * 0.4);
+    const gAmp = gustAmp;
+    if ((rightDown || xHeld) && ptr.on) cutNear();
+
+    for (let j = 0; j < ROWS; j++) {
+      const rowF = 0.35 + 0.65 * (j / (ROWS - 1));
+      const W0 = 0.17 * rowF;
+      for (let i = 0; i < COLS; i++) {
+        const q = j * COLS + i;
+        if (PIN[q]) { X[q] = RX[q]; Y[q] = RY[q]; PX[q] = X[q]; PY[q] = Y[q]; continue; }
+        const x = X[q], y = Y[q];
+        if (q === grab) {
+          const nx = x + (ptr.x - x) * 0.45, ny = y + (ptr.y - y) * 0.45;
+          X[q] = nx; Y[q] = ny; PX[q] = nx; PY[q] = ny;
+          continue;
+        }
+        // wind: smooth sum of sines over x, y, time
+        let ax = W0 * (Math.sin(x * 0.007 + t * 0.9) + 0.6 * Math.sin(y * 0.011 - t * 0.6 + 1.3) + 0.4 * Math.sin((x + y) * 0.0045 + t * 1.7));
+        let ay = W0 * 0.5 * Math.sin(x * 0.005 - t * 0.8) * Math.cos(y * 0.004 + t * 0.4) + G;
+        // invisible wind ghost drifting through the cloth
+        const ddx = x - gX, ddy = y - gY, d2 = ddx * ddx + ddy * ddy;
+        if (d2 < gR2) {
+          const d = Math.sqrt(d2) + 1e-3, f = (1 - d / gR) * (1 - d / gR) * GHOST_K;
+          ax += (ddx / d) * f; ay += (ddy / d) * f;
+        }
+        // gust sweep
+        if (gAmp > 0) {
+          const gx = x - gustX, e = Math.exp(-(gx * gx) / gsig2) * gAmp;
+          ax += e * 0.9; ay -= e * 0.45;
+        }
+        const nx = x + (x - PX[q]) * DAMP + ax * s2;
+        const ny = y + (y - PY[q]) * DAMP + ay * s2;
+        PX[q] = x; PY[q] = y; X[q] = nx; Y[q] = ny;
+      }
+    }
+
+    // constraint relaxation (dead constraints skipped)
+    for (let it = 0; it < ITER; it++) {
+      for (let c = 0; c < NC; c++) {
+        if (!CL[c]) continue;
+        const a = CA[c], b = CB[c];
+        const fa = (PIN[a] || a === grab) ? 0 : 1, fb = (PIN[b] || b === grab) ? 0 : 1;
+        const sum = fa + fb;
+        if (!sum) continue;
+        const dx = X[b] - X[a], dy = Y[b] - Y[a];
+        const d = Math.sqrt(dx * dx + dy * dy) + 1e-6;
+        const k = (d - CR[c] * sp) / d;
+        const ka = (k * fa) / sum, kb = (k * fb) / sum;
+        X[a] += dx * ka; Y[a] += dy * ka;
+        X[b] -= dx * kb; Y[b] -= dy * kb;
+      }
+    }
+
+    // keep everything on screen, guard against NaN
+    for (let q = 0; q < N; q++) {
+      if (PIN[q]) continue;
+      if (!(X[q] === X[q]) || !(Y[q] === Y[q])) { X[q] = RX[q]; Y[q] = RY[q]; PX[q] = X[q]; PY[q] = Y[q]; continue; }
+      if (X[q] < -W) X[q] = -W; else if (X[q] > 2 * W) X[q] = 2 * W;
+      if (Y[q] > H - 2) Y[q] = H - 2;
+    }
+  }
+
+  function settle(n) {
+    for (let k = 0; k < n; k++) { step(1 / 60, simT); simT += 1 / 60; }
+  }
+
+  function reset() {
+    for (let q = 0; q < N; q++) { X[q] = RX[q]; Y[q] = RY[q]; PX[q] = X[q]; PY[q] = Y[q]; }
+    CL.fill(1, 0, NC);
+    grab = -1; gustOn = false; gustAmp = 0;
+    settle(40);
+  }
+
+  // ---- rendering ----
+  function draw() {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = glowG;
+    ctx.fillRect(0, 0, W, H);
+
+    // cloth quads, flat-shaded from the quad's edge cross product (fold / stretch proxy).
+    // Quads are counting-sorted into colour buckets so each bucket is one path and one fill.
+    const inv = 1 / (sp * sp);
+    QCount.fill(0);
+    for (let ci = 0; ci < NCELL; ci++) {
+      const a = CELLA[ci], b = a + 1, c = a + COLS;
+      const ax = X[b] - X[a], ay = Y[b] - Y[a], bx = X[c] - X[a], by = Y[c] - Y[a];
+      let f = (ax * by - ay * bx) * inv;
+      f = f < -0.3 ? -0.3 : f > 1.4 ? 1.4 : f;
+      const fc = f < 0 ? 0 : f > 1.1 ? 1.1 : f;
+      let sh = 0.28 + (0.62 * fc) / 1.1;
+      let add = (f - 1) * 2.2; add = add < 0 ? 0 : add > 1 ? 1 : add;
+      sh += add * 0.4;
+      const k = CELLG[ci] * SHADES + Math.min(SHADES - 1, ((sh / 1.25) * (SHADES - 1) + 0.5) | 0);
+      QS[ci] = k; QCount[k]++;
+    }
+    let acc = 0;
+    for (let k = 0; k < NB; k++) { QStart[k] = acc; QFill[k] = acc; acc += QCount[k]; }
+    QStart[NB] = acc;
+    for (let ci = 0; ci < NCELL; ci++) QOrder[QFill[QS[ci]]++] = ci;
+    for (let k = 0; k < NB; k++) {
+      const s0 = QStart[k], s1 = QStart[k + 1];
+      if (s0 === s1) continue;
+      ctx.fillStyle = FILLS[k];
+      ctx.beginPath();
+      for (let m = s0; m < s1; m++) {
+        const a = CELLA[QOrder[m]], b = a + 1, c = a + COLS, d = c + 1;
+        ctx.moveTo(X[a], Y[a]); ctx.lineTo(X[b], Y[b]); ctx.lineTo(X[d], Y[d]); ctx.lineTo(X[c], Y[c]);
+        ctx.closePath();
+      }
+      ctx.fill();
+    }
+
+    // additive glow lines along constraints
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let c = 0; c < NC; c++) {
+      if (!CL[c] || CK[c] !== 0) continue;
+      const a = CA[c], b = CB[c];
+      ctx.moveTo(X[a], Y[a]); ctx.lineTo(X[b], Y[b]);
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 3; ctx.stroke();
+    for (let g = 0; g < GRAD; g++) {
+      ctx.beginPath();
+      for (let c = 0; c < NC; c++) {
+        if (!CL[c] || CK[c] !== 0 || CG[c] !== g) continue;
+        const a = CA[c], b = CB[c];
+        ctx.moveTo(X[a], Y[a]); ctx.lineTo(X[b], Y[b]);
+      }
+      ctx.strokeStyle = LC[g]; ctx.lineWidth = 0.9; ctx.stroke();
+    }
+    ctx.beginPath();
+    for (let c = 0; c < NC; c++) {
+      if (!CL[c] || CK[c] !== 1) continue;
+      const a = CA[c], b = CB[c];
+      ctx.moveTo(X[a], Y[a]); ctx.lineTo(X[b], Y[b]);
+    }
+    ctx.strokeStyle = 'rgba(160,190,255,0.16)'; ctx.lineWidth = 0.7; ctx.stroke();
+
+    // rail with the only shadowBlur in the scene
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,61,154,0.9)';
+    ctx.shadowBlur = 18;
+    ctx.strokeStyle = railG; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(ox - 26, TOP - 14); ctx.lineTo(ox + clothW + 26, TOP - 14); ctx.stroke();
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ox - 26, TOP - 14); ctx.lineTo(ox + clothW + 26, TOP - 14); ctx.stroke();
+
+    // clips and pin dots
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let q = 0; q < N; q++) if (PIN[q]) { ctx.moveTo(RX[q], TOP - 14); ctx.lineTo(X[q], Y[q]); }
+    ctx.stroke();
+    ctx.fillStyle = '#ffe1f0';
+    ctx.beginPath();
+    for (let q = 0; q < N; q++) if (PIN[q]) { ctx.moveTo(X[q] + 2.6, Y[q]); ctx.arc(X[q], Y[q], 2.6, 0, Math.PI * 2); }
+    ctx.fill();
+  }
+
+  // ---- loop ----
+  let last = performance.now();
+  function frame(now) {
+    let dt = (now - last) / 1000; last = now;
+    if (!(dt > 0)) dt = 1 / 60;
+    if (dt > 1 / 30) dt = 1 / 30;
+    simT += dt;
+
+    // attract: a gust sweeps across every few seconds
+    if (!gustOn && simT >= nextGust) {
+      launchGust(1.2 + Math.random() * 0.4, 2.4, 1);
+      nextGust = simT + 3.2 + Math.random() * 1.6;
+    }
+    if (gustOn) {
+      gp += dt / gustDur;
+      if (gp >= 1) { gustOn = false; gustAmp = 0; }
+      else {
+        gustAmp = gustPeak * Math.sin(Math.PI * gp);
+        gustX = ox - gustWd * 0.5 + gp * (clothW + gustWd);
+      }
+    }
+
+    step(dt, simT);
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  // ---- input (none in preview) ----
+  if (!PREVIEW) {
+    const setPtr = (e) => { ptr.x = e.clientX; ptr.y = e.clientY; ptr.on = true; };
+    cv.addEventListener('contextmenu', (e) => e.preventDefault());
+    cv.addEventListener('pointerdown', (e) => {
+      setPtr(e);
+      try { cv.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+      if (e.button === 2) rightDown = true;
+      else grabNearest();
+    });
+    cv.addEventListener('pointermove', setPtr);
+    cv.addEventListener('pointerleave', () => { ptr.on = false; });
+    window.addEventListener('pointerup', (e) => {
+      if (e.button !== 2) grab = -1; else rightDown = false;
+    });
+    window.addEventListener('pointercancel', () => { grab = -1; rightDown = false; });
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyX') xHeld = true;
+      else if (e.code === 'KeyR' && !e.repeat) reset();
+      else if (e.code === 'KeyW' && !e.repeat) launchGust(2.6, 1.8, 1.6);
+    });
+    window.addEventListener('keyup', (e) => { if (e.code === 'KeyX') xHeld = false; });
+  }
+  window.addEventListener('resize', layout);
+
+  // ---- start: drape the cloth before the first frame so attract mode is live at once ----
+  build();
+  layout();
+  settle(60);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

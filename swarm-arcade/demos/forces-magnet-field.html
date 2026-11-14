@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Magnet Field</title>
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; overflow: hidden; background: #05060a; }
+  canvas { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; display: block; touch-action: none; }
+  #hud {
+    position: fixed; top: 10px; left: 12px; max-width: 60vw;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.5;
+    color: rgba(255,255,255,.7); pointer-events: none; user-select: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">MAGNET FIELD<br>drag pole · click adds · right-click / F flips · C resets · space toggles lines</div>
+<script>
+(() => {
+'use strict';
+
+const PREVIEW = /preview/.test(location.hash);
+const TAU = Math.PI * 2;
+const EPS2 = 12 * 12;            // softening radius^2 (px^2)
+const K = 8000;                  // field scale; |F| ~ K*q/d^2
+const HOVER_Q = 0.3;             // pointer acts as a weak extra pole
+const MAX_POLES = 8;
+const MAX_FILINGS = 2600;
+const N_FILINGS = PREVIEW ? 1200 : 2500;
+const STREAM_MAX = PREVIEW ? 20 : 40;
+const STREAM_CAP = 40;           // buffer size for streamlines
+const STEP = 6;                  // RK2 step (px)
+const MAX_STEPS = 220;
+const SL_STRIDE = (MAX_STEPS + 2) * 2;
+const SPARK_MAX = PREVIEW ? 120 : 300;
+const SPARK_CAP = 300;
+const BUCKETS = 6;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+if (PREVIEW) { const h = document.getElementById('hud'); if (h) h.remove(); }
+
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+// map field magnitude to 0..1 on a log scale
+const strength = (m) => clamp(Math.log2(1 + m * 3) / 8, 0, 1);
+
+// ---------- colours ----------
+const STEEL = [58, 74, 107], ELEC = [125, 249, 255];
+const BUCKET_CSS = [];
+for (let b = 0; b < BUCKETS; b++) {
+  const f = b / (BUCKETS - 1);
+  const c = STEEL.map((v, i) => Math.round(v + (ELEC[i] - v) * f));
+  BUCKET_CSS.push(`rgba(${c[0]},${c[1]},${c[2]},${(0.45 + 0.55 * f).toFixed(3)})`);
+}
+
+function makeSprite(rgb) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grd.addColorStop(0, `rgba(${rgb},1)`);
+  grd.addColorStop(0.18, `rgba(${rgb},0.55)`);
+  grd.addColorStop(0.45, `rgba(${rgb},0.14)`);
+  grd.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 128, 128);
+  return c;
+}
+const SPRITE_POS = makeSprite('255,90,61');
+const SPRITE_NEG = makeSprite('61,123,255');
+
+// ---------- state ----------
+let W = 0, H = 0, dpr = 1, time = 0;
+let showLines = true;
+let flipT = 2;
+let nextSign = -1;
+const lastPtr = { x: 0, y: 0 };
+const hover = { on: false, x: 0, y: 0 };
+const poles = []; // {x,y,q,tq,auto, ax,ay,wx,wy,ph,phy,cx,cy}
+
+function makeAuto(q) {
+  return {
+    x: 0, y: 0, q, tq: q, auto: true,
+    ax: 0.18 + Math.random() * 0.2, ay: 0.16 + Math.random() * 0.22,
+    wx: 0.09 + Math.random() * 0.12, wy: 0.07 + Math.random() * 0.11,
+    ph: Math.random() * TAU, phy: Math.random() * TAU,
+    cx: 0.5 + (Math.random() - 0.5) * 0.2, cy: 0.5 + (Math.random() - 0.5) * 0.2,
+  };
+}
+function resetPoles() {
+  poles.length = 0;
+  poles.push(makeAuto(1), makeAuto(-1), makeAuto(1));
+  nextSign = -1;
+}
+function addPole(x, y) {
+  if (poles.length >= MAX_POLES) poles.shift();
+  const q = nextSign;
+  nextSign = -nextSign;
+  poles.push({ x, y, q: 0, tq: q, auto: false });   // grows in from zero
+}
+function nearestPole(x, y, maxD) {
+  let best = null, bd = maxD * maxD;
+  for (const p of poles) {
+    const dx = p.x - x, dy = p.y - y, d2 = dx * dx + dy * dy;
+    if (d2 < bd) { bd = d2; best = p; }
+  }
+  return best;
+}
+function flipNearest(x, y) {
+  const p = nearestPole(x, y, Infinity);
+  if (p) p.tq = -p.tq;
+}
+
+// ---------- field sources (flat arrays, no per-frame allocation) ----------
+const srcX = new Float64Array(MAX_POLES + 1);
+const srcY = new Float64Array(MAX_POLES + 1);
+const srcQ = new Float64Array(MAX_POLES + 1);
+let srcN = 0;
+function syncSources() {
+  srcN = 0;
+  for (const p of poles) {
+    srcX[srcN] = p.x; srcY[srcN] = p.y; srcQ[srcN] = p.q; srcN++;
+  }
+  if (hover.on) {
+    srcX[srcN] = hover.x; srcY[srcN] = hover.y; srcQ[srcN] = HOVER_Q; srcN++;
+  }
+}
+let gx = 0, gy = 0;
+function fieldAt(x, y) {
+  let fx = 0, fy = 0;
+  for (let i = 0; i < srcN; i++) {
+    const dx = x - srcX[i], dy = y - srcY[i];
+    const r2 = dx * dx + dy * dy + EPS2;
+    const k = srcQ[i] * K / (r2 * Math.sqrt(r2));
+    fx += dx * k; fy += dy * k;
+  }
+  gx = fx; gy = fy;
+}
+function nearPole(x, y, r, sign) {
+  const r2 = r * r;
+  for (const p of poles) {
+    if (sign * p.q < 0.2) continue;
+    const dx = p.x - x, dy = p.y - y;
+    if (dx * dx + dy * dy < r2) return true;
+  }
+  return false;
+}
+
+// ---------- iron filings ----------
+const fX = new Float32Array(MAX_FILINGS), fY = new Float32Array(MAX_FILINGS);
+const fA = new Float32Array(MAX_FILINGS), fC = new Float32Array(MAX_FILINGS);
+const fS = new Float32Array(MAX_FILINGS), fL = new Float32Array(MAX_FILINGS);
+const fB = new Uint8Array(MAX_FILINGS);
+let nFil = 0;
+function layoutFilings() {
+  const s = Math.sqrt((W * H) / N_FILINGS);
+  const cols = Math.ceil(W / s), rows = Math.ceil(H / s);
+  nFil = 0;
+  for (let j = 0; j < rows && nFil < MAX_FILINGS; j++) {
+    for (let i = 0; i < cols && nFil < MAX_FILINGS; i++) {
+      fX[nFil] = (i + 0.5 + (Math.random() - 0.5) * 0.7) * s;
+      fY[nFil] = (j + 0.5 + (Math.random() - 0.5) * 0.7) * s;
+      fA[nFil] = Math.random() * TAU;
+      nFil++;
+    }
+  }
+}
+
+// ---------- streamlines ----------
+const slBuf = new Float32Array(STREAM_CAP * SL_STRIDE);
+const slLen = new Int32Array(STREAM_CAP);
+let nStreams = 0;
+function traceStream(idx, x, y) {
+  const base = idx * SL_STRIDE;
+  let n = 1;
+  slBuf[base] = x; slBuf[base + 1] = y;
+  for (let s = 0; s < MAX_STEPS; s++) {
+    fieldAt(x, y);
+    let m = Math.hypot(gx, gy);
+    if (m < 1e-9) break;
+    const hx = x + (gx / m) * STEP * 0.5, hy = y + (gy / m) * STEP * 0.5;   // RK2 midpoint
+    fieldAt(hx, hy);
+    m = Math.hypot(gx, gy);
+    if (m < 1e-9) break;
+    x += (gx / m) * STEP; y += (gy / m) * STEP;
+    slBuf[base + n * 2] = x; slBuf[base + n * 2 + 1] = y; n++;
+    if (x < -20 || y < -20 || x > W + 20 || y > H + 20) break;
+    if (nearPole(x, y, 14, -1)) break;
+  }
+  slLen[idx] = n;
+}
+function buildStreams() {
+  nStreams = 0;
+  let nPos = 0;
+  for (const p of poles) if (p.q > 0.15) nPos++;
+  if (!nPos) return;
+  const per = Math.max(1, Math.floor(STREAM_MAX / nPos));
+  const phase = time * 0.35;
+  for (const p of poles) {
+    if (p.q <= 0.15) continue;
+    for (let i = 0; i < per && nStreams < STREAM_MAX; i++) {
+      const a = phase + (i * TAU) / per;
+      traceStream(nStreams, p.x + Math.cos(a) * 14, p.y + Math.sin(a) * 14);
+      nStreams++;
+    }
+  }
+}
+
+// ---------- sparks ----------
+const sX = new Float32Array(SPARK_CAP), sY = new Float32Array(SPARK_CAP);
+const sAge = new Float32Array(SPARK_CAP), sLife = new Float32Array(SPARK_CAP);
+const sDX = new Float32Array(SPARK_CAP), sDY = new Float32Array(SPARK_CAP);
+const sT = new Float32Array(SPARK_CAP);
+let nSparks = 0;
+function respawnSpark(i, stagger) {
+  let count = 0;
+  for (const p of poles) if (p.q > 0.2) count++;
+  if (count) {
+    let k = Math.floor(Math.random() * count);
+    for (const p of poles) {
+      if (p.q > 0.2 && k-- === 0) {
+        const a = Math.random() * TAU, r = 6 + Math.random() * 8;
+        sX[i] = p.x + Math.cos(a) * r; sY[i] = p.y + Math.sin(a) * r;
+        break;
+      }
+    }
+  } else {
+    sX[i] = Math.random() * W; sY[i] = Math.random() * H;
+  }
+  sLife[i] = 1.4 + Math.random() * 1.6;
+  sAge[i] = stagger ? Math.random() * sLife[i] : 0;
+}
+
+// ---------- layout ----------
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  layoutFilings();
+}
+window.addEventListener('resize', resize);
+resize();
+resetPoles();
+nSparks = SPARK_MAX;
+for (let i = 0; i < nSparks; i++) respawnSpark(i, true);
+
+// ---------- input ----------
+window.addEventListener('contextmenu', (e) => e.preventDefault());
+let drag = null;
+let down = null;
+function pointerPos(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+canvas.addEventListener('pointerdown', (e) => {
+  const { x, y } = pointerPos(e);
+  lastPtr.x = x; lastPtr.y = y;
+  if (e.button === 2) { flipNearest(x, y); return; }
+  if (e.button !== 0) return;
+  const p = nearestPole(x, y, 34);
+  if (p) {
+    drag = p; p.auto = false;
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+  } else {
+    down = { x, y, moved: 0 };
+  }
+});
+canvas.addEventListener('pointermove', (e) => {
+  const { x, y } = pointerPos(e);
+  lastPtr.x = x; lastPtr.y = y;
+  if (e.pointerType === 'mouse') { hover.on = true; hover.x = x; hover.y = y; }
+  if (drag) { drag.x = x; drag.y = y; }
+  else if (down) down.moved = Math.max(down.moved, Math.hypot(x - down.x, y - down.y));
+});
+function endPointer(e) {
+  if (down && down.moved < 6 && poles.length >= 0) addPole(down.x, down.y);
+  down = null; drag = null;
+  if (e.pointerType !== 'mouse') hover.on = false;
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !drag) hover.on = false; });
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyF') { if (!e.repeat) flipNearest(lastPtr.x, lastPtr.y); }
+  else if (e.code === 'KeyC') { if (!e.repeat) { resetPoles(); drag = null; } }
+  else if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) showLines = !showLines; }
+});
+
+// ---------- update ----------
+function update(dt) {
+  for (const p of poles) {
+    if (p.auto) {
+      p.x = (p.cx + p.ax * Math.sin(time * p.wx + p.ph)) * W;
+      p.y = (p.cy + p.ay * Math.sin(time * p.wy + p.phy)) * H;
+    }
+    p.q += (p.tq - p.q) * (1 - Math.exp(-3 * dt));   // polarity flips take ~1 s
+  }
+
+  // attract mode: auto poles flip polarity now and then
+  flipT -= dt;
+  if (flipT <= 0) {
+    const autos = poles.filter((p) => p.auto);
+    if (autos.length) {
+      const p = autos[Math.floor(Math.random() * autos.length)];
+      p.tq = -p.tq;
+    }
+    flipT = 2.2 + Math.random() * 2.5;
+  }
+
+  syncSources();
+
+  // filings ease toward the local field axis (shortest arc, lines are mod PI)
+  const ease = 1 - Math.exp(-8 * dt);
+  for (let i = 0; i < nFil; i++) {
+    fieldAt(fX[i], fY[i]);
+    const m = Math.hypot(gx, gy);
+    if (m > 1e-9) {
+      let d = Math.atan2(gy, gx) - fA[i];
+      d -= Math.round(d / Math.PI) * Math.PI;
+      fA[i] += d * ease;
+    }
+    const t = strength(m);
+    fC[i] = Math.cos(fA[i]); fS[i] = Math.sin(fA[i]);
+    fL[i] = 4 + 11 * t;
+    fB[i] = Math.min(BUCKETS - 1, Math.floor(t * BUCKETS));
+  }
+
+  // sparks travel along the field from + to -
+  for (let i = 0; i < nSparks; i++) {
+    sAge[i] += dt;
+    const x = sX[i], y = sY[i];
+    fieldAt(x, y);
+    const m = Math.hypot(gx, gy);
+    if (m < 1e-9 || sAge[i] >= sLife[i] || nearPole(x, y, 12, -1) ||
+        x < -10 || y < -10 || x > W + 10 || y > H + 10) {
+      respawnSpark(i, false);
+      continue;
+    }
+    const t = strength(m);
+    const sp = (50 + 170 * t) * dt;
+    const dx = gx / m, dy = gy / m;
+    sX[i] = x + dx * sp; sY[i] = y + dy * sp;
+    sDX[i] = dx; sDY[i] = dy; sT[i] = t;
+  }
+}
+
+// ---------- draw ----------
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+  const bgG = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.75);
+  bgG.addColorStop(0, '#0b1126');
+  bgG.addColorStop(0.6, '#060812');
+  bgG.addColorStop(1, '#05060a');
+  ctx.fillStyle = bgG;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.globalCompositeOperation = 'lighter';
+
+  // streamlines
+  if (showLines) {
+    buildStreams();
+    ctx.beginPath();
+    for (let i = 0; i < nStreams; i++) {
+      const n = slLen[i];
+      if (n < 2) continue;
+      const base = i * SL_STRIDE;
+      ctx.moveTo(slBuf[base], slBuf[base + 1]);
+      for (let j = 1; j < n; j++) ctx.lineTo(slBuf[base + j * 2], slBuf[base + j * 2 + 1]);
+    }
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(125,249,255,0.12)';
+    ctx.stroke();
+  }
+
+  // iron filings, batched into colour buckets
+  ctx.lineWidth = 1.25;
+  ctx.lineCap = 'round';
+  for (let b = 0; b < BUCKETS; b++) {
+    ctx.beginPath();
+    for (let i = 0; i < nFil; i++) {
+      if (fB[i] !== b) continue;
+      const h = fL[i] * 0.5, c = fC[i] * h, s = fS[i] * h;
+      const x = fX[i], y = fY[i];
+      ctx.moveTo(x - c, y - s);
+      ctx.lineTo(x + c, y + s);
+    }
+    ctx.strokeStyle = BUCKET_CSS[b];
+    ctx.stroke();
+  }
+
+  // sparks
+  ctx.lineCap = 'round';
+  for (let i = 0; i < nSparks; i++) {
+    const a = Math.min(1, sAge[i] * 3, (sLife[i] - sAge[i]) * 2);
+    if (a <= 0) continue;
+    const len = 3 + 9 * sT[i];
+    const x = sX[i], y = sY[i];
+    ctx.strokeStyle = `rgba(125,249,255,${(0.85 * a).toFixed(3)})`;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(x - sDX[i] * len, y - sDY[i] * len);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(230,255,255,${a.toFixed(3)})`;
+    ctx.fillRect(x - 0.9, y - 0.9, 1.8, 1.8);
+  }
+
+  // pole glows (pre-rendered sprites)
+  for (const p of poles) {
+    const mag = Math.min(1, Math.abs(p.q));
+    if (mag < 0.01) continue;
+    const r = (22 + 26 * mag) * (1 + 0.05 * Math.sin(time * 3 + p.ph));
+    ctx.globalAlpha = 0.9 * mag;
+    ctx.drawImage(p.q > 0 ? SPRITE_POS : SPRITE_NEG, p.x - r, p.y - r, r * 2, r * 2);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  for (const p of poles) {
+    const mag = Math.min(1, Math.abs(p.q));
+    ctx.fillStyle = p.q > 0 ? 'rgba(255,210,196,' + mag.toFixed(3) + ')' : 'rgba(201,220,255,' + mag.toFixed(3) + ')';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3.2, 0, TAU);
+    ctx.fill();
+    if (!p.auto) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 11, 0, TAU);
+      ctx.stroke();
+    }
+  }
+  if (hover.on) {
+    ctx.strokeStyle = 'rgba(125,249,255,0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(hover.x, hover.y, 6, 0, TAU);
+    ctx.stroke();
+  }
+}
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) {
+  let dt = (now - last) / 1000;
+  last = now;
+  if (!(dt > 0)) dt = 0;
+  dt = Math.min(dt, 1 / 30);
+  time += dt;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

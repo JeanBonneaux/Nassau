@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gravity Garden</title>
+<style>
+html,body{height:100%}
+body{margin:0;overflow:hidden;background:#05060a}
+canvas{position:fixed;left:0;top:0;display:block;touch-action:none;cursor:crosshair}
+#hud{position:fixed;top:10px;left:12px;max-width:calc(100vw - 150px);z-index:1;pointer-events:none;user-select:none;
+  font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><div id="ht">Gravity Garden</div><div id="hh"></div></div>
+<script>
+(() => {
+'use strict';
+
+const PREVIEW = /preview/.test(location.hash);
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: false });
+const hud = document.getElementById('hud');
+const hudT = document.getElementById('ht');
+const hudH = document.getElementById('hh');
+if (PREVIEW) hud.style.display = 'none';
+
+// ---- constants -------------------------------------------------------------
+const BG = '#05060a';
+const ACCENT = '61,255,208';
+const C_SLOW = '58,107,255', C_MID = '61,255,208', C_FAST = '255,242,176';
+const EPS2 = 40;                 // softening, eps^2
+const SUN_GM = 2.5e6, PLANET_GM = 4e4, GA = 3.2e6;
+const MAXN = 700, NPLAN = 120, MAXS = 6;
+const N = PREVIEW ? 300 : MAXN;  // total bodies (planets + dust)
+const P = Math.min(NPLAN, N);    // planets are indices [0, P)
+const AMAX = 5000, VMAX = 1600;  // accel / speed caps (px/s^2, px/s)
+const HINT = 'drag: pull  ·  release: fling a sun  ·  right-click/B: repel  ·  C: reset  ·  space: pause  ·  wheel: gravity';
+
+// ---- state (typed arrays, allocated once) ----------------------------------
+const px = new Float32Array(MAXN), py = new Float32Array(MAXN);
+const vx = new Float32Array(MAXN), vy = new Float32Array(MAXN);
+const ax = new Float32Array(MAXN), ay = new Float32Array(MAXN);
+const sx = new Float32Array(MAXS), sy = new Float32Array(MAXS);
+const svx = new Float32Array(MAXS), svy = new Float32Array(MAXS);
+const sax = new Float32Array(MAXS), say = new Float32Array(MAXS);
+const sgm = new Float32Array(MAXS);
+let nS = 0;
+
+// expanding shockwave rings (fixed pool)
+const ringX = new Float32Array(4), ringY = new Float32Array(4);
+const ringR = new Float32Array(4), ringAge = new Float32Array(4).fill(99);
+let ringI = 0;
+
+// pointer drag samples (ring buffer of 8)
+const tX = new Float32Array(8), tY = new Float32Array(8), tT = new Float64Array(8);
+let tCount = 0;
+const pointer = { x: 0, y: 0, has: false, down: false, ax: 0, ay: 0, drag: 0, lx: 0, ly: 0 };
+
+let W = 0, H = 0, cx = 0, cy = 0, sc = 1, DPR = 1;
+let GS = 1, paused = false;
+let time = 0, lastRespawn = 0, arrAge = 0, escapes = 0, lastInteract = -99;
+let fadeT = -1, rebuilt = false, hudClock = 0, lastHud = '';
+
+// ---- sprites (pre-rendered once per DPR/size change) -----------------------
+let spDust = [], spPlan = [], bloom = null;
+
+function makeGlow(rgb, rad) {
+  const s = Math.ceil(rad * 2 * DPR) + 2, m = s / 2;
+  const c = document.createElement('canvas');
+  c.width = c.height = s;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(m, m, 0, m, m, m);
+  gr.addColorStop(0, 'rgba(255,255,255,1)');
+  gr.addColorStop(0.16, 'rgba(' + rgb + ',0.95)');
+  gr.addColorStop(0.45, 'rgba(' + rgb + ',0.28)');
+  gr.addColorStop(1, 'rgba(' + rgb + ',0)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, s, s);
+  return c;
+}
+
+function makeBloom() {
+  const s = 256, m = s / 2;
+  const c = document.createElement('canvas');
+  c.width = c.height = s;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(m, m, 0, m, m, m);
+  gr.addColorStop(0, 'rgba(255,252,240,1)');
+  gr.addColorStop(0.08, 'rgba(255,226,160,0.95)');
+  gr.addColorStop(0.25, 'rgba(255,150,60,0.45)');
+  gr.addColorStop(0.6, 'rgba(255,90,30,0.12)');
+  gr.addColorStop(1, 'rgba(255,80,20,0)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, s, s);
+  return c;
+}
+
+function buildSprites() {
+  spDust = [makeGlow(C_SLOW, 5), makeGlow(C_MID, 5), makeGlow(C_FAST, 5)];
+  spPlan = [makeGlow(C_SLOW, 9), makeGlow(C_MID, 9), makeGlow(C_FAST, 9)];
+  bloom = makeBloom();
+}
+
+// ---- helpers ---------------------------------------------------------------
+const rnd = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+// circular speed around a softened point mass M at radius r
+const orbitSpeed = (m, r) => Math.sqrt(m * r * r / Math.pow(r * r + EPS2, 1.5));
+
+function removeSun(s) {
+  for (let i = s; i < nS - 1; i++) {
+    sx[i] = sx[i + 1]; sy[i] = sy[i + 1];
+    svx[i] = svx[i + 1]; svy[i] = svy[i + 1]; sgm[i] = sgm[i + 1];
+  }
+  nS--;
+}
+
+function addSun(x, y, u, v, m) {
+  if (nS === MAXS) removeSun(0); // oldest goes
+  sx[nS] = x; sy[nS] = y; svx[nS] = u; svy[nS] = v; sgm[nS] = m;
+  nS++;
+}
+
+// ---- gravity ---------------------------------------------------------------
+function computeAccel() {
+  // suns: mutual pull
+  for (let i = 0; i < nS; i++) {
+    let a = 0, b = 0;
+    for (let j = 0; j < nS; j++) {
+      if (j === i) continue;
+      const dx = sx[j] - sx[i], dy = sy[j] - sy[i];
+      const r2 = dx * dx + dy * dy + EPS2, k = sgm[j] / (r2 * Math.sqrt(r2));
+      a += dx * k; b += dy * k;
+    }
+    sax[i] = a; say[i] = b;
+  }
+  // planets: suns + full O(n^2) among planets
+  for (let i = 0; i < P; i++) {
+    const xi = px[i], yi = py[i];
+    let a = 0, b = 0;
+    for (let s = 0; s < nS; s++) {
+      const dx = sx[s] - xi, dy = sy[s] - yi;
+      const r2 = dx * dx + dy * dy + EPS2, k = sgm[s] / (r2 * Math.sqrt(r2));
+      a += dx * k; b += dy * k;
+    }
+    for (let j = 0; j < P; j++) {
+      if (j === i) continue;
+      const dx = px[j] - xi, dy = py[j] - yi;
+      const r2 = dx * dx + dy * dy + EPS2, k = PLANET_GM / (r2 * Math.sqrt(r2));
+      a += dx * k; b += dy * k;
+    }
+    ax[i] = a; ay[i] = b;
+  }
+  // dust: feels only suns
+  for (let i = P; i < N; i++) {
+    const xi = px[i], yi = py[i];
+    let a = 0, b = 0;
+    for (let s = 0; s < nS; s++) {
+      const dx = sx[s] - xi, dy = sy[s] - yi;
+      const r2 = dx * dx + dy * dy + EPS2, k = sgm[s] / (r2 * Math.sqrt(r2));
+      a += dx * k; b += dy * k;
+    }
+    ax[i] = a; ay[i] = b;
+  }
+  // pointer attractor while held
+  if (pointer.down) {
+    const gx = pointer.ax, gy = pointer.ay;
+    for (let i = 0; i < N; i++) {
+      const dx = gx - px[i], dy = gy - py[i];
+      const r2 = dx * dx + dy * dy + EPS2, k = GA / (r2 * Math.sqrt(r2));
+      ax[i] += dx * k; ay[i] += dy * k;
+    }
+    for (let s = 0; s < nS; s++) {
+      const dx = gx - sx[s], dy = gy - sy[s];
+      const r2 = dx * dx + dy * dy + EPS2, k = GA / (r2 * Math.sqrt(r2));
+      sax[s] += dx * k; say[s] += dy * k;
+    }
+  }
+  // gravity strength + acceleration cap (no slingshot explosions)
+  for (let i = 0; i < N; i++) {
+    let a = ax[i] * GS, b = ay[i] * GS;
+    const m2 = a * a + b * b;
+    if (m2 > AMAX * AMAX) { const f = AMAX / Math.sqrt(m2); a *= f; b *= f; }
+    ax[i] = a; ay[i] = b;
+  }
+  for (let s = 0; s < nS; s++) {
+    let a = sax[s] * GS, b = say[s] * GS;
+    const m2 = a * a + b * b;
+    if (m2 > AMAX * AMAX) { const f = AMAX / Math.sqrt(m2); a *= f; b *= f; }
+    sax[s] = a; say[s] = b;
+  }
+}
+
+// leapfrog (kick-drift-kick)
+function kick(k) {
+  for (let i = 0; i < N; i++) {
+    let u = vx[i] + ax[i] * k, w = vy[i] + ay[i] * k;
+    const s2 = u * u + w * w;
+    if (s2 > VMAX * VMAX) { const f = VMAX / Math.sqrt(s2); u *= f; w *= f; }
+    vx[i] = u; vy[i] = w;
+  }
+  for (let s = 0; s < nS; s++) { svx[s] += sax[s] * k; svy[s] += say[s] * k; }
+}
+
+function drift(h) {
+  for (let i = 0; i < N; i++) { px[i] += vx[i] * h; py[i] += vy[i] * h; }
+  for (let s = 0; s < nS; s++) { sx[s] += svx[s] * h; sy[s] += svy[s] * h; }
+}
+
+function integrate(h) {
+  kick(h * 0.5);
+  drift(h);
+  computeAccel();
+  kick(h * 0.5);
+}
+
+// ---- population ------------------------------------------------------------
+function respawnBody(i) {
+  if (nS === 0) {
+    px[i] = cx + rnd(-40, 40) * sc; py[i] = cy + rnd(-40, 40) * sc;
+    vx[i] = rnd(-60, 60); vy[i] = rnd(-60, 60);
+    return;
+  }
+  const s = (Math.random() * nS) | 0;
+  const r = rnd(60, 150) * sc, a = Math.random() * Math.PI * 2;
+  const v = orbitSpeed(sgm[s], r) * rnd(0.9, 1.1);
+  px[i] = sx[s] + Math.cos(a) * r;
+  py[i] = sy[s] + Math.sin(a) * r;
+  vx[i] = svx[s] - Math.sin(a) * v;
+  vy[i] = svy[s] + Math.cos(a) * v;
+}
+
+function recycleEscapes() {
+  const R = 2.2 * Math.max(W, H), R2 = R * R;
+  let changed = false;
+  for (let i = 0; i < N; i++) {
+    const dx = px[i] - cx, dy = py[i] - cy;
+    if (dx * dx + dy * dy > R2) { respawnBody(i); escapes++; changed = true; }
+  }
+  for (let s = nS - 1; s >= 0; s--) {
+    if (nS <= 1) break;
+    const dx = sx[s] - cx, dy = sy[s] - cy;
+    if (dx * dx + dy * dy > R2) { removeSun(s); changed = true; }
+  }
+  if (changed) computeAccel();
+}
+
+// fresh galactic disc orbiting a binary or ternary sun dance
+function spawnArrangement() {
+  cx = W / 2; cy = H / 2;
+  const minDim = Math.min(W, H);
+  nS = PREVIEW ? 2 : (Math.random() < 0.5 ? 2 : 3);
+  const Rs = minDim * 0.19;
+  const base = Math.random() * Math.PI * 2;
+  for (let i = 0; i < nS; i++) {
+    const a = base + i * Math.PI * 2 / nS + rnd(-0.12, 0.12);
+    sx[i] = cx + Math.cos(a) * Rs;
+    sy[i] = cy + Math.sin(a) * Rs;
+    sgm[i] = SUN_GM * rnd(0.7, 1.25);
+    svx[i] = 0; svy[i] = 0;
+  }
+  // sun velocities: centripetal balance against the other suns (v^2/r = |a|)
+  for (let i = 0; i < nS; i++) {
+    let a = 0, b = 0;
+    for (let j = 0; j < nS; j++) {
+      if (j === i) continue;
+      const dx = sx[j] - sx[i], dy = sy[j] - sy[i];
+      const r2 = dx * dx + dy * dy + EPS2, k = sgm[j] / (r2 * Math.sqrt(r2));
+      a += dx * k; b += dy * k;
+    }
+    const mag = Math.sqrt(a * a + b * b);
+    const rx = sx[i] - cx, ry = sy[i] - cy, rr = Math.sqrt(rx * rx + ry * ry) || 1;
+    const v = Math.sqrt(mag * rr) * rnd(0.95, 1.05);
+    svx[i] = -ry / rr * v; svy[i] = rx / rr * v;
+  }
+  // zero net momentum so the dance stays centred
+  let mt = 0, mx = 0, my = 0;
+  for (let i = 0; i < nS; i++) { mt += sgm[i]; mx += sgm[i] * svx[i]; my += sgm[i] * svy[i]; }
+  for (let i = 0; i < nS; i++) { svx[i] -= mx / mt; svy[i] -= my / mt; }
+
+  let Mtot = 0;
+  for (let i = 0; i < nS; i++) Mtot += sgm[i];
+  const Rd = minDim * 0.46;
+  for (let i = 0; i < N; i++) {
+    const r = i < P ? Rd * rnd(0.5, 0.9) : Rd * (0.12 + 0.88 * Math.sqrt(Math.random()));
+    const a = Math.random() * Math.PI * 2;
+    px[i] = cx + Math.cos(a) * r;
+    py[i] = cy + Math.sin(a) * r;
+    const v = orbitSpeed(Mtot, r) * rnd(0.92, 1.08);
+    vx[i] = -Math.sin(a) * v;
+    vy[i] = Math.cos(a) * v;
+  }
+  computeAccel();
+  arrAge = 0; escapes = 0; lastRespawn = time;
+}
+
+function beginRespawn() {
+  if (fadeT >= 0) return;
+  fadeT = 0; rebuilt = false;
+}
+
+// ---- interaction -----------------------------------------------------------
+function pushRing(x, y, r) {
+  ringX[ringI] = x; ringY[ringI] = y; ringR[ringI] = r; ringAge[ringI] = 0;
+  ringI = (ringI + 1) & 3;
+}
+
+function burst(x, y) {
+  lastInteract = time;
+  const R = Math.max(W, H) * 0.45, K = 900 * sc;
+  for (let i = 0; i < N; i++) {
+    const dx = px[i] - x, dy = py[i] - y;
+    const r = Math.sqrt(dx * dx + dy * dy) + 1;
+    if (r < R) {
+      const f = (1 - r / R); const m = f * f * K;
+      vx[i] += dx / r * m; vy[i] += dy / r * m;
+    }
+  }
+  for (let s = 0; s < nS; s++) {
+    const dx = sx[s] - x, dy = sy[s] - y;
+    const r = Math.sqrt(dx * dx + dy * dy) + 1;
+    if (r < R) {
+      const f = (1 - r / R); const m = f * f * K * 0.3;
+      svx[s] += dx / r * m; svy[s] += dy / r * m;
+    }
+  }
+  pushRing(x, y, R);
+}
+
+function fling() {
+  const n = Math.min(tCount, 8);
+  const newest = (tCount - 1) & 7;
+  let oldIdx = -1;
+  for (let i = 1; i < n; i++) {
+    const idx = (tCount - 1 - i) & 7;
+    if (tT[newest] - tT[idx] > 150) break;
+    oldIdx = idx;
+  }
+  let u = 0, v = 0;
+  if (oldIdx >= 0) {
+    const dt = tT[newest] - tT[oldIdx];
+    if (dt >= 8) {
+      u = (tX[newest] - tX[oldIdx]) / dt * 1000;
+      v = (tY[newest] - tY[oldIdx]) / dt * 1000;
+      const sp = Math.sqrt(u * u + v * v);
+      if (sp > 1200) { u *= 1200 / sp; v *= 1200 / sp; }
+    }
+  }
+  addSun(pointer.x, pointer.y, u * 0.35, v * 0.35, SUN_GM * 0.5);
+  computeAccel();
+  lastInteract = time;
+  pushRing(pointer.x, pointer.y, 60 * sc);
+}
+
+function pushSample(x, y) {
+  const idx = tCount & 7;
+  tX[idx] = x; tY[idx] = y; tT[idx] = performance.now();
+  tCount++;
+}
+
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+canvas.addEventListener('pointerdown', (e) => {
+  pointer.x = e.clientX; pointer.y = e.clientY; pointer.has = true;
+  lastInteract = time;
+  if (e.button === 2) { burst(e.clientX, e.clientY); return; }
+  if (e.button !== 0) return;
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+  pointer.down = true;
+  pointer.ax = pointer.x; pointer.ay = pointer.y;
+  pointer.lx = pointer.x; pointer.ly = pointer.y;
+  pointer.drag = 0; tCount = 0;
+  pushSample(pointer.x, pointer.y);
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  pointer.x = e.clientX; pointer.y = e.clientY; pointer.has = true;
+  if (!pointer.down) return;
+  pointer.drag += Math.hypot(pointer.x - pointer.lx, pointer.y - pointer.ly);
+  pointer.lx = pointer.x; pointer.ly = pointer.y;
+  pushSample(pointer.x, pointer.y);
+});
+
+window.addEventListener('pointerup', () => {
+  if (!pointer.down) return;
+  pointer.down = false;
+  if (pointer.drag > 14) fling();
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  GS = clamp(GS * Math.exp(-e.deltaY * 0.0012), 0.2, 3);
+  lastInteract = time;
+}, { passive: false });
+
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (!e.repeat) paused = !paused;
+  } else if (e.code === 'KeyB') {
+    burst(pointer.has ? pointer.x : cx, pointer.has ? pointer.y : cy);
+  } else if (e.code === 'KeyC') {
+    lastInteract = time;
+    beginRespawn();
+  }
+});
+
+// ---- sizing ----------------------------------------------------------------
+function resize() {
+  DPR = PREVIEW ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = Math.max(1, Math.round(W * DPR));
+  canvas.height = Math.max(1, Math.round(H * DPR));
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+  sc = clamp(Math.min(W, H) / 720, 0.5, 2);
+  cx = W / 2; cy = H / 2;
+  if (!pointer.has) { pointer.x = cx; pointer.y = cy; }
+  buildSprites();
+}
+
+let resizeTimer = 0;
+window.addEventListener('resize', () => {
+  resize();
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(beginRespawn, 300);
+});
+
+// ---- HUD -------------------------------------------------------------------
+function updateHud() {
+  const s = 'Gravity Garden  ·  gravity ×' + GS.toFixed(2) + '  ·  suns ' + nS + (paused ? '  ·  paused' : '');
+  if (s !== lastHud) { hudT.textContent = s; lastHud = s; }
+}
+
+// ---- frame loop ------------------------------------------------------------
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = (now - last) / 1000;
+  last = now;
+  if (!(dt > 0)) dt = 0;
+  if (dt > 1 / 30) dt = 1 / 30;
+  time += dt;
+
+  // respawn fade through dark (0.5 s total, rebuild at the darkest point)
+  if (fadeT >= 0) {
+    fadeT += dt;
+    if (!rebuilt && fadeT >= 0.25) { spawnArrangement(); rebuilt = true; }
+    if (fadeT >= 0.5) fadeT = -1;
+  }
+  const fading = fadeT >= 0;
+
+  // physics: two leapfrog substeps per frame
+  if (!paused && !fading) {
+    const h = dt * 0.5;
+    integrate(h);
+    integrate(h);
+    recycleEscapes();
+    arrAge += dt;
+    if (arrAge > 5 && escapes > 0.35 * N) beginRespawn();
+    if (time - lastRespawn > 25 && time - lastInteract > 8) beginRespawn();
+  }
+  if (pointer.down) {
+    const k = 1 - Math.exp(-dt * 12);
+    pointer.ax += (pointer.x - pointer.ax) * k;
+    pointer.ay += (pointer.y - pointer.ay) * k;
+  }
+
+  // trails: translucent wash instead of clearing
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'rgba(5,6,10,0.08)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'lighter';
+
+  // bodies: pre-rendered glow sprites, coloured by speed
+  const vref = 260 * sc, ss = clamp(sc, 0.7, 1.4);
+  for (let i = 0; i < P; i++) {
+    const x = px[i], y = py[i];
+    if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
+    const sp = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]) / vref;
+    const b = sp < 0.35 ? 0 : sp < 0.8 ? 1 : 2;
+    const d = 18 * ss;
+    ctx.drawImage(spPlan[b], x - d / 2, y - d / 2, d, d);
+  }
+  ctx.globalAlpha = 0.85;
+  for (let i = P; i < N; i++) {
+    const x = px[i], y = py[i];
+    if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
+    const sp = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]) / vref;
+    const b = sp < 0.35 ? 0 : sp < 0.8 ? 1 : 2;
+    const d = 10 * ss;
+    ctx.drawImage(spDust[b], x - d / 2, y - d / 2, d, d);
+  }
+  ctx.globalAlpha = 1;
+
+  // suns: pulsing orange-white blooms with a faint ring
+  for (let s = 0; s < nS; s++) {
+    const pulse = 1 + 0.08 * Math.sin(time * 2.1 + s * 2.3);
+    const R = 62 * sc * pulse;
+    ctx.drawImage(bloom, sx[s] - R, sy[s] - R, 2 * R, 2 * R);
+    const rr = 38 * sc * (1 + 0.05 * Math.sin(time * 3.1 + s));
+    ctx.beginPath();
+    ctx.arc(sx[s], sy[s], rr, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,214,150,0.22)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // held attractor marker
+  if (pointer.down) {
+    ctx.beginPath();
+    ctx.arc(pointer.ax, pointer.ay, (16 + 5 * Math.sin(time * 9)) * sc, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(' + ACCENT + ',0.5)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+
+  // burst / fling rings
+  for (let k = 0; k < 4; k++) {
+    if (ringAge[k] >= 0.7) continue;
+    ringAge[k] += dt;
+    const t = ringAge[k] / 0.7;
+    ctx.beginPath();
+    ctx.arc(ringX[k], ringY[k], ringR[k] * t, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(' + ACCENT + ',' + ((1 - t) * 0.6).toFixed(3) + ')';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  // fade overlay (dark through the respawn)
+  if (fading) {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(5,6,10,' + Math.sin(Math.PI * fadeT / 0.5).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+  }
+
+  if (!PREVIEW) {
+    hudClock += dt;
+    if (hudClock > 0.25) { hudClock = 0; updateHud(); }
+  }
+}
+
+// ---- boot ------------------------------------------------------------------
+let last = performance.now();
+resize();
+spawnArrangement();
+hudH.textContent = PREVIEW ? '' : HINT;
+updateHud();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

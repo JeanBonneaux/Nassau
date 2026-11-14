@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Reaction Garden: chemistry that sprouts coral, spots and labyrinths wherever you touch.">
+<title>Reaction Garden</title>
+<style>
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; background: #05060a; }
+canvas {
+  position: fixed; left: 0; top: 0; width: 100%; height: 100%; display: block;
+  touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none;
+}
+#hud {
+  position: fixed; left: 12px; top: 10px; max-width: calc(100% - 140px); z-index: 2;
+  font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
+  color: rgba(255, 255, 255, .7); pointer-events: none;
+}
+#hud .title { letter-spacing: .12em; text-transform: uppercase; }
+#hud .row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; pointer-events: auto; }
+#hud button {
+  font: inherit; color: inherit; background: rgba(5, 6, 10, .35);
+  border: 1px solid rgba(255, 255, 255, .25); border-radius: 3px; padding: 1px 6px; cursor: pointer;
+}
+#hud button:hover { border-color: rgba(255, 255, 255, .5); }
+#hud button.on { border-color: rgba(255, 255, 255, .85); background: rgba(255, 255, 255, .14); }
+body.preview #hud { display: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="title">Reaction Garden</div>
+  <div class="hint">drag: grow · right-drag or 2nd finger: erase · wheel: F · 1-5: presets · C: palette · Space: reseed</div>
+  <div class="row" id="presets"></div>
+  <div class="row" id="tools"></div>
+  <div id="readout"></div>
+</div>
+<script>
+(function () {
+  'use strict';
+
+  var PREVIEW = /preview/.test(location.hash);
+  if (PREVIEW) document.body.classList.add('preview');
+
+  var PRESETS = [
+    { name: 'coral',     F: 0.0545, k: 0.062 },
+    { name: 'spots',     F: 0.035,  k: 0.065 },
+    { name: 'mitosis',   F: 0.0367, k: 0.0649 },
+    { name: 'labyrinth', F: 0.029,  k: 0.057 },
+    { name: 'waves',     F: 0.014,  k: 0.045 }
+  ];
+  // Colour stops evenly spaced over V in [0, 0.4]: base, mid, light, highlight.
+  var PALETTES = [
+    { name: 'violet', stops: [[11, 6, 32], [122, 45, 214], [196, 107, 255], [255, 214, 245]] },
+    { name: 'lava',   stops: [[26, 5, 3], [255, 61, 46], [255, 138, 31], [255, 227, 107]] },
+    { name: 'sea',    stops: [[3, 18, 15], [18, 214, 160], [63, 240, 230], [232, 255, 249]] }
+  ];
+
+  var DU = 1.0, DV = 0.5, RELIEF = 14;
+  var VMAX = 0.4;
+  var WARM = 200;
+
+  var cv = document.getElementById('c');
+  var ctx = cv.getContext('2d');
+  var off = document.createElement('canvas');
+  var octx = off.getContext('2d');
+  var presetRow = document.getElementById('presets');
+  var toolRow = document.getElementById('tools');
+  var readout = document.getElementById('readout');
+
+  var LUT_R = new Float32Array(256), LUT_G = new Float32Array(256), LUT_B = new Float32Array(256);
+  var hiR = 255, hiG = 214, hiB = 245;
+
+  var W = 0, H = 0, N = 0;
+  var U, V, U2, V2, img, img32;
+  var cw = 1, ch = 1, dpr = 1, grad = null;
+
+  var presetIdx = 0, Fb = PRESETS[0].F, kb = PRESETS[0].k, paletteIdx = 0;
+  var userUntil = 0, time = 0, blobT = 0, presetT = 0, meanT = 0, hudT = 0, lastWheel = 0;
+  var steps = PREVIEW ? 4 : 8, BASE_STEPS = PREVIEW ? 4 : 8, simEMA = 0;
+  var lastT = performance.now();
+  var ptrs = new Map();
+
+  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function rint(n) { return Math.floor(Math.random() * n); }
+  function norm3(x, y, z) { var l = Math.sqrt(x * x + y * y + z * z); return [x / l, y / l, z / l]; }
+  var LIGHT = norm3(-0.5, -0.7, 0.55);
+  var HALF = norm3(LIGHT[0], LIGHT[1], LIGHT[2] + 1);
+
+  function autoMode() { return performance.now() > userUntil; }
+  function userTouch() { userUntil = performance.now() + 25000; }
+  function effF() { return Fb + (autoMode() ? 0.002 * Math.sin(time * 0.37) : 0); }
+  function effK() { return kb + (autoMode() ? 0.002 * Math.sin(time * 0.29 + 1.3) : 0); }
+
+  function gridSize() {
+    var aspect = Math.max(0.2, innerWidth / Math.max(1, innerHeight));
+    var target = PREVIEW ? 16000 : 40960;
+    var maxW = PREVIEW ? 160 : 320, maxH = PREVIEW ? 100 : 200;
+    var w = Math.round(Math.sqrt(target * aspect)), h = Math.round(w / aspect);
+    if (w > maxW) { w = maxW; h = Math.round(w / aspect); }
+    if (h > maxH) { h = maxH; w = Math.round(h * aspect); }
+    return [Math.max(32, w), Math.max(32, h)];
+  }
+
+  function allocate(w, h) {
+    W = w; H = h; N = w * h;
+    U = new Float32Array(N); V = new Float32Array(N);
+    U2 = new Float32Array(N); V2 = new Float32Array(N);
+    off.width = w; off.height = h;
+    img = octx.createImageData(w, h);
+    img32 = new Uint32Array(img.data.buffer);
+    reset(WARM);
+  }
+
+  function seedBlob(cx, cy, r) {
+    var r2 = r * r;
+    for (var dy = -r; dy <= r; dy++) {
+      var yy = ((cy + dy) % H + H) % H;
+      for (var dx = -r; dx <= r; dx++) {
+        if (dx * dx + dy * dy > r2) continue;
+        var xx = ((cx + dx) % W + W) % W;
+        var c = yy * W + xx;
+        U[c] = clamp01(0.5 + (Math.random() - 0.5) * 0.1);
+        V[c] = clamp01(0.25 + (Math.random() - 0.5) * 0.1);
+      }
+    }
+  }
+
+  function randomBlob() { seedBlob(rint(W), rint(H), 4 + rint(5)); }
+
+  function reset(warm) {
+    U.fill(1); V.fill(0);
+    for (var i = 0; i < 12; i++) randomBlob();
+    for (var s = 0; s < warm; s++) step(effF(), effK());
+  }
+
+  // Wrap-aware update for border cells.
+  function cellWrap(x, y, F, FK) {
+    var w = W, h = H, u = U, v = V;
+    var xl = (x + w - 1) % w, xr = (x + 1) % w, yu = (y + h - 1) % h, yd = (y + 1) % h;
+    var c = y * w + x, L = y * w + xl, R = y * w + xr;
+    var UP = yu * w + x, DN = yd * w + x;
+    var UL = yu * w + xl, UR = yu * w + xr, DL = yd * w + xl, DR = yd * w + xr;
+    var uc = u[c], vc = v[c];
+    var lu = -uc + 0.2 * (u[L] + u[R] + u[UP] + u[DN]) + 0.05 * (u[UL] + u[UR] + u[DL] + u[DR]);
+    var lv = -vc + 0.2 * (v[L] + v[R] + v[UP] + v[DN]) + 0.05 * (v[UL] + v[UR] + v[DL] + v[DR]);
+    var uvv = uc * vc * vc;
+    U2[c] = clamp01(uc + DU * lu - uvv + F * (1 - uc));
+    V2[c] = clamp01(vc + DV * lv + uvv - FK * vc);
+  }
+
+  function step(F, K) {
+    var u = U, v = V, nu = U2, nv = V2, w = W, h = H, FK = F + K;
+    // Interior: direct offsets, no modulo.
+    for (var y = 1; y < h - 1; y++) {
+      var row = y * w, rU = row - w, rD = row + w;
+      for (var x = 1; x < w - 1; x++) {
+        var c = row + x, up = rU + x, dn = rD + x;
+        var uc = u[c], vc = v[c];
+        var lu = -uc + 0.2 * (u[c - 1] + u[c + 1] + u[up] + u[dn]) + 0.05 * (u[up - 1] + u[up + 1] + u[dn - 1] + u[dn + 1]);
+        var lv = -vc + 0.2 * (v[c - 1] + v[c + 1] + v[up] + v[dn]) + 0.05 * (v[up - 1] + v[up + 1] + v[dn - 1] + v[dn + 1]);
+        var uvv = uc * vc * vc;
+        var a = uc + DU * lu - uvv + F * (1 - uc);
+        var b = vc + DV * lv + uvv - FK * vc;
+        nu[c] = a < 0 ? 0 : a > 1 ? 1 : a;
+        nv[c] = b < 0 ? 0 : b > 1 ? 1 : b;
+      }
+    }
+    // Borders: toroidal wrap.
+    for (var by = 0; by < h; by++) {
+      if (by === 0 || by === h - 1) {
+        for (var bx = 0; bx < w; bx++) cellWrap(bx, by, F, FK);
+      } else {
+        cellWrap(0, by, F, FK);
+        cellWrap(w - 1, by, F, FK);
+      }
+    }
+    U2 = u; V2 = v; U = nu; V = nv;
+  }
+
+  function meanV() {
+    var s = 0, v = V;
+    for (var i = 0; i < N; i++) s += v[i];
+    return s / N;
+  }
+
+  function buildLUT() {
+    var st = PALETTES[paletteIdx].stops;
+    for (var i = 0; i < 256; i++) {
+      var pos = (i / 255) * 3;
+      var seg = Math.min(2, Math.floor(pos)), f = pos - seg;
+      var a = st[seg], b = st[seg + 1];
+      LUT_R[i] = a[0] + (b[0] - a[0]) * f;
+      LUT_G[i] = a[1] + (b[1] - a[1]) * f;
+      LUT_B[i] = a[2] + (b[2] - a[2]) * f;
+    }
+    hiR = st[3][0]; hiG = st[3][1]; hiB = st[3][2];
+  }
+
+  function render() {
+    var v = V, w = W, h = H, p = img32, S = RELIEF;
+    var lr = LUT_R, lg = LUT_G, lb = LUT_B;
+    var Lx = LIGHT[0], Ly = LIGHT[1], Lz = LIGHT[2];
+    var Hx = HALF[0], Hy = HALF[1], Hz = HALF[2];
+    var vScale = 255 / VMAX;
+    for (var y = 0; y < h; y++) {
+      var row = y * w;
+      var yu = (y > 0 ? y - 1 : h - 1) * w, yd = (y < h - 1 ? y + 1 : 0) * w;
+      for (var x = 0; x < w; x++) {
+        var c = row + x;
+        var xl = x > 0 ? c - 1 : row + w - 1, xr = x < w - 1 ? c + 1 : row;
+        var gx = (v[xr] - v[xl]) * 0.5, gy = (v[yd + x] - v[yu + x]) * 0.5;
+        var nx = -gx * S, ny = -gy * S;
+        var il = 1 / Math.sqrt(nx * nx + ny * ny + 1);
+        nx *= il; ny *= il;
+        var nz = il;
+        var diff = nx * Lx + ny * Ly + nz * Lz; if (diff < 0) diff = 0;
+        var sp = nx * Hx + ny * Hy + nz * Hz; if (sp < 0) sp = 0;
+        var s2 = sp * sp, s4 = s2 * s2, s8 = s4 * s4, spec = s8 * s8 * 0.9;
+        var idx = (v[c] * vScale) | 0; if (idx < 0) idx = 0; else if (idx > 255) idx = 255;
+        var sh = 0.55 + 0.7 * diff;
+        var r = lr[idx] * sh + hiR * spec;
+        var g = lg[idx] * sh + hiG * spec;
+        var bl = lb[idx] * sh + hiB * spec;
+        r = r > 255 ? 255 : r; g = g > 255 ? 255 : g; bl = bl > 255 ? 255 : bl;
+        p[c] = (255 << 24) | ((bl | 0) << 16) | ((g | 0) << 8) | (r | 0);
+      }
+    }
+    octx.putImageData(img, 0, 0);
+  }
+
+  function resize() {
+    dpr = PREVIEW ? 1 : Math.min(2, window.devicePixelRatio || 1);
+    cw = Math.max(1, Math.round(innerWidth * dpr));
+    ch = Math.max(1, Math.round(innerHeight * dpr));
+    cv.width = cw; cv.height = ch;
+    grad = ctx.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * 0.3, cw / 2, ch / 2, Math.max(cw, ch) * 0.72);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(0.6, 'rgba(2,1,8,0.25)');
+    grad.addColorStop(1, 'rgba(2,1,8,0.75)');
+    var gs = gridSize();
+    if (W === 0 || Math.abs(gs[0] - W) > W * 0.1 || Math.abs(gs[1] - H) > H * 0.1) allocate(gs[0], gs[1]);
+  }
+
+  // ---- presets, palette, HUD ----
+  var presetBtns = [];
+  function setPreset(i) {
+    presetIdx = i;
+    Fb = PRESETS[i].F; kb = PRESETS[i].k;
+    for (var j = 0; j < presetBtns.length; j++) presetBtns[j].classList.toggle('on', j === presetIdx);
+  }
+  var paletteBtn = null;
+  function cyclePalette() {
+    paletteIdx = (paletteIdx + 1) % PALETTES.length;
+    buildLUT();
+    if (paletteBtn) paletteBtn.textContent = 'palette: ' + PALETTES[paletteIdx].name;
+  }
+  function button(label, parent, fn) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.addEventListener('click', function () { userTouch(); fn(); });
+    parent.appendChild(b);
+    return b;
+  }
+  PRESETS.forEach(function (p, i) {
+    presetBtns.push(button((i + 1) + ' ' + p.name, presetRow, function () { setPreset(i); }));
+  });
+  paletteBtn = button('palette: ' + PALETTES[0].name, toolRow, cyclePalette);
+  button('reseed', toolRow, function () { reset(30); });
+
+  // ---- pointer ----
+  function gridXY(e) {
+    var r = cv.getBoundingClientRect();
+    return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H];
+  }
+  function stamp(x, y, erase) {
+    var cx = Math.round(x), cy = Math.round(y);
+    for (var dy = -5; dy <= 5; dy++) {
+      var yy = (((cy + dy) % H) + H) % H;
+      for (var dx = -5; dx <= 5; dx++) {
+        if (dx * dx + dy * dy > 25) continue;
+        var xx = (((cx + dx) % W) + W) % W;
+        var c = yy * W + xx;
+        if (erase) { U[c] = 1; V[c] = 0; }
+        else { U[c] = 0.25; V[c] = 0.5; }
+      }
+    }
+  }
+  function paintLine(x0, y0, x1, y1, erase) {
+    var dist = Math.hypot(x1 - x0, y1 - y0);
+    var n = Math.max(1, Math.min(200, Math.ceil(dist / 2)));
+    for (var i = 1; i <= n; i++) {
+      var t = i / n;
+      stamp(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, erase);
+    }
+  }
+
+  cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  cv.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    userTouch();
+    try { cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    var p = gridXY(e);
+    var erase = e.button === 2 || (e.pointerType === 'touch' && ptrs.size > 0);
+    ptrs.set(e.pointerId, { x: p[0], y: p[1], erase: erase });
+    stamp(p[0], p[1], erase);
+  });
+  cv.addEventListener('pointermove', function (e) {
+    var s = ptrs.get(e.pointerId);
+    if (!s) return;
+    var p = gridXY(e);
+    paintLine(s.x, s.y, p[0], p[1], s.erase);
+    s.x = p[0]; s.y = p[1];
+  });
+  function release(e) { ptrs.delete(e.pointerId); }
+  cv.addEventListener('pointerup', release);
+  cv.addEventListener('pointercancel', release);
+  cv.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var now = performance.now();
+    if (now - lastWheel < 40) return;
+    lastWheel = now;
+    userTouch();
+    var d = e.deltaY < 0 ? 0.001 : -0.001;
+    Fb = Math.min(0.1, Math.max(0.001, Math.round((Fb + d) * 10000) / 10000));
+    presetIdx = -1;
+    for (var j = 0; j < presetBtns.length; j++) presetBtns[j].classList.remove('on');
+  }, { passive: false });
+
+  window.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); userTouch(); reset(30); return; }
+    if (/^[1-5]$/.test(e.key)) { userTouch(); setPreset(+e.key - 1); return; }
+    if (e.key === 'c' || e.key === 'C') { userTouch(); cyclePalette(); }
+  });
+
+  var rzT = 0;
+  window.addEventListener('resize', function () {
+    clearTimeout(rzT);
+    rzT = setTimeout(resize, 150);
+  });
+
+  // ---- main loop ----
+  function frame(now) {
+    var dt = (now - lastT) / 1000;
+    lastT = now;
+    if (!(dt > 0)) dt = 0;
+    if (dt > 1 / 30) dt = 1 / 30;
+    time += dt;
+
+    if (autoMode()) {
+      blobT += dt;
+      if (blobT >= 2.5) { blobT = 0; randomBlob(); }
+      presetT += dt;
+      if (presetT >= 20) { presetT = 0; setPreset((presetIdx + 1) % PRESETS.length); }
+    }
+
+    meanT += dt;
+    if (meanT >= 1) {
+      meanT = 0;
+      if (meanV() < 0.02) for (var i = 0; i < 6; i++) randomBlob();
+    }
+
+    var F = effF(), K = effK();
+    var t0 = performance.now();
+    for (var s = 0; s < steps; s++) step(F, K);
+    simEMA = simEMA * 0.9 + (performance.now() - t0) * 0.1;
+    if (simEMA > 12 && steps > 4) steps--;
+    else if (simEMA < 6 && steps < BASE_STEPS) steps++;
+
+    render();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'low';
+    ctx.drawImage(off, 0, 0, cw, ch);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, cw, ch);
+
+    hudT += dt;
+    if (hudT > 0.25) {
+      hudT = 0;
+      if (!PREVIEW) {
+        readout.textContent = 'F ' + F.toFixed(4) + '  k ' + K.toFixed(4) + '  ·  ' + PALETTES[paletteIdx].name;
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  buildLUT();
+  resize();
+  setPreset(0);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

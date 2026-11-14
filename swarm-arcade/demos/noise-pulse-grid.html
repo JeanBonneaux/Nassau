@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pulse Grid</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#05060a}
+canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;display:block;touch-action:none}
+#hud{position:fixed;left:14px;top:12px;max-width:calc(100vw - 160px);z-index:2;
+  font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7);
+  user-select:none;-webkit-user-select:none}
+#hud .t{letter-spacing:.12em}
+#hud #bpm{color:#6dffb0}
+#hud .h{opacity:.7}
+#row{margin-top:6px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#hud button{font:inherit;color:inherit;background:rgba(5,6,10,.45);
+  border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:2px 9px;cursor:pointer}
+#hud button:focus-visible{outline:1px solid rgba(255,255,255,.6)}
+#sh{transition:opacity .8s ease;animation:blink 2.2s ease-in-out infinite}
+#sh.gone{opacity:0;animation:none}
+@keyframes blink{50%{opacity:.35}}
+body.preview #hud{display:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="t">PULSE GRID &middot; <span id="bpm">112</span> BPM <span id="pz"></span></div>
+  <div class="h">click pads &middot; drag to paint &middot; space play/pause &middot; C clear &middot; R random &middot; up/down tempo</div>
+  <div id="row"><button id="mute" type="button">sound on</button><span id="sh">click to start sound</span></div>
+</div>
+<script>
+(() => {
+'use strict';
+
+const PREVIEW = /preview/.test(location.hash);
+if (PREVIEW) document.body.classList.add('preview');
+
+const STEPS = 16, TRACKS = 5;
+const KICK = 0, SNARE = 1, HAT = 2, PERC = 3, BASS = 4;
+const RGB = [[255,79,163],[255,179,71],[92,225,255],[157,123,255],[109,255,176]];
+const TRACK_GAIN = [0.9, 0.5, 0.25, 0.3, 0.4];
+const REV_SEND = [0.05, 0.6, 0.3, 0.5, 0.1];
+const BASS_HZ = [73.42, 87.31, 98.00, 110.00, 130.81]; // D2 F2 G2 A2 C3 (D minor pentatonic)
+const SWING = 0.08, LOOKAHEAD = 0.1, MAX_VOICES = 32, MASTER_LEVEL = 0.22;
+const MIN_BPM = 80, MAX_BPM = 160;
+const PARTICLE_CAP = PREVIEW ? 100 : 200;
+
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const col = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+// ---------- state ----------
+let bpm = 112;
+const pat = Array.from({ length: TRACKS }, () => new Uint8Array(STEPS)); // 0 off, 1 normal, 2 ghost/open
+const bassIdx = new Uint8Array(STEPS);
+let playing = true;
+let stepIdx = 0, bar = 0, nextT = 0, domain = 'perf', playhead = 0;
+let lastTouch = -1e9;
+let bgPulse = 0;
+let painting = null;
+const colGlow = new Float32Array(STEPS);
+const pulse = new Float32Array(TRACKS * STEPS);
+const rings = [], particles = [], ripples = [], visQ = [];
+const stars = [];
+for (let i = 0; i < (PREVIEW ? 36 : 72); i++) {
+  stars.push({ x: Math.random(), y: Math.random(), z: Math.random(), v: 0.006 + Math.random() * 0.02 });
+}
+
+// ---------- layout ----------
+const cv = document.getElementById('c');
+const g = cv.getContext('2d');
+let W = 0, H = 0, dpr = 1;
+let gx = 0, gy = 0, gw = 1, gh = 1, cw = 1, ch = 1, cxC = 0, cyC = 0, maxR = 1;
+const pads = Array.from({ length: TRACKS * STEPS }, () => ({ cx: 0, cy: 0, w: 0, h: 0 }));
+
+function layout() {
+  W = window.innerWidth; H = window.innerHeight;
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const narrow = W < 640;
+  const m = PREVIEW ? 14 : (narrow ? 22 : 40);
+  const labelW = PREVIEW ? 30 : (narrow ? 40 : 58);
+  const top = PREVIEW ? m : (narrow ? 128 : 92);
+  gx = m + labelW;
+  gy = top;
+  gw = Math.max(40, W - gx - m);
+  gh = Math.max(40, H - gy - m);
+  cw = gw / STEPS; ch = gh / TRACKS;
+  for (let t = 0; t < TRACKS; t++) {
+    for (let s = 0; s < STEPS; s++) {
+      const p = pads[t * STEPS + s];
+      p.cx = gx + (s + 0.5) * cw;
+      p.cy = gy + (t + 0.5) * ch;
+      p.w = cw * 0.78;
+      p.h = Math.min(ch * 0.7, cw * 1.1);
+    }
+  }
+  cxC = gx + gw / 2; cyC = gy + gh / 2;
+  maxR = Math.hypot(gw, gh) / 2;
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.fillStyle = '#05060a';
+  g.fillRect(0, 0, W, H);
+}
+
+function hitPad(x, y) {
+  if (x < gx || y < gy || x >= gx + gw || y >= gy + gh) return null;
+  const s = Math.floor((x - gx) / cw), t = Math.floor((y - gy) / ch);
+  if (s < 0 || s >= STEPS || t < 0 || t >= TRACKS) return null;
+  return { t, s };
+}
+
+// glow sprites, one per track colour, built once
+const SPR = RGB.map((c) => {
+  const sc = document.createElement('canvas');
+  sc.width = sc.height = 128;
+  const x = sc.getContext('2d');
+  const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, col(c, 1));
+  gr.addColorStop(0.3, col(c, 0.5));
+  gr.addColorStop(0.65, col(c, 0.12));
+  gr.addColorStop(1, col(c, 0));
+  x.fillStyle = gr;
+  x.fillRect(0, 0, 128, 128);
+  return sc;
+});
+
+function rr(x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+
+// ---------- pattern ----------
+function clearPattern() {
+  for (let t = 0; t < TRACKS; t++) pat[t].fill(0);
+  bassIdx.fill(0);
+}
+
+function presetPattern() {
+  clearPattern();
+  [0, 4, 8, 12].forEach((s) => { pat[KICK][s] = 1; });
+  pat[KICK][10] = 2; // ghost kick
+  [4, 12].forEach((s) => { pat[SNARE][s] = 1; });
+  for (let s = 0; s < STEPS; s += 2) pat[HAT][s] = 1;
+  pat[HAT][14] = 2; // open hat
+  [3, 7, 11, 15].forEach((s) => { pat[PERC][s] = 1; });
+  const bass = { 0: 0, 3: 1, 6: 2, 8: 3, 11: 4, 14: 0 };
+  for (const k in bass) { pat[BASS][k] = 1; bassIdx[k] = bass[k]; }
+}
+
+function pickBassIdx() {
+  return [0, 0, 1, 2, 3, 4][Math.floor(Math.random() * 6)];
+}
+
+function setPad(t, s, on) {
+  if (on) {
+    const was = pat[t][s] > 0;
+    pat[t][s] = 1;
+    if (t === BASS && !was) bassIdx[s] = pickBassIdx();
+  } else {
+    pat[t][s] = 0;
+  }
+}
+
+function randomise() {
+  clearPattern();
+  for (let s = 0; s < STEPS; s++) {
+    if (s === 0 || (s > 0 && Math.random() < 0.1)) pat[KICK][s] = Math.random() < 0.2 ? 2 : 1;
+    if ((s === 4 || s === 12) && Math.random() < 0.85) pat[SNARE][s] = 1;
+    if (s % 2 === 0 && Math.random() < 0.5) pat[HAT][s] = Math.random() < 0.15 ? 2 : 1;
+    if (Math.random() < 0.25) pat[PERC][s] = 1;
+    if (Math.random() < 0.3) { pat[BASS][s] = 1; bassIdx[s] = pickBassIdx(); }
+  }
+}
+
+function mutate() {
+  const n = 2 + (Math.random() < 0.5 ? 1 : 0);
+  for (let k = 0; k < n; k++) {
+    const t = Math.floor(Math.random() * TRACKS);
+    const s = Math.floor(Math.random() * STEPS);
+    setPad(t, s, pat[t][s] === 0);
+  }
+}
+
+// ---------- visuals helpers ----------
+function burst(x, y, n, c) {
+  for (let i = 0; i < n; i++) {
+    if (particles.length >= PARTICLE_CAP) break;
+    const a = Math.random() * Math.PI * 2;
+    const sp = 120 + Math.random() * 300;
+    particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.4, max: 0.4, c });
+  }
+}
+
+function ripple(t, s, small) {
+  const p = pads[t * STEPS + s];
+  if (ripples.length >= 12) ripples.shift();
+  ripples.push({ x: p.cx, y: p.cy, age: 0, life: small ? 0.3 : 0.5, c: RGB[t] });
+}
+
+function queueVis(e) {
+  if (visQ.length > 512) visQ.length = 0;
+  visQ.push(e);
+}
+
+function fireVis(e) {
+  if (e.k === 0) {
+    playhead = e.s;
+    colGlow[e.s] = 1;
+    return;
+  }
+  const i = e.tr * STEPS + e.s;
+  pulse[i] = Math.max(pulse[i], e.tr === KICK && e.v === 2 ? 0.6 : 1);
+  if (e.tr === KICK) {
+    const vel = e.v === 2 ? 0.5 : 1;
+    if (rings.length >= 6) rings.shift();
+    rings.push({ age: 0, life: 0.85 });
+    bgPulse = Math.max(bgPulse, vel);
+    burst(cxC, cyC, Math.round((PREVIEW ? 30 : 60) * vel), RGB[KICK]);
+  }
+}
+
+function flushVis(now) {
+  while (visQ.length && visQ[0].t <= now) fireVis(visQ.shift());
+}
+
+// ---------- audio ----------
+let ac = null, master = null, revIn = null, delIn = null, noiseBuf = null, duck = null;
+let bus = [], voices = [], muted = false;
+
+function env(gn, t, peak, atk, tc) {
+  gn.gain.setValueAtTime(0, t);
+  gn.gain.linearRampToValueAtTime(peak, t + atk);
+  gn.gain.setTargetAtTime(0.0001, t + atk, tc);
+}
+
+function killVoice(v, when) {
+  for (const gn of v.gains) {
+    try { gn.gain.cancelScheduledValues(when); gn.gain.setTargetAtTime(0, when, 0.004); } catch (e) { /* ignore */ }
+  }
+  for (const s of v.sources) {
+    try { s.stop(when + 0.03); } catch (e) { /* ignore */ }
+  }
+}
+
+function dropVoice(v) {
+  voices = voices.filter((x) => x !== v);
+  for (const n of v.nodes) {
+    try { n.disconnect(); } catch (e) { /* ignore */ }
+  }
+}
+
+// register a one-shot; steals the oldest voice beyond the polyphony cap
+function voice(nodes, sources, gains) {
+  if (voices.length >= MAX_VOICES) {
+    const old = voices.shift();
+    killVoice(old, ac.currentTime);
+  }
+  const v = { nodes, sources, gains, left: sources.length };
+  voices.push(v);
+  for (const s of sources) {
+    s.onended = () => { v.left--; if (v.left <= 0) dropVoice(v); };
+  }
+}
+
+function build() {
+  const sr = ac.sampleRate;
+  master = ac.createGain();
+  master.gain.value = muted ? 0 : MASTER_LEVEL;
+  const comp = ac.createDynamicsCompressor();
+  comp.threshold.value = -18;
+  comp.ratio.value = 8;
+  comp.knee.value = 10;
+  comp.attack.value = 0.005;
+  comp.release.value = 0.2;
+  master.connect(comp);
+  comp.connect(ac.destination);
+
+  // reverb: generated decaying stereo noise, ~30% wet
+  revIn = ac.createGain();
+  const conv = ac.createConvolver();
+  const len = Math.floor(sr * 2.5);
+  const imp = ac.createBuffer(2, len, sr);
+  for (let c = 0; c < 2; c++) {
+    const d = imp.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-6 * i / len);
+  }
+  conv.buffer = imp;
+  const revOut = ac.createGain();
+  revOut.gain.value = 0.3;
+  revIn.connect(conv);
+  conv.connect(revOut);
+  revOut.connect(master);
+
+  // feedback delay with lowpass in the loop
+  delIn = ac.createGain();
+  const delay = ac.createDelay(1.0);
+  delay.delayTime.value = 0.35;
+  const fbLP = ac.createBiquadFilter();
+  fbLP.type = 'lowpass';
+  fbLP.frequency.value = 2200;
+  fbLP.Q.value = 0.5;
+  const fb = ac.createGain();
+  fb.gain.value = 0.35;
+  const delOut = ac.createGain();
+  delOut.gain.value = 0.45;
+  delIn.connect(delay);
+  delay.connect(fbLP);
+  fbLP.connect(fb);
+  fb.connect(delay);
+  fbLP.connect(delOut);
+  delOut.connect(master);
+
+  // per-track buses
+  bus = [];
+  for (let t = 0; t < TRACKS; t++) {
+    const b = ac.createGain();
+    b.gain.value = TRACK_GAIN[t];
+    b.connect(master);
+    const snd = ac.createGain();
+    snd.gain.value = REV_SEND[t];
+    b.connect(snd);
+    snd.connect(revIn);
+    bus.push(b);
+  }
+  const ps = ac.createGain();
+  ps.gain.value = 0.5;
+  bus[PERC].connect(ps);
+  ps.connect(delIn);
+
+  // bass goes through a sidechain duck
+  duck = ac.createGain();
+  duck.connect(bus[BASS]);
+
+  // one shared noise buffer, created once
+  noiseBuf = ac.createBuffer(1, sr, sr);
+  const nd = noiseBuf.getChannelData(0);
+  for (let i = 0; i < sr; i++) nd[i] = Math.random() * 2 - 1;
+}
+
+function startAudio() {
+  if (PREVIEW || ac) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ac = new AC();
+    build();
+    if (ac.state !== 'running') {
+      const p = ac.resume();
+      if (p && p.catch) p.catch(() => {});
+    }
+    document.getElementById('sh').classList.add('gone');
+  } catch (e) {
+    ac = null;
+  }
+}
+
+function setMuted(m) {
+  muted = m;
+  if (master) {
+    try {
+      const n = ac.currentTime;
+      master.gain.cancelScheduledValues(n);
+      master.gain.setValueAtTime(master.gain.value, n);
+      master.gain.setTargetAtTime(m ? 0 : MASTER_LEVEL, n, 0.03);
+    } catch (e) { /* ignore */ }
+  }
+  document.getElementById('mute').textContent = m ? 'sound off' : 'sound on';
+}
+
+function kick(t, vel) {
+  const o = ac.createOscillator(), gn = ac.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(150, t);
+  o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+  env(gn, t, vel, 0.004, 0.065);
+  o.connect(gn);
+  gn.connect(bus[KICK]);
+  // soft transient, ramped so it never clicks
+  const cl = ac.createOscillator(), cg = ac.createGain();
+  cl.type = 'triangle';
+  cl.frequency.value = 1400;
+  env(cg, t, 0.14 * vel, 0.002, 0.006);
+  cl.connect(cg);
+  cg.connect(bus[KICK]);
+  o.start(t); o.stop(t + 0.45);
+  cl.start(t); cl.stop(t + 0.05);
+  voice([o, gn, cl, cg], [o, cl], [gn, cg]);
+  // light sidechain on the bass
+  duck.gain.setTargetAtTime(0.45, t, 0.003);
+  duck.gain.setTargetAtTime(1, t + 0.02, 0.12);
+}
+
+function snare(t) {
+  const n = ac.createBufferSource(); n.buffer = noiseBuf;
+  const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1200;
+  const gn = ac.createGain(); env(gn, t, 0.9, 0.003, 0.03);
+  const o = ac.createOscillator(); o.type = 'triangle'; o.frequency.value = 190;
+  const og = ac.createGain(); env(og, t, 0.55, 0.002, 0.02);
+  n.connect(hp); hp.connect(gn); gn.connect(bus[SNARE]);
+  o.connect(og); og.connect(bus[SNARE]);
+  n.start(t, Math.random() * 0.5, 0.18);
+  o.start(t); o.stop(t + 0.25);
+  n.stop(t + 0.25);
+  voice([n, hp, gn, o, og], [n, o], [gn, og]);
+}
+
+function hat(t, open) {
+  const n = ac.createBufferSource(); n.buffer = noiseBuf;
+  const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+  const gn = ac.createGain();
+  if (open) env(gn, t, 0.6, 0.002, 0.06);
+  else env(gn, t, 0.75, 0.002, 0.009);
+  n.connect(hp); hp.connect(gn); gn.connect(bus[HAT]);
+  const end = t + (open ? 0.42 : 0.1);
+  n.start(t, Math.random() * 0.4, 0.4);
+  n.stop(end);
+  voice([n, hp, gn], [n], [gn]);
+}
+
+function perc(t) {
+  const o = ac.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(880, t);
+  o.frequency.exponentialRampToValueAtTime(220, t + 0.05);
+  const gn = ac.createGain(); env(gn, t, 0.8, 0.002, 0.03);
+  o.connect(gn); gn.connect(bus[PERC]);
+  o.start(t); o.stop(t + 0.25);
+  voice([o, gn], [o], [gn]);
+}
+
+function bass(t, freq) {
+  const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = freq;
+  const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 6;
+  f.frequency.setValueAtTime(900, t);
+  f.frequency.exponentialRampToValueAtTime(200, t + 0.25);
+  const gn = ac.createGain();
+  gn.gain.setValueAtTime(0, t);
+  gn.gain.linearRampToValueAtTime(0.5, t + 0.008);
+  gn.gain.setTargetAtTime(0.0001, t + 0.25, 0.04);
+  o.connect(f); f.connect(gn); gn.connect(duck);
+  o.start(t); o.stop(t + 0.55);
+  voice([o, f, gn], [o], [gn]);
+}
+
+function hitSound(t, s, v, time) {
+  if (!ac || PREVIEW || domain !== 'audio') return;
+  try {
+    if (t === KICK) kick(time, v === 2 ? 0.45 : 1);
+    else if (t === SNARE) snare(time);
+    else if (t === HAT) hat(time, v === 2);
+    else if (t === PERC) perc(time);
+    else bass(time, BASS_HZ[bassIdx[s]]);
+  } catch (e) { /* never throw from audio */ }
+}
+
+// ---------- clock + look-ahead scheduler ----------
+const stepDur = () => 60 / bpm / 4;
+function domainNow() {
+  return (ac && !PREVIEW && ac.state === 'running') ? 'audio' : 'perf';
+}
+function clockOf(d) {
+  return d === 'audio' ? ac.currentTime : performance.now() / 1000;
+}
+
+function scheduleStep(s, t) {
+  const tt = t + ((s & 1) ? SWING * stepDur() : 0);
+  if (s === 0) {
+    bar++;
+    if (bar % 8 === 0 && performance.now() - lastTouch > 6000) mutate();
+  }
+  for (let tr = 0; tr < TRACKS; tr++) {
+    const v = pat[tr][s];
+    if (!v) continue;
+    hitSound(tr, s, v, tt);
+    queueVis({ t: tt, k: 1, tr, s, v });
+  }
+  queueVis({ t: tt, k: 0, s });
+}
+
+function tick() {
+  try {
+    const d = domainNow();
+    const now = clockOf(d);
+    if (d !== domain) { domain = d; nextT = now + 0.05; visQ.length = 0; }
+    if (!playing) { nextT = now + 0.05; return; }
+    if (nextT < now - 0.1) nextT = now + 0.02;
+    while (nextT < now + LOOKAHEAD) {
+      scheduleStep(stepIdx, nextT);
+      nextT += stepDur();
+      stepIdx = (stepIdx + 1) % STEPS;
+    }
+  } catch (e) { /* keep the loop alive */ }
+}
+
+// ---------- update + draw ----------
+function update(dt) {
+  const dp = Math.exp(-dt * 7);
+  for (let i = 0; i < pulse.length; i++) pulse[i] *= dp;
+  const dc = Math.exp(-dt * 9);
+  for (let s = 0; s < STEPS; s++) colGlow[s] *= dc;
+  bgPulse *= Math.exp(-dt * 4.5);
+  for (const r of rings) r.age += dt;
+  while (rings.length && rings[0].age > rings[0].life) rings.shift();
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const r = ripples[i];
+    r.age += dt;
+    if (r.age >= r.life) ripples.splice(i, 1);
+  }
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life -= dt;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    const f = Math.exp(-dt * 3);
+    p.vx *= f; p.vy *= f;
+  }
+  for (const st of stars) {
+    st.y += st.v * dt;
+    if (st.y > 1) st.y -= 1;
+  }
+}
+
+function draw() {
+  // trail fade
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.fillStyle = 'rgba(5,6,10,0.26)';
+  g.fillRect(0, 0, W, H);
+
+  g.globalCompositeOperation = 'lighter';
+  // ambient centre glow plus the kick-driven brightness pulse
+  const R = maxR * 1.15;
+  const gr = g.createRadialGradient(cxC, cyC, 0, cxC, cyC, R);
+  gr.addColorStop(0, col(RGB[KICK], 0.035 + 0.22 * bgPulse));
+  gr.addColorStop(1, col(RGB[KICK], 0));
+  g.fillStyle = gr;
+  g.fillRect(0, 0, W, H);
+
+  // drifting stars
+  for (const st of stars) {
+    g.fillStyle = `rgba(150,180,255,${(0.1 + 0.25 * st.z).toFixed(3)})`;
+    const sz = 1 + st.z;
+    g.fillRect(st.x * W, st.y * H, sz, sz);
+  }
+
+  // playhead column
+  const px = gx + playhead * cw;
+  g.fillStyle = `rgba(255,255,255,${(0.035 + 0.1 * colGlow[playhead]).toFixed(3)})`;
+  g.fillRect(px + 1, gy - 6, cw - 2, gh + 12);
+  g.fillStyle = `rgba(255,255,255,${(0.35 + 0.5 * colGlow[playhead]).toFixed(3)})`;
+  g.fillRect(px, gy - 12, cw, 3);
+
+  // pads
+  for (let t = 0; t < TRACKS; t++) {
+    const C = RGB[t];
+    for (let s = 0; s < STEPS; s++) {
+      const i = t * STEPS + s;
+      const P = pads[i];
+      const v = pat[t][s];
+      const p = Math.min(1.2, pulse[i]);
+      const cg = colGlow[s];
+      const sc = 1 + 0.25 * cg;
+      const w = P.w * sc, h = P.h * sc;
+      const x = P.cx - w / 2, y = P.cy - h / 2;
+      const r = Math.min(w, h) * 0.24;
+      if (v) {
+        const dim = (t === KICK && v === 2) ? 0.55 : 1;
+        const gs = Math.max(w, h) * (2.3 + 0.8 * p);
+        g.globalAlpha = clamp((0.3 + 0.5 * p + 0.35 * cg) * dim, 0, 1);
+        g.drawImage(SPR[t], P.cx - gs / 2, P.cy - gs / 2, gs, gs);
+        g.globalAlpha = 1;
+        rr(x, y, w, h, r);
+        g.fillStyle = col(C, clamp((0.45 + 0.4 * p + 0.15 * cg) * dim, 0, 1));
+        g.fill();
+        rr(x + w * 0.2, y + h * 0.2, w * 0.6, h * 0.6, r * 0.5);
+        g.fillStyle = `rgba(255,255,255,${(0.1 + 0.5 * p * dim).toFixed(3)})`;
+        g.fill();
+      } else {
+        rr(x, y, w, h, r);
+        g.strokeStyle = col(C, (0.16 + 0.4 * cg).toFixed(3));
+        g.lineWidth = 1;
+        g.stroke();
+        g.fillStyle = col(C, (0.025 + 0.07 * cg).toFixed(3));
+        g.fill();
+      }
+    }
+  }
+
+  // shockwave rings from the grid centre
+  for (const rg of rings) {
+    const p = rg.age / rg.life;
+    if (p < 0 || p > 1) continue;
+    const rad = (1 - Math.pow(1 - p, 2.2)) * R;
+    const a = Math.pow(1 - p, 1.4);
+    g.lineWidth = 1 + 5 * (1 - p);
+    g.strokeStyle = col(RGB[KICK], (0.85 * a).toFixed(3));
+    g.beginPath();
+    g.arc(cxC, cyC, rad, 0, Math.PI * 2);
+    g.stroke();
+  }
+
+  // click ripples
+  for (const rp of ripples) {
+    const p = rp.age / rp.life;
+    g.lineWidth = 1.5;
+    g.strokeStyle = col(rp.c, ((1 - p) * 0.8).toFixed(3));
+    g.beginPath();
+    g.arc(rp.x, rp.y, 6 + 56 * p, 0, Math.PI * 2);
+    g.stroke();
+  }
+
+  // particle burst
+  for (const p of particles) {
+    const a = clamp(p.life / p.max, 0, 1);
+    g.fillStyle = col(p.c, a.toFixed(3));
+    const sz = 1.5 + 1.5 * a;
+    g.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+  }
+
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+}
+
+// ---------- HUD ----------
+const bpmEl = document.getElementById('bpm');
+const pzEl = document.getElementById('pz');
+const muteBtn = document.getElementById('mute');
+function refreshHud() {
+  bpmEl.textContent = String(bpm);
+  pzEl.textContent = playing ? '' : '· paused';
+}
+function setBpm(b) {
+  bpm = clamp(b, MIN_BPM, MAX_BPM);
+  refreshHud();
+}
+
+// ---------- input ----------
+function touch() { lastTouch = performance.now(); }
+
+// the first gesture starts audio
+const gesture = () => { startAudio(); touch(); };
+window.addEventListener('pointerdown', gesture, true);
+window.addEventListener('keydown', gesture, true);
+
+function onDown(e) {
+  if (e.target && e.target.closest && e.target.closest('#hud')) return;
+  touch();
+  const h = hitPad(e.clientX, e.clientY);
+  if (!h) return;
+  const on = pat[h.t][h.s] === 0; // decided by the first pad
+  setPad(h.t, h.s, on);
+  painting = { on, last: h.t * STEPS + h.s };
+  ripple(h.t, h.s, false);
+  if (on && ac && domain === 'audio') hitSound(h.t, h.s, 1, ac.currentTime + 0.01);
+  if (e.cancelable) e.preventDefault();
+}
+
+function onMove(e) {
+  if (!painting) return;
+  touch();
+  const h = hitPad(e.clientX, e.clientY);
+  if (!h) return;
+  const key = h.t * STEPS + h.s;
+  if (key === painting.last) return;
+  painting.last = key;
+  setPad(h.t, h.s, painting.on);
+  ripple(h.t, h.s, true);
+}
+
+function onUp() { painting = null; }
+
+window.addEventListener('pointerdown', onDown);
+window.addEventListener('pointermove', onMove);
+window.addEventListener('pointerup', onUp);
+window.addEventListener('pointercancel', onUp);
+
+muteBtn.addEventListener('click', () => {
+  startAudio();
+  setMuted(!muted);
+  muteBtn.blur();
+});
+
+window.addEventListener('keydown', (e) => {
+  try {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (!e.repeat) { playing = !playing; refreshHud(); }
+    } else if (e.code === 'KeyC') {
+      if (!e.repeat) clearPattern();
+    } else if (e.code === 'KeyR') {
+      if (!e.repeat) randomise();
+    } else if (e.code === 'KeyM') {
+      if (!e.repeat) setMuted(!muted);
+    } else if (e.code === 'ArrowUp') {
+      e.preventDefault();
+      setBpm(bpm + 4);
+    } else if (e.code === 'ArrowDown') {
+      e.preventDefault();
+      setBpm(bpm - 4);
+    }
+  } catch (err) { /* ignore */ }
+});
+
+window.addEventListener('resize', layout);
+
+// ---------- boot ----------
+layout();
+presetPattern();
+refreshHud();
+setInterval(tick, 25);
+tick();
+
+let last = performance.now();
+function frame(now) {
+  const dt = clamp((now - last) / 1000, 0, 1 / 30);
+  last = now;
+  try {
+    flushVis(clockOf(domain));
+    update(dt);
+    draw();
+  } catch (e) { /* keep visuals alive */ }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>

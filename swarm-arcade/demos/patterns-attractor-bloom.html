@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Attractor Bloom</title>
+<meta name="description" content="Chaos, plotted as a million-point firework you can bend by hand.">
+<style>
+html,body{height:100%}
+body{margin:0;overflow:hidden;background:#05060a}
+canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+#hud{position:fixed;left:12px;top:10px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7);pointer-events:none;user-select:none;white-space:nowrap;max-width:calc(100vw - 160px);overflow:hidden;text-overflow:ellipsis}
+#hud b{font-weight:600;letter-spacing:.12em}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><b>ATTRACTOR BLOOM</b> &middot; drag to bend &middot; click to jump &middot; space next &middot; R random &middot; 1-3 palette</div>
+<script>
+(function () {
+  'use strict';
+
+  var PREVIEW = /preview/.test(location.hash);
+  var NW = 2048;                 // walker pool
+  var ITERS = PREVIEW ? 12 : 60; // iterations per walker per frame (~25k pts in preview, ~120k otherwise)
+  var DECAY = 0.985;
+  var MAX_W = 1280, MAX_H = 800;
+  var LUT_N = 4096;
+
+  var PRESETS = [
+    [-1.4, 1.6, 1.0, 0.7],
+    [1.7, 1.7, 0.6, 1.2],
+    [-1.7, 1.3, -0.1, -1.21],
+    [1.5, -1.8, 1.6, 0.9],
+    [-1.8, -2.0, -0.5, -0.9],
+    [1.1, -1.32, 2.4, 0.75]
+  ];
+
+  // Palette stops: [position 0..1, colour]. Position is the speed-driven hue index.
+  var PALETTES = [
+    [[0, '#1a0508'], [0.22, '#ff7a3d'], [0.45, '#ffe08a'], [0.62, '#ffffff'], [0.8, '#ff2f7e'], [1, '#6a3dff']], // ember
+    [[0, '#03201a'], [0.25, '#00e5a0'], [0.5, '#33e0ff'], [0.72, '#7f5bff'], [0.88, '#d08cff'], [1, '#f0e8ff']], // aurora
+    [[0, '#050a14'], [0.35, '#1d3a5c'], [0.65, '#5fa8d3'], [0.85, '#cfeaff'], [1, '#ffffff']]                   // ice
+  ];
+
+  var canvas = document.getElementById('c');
+  var ctx = canvas.getContext('2d', { alpha: false });
+  var hud = document.getElementById('hud');
+  if (PREVIEW) hud.style.display = 'none';
+  var glowCv = document.createElement('canvas');
+  var glowCtx = glowCv.getContext('2d');
+
+  var W = 0, H = 0, hist = null, hue = null, img = null, px = null;
+  var wx = new Float32Array(NW), wy = new Float32Array(NW), wd = new Int32Array(NW);
+
+  var palIdx = 0;
+  var colTable = new Uint32Array(256 * 256);
+  var lutQ = new Uint8Array(LUT_N);
+  var lutScale = 1;
+  var maxS = 1;
+  var BG = 0xff000000 | (10 << 16) | (6 << 8) | 5;
+
+  // morph state
+  var base = PRESETS[0].slice();
+  var fromP = PRESETS[0].slice(), toP = PRESETS[0].slice();
+  var toIdx = 0, morphT = 0, morphDur = 12;
+
+  var ptr = { tx: 0, ty: 0, ox: 0, oy: 0, active: false, down: false };
+  var downAt = null;
+  var last = performance.now(), time = 0;
+
+  // scratch buffers for the randomise test (allocated once)
+  var tX = new Float64Array(64), tY = new Float64Array(64);
+
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+  function reseed(i) {
+    wx[i] = (Math.random() - 0.5) * 1.2;
+    wy[i] = (Math.random() - 0.5) * 1.2;
+    wd[i] = 20; // discard the first 20 iterations after a reset
+  }
+  function reseedAll() { for (var i = 0; i < NW; i++) reseed(i); }
+
+  function resize() {
+    var cssW = window.innerWidth, cssH = window.innerHeight;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var bw = Math.max(2, Math.round(cssW * dpr)), bh = Math.max(2, Math.round(cssH * dpr));
+    var k = Math.min(1, MAX_W / bw, MAX_H / bh);
+    W = Math.max(2, Math.floor(bw * k));
+    H = Math.max(2, Math.floor(bh * k));
+    canvas.width = W; canvas.height = H;
+    hist = new Float32Array(W * H);
+    hue = new Float32Array(W * H);
+    img = ctx.createImageData(W, H);
+    px = new Uint32Array(img.data.buffer);
+    glowCv.width = Math.max(1, W >> 1);
+    glowCv.height = Math.max(1, H >> 1);
+    reseedAll();
+  }
+
+  function hexToRgb(h) {
+    return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  }
+
+  // Builds colour[hueIndex][brightnessIndex] so the per-pixel loop is a single lookup.
+  function buildColTable() {
+    var stops = PALETTES[palIdx];
+    var rgb = [];
+    for (var s = 0; s < stops.length; s++) rgb.push([stops[s][0], hexToRgb(stops[s][1])]);
+    var pal = new Float32Array(256 * 3);
+    for (var i = 0; i < 256; i++) {
+      var t = i / 255, j = 0;
+      while (j < rgb.length - 2 && t > rgb[j + 1][0]) j++;
+      var a = rgb[j], b = rgb[j + 1];
+      var u = clamp((t - a[0]) / (b[0] - a[0]), 0, 1);
+      for (var c = 0; c < 3; c++) pal[i * 3 + c] = a[1][c] + (b[1][c] - a[1][c]) * u;
+    }
+    for (var hq = 0; hq < 256; hq++) {
+      for (var dq = 0; dq < 256; dq++) {
+        var m = (dq / 255) * 0.92;
+        var R = Math.min(255, (5 + pal[hq * 3] * m) | 0);
+        var G = Math.min(255, (6 + pal[hq * 3 + 1] * m) | 0);
+        var B = Math.min(255, (10 + pal[hq * 3 + 2] * m) | 0);
+        colTable[(hq << 8) | dq] = (0xff000000 | (B << 16) | (G << 8) | R) >>> 0;
+      }
+    }
+  }
+
+  // Log tone-map as a lookup: density -> brightness index. Range follows the smoothed max.
+  function buildLut() {
+    var SHOULDER = 1 / (1 - Math.exp(-3));
+    var K = 10; // gain: lifts faint filaments before the log compresses the peaks
+    var range = maxS * 1.5;
+    lutScale = (LUT_N - 1) / range;
+    var invLog = 1 / Math.log(1 + maxS * K);
+    for (var i = 0; i < LUT_N; i++) {
+      var h = i / lutScale;
+      var d = Math.log(1 + h * K) * invLog;
+      if (d > 1) d = 1;
+      d = (1 - Math.exp(-3 * d)) * SHOULDER; // soft shoulder: lifts mid-tones, no hard clip to white
+      lutQ[i] = (d * 255) | 0;
+    }
+  }
+
+  // Walker loop: the only inner loop that deposits points. No allocations, no Math.pow.
+  function deposit(A, B, C, D, cr, sr, scale, cx, cy) {
+    var WW = W, HH = H;
+    for (var w = 0; w < NW; w++) {
+      var x = wx[w], y = wy[w], dsc = wd[w];
+      for (var k = 0; k < ITERS; k++) {
+        var nx = Math.sin(A * y) + C * Math.cos(A * x);
+        var ny = Math.sin(B * x) + D * Math.cos(B * y);
+        if (!(nx < 6 && nx > -6 && ny < 6 && ny > -6)) { // also catches NaN
+          x = (Math.random() - 0.5) * 1.2;
+          y = (Math.random() - 0.5) * 1.2;
+          dsc = 20;
+          continue;
+        }
+        if (dsc > 0) {
+          dsc--;
+        } else {
+          var dx = nx - x, dy = ny - y;
+          var hv = Math.sqrt(dx * dx + dy * dy) * 0.45;
+          if (hv > 1) hv = 1;
+          var rx = nx * cr - ny * sr, ry = nx * sr + ny * cr;
+          var ix = (cx + rx * scale) | 0, iy = (cy + ry * scale) | 0;
+          if (ix >= 0 && ix < WW - 1 && iy >= 0 && iy < HH - 1) {
+            // 2x2 splat so filaments stay thick enough to read at any size
+            var id = iy * WW + ix;
+            hist[id] += 1; hue[id] += hv;
+            hist[id + 1] += 1; hue[id + 1] += hv;
+            hist[id + WW] += 1; hue[id + WW] += hv;
+            hist[id + WW + 1] += 1; hue[id + WW + 1] += hv;
+          }
+        }
+        x = nx; y = ny;
+      }
+      wx[w] = x; wy[w] = y; wd[w] = dsc;
+    }
+  }
+
+  // Tone-maps, paints the ImageData and decays the histogram in one pass. Returns frame max.
+  function render() {
+    var n = W * H, fmax = 0;
+    var hs = hist, hu = hue, out = px, lq = lutQ, ct = colTable, ls = lutScale;
+    for (var i = 0; i < n; i++) {
+      var h = hs[i];
+      if (h > 0.0004) {
+        if (h > fmax) fmax = h;
+        var q = (h * ls) | 0;
+        if (q > LUT_N - 1) q = LUT_N - 1;
+        var hq = (hu[i] / h * 255) | 0;
+        if (hq < 0) hq = 0; else if (hq > 255) hq = 255;
+        out[i] = ct[(hq << 8) | lq[q]];
+        hs[i] = h * DECAY;
+        hu[i] *= DECAY;
+      } else {
+        out[i] = BG;
+        hs[i] = 0;
+        hu[i] = 0;
+      }
+    }
+    return fmax;
+  }
+
+  function smooth(u) { return u * u * (3 - 2 * u); }
+
+  function pickNext() {
+    var i;
+    do { i = (Math.random() * PRESETS.length) | 0; } while (i === toIdx && PRESETS.length > 1);
+    return i;
+  }
+
+  // Start a smooth morph from the current shape to a new preset.
+  function retarget(dur) {
+    fromP = base.slice();
+    toIdx = pickNext();
+    toP = PRESETS[toIdx].slice();
+    morphT = 0;
+    morphDur = dur;
+  }
+
+  // Click: hard jump to a random preset and reseed walkers.
+  function jump() {
+    toIdx = pickNext();
+    fromP = PRESETS[toIdx].slice();
+    toP = fromP.slice();
+    base = fromP.slice();
+    morphT = 0;
+    morphDur = 12;
+    reseedAll();
+  }
+
+  function spreadOK(a, b, c, d) {
+    for (var i = 0; i < 64; i++) { tX[i] = (Math.random() - 0.5) * 1.2; tY[i] = (Math.random() - 0.5) * 1.2; }
+    for (var k = 0; k < 200; k++) {
+      for (var j = 0; j < 64; j++) {
+        var x = tX[j], y = tY[j];
+        var nx = Math.sin(a * y) + c * Math.cos(a * x);
+        var ny = Math.sin(b * x) + d * Math.cos(b * y);
+        if (!(nx < 6 && nx > -6 && ny < 6 && ny > -6)) return false;
+        tX[j] = nx; tY[j] = ny;
+      }
+    }
+    var mx = 0, my = 0, vx = 0, vy = 0;
+    for (var m = 0; m < 64; m++) { mx += tX[m]; my += tY[m]; }
+    mx /= 64; my /= 64;
+    for (var q = 0; q < 64; q++) { vx += (tX[q] - mx) * (tX[q] - mx); vy += (tY[q] - my) * (tY[q] - my); }
+    return Math.sqrt((vx + vy) / 64) > 0.25; // collapsed to a point -> reject
+  }
+
+  function randomise() {
+    var cand = null;
+    for (var t = 0; t < 10; t++) {
+      var c = [
+        -2.2 + Math.random() * 4.4, -2.2 + Math.random() * 4.4,
+        -1.6 + Math.random() * 3.2, -1.6 + Math.random() * 3.2
+      ];
+      cand = c;
+      if (spreadOK(c[0], c[1], c[2], c[3])) break;
+    }
+    fromP = base.slice();
+    toP = cand;
+    toIdx = -1;
+    morphT = 0;
+    morphDur = 5;
+  }
+
+  function setPalette(i) {
+    palIdx = i;
+    buildColTable();
+  }
+
+  function setPtrTarget(e) {
+    ptr.tx = clamp(e.clientX / window.innerWidth * 2 - 1, -1, 1);
+    ptr.ty = clamp(e.clientY / window.innerHeight * 2 - 1, -1, 1);
+    ptr.active = true;
+  }
+
+  window.addEventListener('pointerdown', function (e) {
+    ptr.down = true;
+    setPtrTarget(e);
+    downAt = { x: e.clientX, y: e.clientY, t: performance.now(), moved: false };
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (e.pointerType === 'mouse' || ptr.down) {
+      setPtrTarget(e);
+      if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 6) downAt.moved = true;
+    }
+  });
+  window.addEventListener('pointerup', function (e) {
+    ptr.down = false;
+    if (e.pointerType !== 'mouse') ptr.active = false;
+    if (downAt && !downAt.moved && performance.now() - downAt.t < 450) jump();
+    downAt = null;
+  });
+  window.addEventListener('pointercancel', function () {
+    ptr.down = false; ptr.active = false; downAt = null;
+  });
+  document.documentElement.addEventListener('pointerleave', function () {
+    if (!ptr.down) ptr.active = false;
+  });
+
+  window.addEventListener('keydown', function (e) {
+    if (e.repeat) return;
+    if (e.code === 'Space') { e.preventDefault(); retarget(4); }
+    else if (e.code === 'KeyR') randomise();
+    else if (e.code === 'Digit1') setPalette(0);
+    else if (e.code === 'Digit2') setPalette(1);
+    else if (e.code === 'Digit3') setPalette(2);
+  });
+
+  window.addEventListener('resize', resize);
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    var dt = (now - last) / 1000;
+    last = now;
+    if (!(dt > 0)) dt = 0;
+    if (dt > 1 / 30) dt = 1 / 30;
+    time += dt;
+
+    // morph between presets (smoothstep), then queue the next one
+    morphT += dt;
+    if (morphT >= morphDur) {
+      fromP = toP.slice();
+      toIdx = pickNext();
+      toP = PRESETS[toIdx].slice();
+      morphT -= morphDur;
+      morphDur = 12;
+    }
+    var s = smooth(clamp(morphT / morphDur, 0, 1));
+    for (var i = 0; i < 4; i++) base[i] = fromP[i] + (toP[i] - fromP[i]) * s;
+
+    // pointer offsets on a and b, eased in and out
+    var k = 1 - Math.exp(-dt * 4);
+    ptr.ox += ((ptr.active ? ptr.tx : 0) - ptr.ox) * k;
+    ptr.oy += ((ptr.active ? ptr.ty : 0) - ptr.oy) * k;
+
+    var A = base[0] + ptr.ox * 0.4;
+    var B = base[1] + ptr.oy * 0.4;
+    var C = base[2], D = base[3];
+
+    var ang = time * 0.05;
+    var cr = Math.cos(ang), sr = Math.sin(ang);
+    var scale = Math.min(W, H) / 6.8;
+
+    deposit(A, B, C, D, cr, sr, scale, W / 2, H / 2);
+    buildLut();
+    var fmax = render();
+    maxS += (fmax - maxS) * (fmax > maxS ? 0.3 : 0.1);
+    if (!(maxS > 1)) maxS = 1;
+
+    ctx.putImageData(img, 0, 0);
+
+    // cheap glow: half-res copy drawn back additively
+    glowCtx.drawImage(canvas, 0, 0, glowCv.width, glowCv.height);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.35;
+    ctx.drawImage(glowCv, 0, 0, W, H);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  resize();
+  buildColTable();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

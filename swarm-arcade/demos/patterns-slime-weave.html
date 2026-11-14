@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="description" content="Ten thousand tiny agents spin glowing veins of living light.">
+<title>Slime Weave</title>
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; overflow: hidden; background: #05060a; }
+  canvas {
+    position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; display: block;
+    touch-action: none; user-select: none; -webkit-user-select: none; cursor: crosshair;
+  }
+  #hud {
+    position: fixed; left: 12px; top: 10px; max-width: calc(100vw - 150px);
+    font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace;
+    color: rgba(255,255,255,.7); pointer-events: none;
+    text-shadow: 0 0 6px rgba(0,0,0,.7);
+  }
+  #hud .t { letter-spacing: .18em; text-transform: uppercase; }
+  #hud .h { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .85; }
+  body::after {
+    content: ''; position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%);
+  }
+  body.preview #hud { display: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><div class="t">Slime Weave</div><div class="h" id="hint">drag: paint attractant | right-click or 2 fingers: repel | space: scatter | 1 2 3: palette | up/down: sensor reach</div></div>
+<script>
+(() => {
+'use strict';
+
+const PREVIEW = /preview/.test(location.hash);
+if (PREVIEW) document.body.classList.add('preview');
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const off = document.createElement('canvas');
+const offCtx = off.getContext('2d');
+const glow = document.createElement('canvas');
+const gctx = glow.getContext('2d');
+
+const TWO_PI = Math.PI * 2;
+const N = PREVIEW ? 3000 : 12000;     // agent count (typed arrays, fixed)
+const TURN = 0.3;                     // turn rate toward strongest sensor
+const JITTER = 0.12;                  // tiny random wobble per step
+const STEP = 1.1;                     // cells moved per step
+const DEP = 1;                        // deposit per agent per step
+const DEP_CAP = 6;                    // trail values never exceed this
+const PREWARM = 60;                   // steps run at init without rendering
+const NORM_SCALE = 255 / DEP_CAP;     // trail -> LUT index (v^0.6 applied in LUT)
+const LE = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
+
+// Palettes: [position 0..1, [r,g,b]]
+const PALETTES = [
+  [[0, [5, 6, 10]], [0.42, [4, 50, 58]], [0.78, [56, 242, 192]], [1, [255, 242, 192]]],   // teal-gold
+  [[0, [5, 6, 10]], [0.40, [70, 8, 60]], [0.72, [255, 62, 165]], [1, [255, 208, 240]]],    // magenta-violet
+  [[0, [5, 6, 10]], [0.40, [8, 30, 80]], [0.74, [58, 160, 255]], [1, [232, 246, 255]]]     // ice-blue
+];
+let palIdx = 0;
+const lut = new Uint32Array(256);
+
+function pack(r, g, b) {
+  return LE ? ((0xff000000 | (b << 16) | (g << 8) | r) >>> 0)
+            : (((r << 24) | (g << 16) | (b << 8) | 0xff) >>> 0);
+}
+function buildLUT() {
+  const stops = PALETTES[palIdx];
+  for (let k = 0; k < 256; k++) {
+    const t = Math.pow(k / 255, 0.6);
+    let i = 0;
+    while (i < stops.length - 2 && t > stops[i + 1][0]) i++;
+    const a = stops[i], b = stops[i + 1];
+    const f = Math.min(1, Math.max(0, (t - a[0]) / (b[0] - a[0])));
+    lut[k] = pack(
+      Math.round(a[1][0] + (b[1][0] - a[1][0]) * f),
+      Math.round(a[1][1] + (b[1][1] - a[1][1]) * f),
+      Math.round(a[1][2] + (b[1][2] - a[1][2]) * f));
+  }
+}
+
+// Simulation state
+let W = 0, H = 0;
+let trail = null, scratch = null;
+let img = null, img32 = null;
+let xl = null, xr = null;
+let px = null, py = null, ang = null;
+let sensorDist = 9;
+let sensorAngle = 0.575;
+let simTime = 0;
+let nextFood = 0.4;
+const food = { x: 0, y: 0, t: 0 };
+const pointers = new Map();
+
+// Canvas state
+let cw = 1, ch = 1, dpr = 1;
+
+function gridSize() {
+  const iw = Math.max(1, innerWidth), ih = Math.max(1, innerHeight);
+  let gw = Math.min(640, Math.max(64, Math.floor(iw / 2)));
+  let gh = Math.max(48, Math.round(gw * ih / iw));
+  if (gh > 400) {
+    gh = 400;
+    gw = Math.min(640, Math.max(64, Math.round(gh * iw / ih)));
+  }
+  return { W: gw, H: gh };
+}
+
+function seedRing() {
+  const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.42;
+  for (let i = 0; i < N; i++) {
+    const t = (i / N) * TWO_PI;
+    const r = R * (1 + (Math.random() - 0.5) * 0.04);
+    px[i] = cx + Math.cos(t) * r;
+    py[i] = cy + Math.sin(t) * r;
+    // half face inward (collapse into the hub), half run tangent (swirl)
+    ang[i] = (i & 1) ? t + Math.PI + (Math.random() - 0.5) * 1.2
+                     : t + Math.PI / 2 + (Math.random() - 0.5) * 0.6;
+  }
+}
+
+function scatter() {
+  for (let i = 0; i < N; i++) {
+    px[i] = Math.random() * W;
+    py[i] = Math.random() * H;
+    ang[i] = Math.random() * TWO_PI;
+  }
+}
+
+function rescaleGrid(nW, nH) {
+  const oW = W, oH = H;
+  W = nW; H = nH;
+  trail = new Float32Array(W * H);
+  scratch = new Float32Array(W * H);
+  off.width = W; off.height = H;
+  img = offCtx.createImageData(W, H);
+  img32 = new Uint32Array(img.data.buffer);
+  glow.width = Math.max(1, W >> 2);
+  glow.height = Math.max(1, H >> 2);
+  xl = new Int32Array(W); xr = new Int32Array(W);
+  for (let x = 0; x < W; x++) { xl[x] = (x - 1 + W) % W; xr[x] = (x + 1) % W; }
+  if (!px) {
+    px = new Float32Array(N); py = new Float32Array(N); ang = new Float32Array(N);
+    seedRing();
+  } else {
+    const sx = W / oW, sy = H / oH;
+    for (let i = 0; i < N; i++) { px[i] *= sx; py[i] *= sy; }
+  }
+  food.t = 0;
+  for (let i = 0; i < PREWARM; i++) update(1 / 60);
+}
+
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  cw = Math.max(1, Math.floor(innerWidth * dpr));
+  ch = Math.max(1, Math.floor(innerHeight * dpr));
+  canvas.width = cw; canvas.height = ch;
+  const g = gridSize();
+  if (g.W !== W || g.H !== H) rescaleGrid(g.W, g.H);
+}
+
+// Sample trail with toroidal wrap; floor keeps indices integer and in range.
+function sample(fx, fy) {
+  let ix = Math.floor(fx), iy = Math.floor(fy);
+  if (ix < 0) ix += W; else if (ix >= W) ix -= W;
+  if (iy < 0) iy += H; else if (iy >= H) iy -= H;
+  return trail[iy * W + ix];
+}
+
+function step() {
+  const sd = sensorDist, sa = sensorAngle;
+  // Pass 1: read the trail, turn, move. No deposits yet.
+  for (let i = 0; i < N; i++) {
+    const a = ang[i], x = px[i], y = py[i];
+    const fF = sample(x + Math.cos(a) * sd, y + Math.sin(a) * sd);
+    const aL = a - sa, aR = a + sa;
+    const fL = sample(x + Math.cos(aL) * sd, y + Math.sin(aL) * sd);
+    const fR = sample(x + Math.cos(aR) * sd, y + Math.sin(aR) * sd);
+    let na = a;
+    if (fF >= fL && fF >= fR) { /* keep heading */ }
+    else if (fL > fR) na -= TURN;
+    else if (fR > fL) na += TURN;
+    else na += (Math.random() < 0.5 ? -TURN : TURN);
+    na += (Math.random() - 0.5) * JITTER;
+    if (na > Math.PI) na -= TWO_PI; else if (na < -Math.PI) na += TWO_PI;
+    ang[i] = na;
+    let nx = x + Math.cos(na) * STEP, ny = y + Math.sin(na) * STEP;
+    if (nx < 0) nx += W; else if (nx >= W) nx -= W;
+    if (ny < 0) ny += H; else if (ny >= H) ny -= H;
+    px[i] = nx; py[i] = ny;
+  }
+  // Pass 2: deposit (after every agent has read the trail).
+  const foodOn = food.t > 0;
+  const fx = food.x, fy = food.y;
+  for (let i = 0; i < N; i++) {
+    let ix = px[i] | 0, iy = py[i] | 0;
+    if (ix >= W) ix = W - 1; if (iy >= H) iy = H - 1;
+    const idx = iy * W + ix;
+    let v = trail[idx] + DEP;
+    if (foodOn) {
+      const dx = px[i] - fx, dy = py[i] - fy;
+      if (dx * dx + dy * dy < 3600) v += 2;   // brief boost near the food source
+    }
+    trail[idx] = v > DEP_CAP ? DEP_CAP : v;
+  }
+}
+
+// Stamp a soft disk; amt may be negative (repel). Values clamped to [0, DEP_CAP].
+function stampDisk(cx, cy, r, amt) {
+  const x0 = Math.floor(cx), y0 = Math.floor(cy);
+  const ri = Math.ceil(r), r2 = r * r;
+  for (let dy = -ri; dy <= ri; dy++) {
+    const yy = (((y0 + dy) % H) + H) % H;
+    for (let dx = -ri; dx <= ri; dx++) {
+      const d2 = dx * dx + dy * dy;
+      if (d2 > r2) continue;
+      const xx = (((x0 + dx) % W) + W) % W;
+      const idx = yy * W + xx;
+      let v = trail[idx] + amt * (1 - d2 / (r2 + 1));
+      trail[idx] = v > DEP_CAP ? DEP_CAP : (v < 0 ? 0 : v);
+    }
+  }
+}
+
+function paintPointer(p) {
+  const x1 = p.gx, y1 = p.gy;
+  const x0 = p.lx, y0 = p.ly;
+  const dx = x1 - x0, dy = y1 - y0;
+  const n = Math.min(40, Math.max(1, Math.ceil(Math.hypot(dx, dy) / 2)));
+  const r = p.repel ? 8 : 6;
+  const amt = p.repel ? -4 : 4;
+  for (let k = 0; k <= n; k++) {
+    const t = k / n;
+    stampDisk(x0 + dx * t, y0 + dy * t, r, amt);
+  }
+  p.lx = x1; p.ly = y1;
+}
+
+function update(dt) {
+  simTime += dt;
+  sensorAngle = 0.575 + 0.225 * Math.sin(simTime * TWO_PI / 25);
+
+  // Invisible wanderer on a Lissajous path drops a food source every ~6 s.
+  if (simTime >= nextFood) {
+    const wx = W * (0.5 + 0.36 * Math.cos(simTime * 0.21));
+    const wy = H * (0.5 + 0.32 * Math.sin(simTime * 0.33 + 0.7));
+    food.x = wx; food.y = wy; food.t = 4;
+    nextFood = simTime + 6;
+  }
+  if (food.t > 0) {
+    food.t -= dt;
+    stampDisk(food.x, food.y, 3, 2.5);
+  }
+
+  for (const p of pointers.values()) paintPointer(p);
+
+  step();
+  diffuse();
+}
+
+// 3x3 box blur (wrapped), done as two separable 3-tap passes, then
+// mix 0.9 blur + 0.1 original and decay by 0.96.
+function diffuse() {
+  const s = scratch, t = trail;
+  // Horizontal sums into scratch (reads trail only).
+  for (let y = 0; y < H; y++) {
+    const rc = y * W;
+    for (let x = 0; x < W; x++) {
+      s[rc + x] = t[rc + xl[x]] + t[rc + x] + t[rc + xr[x]];
+    }
+  }
+  // Vertical sums from scratch; each index reads its own original trail value before writing.
+  for (let y = 0; y < H; y++) {
+    const ru = ((y - 1 + H) % H) * W, rc = y * W, rd = ((y + 1) % H) * W;
+    for (let x = 0; x < W; x++) {
+      const i = rc + x;
+      const blur = (s[ru + x] + s[i] + s[rd + x]) * (1 / 9);
+      const v = (blur * 0.9 + t[i] * 0.1) * 0.96;
+      t[i] = v > DEP_CAP ? DEP_CAP : v;
+    }
+  }
+}
+
+function render() {
+  const n = W * H;
+  for (let i = 0; i < n; i++) {
+    let k = (trail[i] * NORM_SCALE) | 0;
+    img32[i] = lut[k > 255 ? 255 : k];
+  }
+  offCtx.putImageData(img, 0, 0);
+
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+  ctx.imageSmoothingEnabled = true;
+  ctx.fillStyle = '#05060a';
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.drawImage(off, 0, 0, cw, ch);
+
+  if (!PREVIEW) {
+    gctx.imageSmoothingEnabled = true;
+    gctx.drawImage(off, 0, 0, glow.width, glow.height);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.25;
+    ctx.drawImage(glow, 0, 0, cw, ch);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+
+}
+
+// Input (pointer events for mouse and touch)
+function toGrid(e) {
+  return { gx: (e.clientX / innerWidth) * W, gy: (e.clientY / innerHeight) * H };
+}
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+canvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  const g = toGrid(e);
+  const repel = e.button === 2 || (e.pointerType === 'touch' && pointers.size >= 1);
+  pointers.set(e.pointerId, { gx: g.gx, gy: g.gy, lx: g.gx, ly: g.gy, repel });
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+});
+canvas.addEventListener('pointermove', (e) => {
+  const p = pointers.get(e.pointerId);
+  if (!p) return;
+  const g = toGrid(e);
+  p.gx = g.gx; p.gy = g.gy;
+});
+const release = (e) => { pointers.delete(e.pointerId); };
+canvas.addEventListener('pointerup', release);
+canvas.addEventListener('pointercancel', release);
+
+addEventListener('keydown', (e) => {
+  if (e.key === ' ' || e.code === 'Space') {
+    e.preventDefault();
+    scatter();
+  } else if (e.key === '1' || e.key === '2' || e.key === '3') {
+    palIdx = Number(e.key) - 1;
+    buildLUT();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    sensorDist = Math.min(20, sensorDist + 1);
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    sensorDist = Math.max(4, sensorDist - 1);
+  }
+});
+
+addEventListener('resize', resize);
+
+// Boot
+buildLUT();
+resize();
+
+let last = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const raw = (now - last) / 1000;
+  last = now;
+  if (raw > 0.25) return;           // tab was hidden or stalled: skip this frame
+  update(Math.min(raw, 1 / 30));
+  render();
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

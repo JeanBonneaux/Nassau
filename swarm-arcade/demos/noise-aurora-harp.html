@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora Harp</title>
+<style>
+html,body{height:100%}
+body{margin:0;overflow:hidden;background:#05060a}
+canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-action:none}
+#hud{position:fixed;left:14px;top:12px;font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7);pointer-events:none;z-index:2;user-select:none;white-space:nowrap}
+#hud .title{letter-spacing:.2em;text-transform:uppercase}
+#hud .row{display:flex;gap:10px;align-items:center;margin-top:3px}
+#mute{pointer-events:auto;font:inherit;color:inherit;background:rgba(5,6,10,.45);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:1px 8px;cursor:pointer}
+#mute:hover{border-color:rgba(255,255,255,.6)}
+#audiohint{transition:opacity 1.4s ease}
+#audiohint.gone{opacity:0}
+body.preview #hud{display:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="title">Aurora Harp</div>
+  <div>drag across strings &middot; keys A-L and Q-O</div>
+  <div class="row"><button id="mute" type="button">mute</button><span id="audiohint">click to start sound</span></div>
+</div>
+<script>
+(() => {
+'use strict';
+
+const PREVIEW = location.hash.indexOf('preview') !== -1;
+if (PREVIEW) document.body.classList.add('preview');
+
+const canvas = document.getElementById('c');
+const g = canvas.getContext('2d');
+const muteBtn = document.getElementById('mute');
+const audioHint = document.getElementById('audiohint');
+
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const rand = (a, b) => a + Math.random() * (b - a);
+
+// E minor pentatonic, low at left
+const FREQS = [164.81, 196.00, 220.00, 246.94, 293.66, 329.63, 392.00, 440.00, 493.88,
+               587.33, 659.26, 783.99, 880.00, 987.77, 1174.66, 1318.51, 1567.98, 1760.00];
+const N = FREQS.length;
+const KEYS = ['KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK','KeyL',
+              'KeyQ','KeyW','KeyE','KeyR','KeyT','KeyY','KeyU','KeyI','KeyO'];
+const KEYIDX = {};
+KEYS.forEach((k, i) => { KEYIDX[k] = i; });
+
+const MAX_VOICES = 16;
+const MAX_MOTES = PREVIEW ? 150 : 400;
+const STAR_COUNT = PREVIEW ? 60 : 130;
+const BG = '#05060a';
+const MASTER_LEVEL = 0.22;
+
+// ---------- state ----------
+let W = 0, H = 0, DPR = 1;
+const layout = { top: 0, bot: 0 };
+let T = 0; // visual clock (seconds)
+
+const strings = [];
+for (let i = 0; i < N; i++) {
+  const hi = i / (N - 1);
+  strings.push({
+    i, x: 0,
+    hue: 185 + 125 * hi,            // cyan (left) -> magenta (right)
+    w: TAU * (3 + 4 * hi),          // visual vibration rate
+    amp: 0, age: 0, active: false,
+    glow: 0, last: -1
+  });
+}
+
+const motes = [];
+const stars = [];
+for (let k = 0; k < 130; k++) {
+  stars.push({ x: Math.random(), y: Math.random(), r: rand(0.6, 1.6), ph: rand(0, TAU), sp: rand(0.4, 1.6) });
+}
+
+const BAND_DEFS = [
+  { c: [70, 240, 210],  base: 0.20, amp: 0.07, sp: 0.11, fq: 1.3, ph: 0.0, th: 0.20, a: 0.085 },
+  { c: [150, 110, 255], base: 0.30, amp: 0.09, sp: 0.075, fq: 0.9, ph: 2.1, th: 0.24, a: 0.07 },
+  { c: [90, 255, 150],  base: 0.14, amp: 0.05, sp: 0.16, fq: 1.8, ph: 4.0, th: 0.14, a: 0.06 },
+  { c: [90, 150, 255],  base: 0.36, amp: 0.06, sp: 0.06, fq: 1.1, ph: 5.3, th: 0.18, a: 0.06 }
+];
+const BANDS = PREVIEW ? BAND_DEFS.slice(0, 3) : BAND_DEFS;
+
+// ---------- audio ----------
+let ctx = null, master = null, comp = null, revIn = null, dlyIn = null, noiseBuf = null;
+let muted = false, audioLive = false;
+const voices = [];
+
+function makeImpulse(c) {
+  const len = Math.floor(c.sampleRate * 2.5);
+  const buf = c.createBuffer(2, len, c.sampleRate);
+  const tau = c.sampleRate * 0.55;
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / tau);
+  }
+  return buf;
+}
+
+function makeNoise(c) {
+  const len = Math.floor(c.sampleRate * 0.2);
+  const buf = c.createBuffer(1, len, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  return buf;
+}
+
+function makePan(v) {
+  if (ctx.createStereoPanner) {
+    const p = ctx.createStereoPanner();
+    p.pan.value = v;
+    return p;
+  }
+  return ctx.createGain();
+}
+
+function buildGraph() {
+  master = ctx.createGain();
+  master.gain.value = muted ? 0 : MASTER_LEVEL;
+  comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -18;
+  comp.ratio.value = 8;
+  comp.knee.value = 10;
+  comp.attack.value = 0.005;
+  comp.release.value = 0.2;
+  master.connect(comp);
+  comp.connect(ctx.destination);
+
+  // reverb send
+  revIn = ctx.createGain();
+  const conv = ctx.createConvolver();
+  conv.buffer = makeImpulse(ctx);
+  const revWet = ctx.createGain();
+  revWet.gain.value = 0.3;
+  revIn.connect(conv);
+  conv.connect(revWet);
+  revWet.connect(master);
+
+  // ping-pong delay: d1 (L) <-> d2 (R), 0.375 s each, lowpass + feedback <= 0.4 in the loop
+  dlyIn = ctx.createGain();
+  const d1 = ctx.createDelay(1.0), d2 = ctx.createDelay(1.0);
+  d1.delayTime.value = 0.375;
+  d2.delayTime.value = 0.375;
+  const lp1 = ctx.createBiquadFilter(), lp2 = ctx.createBiquadFilter();
+  lp1.type = 'lowpass'; lp1.frequency.value = 2400; lp1.Q.value = 0.5;
+  lp2.type = 'lowpass'; lp2.frequency.value = 2400; lp2.Q.value = 0.5;
+  const fb1 = ctx.createGain(), fb2 = ctx.createGain();
+  fb1.gain.value = 0.35;
+  fb2.gain.value = 0.35;
+  const outL = ctx.createGain(), outR = ctx.createGain();
+  outL.gain.value = 0.7;
+  outR.gain.value = 0.7;
+  const panL = makePan(-0.7), panR = makePan(0.7);
+  dlyIn.connect(d1);
+  d1.connect(outL);
+  d1.connect(lp1); lp1.connect(fb1); fb1.connect(d2);
+  d2.connect(outR);
+  d2.connect(lp2); lp2.connect(fb2); fb2.connect(d1);
+  outL.connect(panL); outR.connect(panR);
+  panL.connect(master); panR.connect(master);
+
+  noiseBuf = makeNoise(ctx);
+}
+
+function initAudio() {
+  if (PREVIEW) return;
+  try {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ctx = new AC();
+      buildGraph();
+    }
+    if (ctx.state === 'suspended') {
+      const p = ctx.resume();
+      if (p && p.catch) p.catch(() => {});
+    }
+  } catch (e) {
+    ctx = null; master = null;
+  }
+}
+
+function releaseVoice(v) {
+  const k = voices.indexOf(v);
+  if (k >= 0) voices.splice(k, 1);
+  for (const n of v.nodes) { try { n.disconnect(); } catch (e) { /* ignore */ } }
+}
+
+function stealVoice(v) {
+  try {
+    const now = ctx.currentTime;
+    const env = v.env;
+    env.gain.cancelScheduledValues(now);
+    env.gain.setTargetAtTime(0, now, 0.01);
+    v.saw.stop(now + 0.06);
+    v.tri.stop(now + 0.06);
+  } catch (e) { /* ignore */ }
+}
+
+function pluckAudio(i, loud) {
+  if (PREVIEW || !ctx || !master || ctx.state !== 'running') return;
+  try {
+    const t = ctx.currentTime + 0.005;
+    const hi = i / (N - 1);
+    const tau = 0.9 + (0.4 - 0.9) * hi;           // decay: 0.9 s low -> 0.4 s high
+    const peak = 0.15 + 0.3 * loud;
+    const f = FREQS[i];
+
+    const saw = ctx.createOscillator();
+    saw.type = 'sawtooth';
+    saw.frequency.value = f;
+    const tri = ctx.createOscillator();
+    tri.type = 'triangle';
+    tri.frequency.value = f * 2;                 // octave up
+    tri.detune.value = 4;                        // +4 cents
+    const sg = ctx.createGain(); sg.gain.value = 0.6;
+    const tg = ctx.createGain(); tg.gain.value = 0.25;
+
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 1.2;
+    lp.frequency.setValueAtTime(4500, t);
+    lp.frequency.setTargetAtTime(700, t, 0.35);
+
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0, t);
+    env.gain.linearRampToValueAtTime(peak, t + 0.005);
+    env.gain.setTargetAtTime(0, t + 0.005, tau);
+    env.gain.setTargetAtTime(0, t + 2.2, 0.06);  // release tail, silent by stop time
+
+    const ns = ctx.createBufferSource();
+    ns.buffer = noiseBuf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 3000; bp.Q.value = 1.0;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.15, t);
+    ng.gain.linearRampToValueAtTime(0, t + 0.015);
+
+    const rs = ctx.createGain(); rs.gain.value = 0.45;   // reverb send
+    const ds = ctx.createGain(); ds.gain.value = 0.3;    // delay send
+
+    saw.connect(sg); tri.connect(tg);
+    sg.connect(lp); tg.connect(lp);
+    lp.connect(env);
+    ns.connect(bp); bp.connect(ng); ng.connect(env);
+    env.connect(master);
+    env.connect(rs); rs.connect(revIn);
+    env.connect(ds); ds.connect(dlyIn);
+
+    const stopAt = t + 2.7;
+    saw.start(t);
+    tri.start(t);
+    ns.start(t, 0.1, 0.015);
+    saw.stop(stopAt);
+    tri.stop(stopAt);
+
+    const voice = {
+      saw, tri, env,
+      nodes: [saw, tri, sg, tg, lp, env, ns, bp, ng, rs, ds]
+    };
+    while (voices.length >= MAX_VOICES) stealVoice(voices.shift());
+    voices.push(voice);
+    saw.onended = () => releaseVoice(voice);
+  } catch (e) { /* audio must never throw */ }
+}
+
+function setMuted(m) {
+  muted = m;
+  muteBtn.textContent = m ? 'unmute' : 'mute';
+  if (!ctx || !master) return;
+  try {
+    const t = ctx.currentTime;
+    master.gain.cancelScheduledValues(t);
+    master.gain.setValueAtTime(master.gain.value, t);
+    master.gain.linearRampToValueAtTime(m ? 0 : MASTER_LEVEL, t + 0.08);
+  } catch (e) { /* ignore */ }
+}
+
+muteBtn.addEventListener('click', () => { setMuted(!muted); muteBtn.blur(); });
+
+// ---------- visuals ----------
+function spawnMote(s, loud) {
+  if (motes.length >= MAX_MOTES) return;
+  const u = rand(0.1, 0.9);
+  const life = rand(1.6, 3.0);
+  motes.push({
+    x: s.x + disp(s, u),
+    y: layout.top + (layout.bot - layout.top) * u,
+    vx: rand(-10, 10),
+    vy: -rand(30, 90) * loud,
+    life, max: life,
+    r: rand(0.8, 2.2),
+    h: s.hue + rand(-12, 12)
+  });
+}
+
+function disp(s, u) {
+  return s.amp * Math.exp(-1.7 * s.age) * Math.sin(3 * Math.PI * u) * Math.cos(s.w * s.age);
+}
+
+// Returns true if the string actually plucked (guard: same string not more often than 60 ms)
+function pluckString(i, loud) {
+  const s = strings[i];
+  if (!s) return false;
+  if (T - s.last < 0.06) return false;
+  s.last = T;
+  loud = clamp(loud, 0.3, 1);
+  s.amp = 22 * loud;
+  s.age = 0;
+  s.active = true;
+  s.glow = 1;
+  const count = Math.round((PREVIEW ? 3 : 6) + 10 * loud);
+  for (let k = 0; k < count; k++) spawnMote(s, loud);
+  pluckAudio(i, loud);
+  return true;
+}
+
+function nearestString(x) {
+  let best = 0, bd = Infinity;
+  for (let i = 0; i < N; i++) {
+    const d = Math.abs(strings[i].x - x);
+    if (d < bd) { bd = d; best = i; }
+  }
+  return best;
+}
+
+function update(dt) {
+  for (const s of strings) {
+    if (s.active) {
+      s.age += dt;
+      if (s.amp * Math.exp(-1.7 * s.age) < 0.15) s.active = false;
+    }
+    s.glow *= Math.exp(-dt / 0.8);
+  }
+  for (let k = motes.length - 1; k >= 0; k--) {
+    const m = motes[k];
+    m.life -= dt;
+    if (m.life <= 0) {
+      motes[k] = motes[motes.length - 1];
+      motes.pop();
+      continue;
+    }
+    m.vx += Math.sin(T * 1.3 + m.x * 0.02) * 4 * dt;
+    m.x += m.vx * dt;
+    m.y += m.vy * dt;
+    m.vy *= Math.exp(-0.35 * dt);
+  }
+}
+
+function smoothPath(pts) {
+  g.moveTo(pts[0].x, pts[0].y);
+  for (let j = 1; j < pts.length - 1; j++) {
+    const mx = (pts[j].x + pts[j + 1].x) / 2;
+    const my = (pts[j].y + pts[j + 1].y) / 2;
+    g.quadraticCurveTo(pts[j].x, pts[j].y, mx, my);
+  }
+  const last = pts[pts.length - 1];
+  g.lineTo(last.x, last.y);
+}
+
+function drawAurora() {
+  const SEG = 12;
+  for (const b of BANDS) {
+    const top = [], bot = [];
+    for (let j = 0; j <= SEG; j++) {
+      const x = W * j / SEG;
+      const q = x / W;
+      const y = H * (b.base + b.amp * Math.sin(q * TAU * b.fq + T * b.sp * 2 + b.ph)
+                    + 0.03 * Math.sin(q * Math.PI * 5.3 - T * b.sp * 1.7 + b.ph * 0.5));
+      top.push({ x, y });
+      const th = H * b.th * (0.8 + 0.2 * Math.sin(q * 7 + T * b.sp + b.ph));
+      bot.push({ x, y: y + th });
+    }
+    const yMin = H * (b.base - 0.12), yMax = H * (b.base + b.th + 0.12);
+    const grad = g.createLinearGradient(0, yMin, 0, yMax);
+    const [r, gg, bl] = b.c;
+    grad.addColorStop(0, `rgba(${r},${gg},${bl},0)`);
+    grad.addColorStop(0.5, `rgba(${r},${gg},${bl},${b.a})`);
+    grad.addColorStop(1, `rgba(${r},${gg},${bl},0)`);
+    g.beginPath();
+    smoothPath(top);
+    const rb = bot.slice().reverse();
+    g.lineTo(rb[0].x, rb[0].y);
+    smoothPath(rb);
+    g.closePath();
+    g.fillStyle = grad;
+    g.fill();
+  }
+}
+
+function drawStars() {
+  // one batched path, one fill: twinkle is carried by radius
+  const n = PREVIEW ? STAR_COUNT : stars.length;
+  g.fillStyle = 'rgba(220,235,255,0.5)';
+  g.beginPath();
+  for (let k = 0; k < n; k++) {
+    const st = stars[k];
+    const tw = 0.6 + 0.4 * Math.sin(T * st.sp + st.ph);
+    const r = st.r * tw;
+    g.moveTo(st.x * W + r, st.y * H);
+    g.arc(st.x * W, st.y * H, r, 0, TAU);
+  }
+  g.fill();
+}
+
+function drawStrings() {
+  const { top, bot } = layout;
+  for (const s of strings) {
+    const x = s.x;
+    if (!s.active) {
+      g.lineWidth = 1;
+      g.strokeStyle = `hsla(${s.hue},90%,72%,${(0.22 + 0.5 * s.glow).toFixed(3)})`;
+      g.beginPath();
+      g.moveTo(x, top);
+      g.lineTo(x, bot);
+      g.stroke();
+      if (s.glow > 0.02) {
+        g.lineWidth = 6;
+        g.strokeStyle = `hsla(${s.hue},95%,65%,${(0.1 * s.glow).toFixed(3)})`;
+        g.stroke();
+      }
+    } else {
+      g.beginPath();
+      for (let k = 0; k <= 40; k++) {
+        const u = k / 40;
+        const px = x + disp(s, u);
+        const py = top + (bot - top) * u;
+        if (k === 0) g.moveTo(px, py); else g.lineTo(px, py);
+      }
+      g.lineWidth = 6;
+      g.strokeStyle = `hsla(${s.hue},95%,65%,${(0.12 + 0.2 * s.glow).toFixed(3)})`;
+      g.stroke();
+      g.lineWidth = 1.4;
+      g.strokeStyle = `hsla(${s.hue},100%,85%,${(0.6 + 0.4 * s.glow).toFixed(3)})`;
+      g.stroke();
+    }
+  }
+  // string end pins, one batched fill
+  g.fillStyle = 'rgba(200,240,255,0.5)';
+  g.beginPath();
+  for (const s of strings) {
+    g.rect(s.x - 1.5, top - 1.5, 3, 3);
+    g.rect(s.x - 1.5, bot - 1.5, 3, 3);
+  }
+  g.fill();
+}
+
+// motes are batched into hue buckets: 2 fills per bucket (halo + core)
+const MOTE_BUCKETS = 6;
+const moteBuckets = [];
+for (let b = 0; b < MOTE_BUCKETS; b++) moteBuckets.push([]);
+
+function drawMotes() {
+  for (const list of moteBuckets) list.length = 0;
+  for (const m of motes) {
+    let b = Math.floor(((m.h - 185) / 125) * MOTE_BUCKETS);
+    moteBuckets[clamp(b, 0, MOTE_BUCKETS - 1)].push(m);
+  }
+  for (let b = 0; b < MOTE_BUCKETS; b++) {
+    const list = moteBuckets[b];
+    if (!list.length) continue;
+    const hue = 185 + (125 * (b + 0.5)) / MOTE_BUCKETS;
+    g.fillStyle = `hsla(${hue},100%,70%,0.16)`;
+    g.beginPath();
+    for (const m of list) {
+      const a = Math.min(1, m.life / m.max);
+      const r = m.r * 2.8 * (0.5 + 0.5 * a);
+      g.moveTo(m.x + r, m.y);
+      g.arc(m.x, m.y, r, 0, TAU);
+    }
+    g.fill();
+    g.fillStyle = `hsla(${hue},100%,88%,0.75)`;
+    g.beginPath();
+    for (const m of list) {
+      const a = Math.min(1, m.life / m.max);
+      const r = m.r * (0.4 + 0.6 * a);
+      g.moveTo(m.x + r, m.y);
+      g.arc(m.x, m.y, r, 0, TAU);
+    }
+    g.fill();
+  }
+}
+
+function draw() {
+  // trail fade on the full canvas
+  g.globalCompositeOperation = 'source-over';
+  g.fillStyle = 'rgba(5,6,10,0.22)';
+  g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'lighter';
+  drawAurora();
+  drawStars();
+  drawStrings();
+  drawMotes();
+  g.globalCompositeOperation = 'source-over';
+}
+
+// ---------- attract player ----------
+const player = { next: 0.25, idx: 8, queue: [], first: true };
+
+function playerStep(now) {
+  if (now >= player.next) {
+    if (player.first || Math.random() < 0.22) {
+      player.first = false;
+      const n = 5 + Math.floor(Math.random() * 4);
+      const start = Math.floor(Math.random() * (N - n + 1));
+      const rev = Math.random() < 0.5;
+      for (let k = 0; k < n; k++) {
+        player.queue.push({ at: now + k * 0.04, idx: rev ? start + n - 1 - k : start + k, loud: rand(0.35, 0.6) });
+      }
+      player.next = now + n * 0.04 + rand(0.9, 1.5);
+    } else {
+      const steps = [-3, -2, -1, -1, 1, 1, 2, 3];
+      player.idx = clamp(player.idx + steps[Math.floor(Math.random() * steps.length)], 0, N - 1);
+      player.queue.push({ at: now, idx: player.idx, loud: rand(0.3, 0.55) });
+      player.next = now + rand(0.25, 0.6);
+    }
+  }
+  for (let k = player.queue.length - 1; k >= 0; k--) {
+    const q = player.queue[k];
+    if (q.at <= now) {
+      player.queue.splice(k, 1);
+      pluckString(q.idx, q.loud);
+    }
+  }
+}
+
+// ---------- input ----------
+const ptr = { down: false, x: 0, y: 0, t: 0 };
+
+function inHud(target) {
+  return !!(target && target.closest && target.closest('#hud'));
+}
+
+window.addEventListener('pointerdown', (e) => {
+  initAudio();
+  if (PREVIEW || inHud(e.target)) return;
+  ptr.down = true;
+  ptr.x = e.clientX;
+  ptr.y = e.clientY;
+  ptr.t = performance.now();
+  pluckString(nearestString(e.clientX), 0.7);
+});
+
+window.addEventListener('pointermove', (e) => {
+  if (PREVIEW || !ptr.down) return;
+  const now = performance.now();
+  const x = e.clientX, y = e.clientY;
+  const dt = Math.max((now - ptr.t) / 1000, 0.001);
+  const speed = Math.hypot(x - ptr.x, y - ptr.y) / dt;
+  const loud = clamp(speed / 1800, 0.3, 1);
+  const x0 = ptr.x, dx = x - x0;
+  if (Math.abs(dx) > 0.01) {
+    for (let i = 0; i < N; i++) {
+      const sx = strings[i].x;
+      if ((sx - x0) * (sx - x) <= 0) {                 // crossed between previous and current x
+        const tt = (sx - x0) / dx;
+        const yc = ptr.y + tt * (y - ptr.y);
+        if (yc >= layout.top - 12 && yc <= layout.bot + 12) pluckString(i, loud);
+      }
+    }
+  }
+  ptr.x = x; ptr.y = y; ptr.t = now;
+});
+
+const endPtr = () => { ptr.down = false; };
+window.addEventListener('pointerup', endPtr);
+window.addEventListener('pointercancel', endPtr);
+
+window.addEventListener('keydown', (e) => {
+  initAudio();
+  if (PREVIEW || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+  const i = KEYIDX[e.code];
+  if (i === undefined) return;
+  pluckString(i, 0.8);
+});
+
+// ---------- layout / loop ----------
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = Math.floor(W * DPR);
+  canvas.height = Math.floor(H * DPR);
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  layout.top = H * 0.15;
+  layout.bot = H * 0.86;
+  for (const s of strings) s.x = W * (0.08 + 0.84 * s.i / (N - 1));
+  g.globalCompositeOperation = 'source-over';
+  g.fillStyle = BG;
+  g.fillRect(0, 0, W, H);
+}
+window.addEventListener('resize', resize);
+
+let last = performance.now();
+function frame(now) {
+  let dt = (now - last) / 1000;
+  last = now;
+  if (!(dt > 0)) dt = 0;
+  dt = Math.min(dt, 1 / 30);
+  T += dt;
+  playerStep(T);
+  update(dt);
+  draw();
+  if (!audioLive && ctx && ctx.state === 'running') {
+    audioLive = true;
+    audioHint.classList.add('gone');
+  }
+  requestAnimationFrame(frame);
+}
+
+resize();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

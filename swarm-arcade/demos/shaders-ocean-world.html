@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tidal Dusk</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#05060a;touch-action:none;overscroll-behavior:none}
+canvas{display:block;width:100vw;height:100vh}
+#hud{position:fixed;top:12px;left:12px;font:12px ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7);pointer-events:none;line-height:1.5;text-shadow:0 0 6px rgba(0,0,0,.6);z-index:2;user-select:none}
+#hud b{font-weight:600;letter-spacing:.14em}
+#nogl{display:none;position:fixed;top:50%;left:0;right:0;text-align:center;font:12px ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><b>TIDAL DUSK</b><br>move: look &middot; hold: ascend &middot; T: time of day</div>
+<div id="nogl">WebGL is not available in this browser.</div>
+<script>
+(function () {
+  "use strict";
+
+  var VS = [
+    "attribute vec2 aPos;",
+    "void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }"
+  ].join("\n");
+
+  var FS = [
+    "precision highp float;",
+    "uniform vec2 uRes;",
+    "uniform float uTime;",
+    "uniform vec2 uMouse;",
+    "uniform float uCamZ;",
+    "uniform float uAsc;",
+    "uniform float uSteps;",
+    "uniform float uOct;",
+    "uniform vec3 uSunDir;",
+    "uniform vec3 uSunCol;",
+    "uniform float uSunI;",
+    "uniform vec3 uZen;",
+    "uniform vec3 uHor;",
+    "uniform vec3 uDeep;",
+    "uniform vec3 uLight;",
+    "uniform vec3 uCloud;",
+    "uniform vec3 uRock;",
+    "uniform float uStars;",
+
+    "float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }",
+
+    "float vnoise(vec2 p){",
+    "  vec2 i = floor(p); vec2 f = fract(p);",
+    "  f = f*f*(3.0-2.0*f);",
+    "  float a = hash(i), b = hash(i+vec2(1.0,0.0)), c = hash(i+vec2(0.0,1.0)), d = hash(i+vec2(1.0,1.0));",
+    "  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y);",
+    "}",
+
+    "float fbm(vec2 p, float oct){",
+    "  float s = 0.0; float a = 0.5;",
+    "  mat2 m = mat2(0.8,0.6,-0.6,0.8);",
+    "  for(int i=0;i<5;i++){ if(float(i)>=oct) break; s += a*vnoise(p); p = m*p*2.02; a *= 0.5; }",
+    "  return s;",
+    "}",
+
+    // Ocean height: sum of directional sines, sharp-crest trick on the first two octaves.
+    "float waveH(vec2 p, float oct, float dist){",
+    "  float amp = 0.85*exp(-dist*0.02);",
+    "  float f = 0.18; float h = 0.0;",
+    "  for(int i=0;i<5;i++){",
+    "    if(float(i)>=oct) break;",
+    "    float fi = float(i);",
+    "    vec2 d = vec2(cos(fi*1.7), sin(fi*1.7));",
+    "    float ph = dot(d,p)*f + uTime*sqrt(f)*1.6 + fi*0.7;",
+    "    float w = (i<2) ? (1.0-2.0*abs(sin(ph))) : sin(ph);",
+    "    h += amp*w;",
+    "    amp *= 0.55; f *= 1.8;",
+    "  }",
+    "  return h;",
+    "}",
+
+    "vec3 calcN(vec2 p, float t){",
+    "  float e = 0.02 + t*0.004;",
+    "  float hx0 = waveH(p-vec2(e,0.0),5.0,t), hx1 = waveH(p+vec2(e,0.0),5.0,t);",
+    "  float hz0 = waveH(p-vec2(0.0,e),5.0,t), hz1 = waveH(p+vec2(0.0,e),5.0,t);",
+    "  return normalize(vec3(hx0-hx1, 2.0*e, hz0-hz1));",
+    "}",
+
+    "vec3 sky(vec3 rd, float octs){",
+    "  float y = rd.y;",
+    "  vec3 col = mix(uHor, uZen, smoothstep(0.0, 0.5, max(y,0.0)));",
+    "  col += uHor*0.12*exp(-abs(y)*22.0);",
+    "  float sd = max(dot(rd,uSunDir),0.0);",
+    "  vec3 sunC = uSunCol*uSunI;",
+    "  col += sunC*(pow(sd,900.0)*6.0 + pow(sd,6.0)*0.18);",
+    "  float cover = 0.0;",
+    "  if(y > 0.02){",
+    "    vec2 uv = rd.xz/y*0.5 + vec2(uTime*0.02, uTime*0.005);",
+    "    float c = fbm(uv, octs);",
+    "    cover = smoothstep(0.5,0.7,c)*smoothstep(0.02,0.2,y);",
+    "    vec3 lit = uCloud*mix(uHor, sunC, 0.6) + sunC*pow(sd,8.0)*0.5;",
+    "    vec3 shadow = uZen*0.6 + uHor*0.12;",
+    "    vec3 cc = mix(shadow, lit, smoothstep(0.55,0.85,c));",
+    "    col = mix(col, cc, cover*0.95);",
+    "  }",
+    "  if(uStars > 0.0 && y > 0.0){",
+    "    vec3 cell = floor(rd*260.0);",
+    "    float hs = hash(vec2(cell.x + cell.z*7.31, cell.y*1.73));",
+    "    float st = step(0.9965, hs)*(0.55+0.45*sin(uTime*2.0+hs*90.0));",
+    "    col += vec3(st)*uStars*(1.0-cover)*smoothstep(0.0,0.15,y);",
+    "  }",
+    // Distant island silhouettes near the horizon.
+    "  float az = atan(rd.x, -rd.z);",
+    "  float ridge = 0.03*exp(-pow((az-1.1)*4.0,2.0)) + 0.02*exp(-pow((az+0.9)*6.0,2.0)) + 0.012*exp(-pow((az-2.5)*9.0,2.0)) + 0.006*exp(-pow((az+2.6)*5.0,2.0));",
+    "  float rock = (1.0 - smoothstep(ridge-0.003, ridge+0.003, y))*step(0.0,y)*step(0.0005,ridge);",
+    "  col = mix(col, uRock, rock);",
+    "  return col;",
+    "}",
+
+    "vec3 water(vec3 p, vec3 rd, float t, float h){",
+    "  vec3 n = calcN(p.xz, t);",
+    "  float hn = clamp(h*0.55+0.5, 0.0, 1.0);",
+    "  vec3 refr = mix(uDeep, uLight, hn);",
+    "  refr *= 0.8 + 0.3*max(dot(n,uSunDir),0.0);",
+    "  vec3 rf = reflect(rd, n);",
+    "  float fres = clamp(pow(1.0-max(dot(n,-rd),0.0),5.0)*0.75+0.03, 0.0, 1.0);",
+    "  vec3 refl = sky(rf, 2.0)*0.6;",
+    "  vec3 col = mix(refr*0.8, refl, fres);",
+    "  float rs = max(dot(rf,uSunDir),0.0);",
+    "  float sp = pow(rs,300.0)*6.0 + pow(rs,40.0)*0.35*(0.6+0.4*hn);",
+    "  col += uSunCol*uSunI*sp;",
+    "  col = mix(col, uHor, 1.0-exp(-t*0.012));",
+    "  return col;",
+    "}",
+
+    "void main(){",
+    "  vec2 uv = gl_FragCoord.xy/uRes;",
+    "  vec2 q = (gl_FragCoord.xy-0.5*uRes)/uRes.y;",
+    "  float yaw = sin(uTime*0.1)*0.4 + (uMouse.x-0.5)*1.8;",
+    "  float pitch = clamp((uMouse.y-0.5)*0.6 - 0.1, -0.35, 0.3);",
+    "  vec3 rd = normalize(vec3(q.x, q.y, -1.4));",
+    "  float cp = cos(pitch), sp = sin(pitch);",
+    "  rd = vec3(rd.x, rd.y*cp - rd.z*sp, rd.y*sp + rd.z*cp);",
+    "  float cy = cos(yaw), sy = sin(yaw);",
+    "  rd = vec3(rd.x*cy + rd.z*sy, rd.y, -rd.x*sy + rd.z*cy);",
+
+    "  float camY = mix(2.5 + 0.6*sin(uTime*0.2) + 0.15*sin(uTime*0.7), 9.0, uAsc);",
+    "  vec3 ro = vec3(0.0, camY, -uCamZ);",
+
+    "  vec3 col = vec3(0.0);",
+    "  float t = 0.0, tPrev = 0.0, hh = 0.0;",
+    "  bool hit = false;",
+    "  if(rd.y < -0.001){",
+    "    for(int i=0;i<64;i++){",
+    "      if(float(i) >= uSteps) break;",
+    "      vec3 p = ro + rd*t;",
+    "      hh = waveH(p.xz, 3.0, t);",
+    "      float d = p.y - hh;",
+    "      if(d < 0.01){ hit = true; break; }",
+    "      tPrev = t;",
+    "      t += clamp(d*0.5, 0.05, 4.0);",
+    "      if(t > 400.0) break;",
+    "    }",
+    "    if(hit){",
+    "      float a = tPrev, b = t;",
+    "      for(int k=0;k<4;k++){",
+    "        float m = 0.5*(a+b);",
+    "        vec3 pm = ro + rd*m;",
+    "        float dm = pm.y - waveH(pm.xz, 3.0, m);",
+    "        if(dm > 0.0) a = m; else b = m;",
+    "      }",
+    "      t = b;",
+    "      vec3 ph = ro + rd*t;",
+    "      hh = waveH(ph.xz, 3.0, t);",
+    "      col = water(ph, rd, t, hh);",
+    "    }",
+    "  }",
+    "  if(!hit) col = sky(rd, uOct);",
+
+    "  col += (hash(gl_FragCoord.xy)-0.5)/255.0;",
+    "  col = 1.0 - exp(-max(col,0.0)*1.3);",
+    "  col = pow(col, vec3(0.4545));",
+    "  float vig = pow(16.0*uv.x*(1.0-uv.x)*uv.y*(1.0-uv.y), 0.12);",
+    "  col *= mix(0.5, 1.0, vig);",
+    "  gl_FragColor = vec4(col, 1.0);",
+    "}"
+  ].join("\n");
+
+  var PREVIEW = /preview/.test(location.hash);
+
+  var canvas = document.getElementById("c");
+  var hud = document.getElementById("hud");
+  if (PREVIEW && hud) hud.parentNode.removeChild(hud);
+
+  var gl = null;
+  try {
+    gl = canvas.getContext("webgl", { antialias: false, alpha: false, depth: false, stencil: false, premultipliedAlpha: false });
+  } catch (e) { gl = null; }
+  if (!gl) {
+    var ng = document.getElementById("nogl");
+    if (ng) ng.style.display = "block";
+    return;
+  }
+
+  function compile(type, src) {
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.error("shader compile: " + gl.getShaderInfoLog(s));
+      return null;
+    }
+    return s;
+  }
+
+  var vs = compile(gl.VERTEX_SHADER, VS);
+  var fs = compile(gl.FRAGMENT_SHADER, FS);
+  if (!vs || !fs) return;
+
+  var prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.bindAttribLocation(prog, 0, "aPos");
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error("program link: " + gl.getProgramInfoLog(prog));
+    return;
+  }
+  gl.useProgram(prog);
+
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  var U = {};
+  ["uRes", "uTime", "uMouse", "uCamZ", "uAsc", "uSteps", "uOct", "uSunDir", "uSunCol", "uSunI",
+   "uZen", "uHor", "uDeep", "uLight", "uCloud", "uRock", "uStars"].forEach(function (n) {
+    U[n] = gl.getUniformLocation(prog, n);
+  });
+
+  // Time-of-day presets: 0 dusk, 1 noon, 2 night (moon + stars).
+  var PRESETS = [
+    { zen: [0.043, 0.165, 0.267], hor: [1.0, 0.604, 0.384], sun: [1.0, 0.8, 0.52], sunI: 1.0,
+      deep: [0.024, 0.188, 0.239], light: [0.114, 0.478, 0.478], cloud: [1.0, 0.66, 0.52],
+      rock: [0.09, 0.04, 0.07], stars: 0.0 },
+    { zen: [0.09, 0.36, 0.72], hor: [0.72, 0.88, 1.0], sun: [1.0, 0.97, 0.88], sunI: 1.1,
+      deep: [0.0, 0.22, 0.31], light: [0.1, 0.6, 0.62], cloud: [1.0, 1.0, 1.0],
+      rock: [0.22, 0.2, 0.18], stars: 0.0 },
+    { zen: [0.008, 0.016, 0.04], hor: [0.08, 0.1, 0.2], sun: [0.62, 0.72, 0.95], sunI: 0.45,
+      deep: [0.0, 0.02, 0.05], light: [0.03, 0.12, 0.2], cloud: [0.22, 0.26, 0.42],
+      rock: [0.02, 0.02, 0.04], stars: 1.0 }
+  ];
+
+  function norm3(v) {
+    var l = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) || 1;
+    return [v[0] / l, v[1] / l, v[2] / l];
+  }
+
+  function sunDirFor(i, t) {
+    if (i === 0) return norm3([0.75, 0.15 + 0.07 * Math.sin(t * 0.05), -1.0]);
+    if (i === 1) return norm3([0.35, 0.8, -0.45]);
+    return norm3([-0.4, 0.4, -0.82]);
+  }
+
+  var todCur = 0, todTarget = 0;
+
+  function lerpArr(a, b, f) {
+    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+  }
+
+  // Pointer state.
+  var mouseTX = 0.5, mouseTY = 0.5, mx = 0.5, my = 0.5;
+  var pointerDown = false, hasPtr = false, lastPtr = -1e9;
+  var autoB = 1.0, asc = 0.0;
+
+  function nowS() { return performance.now() / 1000; }
+
+  window.addEventListener("pointermove", function (e) {
+    mouseTX = e.clientX / Math.max(1, window.innerWidth);
+    mouseTY = 1 - e.clientY / Math.max(1, window.innerHeight);
+    hasPtr = true; lastPtr = nowS();
+  });
+  window.addEventListener("pointerdown", function (e) {
+    pointerDown = true; hasPtr = true; lastPtr = nowS();
+    mouseTX = e.clientX / Math.max(1, window.innerWidth);
+    mouseTY = 1 - e.clientY / Math.max(1, window.innerHeight);
+  });
+  function release() { pointerDown = false; lastPtr = nowS(); }
+  window.addEventListener("pointerup", release);
+  window.addEventListener("pointercancel", release);
+  window.addEventListener("keydown", function (e) {
+    if (e.code === "KeyT" || e.key === "t" || e.key === "T") todTarget += 1;
+  });
+
+  // Resolution scale: default 0.6, adaptive 0.3..0.9, fixed in preview.
+  var MIN_SCALE = 0.3, MAX_SCALE = 0.9;
+  var scale = PREVIEW ? 0.35 : 0.6;
+  var steps = PREVIEW ? 28 : 48;
+  var oct = PREVIEW ? 2 : 5;
+
+  function resize() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(2, Math.round(window.innerWidth * dpr * scale));
+    var h = Math.max(2, Math.round(window.innerHeight * dpr * scale));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    gl.viewport(0, 0, w, h);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  var time = 0, camZ = 0, last = nowS(), ftAvg = 16, lastAdapt = 0, frames = 0;
+  var blendCol = null;
+
+  function blendParams(t) {
+    var i = Math.floor(todCur) % 3;
+    var j = (i + 1) % 3;
+    var f = todCur - Math.floor(todCur);
+    f = f * f * (3 - 2 * f);
+    var A = PRESETS[i], B = PRESETS[j];
+    var sd = norm3(lerpArr(sunDirFor(i, t), sunDirFor(j, t), f));
+    return {
+      sunDir: sd,
+      sunCol: lerpArr(A.sun, B.sun, f),
+      sunI: A.sunI + (B.sunI - A.sunI) * f,
+      zen: lerpArr(A.zen, B.zen, f),
+      hor: lerpArr(A.hor, B.hor, f),
+      deep: lerpArr(A.deep, B.deep, f),
+      light: lerpArr(A.light, B.light, f),
+      cloud: lerpArr(A.cloud, B.cloud, f),
+      rock: lerpArr(A.rock, B.rock, f),
+      stars: A.stars + (B.stars - A.stars) * f
+    };
+  }
+
+  function frame() {
+    var now = nowS();
+    var raw = Math.max(0, now - last);
+    last = now;
+    var dt = Math.min(raw, 1 / 30);
+    time += dt;
+    frames++;
+
+    // Adaptive resolution scale (after warm-up, never in preview).
+    if (!PREVIEW && frames > 3) {
+      ftAvg += (Math.min(raw, 0.1) * 1000 - ftAvg) * 0.08;
+      if (now - lastAdapt > 0.6) {
+        if (ftAvg > 30 && scale > MIN_SCALE + 1e-6) {
+          scale = Math.max(MIN_SCALE, Math.round((scale - 0.1) * 10) / 10);
+          lastAdapt = now;
+        } else if (ftAvg < 12 && scale < MAX_SCALE - 1e-6) {
+          scale = Math.min(MAX_SCALE, Math.round((scale + 0.1) * 10) / 10);
+          lastAdapt = now;
+        }
+      }
+    }
+
+    // Attract autopilot: takes over after 3 s without pointer input (or from the start).
+    var idle = !hasPtr || (!pointerDown && now - lastPtr > 3);
+    autoB += ((idle ? 1 : 0) - autoB) * (1 - Math.exp(-dt * 1.5));
+    var ax = 0.5 + 0.45 * Math.sin(time * 0.11);
+    var ay = 0.5 + 0.5 * Math.sin(time * 0.23 + 1.0);
+    var ex = mouseTX * (1 - autoB) + ax * autoB;
+    var ey = mouseTY * (1 - autoB) + ay * autoB;
+    var k = 1 - Math.exp(-dt * 5);
+    mx += (ex - mx) * k;
+    my += (ey - my) * k;
+
+    // Hold to ascend and speed up.
+    asc += ((pointerDown ? 1 : 0) - asc) * (1 - Math.exp(-dt * 2.5));
+    camZ += dt * (1.5 + 2.5 * asc);
+    if (camZ > 10000) camZ -= 10000;
+
+    // Time-of-day easing.
+    todCur += (todTarget - todCur) * (1 - Math.exp(-dt * 2.2));
+    if (todCur >= 3) { todCur -= 3; todTarget -= 3; }
+
+    resize();
+    var P = blendParams(time);
+    gl.uniform2f(U.uRes, canvas.width, canvas.height);
+    gl.uniform1f(U.uTime, time);
+    gl.uniform2f(U.uMouse, mx, my);
+    gl.uniform1f(U.uCamZ, camZ);
+    gl.uniform1f(U.uAsc, asc);
+    gl.uniform1f(U.uSteps, steps);
+    gl.uniform1f(U.uOct, oct);
+    gl.uniform3f(U.uSunDir, P.sunDir[0], P.sunDir[1], P.sunDir[2]);
+    gl.uniform3f(U.uSunCol, P.sunCol[0], P.sunCol[1], P.sunCol[2]);
+    gl.uniform1f(U.uSunI, P.sunI);
+    gl.uniform3f(U.uZen, P.zen[0], P.zen[1], P.zen[2]);
+    gl.uniform3f(U.uHor, P.hor[0], P.hor[1], P.hor[2]);
+    gl.uniform3f(U.uDeep, P.deep[0], P.deep[1], P.deep[2]);
+    gl.uniform3f(U.uLight, P.light[0], P.light[1], P.light[2]);
+    gl.uniform3f(U.uCloud, P.cloud[0], P.cloud[1], P.cloud[2]);
+    gl.uniform3f(U.uRock, P.rock[0], P.rock[1], P.rock[2]);
+    gl.uniform1f(U.uStars, P.stars);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
