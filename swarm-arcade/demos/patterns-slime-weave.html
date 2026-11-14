@@ -122,7 +122,7 @@ function wrap(v, m) {
 
 // Seed 8 to 12 soft Gaussian clusters plus ~15% uniform agents. No ring.
 function seedClusters() {
-  const R = Math.min(W, H) * 0.12;      // Gaussian sigma per cluster
+  const R = Math.min(W, H) * 0.16;      // Gaussian sigma per cluster (widened so clusters cover the frame)
   const K = 8 + ((Math.random() * 5) | 0);
   const mx = W * 0.08, my = H * 0.08;   // centres kept 8% inside the edges
   const cxs = new Float32Array(K), cys = new Float32Array(K);
