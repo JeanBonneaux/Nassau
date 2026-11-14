@@ -11,12 +11,13 @@
 //          /api/scan    réseaux Wi-Fi à portée (lance une recherche, puis renvoie la liste)
 //          /api/radar   radar à ultrasons (radar.ino) : état et carte polaire en JSON ; paramètres facultatifs : mode=off|fixe|balayage,
 //                       angle=-80..80, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..80, ech=1..3, inv=0|1, effacer=1,
-//                       butee=10..80 (degrés de part et d'autre du centre que le servo ne dépasse jamais)
+//                       butee=10..30 (degrés de part et d'autre du centre que le servo ne dépasse jamais ; plafond RADAR_BUTEE_MAX, v12)
 //          /api/tour    tour sur place (tour.ino) : état et mesures [dixièmes de degré, mm] du dernier tour ; go=1 le lance, stop=1 l'arrête
 //          /api/mouv    v10 : avance (av=MM, v=, cap=) ou rotation (rot=DEG) exécutée par le cerveau, stop=1 ; voir mouv.ino
 //          /api/pose    position du robot (position.ino) : x, y en mm, cap en degrés, tracé [x, y] ; zero=1 remet à zéro ;
 //                       gen et from : la page ne redemande que les points qu'elle n'a pas encore
-//          /api/essai   essais sans mouvement de l'enquête sur la liaison : b=octets à envoyer, ecoute=ms (voir handleEssai)
+//          /api/essai   essais sans mouvement de l'enquête sur la liaison : b=octets à envoyer, ecoute=ms (voir handleEssai) ;
+//                       plus compilé depuis la v12, sauf si ESSAI_LIAISON vaut 1 (fichier principal)
 //          /api/carte   carte des obstacles vus par le capteur de distance (carte.ino) : points [x, y] en mm ; effacer=1 ;
 //                       dx=N décalage du capteur ; gen et from comme pour /api/pose
 //
@@ -82,7 +83,7 @@ void handleState() {
   j.reserve(2400);
   char b[800];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v11 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
+    "{\"ms\":%lu,\"ver\":\"v12 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u,\"wall\":%u,\"cur\":[%d,%d],\"base\":%s},"
@@ -272,6 +273,9 @@ void handleUpdateUpload() {
 // qui ne peuvent être, même lus de travers par le robot, ni un ordre de roues, de moteurs ou de nettoyage, ni un
 // changement de mode ou de débit. Restent permis : les valeurs inférieures à 128, 255, et les ordres 139 (voyants),
 // 140 et 141 (notes), 142, 148, 149, 150 (capteurs). Refusé pendant que les roues tournent.
+// v12 : plus compilé par défaut (ESSAI_LIAISON, fichier principal). Avant de le remettre : n'accepter que des ordres
+// complets (140 annonce son nombre de notes, 148 et 149 leur nombre de paquets), sinon le robot attend la suite.
+#if ESSAI_LIAISON
 bool essaiByteOk(long v) {
   if (v < 0 || v > 255) return false;
   if (v < 128 || v == 255) return true;
@@ -331,6 +335,7 @@ void handleEssai() {
   out.printf("), %lu octet(s) reçu(s) en %lu ms.\n", (unsigned long)total, (unsigned long)ecoute);
   http.send(200, "application/json", j);
 }
+#endif   // ESSAI_LIAISON
 
 // ---------- Tour sur place (tour.ino) ----------
 // /api/tour renvoie l'état et les mesures du dernier tour ; go=1 le lance (mêmes vérifications que la touche 't'),
@@ -353,7 +358,8 @@ void handleRadar() {
   bool save = false;
   if (http.hasArg("butee")) {   // traitée en premier : l'angle demandé dans la même requête lui obéit déjà
     int v = http.arg("butee").toInt();
-    if (v >= 10 && v <= RADAR_SPAN_MAX) { radar.butee = (int8_t)v; out.printf("Radar : butée du servo à %d° de chaque côté.\n", v); save = true; }
+    if (v >= 10 && v <= RADAR_BUTEE_MAX) { radar.butee = (int8_t)v; out.printf("Radar : butée du servo à %d° de chaque côté.\n", v); save = true; }
+    else out.printf("Radar : butée de %d° refusée (de 10 à %d° ; au-delà il faut changer RADAR_BUTEE_MAX dans radar.ino).\n", v, RADAR_BUTEE_MAX);   // v12
   }
   if (http.hasArg("angle")) radar.fixedDeg = (int8_t)constrain(http.arg("angle").toInt(), -radarLimit(), radarLimit());
   if (http.hasArg("mode")) {

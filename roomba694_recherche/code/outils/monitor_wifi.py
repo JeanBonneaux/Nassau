@@ -12,9 +12,14 @@ import csv
 import datetime
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
+
+# Le nom du réseau de la maison ne doit entrer dans aucun fichier : masqué dans les lignes de console, comme le fait
+# enregistreur.py (ajouté le 2026-11-14 : cet outil-ci recopiait ces lignes telles quelles).
+RE_RESEAU = re.compile(r"([Rr]éseau de la maison « )[^»]*( »)")
 
 host = sys.argv[1] if len(sys.argv) > 1 else "192.168.18.25"
 duration = float(sys.argv[2]) if len(sys.argv) > 2 else 600.0
@@ -135,6 +140,7 @@ with open(csv_path, "w", newline="", encoding="utf-8") as f:
             else:
                 for k, line in enumerate(lg["lines"]):
                     if lg["from"] + k >= seq and line.strip():
+                        line = RE_RESEAU.sub(r"\1…\2", line)
                         event(f"console : {line}")
                 seq = lg["seq"]
         except Exception:

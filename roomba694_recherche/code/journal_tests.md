@@ -1,6 +1,6 @@
 # Journal des tests — ESP32 ↔ Roomba 694 (sketch `roomba694_test1`)
 
-Session locale du 2026-11-08 (après-midi et soirée) sur l'ordinateur Windows relié à l'ESP32. Branche `claude/eager-ride-crj3f0`, clone local `C:\Users\hugue\romba`. Les étapes suivent le plan de [PROMPT_session_locale.md](PROMPT_session_locale.md).
+Session locale du 2026-11-08 (après-midi et soirée) sur l'ordinateur Windows relié à l'ESP32. Branche `claude/eager-ride-crj3f0`, clone local du dépôt sur cet ordinateur. Les étapes suivent le plan de [PROMPT_session_locale.md](PROMPT_session_locale.md).
 
 ## Résumé
 

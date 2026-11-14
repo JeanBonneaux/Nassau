@@ -204,6 +204,14 @@ void handleMouv() {
     float but = http.arg(rotation ? "rot" : "av").toFloat();
     int v = http.hasArg("v") ? (int)http.arg("v").toInt() : (rotation ? 75 : (int)driveSpeed);
     float capRel = http.hasArg("cap") ? http.arg("cap").toFloat() : 0.0f;
+    // v12 : « nan » et « inf » se lisent comme des nombres qui n'en sont pas. Toute comparaison avec « nan » est fausse :
+    // il passait les contrôles de distance, la borne de 2 m ne s'appliquait plus, et l'avance n'était reconnue ni comme
+    // une avance ni comme un recul (plus d'arrêt du capteur de distance). Vu le 2026-11-14 : /api/mouv?av=nan répondait
+    // « but : nan » (mouvement refusé ce jour-là pour une autre raison, robot endormi).
+    if (!isfinite(but) || !isfinite(capRel)) {
+      http.send(400, "text/plain; charset=utf-8", "valeur refusée : av, rot et cap doivent être des nombres finis");
+      return;
+    }
     mouvStart(rotation, but, v, capRel);
   }
   String j;

@@ -1,5 +1,18 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 12 — 2026-11-14 (soir) : corrections demandées par l'utilisateur après la revue du jour (notes/J_revue_localisation.md).
+    Sept retouches indépendantes ; aucune ne change la conduite du robot ni une sécurité existante.
+    (1) Le cap du gyroscope est cumulé dans un nombre à 53 bits (double) propre à sa tâche ; imu.yawDeg n'en est plus que
+        la copie. Jusqu'à la v11 le cumul se faisait dans un float (24 bits) jamais remis à zéro : au-delà de 16 384°
+        cumulés les rotations lentes étaient mal comptées, au-delà de 32 768° plus du tout sous 0,1 °/s (44 562° atteints
+        le 2026-11-13 ; data_analysis/rv_cap_float32.py).
+    (2) Au démarrage l'ordre d'arrêt des roues part trois fois au lieu d'une : si la carte avait perdu son alimentation au
+        milieu d'un ordre de roues, le robot prenait le début de l'unique arrêt pour la fin de cet ordre.
+    (3) /api/mouv refuse une valeur qui n'est pas un nombre fini (« nan », « inf ») : mouv.ino.
+    (4) La page /wifi affiche le nom du réseau enregistré comme du texte, jamais comme du HTML : pages.h.
+    (5) /api/essai n'est plus compilé (ESSAI_LIAISON à 0, plus bas) : il servait à l'enquête du 2026-11-09, terminée.
+    (6) La butée du servo ne peut plus dépasser RADAR_BUTEE_MAX (30°, la valeur fixée par l'utilisateur) : radar.ino.
+    (7) La touche n (test des trois fils) est refusée pendant que les roues tournent, comme y et v.
   Version 11 — 2026-11-14 : tampon de la console TCP, une seule retouche (journal_wifi.md § 48, idée de l'utilisateur).
     Jusqu'à la v10 chaque ligne de la console et du journal CSV était écrite au client TCP depuis la boucle principale,
     et cette écriture peut attendre le réseau jusqu'à dix secondes (NetworkClient::write du cœur ESP32 3.3.7 : dix
@@ -119,6 +132,10 @@ constexpr uint32_t ANSWER_TIMEOUT_MS = 200;    // attente maximale d'une répons
 constexpr uint32_t INTER_QUERY_MS    = 20;     // pause minimale entre deux requêtes capteur (spec : 15 ms)
 constexpr uint32_t POLL_PERIOD_MS    = 50;     // période de la lecture périodique des capteurs (200 ms jusqu'à la v6 ; le robot rafraîchit ses valeurs toutes les 15 ms)
 constexpr uint32_t POLL_BACKOFF_MS   = 2000;   // période quand le robot ne répond plus (endormi, OI fermée)
+// v12 : /api/essai (envoi d'octets choisis au robot, web.ino) n'est compilé que si cette valeur vaut 1. Il jugeait chaque
+// octet seul : un ordre permis mais incomplet (une chanson annoncée plus longue qu'elle n'est) laissait le robot attendre
+// la suite, et il prenait alors pour elle les octets des ordres suivants du cerveau.
+#define ESSAI_LIAISON 0
 
 // ---------- Opcodes OI utilisés ----------
 enum : uint8_t {
@@ -259,6 +276,10 @@ float imuCap() { return imu.yawDeg - imu.yawZero; }
 
 void imuTask(void*) {
   uint32_t last = micros();
+  // v12 : le cap est cumulé ici, dans un double que cette tâche est seule à toucher ; imu.yawDeg (float, lu par les
+  // autres tâches d'un seul tenant) n'en est que la copie. Additionner 0,003° à un float qui vaut déjà 40 000° ne
+  // change rien : son plus petit pas y est de 0,004°.
+  double yawCumul = imu.yawDeg;
   imu.calibRequested = true;
   for (;;) {
     if (imu.calibRequested) {
@@ -281,7 +302,7 @@ void imuTask(void*) {
         // ordre de marche, et 0,5 s après leur arrêt, tout est compté : le robot dévie lentement en roulant.
         uint32_t depuis = millis() - lastRoulageMs;
         bool roule = driving || depuis < 500;
-        if (roule || fabsf(r) > 0.3f) imu.yawDeg += r * dt;
+        if (roule || fabsf(r) > 0.3f) { yawCumul += (double)r * (double)dt; imu.yawDeg = (float)yawCumul; }   // v12
         // v9 : à l'arrêt complet, le zéro suit lentement la mesure (0,4 % par échantillon à 100 Hz : 2,5 s).
         if (!roule && depuis > 1500 && fabsf(r) < 0.3f) {
           for (int k = 0; k < 3; k++) imu.bias[k] += 0.004f * (g[k] - imu.bias[k]);
@@ -1072,7 +1093,7 @@ void printInfo() {
              st.ok ? "joignable" : "sans réponse", (unsigned long)(millis() - st.lastOkMs),
              useSplitGroups ? "lecture par les groupes 6 et 101" : "lecture par le groupe 100",
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
-  out.printf("Firmware roomba694_wifi v5, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
+  out.printf("Firmware roomba694_wifi v12, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
              __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
   out.printf("Depuis le démarrage de la carte : robot vu redémarrer %lu fois ; retrouvé à 19200 bauds et ramené à 115200 : %lu fois.\n",
              (unsigned long)robotBoots, (unsigned long)baudRescues);
@@ -1081,7 +1102,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v11 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v12 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"
@@ -1129,7 +1150,9 @@ void handle(char c) {
     case 'b': printBattery(); break;
     case 'e': printSensors(); break;
     case 'k': printEncoders(); break;
-    case 'n': printLevels(); break;
+    case 'n':   // v12 : ce test coupe un instant la liaison avec le robot et tire sa ligne de réveil ; jamais pendant un mouvement
+      if (driving || tourActive() || mouvActive()) { out.println(F("Test des trois fils refusé : les roues tournent. Arrêtez-les d'abord (5).")); break; }
+      printLevels(); break;
     case 'p': pauseStream(); break;
     case 'm': playJingle(); break;
     case 'l': ledDemo(); break;
@@ -1243,7 +1266,9 @@ void setupWifi() {
   http.on("/api/tour", HTTP_GET, handleTour);
   http.on("/api/mouv", HTTP_GET, handleMouv);   // v10 : avance et rotation exécutées par le cerveau (mouv.ino)
   http.on("/api/pose", HTTP_GET, handlePose);
-  http.on("/api/essai", HTTP_GET, handleEssai);
+#if ESSAI_LIAISON
+  http.on("/api/essai", HTTP_GET, handleEssai);   // v12 : plus compilé par défaut (voir ESSAI_LIAISON)
+#endif
   http.on("/api/carte", HTTP_GET, handleCarte);
   http.on("/wifi", HTTP_GET, handleWifiGet);
   http.on("/wifi", HTTP_POST, handleWifiPost);
@@ -1365,7 +1390,10 @@ void setup() {
   // Seul ordre envoyé au robot au démarrage : roues à l'arrêt. Sans effet s'il dort ou s'il est en Passive ;
   // indispensable si la carte a redémarré (coupure d'alimentation, plantage) pendant un déplacement en Safe,
   // car le robot garderait sinon son dernier ordre de roues.
-  driveDirect(0, 0);
+  // v12 : envoyé trois fois, à 20 ms d'intervalle. Si la carte s'est éteinte au milieu des cinq octets d'un ordre de
+  // roues, le robot attend encore la fin de cet ordre : il la prend dans le premier arrêt (et comprend alors un ordre
+  // de roues fait de morceaux des deux), ne voit dans ce qui reste que des zéros sans effet, et lit bien le suivant.
+  for (int k = 0; k < 3; k++) { driveDirect(0, 0); robot.flush(); delay(20); }
   robot.write(OI_STREAM_PAUSE);   // et fin d'un éventuel flux continu laissé par une session précédente
   robot.write((uint8_t)0);
   prefs.begin("cfg", true);

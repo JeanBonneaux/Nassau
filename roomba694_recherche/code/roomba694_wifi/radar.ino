@@ -51,7 +51,11 @@ constexpr int PIN_SERVO = 18;   // D18 : signal du servo SG90 (fil orange)
 constexpr int PIN_TRIG  = 19;   // D19 : Trig du HC-SR04 (3,3 V suffisent pour le déclencher)
 constexpr int PIN_ECHO  = 23;   // D23 : Echo du HC-SR04 à travers le diviseur 1 kΩ / 2 kΩ (le 2 kΩ vers GND tient la broche à 0 V au repos ; rappel interne en plus, voir radarSetup)
 
-constexpr int      RADAR_SPAN_MAX   = 80;                                       // degrés de part et d'autre du centre
+constexpr int      RADAR_SPAN_MAX   = 80;                                       // degrés de part et d'autre du centre (taille de la carte polaire)
+// v12 : plafond de la butée du servo, écrit dans le code. Les fils du capteur sont courts : l'utilisateur a fixé la butée
+// à 30° le 2026-11-09. Jusqu'à la v11 ce n'était qu'un réglage en mémoire : /api/radar?butee=80 le relevait, et une mémoire
+// effacée redonnait 80°. Pour aller plus loin après avoir rallongé les fils, c'est cette constante qu'il faut changer.
+constexpr int      RADAR_BUTEE_MAX  = 30;
 constexpr int      RADAR_SLOT_DEG   = 5;                                        // résolution de la carte polaire
 constexpr int      RADAR_SLOTS      = 2 * RADAR_SPAN_MAX / RADAR_SLOT_DEG + 1;  // 33 cases, de -80° à +80°
 constexpr int      RADAR_FRONT_DEG  = 15;                                       // secteur « devant » pour la sécurité
@@ -81,7 +85,7 @@ struct RadarState {
   volatile int8_t   amplitude = 60;       // demi-ouverture du balayage, degrés
   volatile int8_t   ech = 1;              // mesures par direction (1 à 3, médiane)
   volatile bool     inverse = false;      // vrai si le servo part à droite quand on lui demande la gauche (montage à l'envers)
-  volatile int8_t   butee = RADAR_SPAN_MAX;   // butée du servo, degrés de part et d'autre du centre : aucun ordre ne la dépasse (voir radarLimit)
+  volatile int8_t   butee = RADAR_BUTEE_MAX;  // butée du servo, degrés de part et d'autre du centre : aucun ordre ne la dépasse (voir radarLimit)
   volatile int8_t   fixedDeg = 0;         // direction visée en mode fixe
   // État :
   volatile int8_t   servoDeg = 0;         // direction actuelle du capteur
@@ -103,7 +107,7 @@ volatile bool     radarFwdSeen = false;
 // Butée du servo, en degrés de part et d'autre du centre (réglage « butee », 10 à 80, conservé en flash). Ajoutée le
 // 2026-11-09 à la demande de l'utilisateur, dont les fils du capteur sont courts : tout angle demandé y est ramené, que
 // l'ordre vienne du balayage, du mode fixe, de l'API ou du dessin touché sur la page.
-int radarLimit() { return constrain((int)radar.butee, 10, RADAR_SPAN_MAX); }
+int radarLimit() { return constrain((int)radar.butee, 10, RADAR_BUTEE_MAX); }   // v12 : jamais au-delà du plafond du code
 
 // ---------- Servo SG90 par LEDC (50 Hz, 16 bits : 20 000 µs sur 65 535 pas, soit 0,3 µs de résolution) ----------
 bool servoOn = false;        // impulsions en cours
@@ -275,7 +279,7 @@ void radarLoadSettings() {
   radar.amplitude = constrain(prefs.getInt("amp", 60), 5, RADAR_SPAN_MAX);
   radar.ech       = constrain(prefs.getInt("ech", 1), 1, 3);
   radar.inverse   = prefs.getBool("inv", false);
-  radar.butee     = constrain(prefs.getInt("max", RADAR_SPAN_MAX), 10, RADAR_SPAN_MAX);
+  radar.butee     = constrain(prefs.getInt("max", RADAR_BUTEE_MAX), 10, RADAR_BUTEE_MAX);   // v12 : mémoire vide ou trop grande -> le plafond
   prefs.end();
 }
 

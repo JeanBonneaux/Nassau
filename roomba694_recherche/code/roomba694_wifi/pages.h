@@ -169,7 +169,7 @@ a{color:var(--accent)}
 </div><div class="opts">
 <label>pas <select id="rpas" onchange="radar('pas='+this.value)"><option>5</option><option>10</option><option>15</option><option>20</option></select>°</label>
 <label>balayage ±<select id="ramp" onchange="radar('amplitude='+this.value)"><option>20</option><option>30</option><option>45</option><option>60</option><option>80</option></select>°</label>
-<label>butée ±<select id="rmax" onchange="radar('butee='+this.value)"><option>15</option><option>20</option><option>30</option><option>45</option><option>60</option><option>80</option></select>°</label>
+<label>butée ±<select id="rmax" onchange="radar('butee='+this.value)"><option>15</option><option>20</option><option>30</option></select>°</label>
 <label>portée <select id="rport" onchange="if(rd)drawRadar(rd)"><option>100</option><option selected>200</option><option>400</option></select> cm</label>
 </div>
 <p class="hint">Touchez le demi-cercle pour orienter le capteur. 0° = devant, positif = gauche. Le trait pointillé est la distance d'arrêt.</p>
@@ -525,10 +525,14 @@ a{color:#8cb4ff}footer{text-align:center;padding:10px}
 </main>
 <script>
 const $=id=>document.getElementById(id);
+// v12 : tout ce qui vient de la carte est neutralisé avant d'entrer dans la page. Le nom du réseau enregistré est un texte
+// libre de 32 caractères, que n'importe quel appareil du réseau peut enregistrer : collé tel quel, il devenait du HTML.
+const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function refresh(){try{const s=await (await fetch('/api/state')).json();let t;
+ const nom=esc(s.sta.saved),ip=esc(s.sta.ip),hote=esc(s.host);
  if(!s.sta.saved)t='Aucun réseau enregistré.';
- else if(s.sta.on)t='« '+s.sta.saved+' » : connecté, adresse <b>'+s.sta.ip+'</b><br>Depuis le réseau de la maison : <a href="http://'+s.sta.ip+'/">http://'+s.sta.ip+'/</a> ou <a href="http://'+s.host+'.local/">http://'+s.host+'.local/</a>';
- else t='« '+s.sta.saved+' » : '+(s.sta.err?'<span class="bad">échec, '+s.sta.err+'</span> — nouvelle tentative automatique':'connexion en cours…');
+ else if(s.sta.on)t='« '+nom+' » : connecté, adresse <b>'+ip+'</b><br>Depuis le réseau de la maison : <a href="http://'+ip+'/">http://'+ip+'/</a> ou <a href="http://'+hote+'.local/">http://'+hote+'.local/</a>';
+ else t='« '+nom+' » : '+(s.sta.err?'<span class="bad">échec, '+esc(s.sta.err)+'</span> — nouvelle tentative automatique':'connexion en cours…');
  $('state').innerHTML=t;}catch(e){$('state').textContent='carte injoignable… (le téléphone est-il toujours sur le réseau Roomba694 ?)';}}
 async function scan(){$('scan').disabled=true;$('list').textContent='recherche…';
  for(let k=0;k<12;k++){
