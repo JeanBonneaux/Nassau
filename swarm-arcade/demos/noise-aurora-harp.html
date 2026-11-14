@@ -33,7 +33,8 @@ const PREVIEW = location.hash.indexOf('preview') !== -1;
 if (PREVIEW) document.body.classList.add('preview');
 
 const canvas = document.getElementById('c');
-const g = canvas.getContext('2d');
+// CPU-backed 2D context: the scene is a full-screen trail fade plus additive blending every frame
+const g = canvas.getContext('2d', { willReadFrequently: true });
 const muteBtn = document.getElementById('mute');
 const audioHint = document.getElementById('audiohint');
 
