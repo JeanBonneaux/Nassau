@@ -207,7 +207,7 @@ canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-actio
   var uPal = gl.getUniformLocation(prog, 'uPal');
 
   // ---- render scale (fraction of CSS px * DPR) ----
-  var scale = preview ? 0.35 : 0.7;
+  var scale = preview ? 0.5 : 0.7;
   function dpr() { return Math.min(window.devicePixelRatio || 1, 2); }
   function resize() {
     var w = Math.max(1, Math.round(window.innerWidth * dpr() * scale));
@@ -258,7 +258,7 @@ canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-actio
 
     // adaptive render scale (not in preview)
     ema += (Math.min(raw, 100) - ema) * 0.1;
-    if (!preview && T > 1.0 && T - lastAdapt > 0.5) {
+    if (T > 0.6 && T - lastAdapt > 0.4) {
       if (ema > 30 && scale > 0.31) { scale = Math.max(0.3, Math.round((scale - 0.1) * 10) / 10); resize(); lastAdapt = T; }
       else if (ema < 12 && scale < 0.89) { scale = Math.min(0.9, Math.round((scale + 0.1) * 10) / 10); resize(); lastAdapt = T; }
     }

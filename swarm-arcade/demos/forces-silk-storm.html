@@ -74,9 +74,9 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
     };
     for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) {
       const k = j * COLS + i;
-      if (i < COLS - 1) add(k, k + 1, 1, 0);
+      if (i < COLS - 1) add(k, k + 1, 0.86, 0);
       if (j < ROWS - 1) add(k, k + COLS, 1, 0);
-      if (i < COLS - 1 && j < ROWS - 1) { add(k, k + COLS + 1, Math.SQRT2, 1); add(k + 1, k + COLS, Math.SQRT2, 1); }
+      if (i < COLS - 1 && j < ROWS - 1) { add(k, k + COLS + 1, 1.32, 1); add(k + 1, k + COLS, 1.32, 1); }
     }
     for (let j = 0; j < ROWS - 1; j++) for (let i = 0; i < COLS - 1; i++) {
       const ci = j * (COLS - 1) + i;
@@ -110,7 +110,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
     railG = ctx.createLinearGradient(ox, 0, ox + clothW, 0);
     railG.addColorStop(0, '#ff3d9a'); railG.addColorStop(1, '#3de7ff');
     lineG = ctx.createLinearGradient(ox, 0, ox + clothW, 0);
-    lineG.addColorStop(0, 'rgba(255,120,190,0.30)'); lineG.addColorStop(1, 'rgba(120,240,255,0.30)');
+    lineG.addColorStop(0, 'rgba(255,120,190,0.30)'); lineG.addColorStop(1, 'rgba(120,240,255,0.16)');
     inited = true;
   }
 
@@ -157,7 +157,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
 
     for (let j = 0; j < ROWS; j++) {
       const rowF = 0.35 + 0.65 * (j / (ROWS - 1));
-      const W0 = 0.11 * rowF;
+      const W0 = 0.32 * rowF;
       for (let i = 0; i < COLS; i++) {
         const q = j * COLS + i;
         if (PIN[q]) { X[q] = RX[q]; Y[q] = RY[q]; PX[q] = X[q]; PY[q] = Y[q]; continue; }
@@ -168,7 +168,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
           continue;
         }
         // wind: smooth sum of sines over x, y, time
-        let ax = W0 * (0.45 + Math.sin(x * 0.007 + t * 0.9) + 0.6 * Math.sin(y * 0.011 - t * 0.6 + 1.3) + 0.4 * Math.sin((x + y) * 0.0045 + t * 1.7));
+        let ax = W0 * (0.15 + 1.2 * Math.sin(y * 0.02 - t * 1.6 + x * 0.004) + Math.sin(x * 0.007 + t * 0.9) + 0.6 * Math.sin(y * 0.011 - t * 0.6 + 1.3) + 0.4 * Math.sin((x + y) * 0.0045 + t * 1.7));
         let ay = W0 * 0.3 * Math.sin(x * 0.005 - t * 0.8) * Math.cos(y * 0.004 + t * 0.4) + G;
         // invisible wind ghost drifting through the cloth
         const ddx = x - gX, ddy = y - gY, d2 = ddx * ddx + ddy * ddy;
@@ -239,7 +239,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
       let f = (ax * by - ay * bx) * inv;
       f = f < -0.3 ? -0.3 : f > 1.4 ? 1.4 : f;
       const fc = f < 0 ? 0 : f > 1.1 ? 1.1 : f;
-      let sh = 0.28 + (0.62 * fc) / 1.1;
+      let sh = 0.34 + (0.7 * fc) / 1.1;
       let add = (f - 1) * 2.2; add = add < 0 ? 0 : add > 1 ? 1 : add;
       sh += add * 0.4;
       const k = CELLG[ci] * SHADES + Math.min(SHADES - 1, ((sh / 1.25) * (SHADES - 1) + 0.5) | 0);
