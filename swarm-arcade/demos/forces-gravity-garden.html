@@ -477,7 +477,7 @@ function frame(now) {
   ctx.globalCompositeOperation = 'lighter';
 
   // bodies: pre-rendered glow sprites, coloured by speed
-  const vref = 260 * sc, ss = clamp(sc, 0.7, 1.4);
+  const vref = 260 * sc, ss = clamp(sc, 0.5, 1.4);
   for (let i = 0; i < P; i++) {
     const x = px[i], y = py[i];
     if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
@@ -486,7 +486,7 @@ function frame(now) {
     const d = 18 * ss;
     ctx.drawImage(spPlan[b], x - d / 2, y - d / 2, d, d);
   }
-  ctx.globalAlpha = 0.85;
+  ctx.globalAlpha = PREVIEW ? 0.5 : 0.85;
   for (let i = P; i < N; i++) {
     const x = px[i], y = py[i];
     if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
