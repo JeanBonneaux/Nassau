@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mandelbox Cathedral</title>
+<title>FRACTAL CATHEDRAL</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#05060a;}
   canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;touch-action:none;cursor:grab;}
@@ -16,7 +16,7 @@
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="hud"><div class="t">MANDELBOX CATHEDRAL</div><div>drag: orbit · hold: dive · wheel: morph · C: colour</div></div>
+<div id="hud"><div class="t">FRACTAL CATHEDRAL</div><div>drag: look · hold: speed · wheel: morph · C: colour</div></div>
 
 <script>
 (() => {
@@ -42,7 +42,9 @@ precision highp float;
 uniform vec2  uRes;
 uniform float uTime;
 uniform vec2  uMouse;
-uniform float uScale;
+uniform float uMorph;
+uniform float uCamZ;
+uniform float uRoll;
 uniform float uDive;
 uniform int   uIters;
 uniform int   uSteps;
@@ -50,112 +52,108 @@ uniform vec3  uWarm;
 uniform vec3  uCool;
 uniform vec3  uHue;
 
-float gTrap;
+/* infinite cross of three square beams, half-width 1 (negative inside) */
+float sdCross(vec3 p){
+  p = abs(p);
+  return min(max(p.x, p.y), min(max(p.y, p.z), max(p.z, p.x))) - 1.0;
+}
 
+/* infinite Menger sponge: start solid everywhere, carve the cross holes at every level */
 float DE(vec3 p){
-  vec3 z = p; float dr = 1.0; float trap = 1e5;
-  for (int i = 0; i < 7; i++){
-    if (i >= uIters) break;
-    z = clamp(z, -1.0, 1.0) * 2.0 - z;                 // box fold
-    float r2 = max(dot(z, z), 1e-6);
-    if (r2 < 0.25){ z *= 4.0; dr *= 4.0; }             // sphere fold
-    else if (r2 < 1.0){ float k = 1.0 / r2; z *= k; dr *= k; }
-    z = z * uScale + p; dr = dr * abs(uScale) + 1.0;
-    trap = min(trap, length(z));                       // orbit trap
+  p += 0.12 * uMorph * vec3(sin(p.y * 1.3 + uTime * 0.3), sin(p.z * 1.1), sin(p.x * 1.2));
+  float d = -1.0;
+  float s = 1.0;
+  for (int m = 0; m < 4; m++){
+    if (m >= uIters) break;
+    vec3 a = mod(p * s, 2.0) - 1.0;          // local cell in [-1,1]
+    vec3 r = 3.0 * abs(a);                   // middle third  <=>  r < 1
+    float c = sdCross(r) / (3.0 * s);        // negative inside a hole, world units
+    d = max(d, -c);
+    s *= 3.0;
   }
-  gTrap = trap;
-  float d = length(z) / max(abs(dr), 1e-6);
-  return max(d, 1e-5);
+  return d;
 }
 
-vec3 calcN(vec3 p, float e){
-  vec3 ex = vec3(e, 0.0, 0.0), ey = vec3(0.0, e, 0.0), ez = vec3(0.0, 0.0, e);
-  return normalize(vec3(DE(p + ex) - DE(p - ex),
-                        DE(p + ey) - DE(p - ey),
-                        DE(p + ez) - DE(p - ez)));
+vec3 calcN(vec3 p){
+  const float e = 0.0015;
+  return normalize(vec3(DE(p + vec3(e, 0.0, 0.0)) - DE(p - vec3(e, 0.0, 0.0)),
+                        DE(p + vec3(0.0, e, 0.0)) - DE(p - vec3(0.0, e, 0.0)),
+                        DE(p + vec3(0.0, 0.0, e)) - DE(p - vec3(0.0, 0.0, e))));
 }
 
-float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+float hash3(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+float hash2(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
 void main(){
   vec2 q = gl_FragCoord.xy / uRes;
   vec2 p = (2.0 * gl_FragCoord.xy - uRes) / uRes.y;
 
-  /* background: deep gradient + sparse stars */
-  vec3 bg = mix(vec3(0.0157, 0.0235, 0.051), vec3(0.043, 0.0745, 0.188), clamp(q.y * 0.8 + 0.1, 0.0, 1.0)) * 0.7;
-  float sh = hash(floor(p * 140.0));
-  float star = step(0.9966, sh) * (0.4 + 0.6 * fract(sh * 91.7));
-  bg += star * vec3(0.8, 0.85, 1.0) * 0.45;
-
-  /* cinematic orbit camera */
-  float a = uTime * 0.05 + uMouse.x * 3.0;
-  float b = 0.3 + uMouse.y * 0.8 - 0.4;
-  float r = (4.75 + 1.25 * sin(uTime * 0.13)) * mix(1.0, 0.5, uDive);
-  vec3 ta = vec3(sin(uTime * 0.11), cos(uTime * 0.09), sin(uTime * 0.07)) * 0.15;
-  vec3 ro = r * vec3(cos(a) * cos(b), sin(b) * 0.6, sin(a) * cos(b));
-
-  /* never start inside geometry: push the camera outward if the DE is tiny */
+  /* camera rides the channel x = y = 1 (a hole at every level), gentle sway, clamped inside the channel */
+  float yaw = (uMouse.x - 0.5) * 1.2;                      // +-0.6 rad
+  float pit = (uMouse.y - 0.5) * 1.0;                      // +-0.5 rad
+  vec2 sway = vec2(0.10 * sin(uTime * 0.23) + 0.05 * sin(uTime * 0.61), 0.10 * cos(uTime * 0.17));
+  vec2 off = clamp(sway + (uMouse - 0.5) * 0.2, -0.15, 0.15);
+  vec3 ro = vec3(1.0 + off.x, 1.0 + off.y, uCamZ);
   float d0 = DE(ro);
-  if (d0 < 0.2) ro += normalize(ro) * (0.2 - d0) * 2.0;
+  if (d0 < 0.05) ro.xy = mix(ro.xy, vec2(1.0), 0.5);       // safety: drift back to the channel axis
 
-  vec3 fw = normalize(ta - ro);
-  vec3 rt = normalize(cross(fw, vec3(0.0, 1.0, 0.0)));
-  vec3 up = cross(rt, fw);
+  vec3 fw = vec3(sin(yaw) * cos(pit), sin(pit), cos(yaw) * cos(pit));
+  vec3 rt0 = normalize(cross(fw, vec3(0.0, 1.0, 0.0)));
+  vec3 up0 = cross(rt0, fw);
+  float cr = cos(uRoll), sr = sin(uRoll);
+  vec3 rt = rt0 * cr + up0 * sr;
+  vec3 up = up0 * cr - rt0 * sr;
   vec3 rd = normalize(p.x * rt + p.y * up + 1.6 * fw);
 
-  /* bounding sphere radius 6 */
-  float bq = dot(ro, rd);
-  float cq = dot(ro, ro) - 36.0;
-  float hq = bq * bq - cq;
+  vec3 fogCol = vec3(0.0275, 0.0706, 0.145);               // #071225
+  vec3 c = mix(fogCol * 0.6, fogCol * 1.2, clamp(q.y, 0.0, 1.0));
 
-  float hit = 0.0, tHit = 0.0, trapHit = 0.0, steps = 0.0, glow = 0.0;
-
-  if (hq > 0.0){
-    float sq = sqrt(hq);
-    float t = max(-bq - sq, 0.0);
-    float tEnd = -bq + sq;
-    for (int i = 0; i < 72; i++){
-      if (i >= uSteps) break;
-      vec3 pos = ro + rd * t;
-      float d = DE(pos);
-      float eps = (uSteps < 50 ? 0.0028 : 0.0012) * t;   // looser hit test when the step budget is small (preview)
-      glow += 0.006 / (1.0 + d * d * 50.0);
-      if (d < eps){ hit = 1.0; tHit = t; trapHit = gTrap; break; }
-      t += d * 0.9;
-      steps += 1.0;
-      if (t > tEnd) break;
-    }
+  /* march */
+  float t = 0.0, tHit = 0.0, steps = 0.0, glow = 0.0, hit = 0.0;
+  for (int i = 0; i < 72; i++){
+    if (i >= uSteps) break;
+    vec3 pos = ro + rd * t;
+    float d = DE(pos);
+    glow += 0.02 / (1.0 + d * d * 80.0);
+    if (d < 0.001 * t + 0.0005){ hit = 1.0; tHit = t; break; }
+    t += d * 0.9;
+    steps += 1.0;
+    if (t > 40.0) break;
   }
 
-  vec3 c = bg;
   if (hit > 0.5){
     vec3 pos = ro + rd * tHit;
-    vec3 n = calcN(pos, 0.004 * tHit);
-    float ao = clamp(1.0 - steps / float(uSteps), 0.0, 1.0);
+    vec3 n = calcN(pos);
+    float ao = pow(clamp(1.0 - steps / float(uSteps), 0.0, 1.0), 2.0);
 
-    vec3 pal = 0.5 + 0.5 * cos(6.2831 * (trapHit * 0.15 + uHue + uTime * 0.01));
-    vec3 base = mix(pal, uWarm, 0.35);
-    base = mix(base, uCool, smoothstep(0.6, 0.05, trapHit) * 0.7);
-
-    vec3 key = normalize(vec3(0.55, 0.8, 0.35) - rd * 0.6);   // warm key from camera-ish side
+    vec3 key = normalize(rt * 0.4 + up * 0.8 - fw * 0.5);  // warm key, rotates with the camera
     float dif = clamp(dot(n, key), 0.0, 1.0);
-    float fil = clamp(dot(n, -key), 0.0, 1.0);                 // cool fill from opposite
-    float rim = pow(1.0 - clamp(dot(n, -rd), 0.0, 1.0), 3.0);
-    float spe = pow(clamp(dot(reflect(rd, n), key), 0.0, 1.0), 24.0);
+    float fil = clamp(dot(n, -key), 0.0, 1.0);              // cool fill from the opposite side
 
-    vec3 lit = uWarm * dif * 1.5 + uCool * fil * 0.6 + uCool * 0.03;
-    c = base * lit * (0.12 + 0.88 * ao * ao) + uWarm * rim * 0.3 + vec3(1.0, 0.9, 0.7) * spe * 0.5;
-    c = mix(c, bg * 0.5 + uCool * 0.05, (1.0 - exp(-tHit * 0.12)) * 0.7);
+    vec3 toEye = ro - pos;
+    float tl = max(length(toEye), 1e-4);
+    float lamp = clamp(dot(n, toEye / tl), 0.0, 1.0) / (1.0 + 0.15 * tHit * tHit);  // warm light at the camera
+
+    float mixK = 0.5 + 0.5 * sin(dot(pos, vec3(0.7, 1.3, 0.9)));
+    vec3 base = mix(uCool, uWarm, mixK) * 0.8;
+    float blk = hash3(floor(pos * 0.5));
+    base *= mix(vec3(1.0), 0.5 + 0.5 * cos(6.2831 * (uHue + blk)), 0.12);  // per-block tint
+
+    vec3 lit = uWarm * dif * 1.1 + uCool * fil * 0.4 + uWarm * lamp * 0.9 + uCool * 0.04;
+    c = base * lit * (0.08 + 0.92 * ao);
+
+    float fogK = exp(-tHit * 0.08);
+    c = mix(fogCol, c, fogK);
   }
 
-  c += glow * 0.45 * mix(uCool, uWarm, 0.5);                    // subtle volumetric shimmer
+  c += glow * 0.25 * mix(uCool, uWarm, 0.7);               // near-miss glow / light shafts
 
   /* tone map, gamma, vignette, grain */
-  c = 1.0 - exp(-c * 1.0);
+  c = 1.0 - exp(-c * 1.2);
   c = pow(c, vec3(0.4545));
   vec2 vq = q * (1.0 - q);
-  c *= mix(0.3, 1.0, pow(16.0 * vq.x * vq.y, 0.25));
-  c += (hash(gl_FragCoord.xy + fract(uTime * 7.0) * vec2(113.0, 71.0)) - 0.5) * 0.02;
+  c *= mix(0.35, 1.0, pow(16.0 * vq.x * vq.y, 0.3));
+  c += (hash2(gl_FragCoord.xy + fract(uTime * 7.0) * vec2(113.0, 71.0)) - 0.5) * 0.015;
 
   gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }
@@ -184,7 +182,7 @@ gl.enableVertexAttribArray(aPos);
 gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
 const U = {};
-['uRes','uTime','uMouse','uScale','uDive','uIters','uSteps','uWarm','uCool','uHue']
+['uRes','uTime','uMouse','uMorph','uCamZ','uRoll','uDive','uIters','uSteps','uWarm','uCool','uHue']
   .forEach(n => U[n] = gl.getUniformLocation(prog, n));
 
 /* ---------- palettes ---------- */
@@ -198,7 +196,7 @@ let palIdx = 0;
 
 /* ---------- sizing ---------- */
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
-let scale = PREVIEW ? 0.3 : 0.45;
+let scale = PREVIEW ? 0.4 : 0.55;
 function resize(){
   const w = Math.max(2, Math.round(innerWidth * DPR * scale));
   const h = Math.max(2, Math.round(innerHeight * DPR * scale));
@@ -211,7 +209,7 @@ resize();
 /* ---------- input ---------- */
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 let px = 0.5, py = 0.5, lastPtr = -1e9, pDown = false;
-let autoMorph = true, manualScale = -1.8, morphS = -1.8;
+let autoMorph = true, manualMorph = 0.5, morphS = 0.5;
 
 function setPtr(e){
   px = clamp(e.clientX / innerWidth, 0, 1);
@@ -228,12 +226,12 @@ window.addEventListener('pointerup', release);
 window.addEventListener('pointercancel', release);
 
 function leaveAuto(){
-  if (autoMorph){ autoMorph = false; manualScale = morphS; }
+  if (autoMorph){ autoMorph = false; manualMorph = morphS; }
 }
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
   leaveAuto();
-  manualScale = clamp(manualScale - e.deltaY * 0.0012, -2.4, -1.6);
+  manualMorph = clamp(manualMorph - e.deltaY * 0.001, 0, 1);
 }, { passive: false });
 canvas.addEventListener('dblclick', () => {
   if (autoMorph) leaveAuto(); else autoMorph = true;
@@ -245,13 +243,13 @@ window.addEventListener('keydown', e => {
   } else if (k === '+' || k === '=' || k === '-' || k === '_'){
     leaveAuto();
     const step = (k === '-' || k === '_') ? -0.04 : 0.04;
-    manualScale = clamp(manualScale + step, -2.4, -1.6);
+    manualMorph = clamp(manualMorph + step, 0, 1);
   }
 });
 
 /* ---------- loop ---------- */
 let simT = 0, lastNow = performance.now();
-let blend = 1, dive = 0;
+let blend = 1, dive = 0, camZ = 0;
 const mSm = [0.5, 0.5];
 let avgMs = 16, adaptAcc = 0;
 
@@ -262,8 +260,8 @@ function adapt(rawMs){
   if (adaptAcc < 1000) return;
   adaptAcc = 0;
   let s = scale;
-  if (avgMs > 30) s = Math.max(0.25, s - 0.1);
-  else if (avgMs < 12) s = Math.min(0.8, s + 0.1);
+  if (avgMs > 30) s = Math.max(0.35, s - 0.1);
+  else if (avgMs < 12) s = Math.min(0.85, s + 0.1);
   if (Math.abs(s - scale) > 1e-6){ scale = Math.round(s * 100) / 100; resize(); }
 }
 
@@ -286,12 +284,14 @@ function frame(now){
   mSm[0] += (tx - mSm[0]) * kM;
   mSm[1] += (ty - mSm[1]) * kM;
 
+  /* hold to speed up (dive) */
   dive += ((pDown ? 1 : 0) - dive) * (1 - Math.exp(-dt * 5));
+  camZ += dt * 0.6 * (1 + dive);
 
-  /* fractal parameter: auto-morph or manual; both kept within [-2.4,-1.6] */
-  const autoS = -1.8 - 0.2 * Math.sin(simT * 0.07);
-  const goalS = autoMorph ? autoS : manualScale;
-  morphS += (goalS - morphS) * (1 - Math.exp(-dt * 3));
+  /* morph: auto or manual, both within [0,1] */
+  const autoM = 0.5 + 0.5 * Math.sin(simT * 0.1);
+  const goalM = autoMorph ? autoM : manualMorph;
+  morphS += (goalM - morphS) * (1 - Math.exp(-dt * 3));
 
   /* palette cross-fade */
   const P = PALS[palIdx];
@@ -305,10 +305,12 @@ function frame(now){
   gl.uniform2f(U.uRes, canvas.width, canvas.height);
   gl.uniform1f(U.uTime, simT);
   gl.uniform2f(U.uMouse, mSm[0], mSm[1]);
-  gl.uniform1f(U.uScale, morphS);
+  gl.uniform1f(U.uMorph, morphS);
+  gl.uniform1f(U.uCamZ, camZ);
+  gl.uniform1f(U.uRoll, 0.15 * Math.sin(simT * 0.05) * blend);
   gl.uniform1f(U.uDive, dive);
-  gl.uniform1i(U.uIters, PREVIEW ? 4 : 7);
-  gl.uniform1i(U.uSteps, PREVIEW ? 36 : 72);
+  gl.uniform1i(U.uIters, PREVIEW ? 3 : 4);
+  gl.uniform1i(U.uSteps, PREVIEW ? 40 : 72);
   gl.uniform3f(U.uWarm, cur.warm[0], cur.warm[1], cur.warm[2]);
   gl.uniform3f(U.uCool, cur.cool[0], cur.cool[1], cur.cool[2]);
   gl.uniform3f(U.uHue, cur.hue[0], cur.hue[1], cur.hue[2]);

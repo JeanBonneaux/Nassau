@@ -40,7 +40,7 @@ const SPARK_CAP = 300;
 const BUCKETS = 6;
 
 const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });   // CPU-backed: keeps headless/software GL from stalling
 if (PREVIEW) { const h = document.getElementById('hud'); if (h) h.remove(); }
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

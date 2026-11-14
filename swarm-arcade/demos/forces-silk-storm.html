@@ -7,11 +7,13 @@
 <style>
 html,body{height:100%}
 body{margin:0;overflow:hidden;background:#05060a}
-canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair}
+canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-action:none;cursor:crosshair;z-index:1}
+#bg{position:fixed;inset:0;z-index:0;background:radial-gradient(60% 50% at 50% 42%,rgba(255,61,154,.10),rgba(255,61,154,0) 70%),linear-gradient(#05060a,#120a2a)}
 #hud{position:fixed;left:12px;top:10px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.7);pointer-events:none;user-select:none;white-space:nowrap}
 </style>
 </head>
 <body>
+<div id="bg"></div>
 <canvas id="c"></canvas>
 <div id="hud">Silk Storm<br>drag pull · right-drag or hold X cut · W gust · R mend</div>
 <script>
@@ -88,7 +90,7 @@ canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair
 
   // ---- layout (recomputed on resize, cloth mapped by uniform scale) ----
   let W = 0, H = 0, dpr = 1, ox = 0, oy = TOP, sp = 10, clothW = 0, clothH = 0;
-  let bg = null, glowG = null, railG = null, inited = false;
+  let railG = null, inited = false;
   function layout() {
     W = innerWidth; H = innerHeight;
     dpr = PREVIEW ? 1 : Math.min(2, window.devicePixelRatio || 1);
@@ -108,10 +110,6 @@ canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair
     }
     ox = nox; oy = TOP; sp = nsp;
     clothW = sp * (COLS - 1); clothH = sp * (ROWS - 1);
-    bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#05060a'); bg.addColorStop(1, '#120a2a');
-    glowG = ctx.createRadialGradient(ox + clothW / 2, oy + clothH * 0.4, 0, ox + clothW / 2, oy + clothH * 0.4, Math.max(clothW, clothH) * 0.7);
-    glowG.addColorStop(0, 'rgba(255,61,154,0.12)'); glowG.addColorStop(1, 'rgba(255,61,154,0)');
     railG = ctx.createLinearGradient(ox, 0, ox + clothW, 0);
     railG.addColorStop(0, '#ff3d9a'); railG.addColorStop(1, '#3de7ff');
     inited = true;
@@ -230,10 +228,7 @@ canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair
   // ---- rendering ----
   function draw() {
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = glowG;
-    ctx.fillRect(0, 0, W, H);
+    ctx.clearRect(0, 0, W, H); // gradient background lives in CSS (#bg), so no full-screen fill per frame
 
     // cloth quads, flat-shaded from the quad's edge cross product (fold / stretch proxy).
     // Quads are counting-sorted into colour buckets so each bucket is one path and one fill.

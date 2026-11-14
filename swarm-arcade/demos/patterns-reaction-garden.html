@@ -374,7 +374,7 @@ body.preview #hud { display: none; }
 
     var F = effF(), K = effK();
     // Fast-forward the first seconds so the garden fills the screen quickly.
-    var ramp = (!PREVIEW && time < 8) ? 2 : 1;
+    var ramp = (!PREVIEW && time < 8) ? 3 : 1;
     var t0 = performance.now();
     for (var s = 0; s < steps * ramp; s++) step(F, K);
     simEMA = simEMA * 0.9 + ((performance.now() - t0) / ramp) * 0.1;
