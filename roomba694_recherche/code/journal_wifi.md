@@ -1554,3 +1554,111 @@ Le cap par rapport aux murs est retrouvé à 0,1° près en médiane (1,4° au p
 Dans cet ordre, lentement, sous surveillance : `eventail=` devant la porte H12 et dans le couloir (des rotations seulement) ; puis `centre=` dans le couloir entre J17 et J15 ; puis la porte.
 
 **État à la fin** : robot sur sa base d'après l'utilisateur (non vérifié par moi) ; cerveau muet ; aucun ordre envoyé.
+
+## 48. La cuisine explorée, robot posé à la main en C39 ; et des trous de plusieurs secondes dans les lectures, pendant lesquels le robot roule sans surveillance (2026-11-14, 14 h 31 à 15 h 09)
+
+Demande de l'utilisateur : « je vais aller placer le robot vers c39, explore et map cette piece puis dit moi quand c fait (il y a une mini marche entre c28 et c29, mais le robot etait capable de la franchir, il faut juste insister un peu), apres la map de la cuisine on lui apprendra a bien franchir le pallier ». Je lui ai demandé de retirer du sol ce qui peut se renverser et de poser le robot le nez vers la marche. Enregistrements : `mesures/exploration21_20261114_143415_*` (passages `a` et `b`, `_essai_tours.json`, `_essai_tours_interrompu.json`), puis `mesures/repos_f36_*` (robot immobile). Cartes et dessins, hors dépôt : `plan_lidar/carte_grille_20261114_cuisine*.png`, `plan_lidar/exploration21_trajet_cuisine.json`, `plan_lidar/cuisine_*.png`.
+
+### Mise en route
+
+- 14 h 31 : cerveau rallumé (« mise sous tension »), robot en l'air (roue droite levée), puis posé. Il répondait en mode passif, puis s'est tu 25 s après le démarrage du cerveau ; une seule impulsion de réveil (`w`) à 14 h 34 min 39 a suffi. Batterie 2 068 mAh sur 2 068 ; les quatre capteurs de vide lisent 2 480 à 2 550 sur ce sol.
+- Entre 14 h 32 et 14 h 34, robot posé et endormi, le gyroscope l'a vu tourner de 172° : l'utilisateur l'orientait vers la marche.
+- `f` (Safe), capteur de distance droit devant : 1,10 m.
+
+### Premier tour sur place : arrêté par le cerveau, « rotation trop rapide »
+
+`essai_tours.py … --depart 1020,66,180 --flou 500,25 --vitesses 60`. Arrêté après 64°. Dans le journal : rotation normale à 35 °/s, puis une lecture manquée (406 ms sans ligne), pendant laquelle le cap passe de 500,4° à 522,3° ; les compteurs des roues disent la même chose (19°). Le cerveau a coupé les roues quand le gyroscope a dépassé 90 °/s, et le robot a encore tourné de 16° sur son élan. Il a donc réellement tourné deux à trois fois plus vite que demandé pendant un instant. **Cause non établie.** Deux pistes : quelqu'un ou quelque chose l'a poussé ; ou un ordre de roues a été mal reçu par le robot, à un moment où il brouillait une lecture sur trois (voir plus bas). Une fois sur onze tours ce jour-là, jamais vu les jours précédents.
+
+### Second tour : où est le robot
+
+Tour complet, 100 mesures, 7 paliers (direction depuis le début du tour, distance en mm, largeur en degrés) : `33°:189/14 58°:352/22 97°:260/49 200°:662/42 305°:1450/16 322°:1181/12 1°:741/42`. Filtre : case C39, pixel (1010, 71), cap au début du tour 269°, note 0,66, étalement 657 mm et 31°. Le robot était dans un recoin : le mur de droite à 29 cm de son centre, une surface plane à 77 cm vers le bas, une autre à 69 cm vers le haut, et quelque chose à 19 cm du capteur, soit 5 cm de sa coque, en bas à droite. Il était bien tourné vers la marche avant le premier tour (188° ± 5°). La surface du bas est 25 cm plus loin que le bord de la masse sombre du plan en E39 : le plan montre peut-être le dessus d'un meuble sous lequel le capteur voit.
+
+### Exploration
+
+Commande du passage `a` (14 h 41 à 14 h 44) :
+
+```
+python explorer3.py --plan plan_lidar/plan_lidar.png --px-par-m 53 --depart-plan 1015,67,291 --depart-sigma 250,8
+  --plan-passe plan_lidar/plan_lidar_zones.jpg --plan-ferme plan_lidar/obstacles.json --reperes plan_lidar/reperes_tours.json
+  --fluide --vitesse 100 --tour-v 60 --sans-z --k-gyro 1.0045 --filtre-n 20000 --stations 14 --minutes 30
+  --interdit "14000,6943,1300;21698,6679,1650;21698,3849,1650" -- 192.168.18.25 PREFIXE
+```
+
+Les zones interdites (millimètres du plan) : un disque de 1,3 m autour de la marche (limite C28/C29, pixel (742, 66)) et deux disques sur la pièce marquée inaccessible. Sans destination, `explorer3.py` choisit lui-même ses arrêts dans ce que chaque tour voit de libre ; le plan ne sert qu'au filtre.
+
+| Tour | Case, pixel | Note du filtre | Correction du filtre | Saut à l'arrivée | Remarque |
+|---|---|---|---|---|---|
+| a0 | C39 (1013, 67) | 0,96 | (−38, −4) mm, +0,9° | | départ |
+| a1 | D37 (975, 91) | 0,69 | (+57, −8) mm, +0,8° | 66 mm | |
+| a2 | D36 (937, 81) | 0,70 | (+50, −76) mm, +3,1° | 110 mm | arrêt seul le long du comptoir : capteur optique à 408 |
+| a3 | E36 (930, 129) | 0,21 | (+16, −20) mm, +1,2° | 57 mm | |
+| a4 | F36 (937, 142) | 0,67 | (−154, +151) mm, −6,1° | 205 mm | |
+| a5 | limite D35/E35 (925, 106) | 0,60 | (+27, +48) mm, −3,9° | 45 mm | « devant une porte » |
+| b0 | G36 (937, 180) | 0,81 | (−20, −63) mm, −0,5° | 59 mm | départ du passage `b` |
+| b1 | F36 (935, 156) | 0,92 | (−70, −51) mm, +0,3° | 100 mm | |
+
+- Passage `a` : 6 tours, 18 mouvements, 5,5 m en 2,7 min, aucun contact. Fin : en avançant de F36 vers G36, « le robot ne répond plus » (voir plus bas), puis le capteur de distance a arrêté le robot à 29 cm de quelque chose de bas devant le mur du bas, et l'avance suivante a été refusée (27 cm, seuil 30) ; `explorer3.py` s'arrête sur un refus.
+- Passage `b` (14 h 46 à 14 h 47), relancé depuis `relance.py`, avec en plus des disques interdits sur les tours déjà faits et sur le passage étroit de D32 à D34 : 2 tours, 1,6 m, **un contact** du pare-chocs, de face, en F37 au pixel (957, 150), la table ou une chaise ; roues arrêtées par le réflexe du cerveau, deux reculs, puis le tour b1. Fin : « plus rien à voir ».
+- Troisième lancement vers D34 (pixel (903, 88)), pour regarder l'entrée du passage étroit : premier tour arrêté à 209° sur « le robot ne tourne pas (roues bloquées ?) », pendant un silence du robot de 3,3 s. Fausse alarme : il tournait (120° pendant le silence). Je n'ai pas insisté.
+
+`outils/trajet_passages.py` (nouveau) fabrique, à partir des passages, le fichier de trajet que `carte_grille.py --global` dessine.
+
+### Ce que la carte montre
+
+- Sol roulé : la bande D34 à D39 sous le comptoir, le recoin C39, et le coin à gauche de la table, de E35 à G36. La table du plan (E37, F37) est là où le robot a touché.
+- Pas visité : le côté droit de la table (F38, encombré, sans doute des chaises), le passage étroit qui part de D34 vers la marche (55 cm sur le plan entre le comptoir et un mur, de D32 à D34), la marche elle-même.
+- Le plan ressemble moins qu'ailleurs à ce que voit le capteur : notes de 0,21 à 0,96, corrections de 45 à 205 mm à l'arrivée sur un tour (66 mm en médiane). La carte de la pièce est donc juste à 10 ou 20 cm près, pas mieux.
+- Aucun repère : `reperes.py` ne garde aucun des 8 tours, aucun endroit n'ayant été vu deux fois.
+
+### Des trous de plusieurs secondes dans les lectures : cause non établie
+
+En cherchant pourquoi deux tours avaient été arrêtés, j'ai compté les trous du journal sur l'horloge du cerveau (une ligne par lecture réussie des capteurs, toutes les 47 ms en temps normal). Outil : `data_analysis/y_silences_robot.py`, résultats dans `results_y_silences_robot_20261114.txt`.
+
+| Enregistrement | Durée | Trous de plus de 250 ms | Dont plus d'une seconde | Le plus long |
+|---|---|---|---|---|
+| `exploration17` (2026-11-13, 16 h 32) | 38,4 min | 1 | 0 | 0,9 s |
+| `exploration19` (2026-11-14, 9 h 04) | 25,4 min | 4 | 1 | 1,5 s |
+| `exploration21` (2026-11-14, 14 h 34) | 16,1 min | 56 | 5 | 5,1 s |
+
+Dans `exploration21`, par minute depuis le réveil de 14 h 34 min 39 : 28, 14, 7, 1, puis presque rien, et cinq trous longs : 2,6 s et 1,1 s (robot à l'arrêt), 1,6 s (pendant un tour), 5,1 s à 14 h 44 min 19 (pendant une avance), 3,3 s (pendant un tour).
+
+**Ce que le robot fait pendant un trou.** Le cerveau ne lit plus le pare-chocs, les roues ni le sol. Une avance n'est coupée qu'après 1,5 s sans lecture (`mouv.ino`), un tour après 2,5 s (`tour.ino`). À 14 h 44 min 19 le robot a ainsi roulé **196 mm sans surveillance** (compteurs des roues : +428 et +454 pas ; capteur de distance : de 617 à 416 mm), puis le cerveau a coupé les roues (« le robot ne répond plus »). Ces 196 mm n'ont pas été comptés dans la position (`sauts` refusés : 2) : le passage `b` est parti d'une position fausse d'autant, et le filtre n'en a repris que 6 cm. Rien n'a été touché pendant ces trous ; le contact de F37 est arrivé pendant que les lectures passaient, et le réflexe a joué.
+
+**Affirmation remplacée.** `code/README.md` dit du réflexe du pare-chocs : « roues arrêtées par le cerveau (au plus 200 ms après le contact) ». C'est vrai tant que les lectures passent. Pendant un trou, le robot roule jusqu'à 1,5 s sans réflexe (2,5 s pendant un tour) : une vingtaine de centimètres à 100 mm/s.
+
+**Trois essais robot immobile**, en F36, mode passif, pour chercher la cause (aucun ordre de roues) :
+
+| Essai | Réveil par impulsion | Touche `e` chaque seconde | Ce qui s'est passé |
+|---|---|---|---|
+| `repos_f36_sans_e`, 14 h 58 min 42 à 15 h 01 min 10 | 14 h 58 min 27 | non | aucun trou : 2 916 lectures, le plus long écart 0,11 s |
+| `repos_f36_avec_e`, 15 h 01 min 22 à 15 h 03 min 28 | le même | oui | 47 s sans trou, puis six trous de 2,1 à 11,5 s entre 15 h 02 min 08 et 15 h 02 min 45 (31,5 s sans lecture) ; pendant ce temps le PC n'obtient plus l'état du cerveau (onze demandes sans réponse) |
+| `repos_f36_avec_e_ping`, 15 h 04 min 55 à 15 h 08 min 05, avec un ping du PC deux fois par seconde (`outils/ping_suivi.py`) | 15 h 04 min 41 | oui | « Pas de réponse du robot » quatorze fois en 40 s ; 797 lectures en 51 s au lieu de 1 080 ; à 15 h 05 min 46 le robot écrit « Soft reset! » puis « iRobotBoot V4 Roomba 600-STM32 Bootloader … » : **il a redémarré de lui-même** et ne répond plus ensuite ; à partir de 15 h 05 min 48, 175 pings sur 370 restent sans réponse (coupures de 0,5 à 11 s) |
+
+**Ce qui est établi :**
+
+1. Chaque trou de plus d'une seconde d'`exploration21`, et celui du matin, tombe au moment où le PC n'arrive plus à joindre le cerveau ou n'obtient sa réponse qu'après une à deux secondes (fichier `_etat.jsonl` : 14 h 36 min 48, 14 h 38 min 10, 14 h 43 min 18, 14 h 44 min 13 à 18, 14 h 48 min 18 à 20 ; le matin 9 h 23 min 59).
+2. La liaison entre le PC et le cerveau décroche par périodes : 40 pings sur 40 à 14 h 53, 2 perdus sur 12 à 15 h 08 (jusqu'à 1,7 s d'aller-retour), près d'un sur deux pendant le troisième essai. En F36 le cerveau reçoit le réseau de la maison à −72 dBm, avec six autres réseaux entre −67 et −88 dBm.
+3. Dans le firmware, chaque ligne de la console et du journal est écrite au client TCP depuis la boucle principale (`TeeOut::write`), la même boucle qui lit les capteurs, tient le réflexe du pare-chocs, l'arrêt du capteur de distance et la surveillance des tours et des avances. Lu dans le code, pas démontré par un essai : une écriture qui attend le réseau suspend tout le reste.
+4. Le robot, de son côté, s'est mal conduit après un réveil par impulsion : des lectures de la touche `e` sans réponse, « Performing eEEProm transfer » à 14 h 37 min 11, et un redémarrage à 15 h 05 min 46 alors que le cerveau ne lui envoyait que des questions.
+
+**Ce qui ne l'est pas :**
+
+- pourquoi la liaison décroche : la force du signal dans la cuisine, les réseaux voisins, le PC (un VPN y est actif depuis le matin), ou l'alimentation du cerveau ;
+- pourquoi le robot a redémarré, et si la « rotation trop rapide » du premier tour était un ordre de roues mal reçu ;
+- si une seule cause explique les deux (une alimentation du cerveau trop faible ferait décrocher la radio et brouillerait aussi ce qu'il envoie au robot) ;
+- la rafale des trois premières minutes d'`exploration21` (49 trous d'environ 0,4 s) : le firmware note depuis le 2026-11-09 qu'après un réveil par impulsion le robot « brouille une lecture sur trois », mais l'essai sans la touche `e`, fait quinze secondes après un tel réveil, n'a eu aucun trou.
+
+**Erreurs de ma part pendant la séance, corrigées depuis.** J'ai écrit à l'utilisateur que le Wi-Fi faisait des « absences du cerveau », puis que ce n'était pas le Wi-Fi mais le robot qui ne répondait pas. Aucune des deux phrases n'était établie quand je l'ai écrite : les deux phénomènes existent, et leur lien n'est pas connu.
+
+### À faire avant de refaire rouler le robot
+
+1. Par l'utilisateur : regarder si la batterie portable du cerveau est chargée et son câble bien enfoncé ; regarder les trois fils entre le cerveau et le robot (une photo suffit).
+2. Robot immobile, cinq minutes de lectures avec le ping en même temps, sans la touche `e` : aucun trou attendu. À refaire près de la base pour comparer la liaison.
+3. À proposer à l'utilisateur, parce que cela touche au firmware : que le cerveau n'attende jamais le réseau (une ligne qui ne part pas tout de suite est abandonnée), et qu'il coupe les roues dès 0,3 s sans lecture au lieu de 1,5 et 2,5 s.
+4. Dans les outils du PC : ne plus envoyer la touche `e` chaque seconde (ses valeurs sont dans le journal depuis la v8) ; refuser un mouvement si une lecture a manqué dans les trente dernières secondes ; compter le chemin sur les compteurs des roues quand la position du cerveau saute un trou.
+
+### Non fait, non vérifié
+
+Le tour de D34 et le passage étroit vers la marche ; le côté droit de la table ; des repères dans la cuisine ; la carte vivante pendant cette séance (je ne l'ai pas regardée) ; les causes ci-dessus.
+
+**État à la fin** : `s` puis `x` à 14 h 50 min 46 après l'exploration ; ensuite trois réveils pour les essais immobiles, sans aucun ordre de roues ; le robot a redémarré de lui-même à 15 h 05 min 46 et ne répond plus au cerveau (il dort). Il est en F36, pixel (935, 156), tourné vers 318° environ, **hors de sa base : il ne charge pas** ; batterie 2 007 mAh sur 2 068 à 15 h 04. Cerveau allumé. Capteur de distance arrêté.

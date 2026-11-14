@@ -1,13 +1,15 @@
 # Roomba 694 : où en est le projet
 
-*État au 14 novembre 2026, 11 h. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (47 sections) ; ce résumé n'en garde que l'essentiel.*
+*État au 14 novembre 2026, 15 h. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (48 sections) ; ce résumé n'en garde que l'essentiel.*
 
 ## En bref
 
 - Le robot **va seul d'une case à l'autre de l'appartement**, conduit par le cerveau et par le programme du PC. Trajet le plus long : de sa base jusqu'en C28 et retour, **32 m en 23 minutes, 5 contacts légers**.
 - Il **sait où il est à 1 cm près** là où il a déjà fait un tour sur lui-même (81 repères enregistrés). Loin d'un repère, l'erreur a atteint 20 à 30 cm.
 - **Trois choses ne sont pas au point** : rentrer sur sa base tout seul (réussi 1 fois sur 2), passer les portes et les passages étroits sans que je le guide pas à pas, et rouler plus vite.
-- En ce moment : robot **sur sa base, en charge** (tu me l'as confirmé), cerveau éteint, rien ne roule.
+- **La cuisine est explorée** depuis le 14 après-midi (8 tours sur place, un contact léger), sauf le passage étroit qui mène à la marche.
+- **Un défaut de sécurité trouvé le 14** : par moments le cerveau reste plusieurs secondes sans nouvelles des capteurs du robot, aux moments où le Wi-Fi décroche. Il laisse alors le robot rouler jusqu'à 1,5 s sans rien surveiller (20 cm une fois). Le robot a aussi redémarré tout seul pendant un essai immobile. Les causes ne sont pas trouvées : à régler avant de le refaire rouler.
+- En ce moment : robot **endormi dans la cuisine, en F36**. Il n'est pas sur sa base : **il ne charge pas**. Cerveau allumé, rien ne roule.
 
 ## Le but, pour mémoire
 
@@ -21,7 +23,7 @@ Dire « va dans telle pièce » et que le robot y aille seul. L'ordre que tu as 
 | 9 nov. | Le cerveau branché ; pilotage au téléphone en Wi-Fi ; capteur de distance sur son servo ; premier tour sur place |
 | 10 nov. | Arrêt automatique sur pare-chocs ; premières cartes ; le plan de l'appartement sert de fond ; carte quadrillée « comme aux échecs » ; le robot explore seul le couloir et la pièce centrale (77 m) ; premier trajet demandé par cases |
 | 13 nov. | Nouvelle localisation et conduite d'un seul tenant (2 à 3 fois plus rapide) ; firmware v10 ; les repères ; la base mesurée (case B16) ; premier accostage réussi ; premier aller-retour jusqu'en C28 ; découverte du patinage d'une roue |
-| 14 nov. | Le même aller-retour refait pour mesurer : deux fois plus vite. Second accostage : manqué |
+| 14 nov. | Le même aller-retour refait pour mesurer : deux fois plus vite. Second accostage : manqué. Centrage automatique des passages étroits écrit. La cuisine explorée, robot posé à la main en C39. Des trous dans les lectures des capteurs découverts |
 
 ## Ce que le robot sait faire aujourd'hui (mesuré)
 
@@ -30,6 +32,7 @@ Dire « va dans telle pièce » et que le robot y aille seul. L'ordre que tu as 
 - **Se situer sur le plan** : à 1 cm près sur un repère ; se retrouver à 1 ou 2 cm et 1 ou 2° près, neuf minutes après avoir été porté à la main devant sa base.
 - **Planifier un trajet** en évitant les murs et les 14 obstacles qu'il a déjà touchés ou vus.
 - **Atteindre les cases demandées** : C28, B22, C9, K10, et revenir en D16 devant sa base.
+- **Explorer seul une pièce qu'il ne connaît pas** : la cuisine le 14, posé à la main en C39. Huit tours sur place et 7 m en 4 minutes de route, un contact léger contre la table ou une chaise.
 - **Retrouver l'axe de sa base** grâce à ses faisceaux infrarouges : à 2 mm près à la dernière arrivée ; signal reçu jusqu'à 2 m.
 
 ## Ce qui n'est pas encore au point
@@ -41,6 +44,8 @@ Dire « va dans telle pièce » et que le robot y aille seul. L'ordre que tu as 
 | Vitesse | 32 m en 23 min, soit 1,4 m par minute en moyenne. Les tours sur place, ceux où il regarde autour de lui, prenaient 46 % du temps sur une boucle d'essai du 13 |
 | Position loin des repères | Le calcul seul s'est trompé de 20 à 30 cm devant la base ; il faut passer par les endroits à repères |
 | Patinage d'une roue | Le code qui le détecte et ralentit est écrit et vérifié sur les enregistrements, mais aucune roue n'a patiné depuis : pas encore prouvé sur le robot |
+| Trous dans les lectures | Par moments le cerveau reste sans nouvelles des capteurs : 0,4 à 5 s, cinq fois plus d'une seconde le 14 après-midi, aux moments où le Wi-Fi décroche. Il laisse alors le robot rouler jusqu'à 1,5 s sans surveiller le pare-chocs ; une fois, 20 cm. Le robot a aussi redémarré tout seul pendant un essai immobile. Rien n'a été touché, mais les causes ne sont pas trouvées |
+| Cuisine | Explorée à 10 ou 20 cm près, sans repères encore (il faut y repasser). Le passage étroit vers la marche (55 cm sur le plan) et la marche elle-même ne sont pas vus |
 | « Va dans telle pièce » | Pas encore : il manque les noms des pièces sur la carte, et une commande unique qui enchaîne tout sans moi |
 
 ## Les chiffres : le même trajet, base → C28 → base
@@ -65,15 +70,18 @@ Le gain vient surtout du vrai chemin de la pièce centrale, de la méthode pour 
 
 ## La suite que je propose, dans l'ordre
 
-1. **Passages étroits sans mon aide** : le robot se centre lui-même au capteur de distance. C'est écrit. En simulation, 75 départs sur 75 passent sans contact dans un couloir qui se resserre à 68 cm et devant une porte de 62 cm ; et sur les mesures de ce matin, le programme aurait décidé ce que j'avais fait à la main. Il reste à l'essayer sur le robot : d'abord des regards sans avancer, puis le couloir, puis la porte H12.
-2. **Accostage fiable** : dégager le devant de la base, puis réessayer ; sinon, un accostage lent mené par le cerveau sur les faisceaux.
-3. **Aller plus vite** : moins de tours sur place, seulement là où ils servent.
-4. **« Va dans telle pièce »** : tu me donnes le nom des pièces, je les attache aux cases ; une seule commande enchaîne trajet, portes et repères.
-5. **La carte vivante sur ton téléphone** : l'autre session l'a mise à jour ce matin (la base en B16, le robot reconnu sur sa base, les obstacles et les repères). Elle n'a pas encore été vue sur ton téléphone ; un VPN actif sur le PC peut la bloquer.
+1. **Retrouver des lectures sûres, avant tout** : toi, un coup d'œil à la batterie du cerveau et à ses fils ; moi, cinq minutes robot immobile sans aucun trou ; puis, avec ton accord parce que cela change le programme du cerveau, qu'il n'attende jamais le Wi-Fi et qu'il coupe les roues dès 0,3 s sans nouvelles des capteurs.
+2. **La marche de la cuisine** : d'abord le passage étroit qui y mène (de D32 à D34), puis la marche entre C28 et C29, lentement.
+3. **Passages étroits sans mon aide** : le robot se centre lui-même au capteur de distance. C'est écrit. En simulation, 75 départs sur 75 passent sans contact dans un couloir qui se resserre à 68 cm et devant une porte de 62 cm ; et sur les mesures de ce matin, le programme aurait décidé ce que j'avais fait à la main. Il reste à l'essayer sur le robot : d'abord des regards sans avancer, puis le couloir, puis la porte H12.
+4. **Accostage fiable** : dégager le devant de la base, puis réessayer ; sinon, un accostage lent mené par le cerveau sur les faisceaux.
+5. **Aller plus vite** : moins de tours sur place, seulement là où ils servent.
+6. **« Va dans telle pièce »** : tu me donnes le nom des pièces, je les attache aux cases ; une seule commande enchaîne trajet, portes et repères.
+7. **La carte vivante sur ton téléphone** : l'autre session l'a mise à jour ce matin (la base en B16, le robot reconnu sur sa base, les obstacles et les repères). Elle n'a pas encore été vue sur ton téléphone ; un VPN actif sur le PC peut la bloquer.
 
 ## Ce dont j'ai besoin de toi
 
-- **Avant la prochaine séance** : rebrancher le cerveau s'il est débranché, et tirer le robot de sa base à la main (posé dessus, il refuse de rouler).
+- **Le robot dort dans la cuisine, en F36, et ne charge pas.** Si on ne continue pas aujourd'hui, repose-le sur sa base.
+- **Avant une séance qui part de la base** : rebrancher le cerveau s'il est débranché, et tirer le robot de sa base à la main (posé dessus, il refuse de rouler).
 - **Dégager le devant de la base** : rien à moins de 50 cm de chaque côté de son axe, sur 1,2 m.
 - **Trois réponses courtes, quand tu veux** :
   - Y a-t-il un tapis dans la pièce centrale, vers D27 et E27 ?

@@ -1,0 +1,35 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (1015, 67), cap 291°
+[  0.2 min]     filtre : position corrigée de (-38, -4) mm et +0.9° ; note 0.96, étalement 221 mm et 8.2°, gyroscope × 1.0045
+[  0.2 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.2 min] station 0 : 8 paliers, 3 lignes de murs, axes de la pièce 13.0°
+[  0.2 min]   depuis la station 0 : direction 210° (vu, libre sur 144 cm), 900 mm, vers (18332, 6474), 5.7 m² à voir ; 13 candidats
+[  0.7 min]     filtre : position corrigée de (+57, -8) mm et +0.8° ; note 0.69, étalement 206 mm et 8.2°, gyroscope × 1.0045
+[  0.7 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.7 min]   porte possible : 655 mm de large vers (18711, 6078), direction 282°
+[  0.7 min] station 1 en (18393, 6466) : 9 paliers ; 7 lignes de murs
+[  0.7 min]   depuis la station 1 : direction 160° (vu, libre sur 145 cm), 900 mm, vers (17547, 6773), 5.2 m² à voir ; 23 candidats
+[  0.9 min]     arrêté : alarme pendant une avance : capteur optique à 408 ; robot en (17635, 6731)
+[  1.1 min]     filtre : position corrigée de (+50, -76) mm et +3.1° ; note 0.70, étalement 237 mm et 7.6°, gyroscope × 1.0046
+[  1.1 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  1.1 min] station 2 (là où le robot s'est arrêté) en (17684, 6653), 8 paliers
+[  1.1 min]   depuis la station 2 : direction 260° (vu, libre sur 130 cm), 900 mm, vers (17528, 5767), 3.2 m² à voir ; 31 candidats
+[  1.5 min]     filtre : position corrigée de (+16, -20) mm et +1.2° ; note 0.21, étalement 307 mm et 9.4°, gyroscope × 1.0046
+[  1.5 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  1.5 min]   porte possible : 760 mm de large vers (18243, 5626), direction 12°
+[  1.5 min] station 3 en (17557, 5756) : 9 paliers ; 11 lignes de murs
+[  1.5 min]   depuis la station 3 : direction 305° (vu, libre sur 98 cm), 500 mm, vers (17844, 5346), 3.2 m² à voir ; 30 candidats
+[  1.8 min]     filtre : position corrigée de (-154, +151) mm et -6.1° ; note 0.67, étalement 322 mm et 12.3°, gyroscope × 1.0042
+[  1.8 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  1.8 min]   porte possible : 814 mm de large vers (17971, 6260), direction 12°
+[  1.8 min]   porte possible : 837 mm de large vers (18332, 7077), direction 102°
+[  1.8 min]   porte possible : 678 mm de large vers (16948, 7114), direction 192°
+[  1.8 min] station 4 en (17686, 5501) : 8 paliers ; 14 lignes de murs
+[  2.0 min]   depuis la station 3 : direction 108° (porte), 409 mm, vers (17433, 6145), 2.0 m² à voir ; 30 candidats
+[  2.3 min]     filtre : position corrigée de (+27, +48) mm et -3.9° ; note 0.60, étalement 345 mm et 14.4°, gyroscope × 1.0039
+[  2.3 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  2.3 min]   porte possible : 661 mm de large vers (17202, 5030), direction 282°
+[  2.3 min] station 5 (devant une porte) en (17447, 6189) : 9 paliers ; 14 lignes de murs
+[  2.5 min]   depuis la station 4 : direction 275° (vu, libre sur 118 cm), 700 mm, vers (17747, 4804), 3.9 m² à voir ; 17 candidats
+[  2.7 min]   liaison : avance interrompue (timed out)
+[  2.7 min]     arrêté : avance refusée : refusé : obstacle devant, sous le seuil du capteur de distance ; robot en (17746, 4854)
+[  2.7 min] fin : arrêt : avance refusée : refusé : obstacle devant, sous le seuil du capteur de distance | mode 3 | roues arrêtées | pare-chocs [0, 0] | 6 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 18 sauts, 2 trajets arrêtés, 0 obstacles touchés ou vus devant | 5.5 m | batterie 2043 mAh

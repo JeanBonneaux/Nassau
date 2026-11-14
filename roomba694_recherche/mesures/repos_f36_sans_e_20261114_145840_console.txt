@@ -1,0 +1,10 @@
+# repos_f36_sans_e_20261114_145840 — carte 192.168.18.25 — début 14:58:40.571 le 2026-11-14
+# robot immobile en F36, mode passif, sans la touche e : compter les lectures manquees
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794686320.702	14:58:40.702	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794686320.704	14:58:40.703	Client TCP connecté : 192.168.18.6
+1794686321.603	14:58:41.602	>> j
+1794686321.634	14:58:41.633	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794686470.578	15:01:10.577	>> j
+1794686470.587	15:01:10.587	Journal CSV désactivé.
+1794686471.594	15:01:11.593	## fin de l'enregistrement après 151.0 s

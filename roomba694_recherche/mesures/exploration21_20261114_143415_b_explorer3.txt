@@ -1,0 +1,12 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (938, 177), cap 277°
+[  0.2 min]     filtre : position corrigée de (-20, -63) mm et -0.5° ; note 0.81, étalement 209 mm et 7.0°, gyroscope × 1.0045
+[  0.2 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.2 min] station 0 : 7 paliers, 2 lignes de murs, axes de la pièce 17.5°
+[  0.2 min]   depuis la station 0 : direction 55° (vu, libre sur 84 cm), 500 mm, vers (17960, 5205), 5.2 m² à voir ; 16 candidats
+[  0.4 min]     arrêté : alarme pendant une avance : pare-chocs gauche droit ; robot en (17947, 5196)
+[  0.6 min]   depuis la station 0 : direction 85° (vu, libre sur 101 cm), 500 mm, vers (17717, 5294), 5.0 m² à voir ; 6 candidats
+[  1.0 min]     filtre : position corrigée de (-70, -51) mm et +0.3° ; note 0.92, étalement 216 mm et 7.8°, gyroscope × 1.0045
+[  1.0 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  1.0 min] station 1 en (17643, 5239) : 11 paliers ; 4 lignes de murs
+[  1.0 min] plus rien à voir avec des murs tenus pour pleins sur 60 cm : seconde passe, pleins sur 30 cm seulement
+[  1.0 min] fin : plus rien à voir | mode 3 | roues arrêtées | pare-chocs [0, 0] | 2 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 8 sauts, 1 trajets arrêtés, 1 obstacles touchés ou vus devant | 1.6 m | batterie 2035 mAh

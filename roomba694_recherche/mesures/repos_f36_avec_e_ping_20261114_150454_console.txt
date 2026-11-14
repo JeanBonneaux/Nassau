@@ -1,0 +1,79 @@
+# repos_f36_avec_e_ping_20261114_150454 — carte 192.168.18.25 — début 15:04:54.612 le 2026-11-14
+# robot immobile en F36, mode passif, touche e chaque seconde, ping du PC en meme temps (ping_suivi.py)
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794686694.657	15:04:54.656	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794686694.681	15:04:54.681	Client TCP connecté : 192.168.18.6
+1794686695.678	15:04:55.677	>> j
+1794686695.701	15:04:55.700	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794686696.183	15:04:56.183	>> e
+1794686696.245	15:04:56.244	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686697.194	15:04:57.194	>> e
+1794686697.252	15:04:57.251	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686698.203	15:04:58.202	>> e
+1794686699.213	15:04:59.213	>> e
+1794686700.223	15:05:00.223	>> e
+1794686701.233	15:05:01.233	>> e
+1794686701.342	15:05:01.341	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686702.192	15:05:02.191	>> e
+1794686703.202	15:05:03.202	>> e
+1794686704.212	15:05:04.211	>> e
+1794686705.221	15:05:05.221	>> e
+1794686706.231	15:05:06.231	>> e
+1794686707.191	15:05:07.190	>> e
+1794686708.200	15:05:08.199	>> e
+1794686708.237	15:05:08.237	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686709.210	15:05:09.210	>> e
+1794686710.221	15:05:10.221	>> e
+1794686711.231	15:05:11.230	>> e
+1794686712.190	15:05:12.190	>> e
+1794686713.200	15:05:13.200	>> e
+1794686714.210	15:05:14.210	>> e
+1794686715.218	15:05:15.218	>> e
+1794686716.228	15:05:16.227	>> e
+1794686717.186	15:05:17.186	>> e
+1794686717.240	15:05:17.240	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686718.196	15:05:18.196	>> e
+1794686718.259	15:05:18.258	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686719.206	15:05:19.205	>> e
+1794686719.262	15:05:19.262	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686720.215	15:05:20.215	>> e
+1794686721.225	15:05:21.225	>> e
+1794686722.185	15:05:22.185	>> e
+1794686723.195	15:05:23.194	>> e
+1794686724.205	15:05:24.205	>> e
+1794686724.248	15:05:24.247	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686725.214	15:05:25.214	>> e
+1794686725.265	15:05:25.264	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686726.223	15:05:26.223	>> e
+1794686727.232	15:05:27.232	>> e
+1794686728.190	15:05:28.190	>> e
+1794686729.199	15:05:29.199	>> e
+1794686730.210	15:05:30.209	>> e
+1794686730.253	15:05:30.253	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686731.221	15:05:31.220	>> e
+1794686732.231	15:05:32.231	>> e
+1794686733.188	15:05:33.188	>> e
+1794686734.197	15:05:34.197	>> e
+1794686735.206	15:05:35.206	>> e
+1794686735.245	15:05:35.245	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686736.214	15:05:36.213	>> e
+1794686736.257	15:05:36.256	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686737.222	15:05:37.222	>> e
+1794686738.233	15:05:38.233	>> e
+1794686739.191	15:05:39.191	>> e
+1794686740.201	15:05:40.201	>> e
+1794686741.211	15:05:41.211	>> e
+1794686742.221	15:05:42.221	>> e
+1794686743.229	15:05:43.228	>> e
+1794686744.188	15:05:44.188	>> e
+1794686745.198	15:05:45.197	>> e
+1794686746.208	15:05:46.207	>> e
+1794686746.990	15:05:46.990	Le robot envoie du texte : il vient de démarrer ou de se réveiller (fois numéro 3). Pour reprendre la main : s, puis f.
+1794686747.217	15:05:47.217	>> e
+1794686747.620	15:05:47.619	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794686748.989	15:05:48.988	  texte du robot : Soft reset! 
+1794686749.630	15:05:49.630	Le robot envoie du texte : il vient de démarrer ou de se réveiller (fois numéro 4). Pour reprendre la main : s, puis f.
+1794686751.643	15:05:51.643	  texte du robot : iRobotBoot V4 Roomba 600-STM32 Bootloader ID: 80b5 0114 4033 3580 Version V4.8 
+1794686884.656	15:08:04.655	>> j
+1794686884.681	15:08:04.680	Journal CSV désactivé.
+1794686885.697	15:08:05.696	## fin de l'enregistrement après 191.1 s
