@@ -1492,3 +1492,65 @@ Accord de l'utilisateur : « Oui, accoste-le ». Enregistrement : `mesures/explo
 **Non vérifié** : que le robot charge (le cerveau s'est tu deux secondes après l'arrivée sur la base) ; pourquoi le cerveau s'est tu (débranché par l'utilisateur, comme la veille à 17 h 19, ou autre chose). La séance n'avait pas à être fermée : le robot est resté en mode passif pendant tout l'accostage.
 
 **À proposer** : dégager le devant de la base (rien à moins de 50 cm de chaque côté de l'axe sur 1,2 m) ; ou un accostage mené par le cerveau, lentement, sur les faisceaux.
+
+## 47. Centrage automatique dans les passages étroits : écrit, essayé en simulation, rejoué sur les mesures du matin (2026-11-14, sans le robot)
+
+Demande de l'utilisateur, à ma proposition de préparer un centrage automatique au capteur de distance : « Oui prepare, et prepare moi donc un resume de l<avancement de la situaiton ». Rien n'a roulé : robot sur sa base, en charge d'après lui (« Oui, il charge ») ; cerveau muet depuis 9 h 34. Le résumé demandé est dans [`../AVANCEMENT.md`](../AVANCEMENT.md).
+
+### Ce que l'enregistrement du matin a appris
+
+Relecture de `mesures/exploration19_20261114_090420_capteurs.csv`, couloir de J20 à J12 (9 h 17 à 9 h 22) et porte H12 (9 h 22 à 9 h 26). Scripts : `data_analysis/u_echelle_gyro_murs.py`, `data_analysis/v_rejeu_centrage.py` (résultats `results_u_…` et `results_v_…_20261114.txt`).
+
+1. **Où est passé le temps du couloir fait à la main** : 3,9 m en 319 s, dont 188 s à l'arrêt, 102 s en rotation et une trentaine de secondes à avancer. Sept arrêts ; à chacun, 12 s de rotations et de lectures, puis 15 à 25 s d'attente entre deux de mes ordres.
+2. **Les capteurs optiques de côté ne voient pas les murs du couloir.** Dans la partie de 68 cm, pendant les avances : 4 à 16 pour le capteur gauche (mur à 22 cm du flanc), 0 pour le droit (mur à 13 cm). Sur toute la séance ils montent à 308 et 99. Pas de centrage en roulant à attendre d'eux à ces distances.
+3. **Un regard de côté, robot immobile, est stable à 3 mm** (441 à 447, 364 à 366, 271, 287 à 291…).
+4. **Tous mes regards tournaient dans le même sens** : un tour complet vers la droite à chaque arrêt, 2 792° nets dans le couloir. L'échelle du gyroscope pèse alors lourd : en tournant chaque pas du cap corrigé par 1,0045, la position en fin de couloir diffère de 42 cm de celle qu'on obtient en tournant tout le trajet d'un seul angle. Jugée sur les murs, qui sont droits : ils sortent droits et parallèles pour une échelle de 1,001 à 1,0025 ; et le déplacement de côté compté s'accorde avec ce que les regards disent de la distance au mur à 3, 3 et 8 mm près avec 1,002, contre 8, 13 et 29 mm avec 1,0045. **Indication, pas mesure** (un seul passage, sept arrêts, des rotations vers la droite faites par le cerveau) : pour ces rotations-là, 1,0045 serait trop fort. À vérifier par un essai simple : quelques tours à droite puis autant à gauche devant un mur.
+5. **La lecture du capteur de distance écrite dans le journal a 0,15 s de retard pendant une rotation.** Le cerveau y écrit la médiane de ses trois dernières mesures, faites dix fois par seconde (`radar.ino`, `radarFrontMm`). Vu devant la porte : robot immobile au cap 67°, 443 mm ; pendant une rotation à 45 °/s la même lecture arrive 6° plus tard ; au cap 77°, 478 mm, 7° plus tard. Autre effet de cette médiane : un écho qui ne tient qu'une mesure n'apparaît pas.
+6. **Ce qu'un vrai éventail montre.** Une paroi proche s'entend très en biais : à 44 cm, lecture plate de 439 à 445 mm sur 15° autour de sa perpendiculaire, puis qui monte lentement jusqu'à 622 mm à 81° d'elle. Le coin d'un rétrécissement à 58 cm s'entend sur 50°. La direction d'un écho est donc floue à 15° près, alors que sa distance est juste. Devant la porte H12, ce qui se lit nettement est la trouée : des lectures lointaines (3,6 m, ou rien) du cap 88° au cap 123°, milieu 105° ; le robot y est passé à la main, tout droit au cap 102 à 103°, sans contact.
+
+Ce que cela remplace : mon simulateur, où un mur vu de biais ne renvoie rien (vrai à 3 m, faux à 50 cm) ; et l'idée du rapport de suivre un mur avec les capteurs optiques une fois étalonnés (étape 7) : à plus de 10 cm du flanc, ils ne lisent rien d'utile sur ces murs.
+
+### Ce qui est écrit
+
+- **`code/outils/centrage.py`**. À chaque arrêt : regard à gauche, demi-tour par l'avant en lisant le capteur (l'éventail), regard à droite, retour vers l'avant. Les trois rotations s'annulent (+90°, −180°, +90°) : l'échelle du gyroscope ne s'accumule plus. Dans un couloir, le milieu se lit sur les deux regards ; un écho de l'éventail ne le déplace que s'il est entier et plus près de la ligne que la paroi, et jamais jusqu'à moins de 8 cm d'une paroi mesurée. Devant une porte (aucune paroi de côté), c'est la trouée qui commande : décalage vers son milieu, approche, regard de près, franchissement d'une traite. Deux arrêts de suite donnent le cap du robot par rapport aux murs. Le pas passe de 40 à 80 cm quand tout est calme. Au premier contact, tout s'arrête.
+- **`code/outils/passage.py`** : ordres `centre=CAP,DIST[,PAS[,VITESSE]]` et `eventail=CAP` (regards et éventail sans avancer, avec la trouée). La position y est maintenant suivie par `centrage.Mobile`, chaque pas tourné du cap corrigé comme dans `explorer3.py` (1 et 6 mm d'écart avec l'ancienne façon sur les deux passages de porte du matin).
+- **`code/outils/pilote.py`** : `tourne(…, v_roues=)` demande au cerveau une rotation à une vitesse donnée (50 à 100 mm/s). Aucun changement du firmware.
+- **`code/outils/simulateur.py`** : durée d'une rotation à vitesse donnée d'après les mesures du matin (un quart de tour 3 s, un demi-tour 5 s à 45 °/s) ; lecture en retard et médiane de trois pendant une rotation. Vérifié : les essais d'`explorer3.py` donnent le même résultat qu'avant (monde `deux_pieces`, graine 2 : 23 tours, 41,1 m, 17,0 min avec le firmware 8 ; 26 tours, 52,7 m, 20,6 min avec le 10).
+- **`code/outils/essai_centrage.py`** : les essais simulés ci-dessous.
+
+### En simulation
+
+`essai_centrage.py tout --graines 5` (`results_w_essai_centrage_20261114.txt`, figure `fig20_centrage_simulation_20261114.png`). Deux mondes : un couloir qui reprend les largeurs mesurées le matin (95, 84, 73 puis 68 cm, et plus loin une ouverture sur un côté), 3,9 m à faire ; une porte de 62 cm dans une cloison de 12 cm, 1,8 m à faire. 75 départs par méthode : robot décalé de −15, 0 ou +15 cm, cap faux de −6 à +6°.
+
+| | Tout droit, sans regarder | Centrage, pas fixe de 40 cm | Centrage, pas qui s'allonge |
+|---|---|---|---|
+| Couloir : essais avec contact | 54 sur 75 | 0 | **0** |
+| Couloir : jeu le plus petit (médiane) | | 91 mm (133) | 88 mm (133) |
+| Couloir : arrêts, durée simulée | | 11, 197 s | **9, 169 s** (de 151 à 228) |
+| Couloir : écart au milieu à l'arrivée | 74 mm, 170 au pire | 7 mm, 23 au pire | 3 mm, 26 au pire |
+| Porte : essais avec contact | 29 sur 75 | 0 | **0** |
+| Porte : jeu le plus petit (médiane) | | 80 mm (119) | 80 mm (119) |
+| Porte : arrêts, durée simulée | | 6, 104 s | **5, 90 s** (de 75 à 118) |
+
+Le cap par rapport aux murs est retrouvé à 0,1° près en médiane (1,4° au pire). Le couloir simulé prend 2,8 min ; le vrai, à la main, 5,3 min.
+
+### Sur les mesures du matin
+
+`v_rejeu_centrage.py` redonne au programme ce que le capteur a lu le matin, y compris pendant les rotations, et note ce qu'il aurait décidé.
+
+- **Couloir, sept arrêts.** Largeurs lues : 945, 859, 740, 688 et 679 mm, puis un côté ouvert. Au premier arrêt l'éventail voit le rétrécissement 43 cm devant, à droite, et le programme décide un pas de côté de 57 mm vers la gauche (le passage qui suit est décalé de 5 à 6 cm de ce côté). Ensuite des avances de 40 cm, cap retouché de −5,2° à +6,6°. Cap par rapport aux murs mesuré trois fois : +2,9°, +0,6°, +2,0°. Aucune décision ne pousse le robot vers une paroi.
+- **Porte H12, premier arrêt** (le robot y était 14 cm trop à l'est, et je l'avais décalé de 14,5 cm vers l'ouest) : trouée du cap 110° au cap 127° ; décision : pas de côté de 173 mm vers la gauche, c'est-à-dire l'ouest. Les échos des bords, eux, auraient dit 258 mm : ils ne sont pas crus.
+- **Porte H12, second arrêt** (d'où j'étais passé tout droit au cap 102 à 103°) : trouée du cap 88° au cap 123°. Avec l'axe 100° : pas de côté de 53 mm vers la gauche. Avec l'axe 103° : franchissement, 867 mm à +1,5° de l'axe. C'est ce que j'avais fait à la main.
+
+### Ce qui n'est pas vérifié
+
+- **Rien n'a roulé.** Le simulateur n'entend pas les parois en biais comme le vrai capteur ; le rejeu ne porte que sur un couloir et sur deux arrêts devant une seule porte, un seul jour.
+- La durée réelle (2,8 min simulées contre 5,3 à la main) et le jeu réel.
+- `CAP_MURS`, le cap d'après les murs affiché à la fin : il suppose que l'axe donné est bien celui du passage sur le plan ; pas encore utilisé.
+- L'éventail lu dans le journal perd les échos d'une seule mesure (médiane). Pour un éventail fin il faudrait la mesure brute dans le journal : une colonne de plus, donc un changement de firmware, à proposer à l'utilisateur.
+
+### Première sortie proposée sur le robot
+
+Dans cet ordre, lentement, sous surveillance : `eventail=` devant la porte H12 et dans le couloir (des rotations seulement) ; puis `centre=` dans le couloir entre J17 et J15 ; puis la porte.
+
+**État à la fin** : robot sur sa base d'après l'utilisateur (non vérifié par moi) ; cerveau muet ; aucun ordre envoyé.

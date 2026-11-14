@@ -264,6 +264,22 @@ class RobotSimule(Pilote):
         P = np.array([self.x, self.y])
         capteur = P + DX * np.array([math.cos(self.th), math.sin(self.th)])
         us = self.monde.sonar(capteur, self.th, rng=self.rng)
+        # Pendant une rotation, la lecture portée par une ligne du journal est en retard : le cerveau écrit la médiane
+        # de ses trois dernières mesures, faites dix fois par seconde (radar.ino). Elle date de 0,15 s environ, et un
+        # écho qui ne tient qu'une mesure disparaît. Imité seulement en rotation, pour ne rien changer aux essais
+        # d'explorer3.py, qui ne se sert pas de ces lectures-là.
+        if abs(getattr(self, "rot_dps", 0.0)) > 20.0:
+            anneau = getattr(self, "_anneau", None)
+            if anneau is None:
+                anneau = self._anneau = [us, us, us]
+                self._t_anneau = self.t
+            elif self.t - self._t_anneau >= 0.099:
+                anneau.pop(0)
+                anneau.append(us)
+                self._t_anneau = self.t
+            us = sorted(anneau)[1]
+        else:
+            self._anneau = None
         sol = 1100.0 + 300.0 * self.rng.random() if self.monde.sur_tapis(P) else 2600.0 + 60.0 * self.rng.random()
         ir = 0
         if self.monde.base is not None:
@@ -437,7 +453,7 @@ class RobotSimule(Pilote):
                 "lignes": int((self.t - t0) / dt), "t0": l0["pc_s"], "t1": l1["pc_s"]}
 
     # ------------------------------------------------------------ une rotation d'un seul tenant, comme Pilote.tourne
-    def tourne(self, angle_deg, vide_min=1500, vide_stop=0, duree_max=12.0):
+    def tourne(self, angle_deg, vide_min=1500, vide_stop=0, duree_max=12.0, v_roues=None):
         l0 = self._ligne()
         refus = self.controle(l0, avance=False, lb_repos=5000, vide_min=vide_min)
         if refus:
@@ -448,6 +464,8 @@ class RobotSimule(Pilote):
             return {"touche": "4", "duree_ordre": 0.6, "alarme": None, "raison": "refus du firmware", "avance_mm": 0.0, "rot_gyro": 0.0}
         cap0, t0 = self.bcap, self.t
         v = min(self.reglage + 21.0, 147.0)
+        if v_roues and self.firmware >= 10:                          # vitesse donnée pour cette rotation (/api/mouv?rot=…&v=…)
+            v = max(50.0, min(100.0, float(v_roues))) + 17.0         # mesuré le 2026-11-14 : 45 °/s pour 75 mm/s demandés
         vit = 2 * v / 235.0 * 57.29578                               # degrés par seconde
         signe = 1.0 if angle_deg > 0 else -1.0
         dt = 0.05
@@ -458,8 +476,16 @@ class RobotSimule(Pilote):
             self.dormir(dt)
             self._ligne()
         self.rot_dps = 0.0
-        self._tourner(math.radians(signe * vit * (0.0 if self.firmware >= 10 else 0.08) + self.rng.gauss(0.0, 0.5)))   # le temps que l'ordre d'arrêt arrive
-        self.dormir(0.4)
+        if v_roues and self.firmware >= 10:
+            # le cerveau ralentit avant le but et s'arrête dessus : 0,5° d'écart en médiane, 1,1° au plus sur 16
+            # rotations (journal_wifi.md § 35). La boucle ci-dessus, elle, dépasse le but d'un pas de calcul (3°).
+            self._tourner(math.radians(signe * (abs(angle_deg) - abs(self.bcap - cap0)) + self.rng.gauss(0.0, 0.5)))
+        else:
+            self._tourner(math.radians(signe * vit * (0.0 if self.firmware >= 10 else 0.08) + self.rng.gauss(0.0, 0.5)))   # le temps que l'ordre d'arrêt arrive
+        # départ progressif et ralentissement dans les trente derniers degrés (mouv.ino) : le 2026-11-14, un quart de
+        # tour prenait 3 s et un demi-tour 5 s à 45 °/s. Compté seulement quand la vitesse est donnée, pour ne pas
+        # changer les durées des essais d'explorer3.py déjà notées.
+        self.dormir(1.0 if v_roues and self.firmware >= 10 else 0.4)
         self._ligne()
         return {"touche": "4" if signe > 0 else "6", "duree_ordre": round(self.t - t0, 2), "alarme": None, "raison": "angle",
                 "avance_mm": 0.0, "rot_gyro": round(self.bcap - cap0, 2), "lignes": int((self.t - t0) / dt), "t0": l0["pc_s"], "t1": self.t}

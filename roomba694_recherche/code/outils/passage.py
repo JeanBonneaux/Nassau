@@ -16,9 +16,20 @@
 #     av=MM[,vitesse]    avance de MM en tenant le cap actuel
 #     re=MM              recule de MM (15 cm au plus), par exemple après un contact
 #     voir=c1/c2/...     tourne vers chaque cap et lit le capteur de distance pendant une seconde
+#     eventail=CAP       sans avancer : regard à gauche du cap CAP, demi-tour lent par l'avant en lisant le capteur,
+#                        regard à droite, retour au cap CAP ; affiche les parois de côté et les échos vus devant
+#     centre=CAP,DIST[,PAS[,VITESSE]]
+#                        avance de DIST mm dans un passage dont l'axe est le cap CAP du plan en se centrant seul
+#                        (centrage.py) : à chaque arrêt, regards des deux côtés et éventail par l'avant ; pas de PAS mm
+#                        (400) qui s'allonge quand tout est calme ; s'arrête au premier contact. Affiche à la fin
+#                        CAP_MURS : le cap du robot d'après les murs, à ne reprendre que si l'axe donné est sûr.
+#                        Essayé en simulation seulement (essai_centrage.py, journal_wifi.md § 47).
 # La position est suivie à l'estime, d'après les compteurs et le gyroscope du cerveau lus dans le journal : bonne à
-# 1 ou 2 cm sur un mètre, mais elle ne se recale pas sur le plan. La dernière ligne affichée, POSE=U,V,CAP, se redonne
-# telle quelle à l'appel suivant. Les contrôles sont ceux de Pilote.avance et Pilote.tourne (pare-chocs, roues, mode
+# 1 ou 2 cm sur un mètre, mais elle ne se recale pas sur le plan. Depuis le 2026-11-14 chaque pas compté par le cerveau
+# est tourné du cap corrigé de l'échelle du gyroscope (centrage.Mobile, comme explorer3.py) ; avant, le trajet de tout
+# un appel était tourné d'un seul angle, ce qui ne changeait rien tant que le robot tournait peu (1 et 6 mm d'écart
+# sur les deux passages de porte du 14). La dernière ligne affichée, POSE=U,V,CAP, se redonne telle quelle à l'appel
+# suivant. Les contrôles sont ceux de Pilote.avance et Pilote.tourne (pare-chocs, roues, mode
 # Safe, sol sombre, obstacle à moins de 30 cm devant) ; les capteurs optiques n'arrêtent pas l'avance (un passage
 # étroit les excite des deux côtés). La série s'arrête au premier ordre refusé ou interrompu.
 import math
@@ -27,6 +38,7 @@ import time
 
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import centrage  # noqa: E402
 from pilote import Pilote  # noqa: E402
 
 K_GYRO = 1.0045                 # échelle du gyroscope du cerveau (journal_wifi.md § 31)
@@ -40,16 +52,13 @@ p.lire()
 l0 = p.frais()
 if l0 is None:
     sys.exit("aucune ligne récente du journal : l'enregistreur tourne-t-il ? le robot répond-il ?")
-ref = dict(l0)
+m = centrage.Mobile(p, u0 / S, -v0 / S, cap0, K_GYRO)         # le robot suivi à l'estime, en millimètres du plan (y vers le haut)
 
 
 def pose():
     """pixel du plan, cap du plan et dernière ligne du journal"""
-    l = p.frais() or p.lignes[-1]
-    dx, dy = l["x_mm"] - ref["x_mm"], l["y_mm"] - ref["y_mm"]
-    a = math.radians(cap0 - ref["cap_pos"])                 # du repère du cerveau à celui du plan
-    X, Y = dx * math.cos(a) - dy * math.sin(a), dx * math.sin(a) + dy * math.cos(a)
-    return u0 + X * S, v0 - Y * S, (cap0 + (l["cap_pos"] - ref["cap_pos"]) * K_GYRO) % 360.0, l
+    X, Y, C, l = m.pose()
+    return X * S, -Y * S, C, l
 
 
 def tourner_vers(cap):
@@ -121,6 +130,37 @@ try:
                 dist, vit, d = f[0], (f[1] if len(f) > 1 else 100), 0.0
             print(f"{ordre} : {dist:.0f} mm au cap {pose()[2]:.1f}° (reste de cap {d:+.1f}°), {vit:.0f} mm/s demandés")
             ok = avancer(dist, int(vit), reste_cap=d if abs(d) >= 0.5 else 0.0)
+        elif nom == "eventail":
+            axe = float(val)
+            rg = m.regard(axe + 90.0)
+            ev = m.balayer(axe - 90.0, sens=-1, v=50) if rg is not None else None
+            rd = m.regard(axe - 90.0) if ev is not None else None
+            if rd is None:
+                ok = False
+                continue
+            rel = [(centrage.ecart(c - axe), us) for c, us in ev if abs(centrage.ecart(c - axe)) <= centrage.EVENTAIL]
+            gr = centrage.groupes(rel)
+            print(f"{ordre} : paroi à gauche à {'rien' if rg['mm'] is None else format(rg['mm'], '.0f') + ' mm'}, à droite à "
+                  f"{'rien' if rd['mm'] is None else format(rd['mm'], '.0f') + ' mm'} (du centre du robot) ; {len(ev)} lectures pendant le demi-tour")
+            for q in gr:
+                print(f"   écho à {q['mm']:.0f} mm vers {q['dir']:+.0f}° de l'axe (cap {(axe + q['dir']) % 360.0:.0f}°), large de {q['larg']:.0f}°, "
+                      f"{q['n']} lectures : " + ("placé" if q["sur"] else "direction incertaine"))
+            tr = centrage.trouee(rel)
+            if tr is not None and tr["a"] is not None and tr["b"] is not None:
+                print(f"   trouée de {tr['a']:+.0f}° à {tr['b']:+.0f}° de l'axe (caps {(axe + tr['a']) % 360.0:.0f}° à {(axe + tr['b']) % 360.0:.0f}°), "
+                      f"milieu au cap {(axe + tr['dir']) % 360.0:.0f}°, bords à {tr['mm_a']:.0f} mm à droite et {tr['mm_b']:.0f} mm à gauche")
+            else:
+                print("   pas de trouée nette devant (aucune suite de lectures lointaines bordée des deux côtés)")
+            ok = m.tourner_vers(axe, v=centrage.V_ROTATION) is not None
+        elif nom == "centre":
+            f = [float(x) for x in val.split(",")]
+            res = centrage.centrer(m, f[0], f[1], pas=f[2] if len(f) > 2 else 400.0, vitesse=int(f[3]) if len(f) > 3 else 100)
+            u, v, c, l = pose()
+            print(f"{ordre} : {res['fin']} ; {len(res['arrets'])} arrêts en {res['duree']:.0f} s ; robot en ({u:.1f}, {v:.1f}), cap {c:.1f}° à l'estime")
+            if res["n_biais"] >= 2:
+                print(f"CAP_MURS={f[0] % 360.0:.1f}  (le robot est tourné dans l'axe des murs ; son cap à l'estime s'en écarte de "
+                      f"{-res['biais']:+.1f}°, {res['n_biais']} mesures) : à reprendre seulement si l'axe {f[0]:.0f}° du plan est sûr")
+            ok = res["ok"]
         elif nom == "re":
             # recul court après un contact (touche 2 du firmware, comme explorer3.py) : 15 cm au plus par ordre
             mm = min(150.0, float(val))

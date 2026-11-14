@@ -279,11 +279,13 @@ class Pilote:
                 "lignes": len(seg), "t0": seg[0]["pc_s"], "t1": seg[-1]["pc_s"]}
 
     # ------------------------------------------------------------ une rotation d'un seul tenant
-    def tourne(self, angle_deg, vide_min=1500, vide_stop=0, duree_max=12.0):
+    def tourne(self, angle_deg, vide_min=1500, vide_stop=0, duree_max=12.0, v_roues=None):
         """Rotation sur place de angle_deg (positif : à gauche) d'un seul tenant, surveillée au gyroscope à chaque ligne du
         journal, au lieu de sauts minutés suivis d'une vérification : le 2026-11-13 un trajet de 2,9 m demandait
         13 rotations saccadées. L'ordre est redonné toutes les 0,5 s ; arrêt à l'angle (en anticipant le retard du
-        journal), sur une alarme, ou si le journal se tait. Renvoie le même dictionnaire que saut(), avec « raison »."""
+        journal), sur une alarme, ou si le journal se tait. Renvoie le même dictionnaire que saut(), avec « raison ».
+        v_roues : vitesse des roues demandée au cerveau pour cette rotation (firmware v10 : de 50 à 100 mm/s, 75 sans
+        précision), pour un balayage lent au capteur de distance ; sans effet avant la v10."""
         l0 = self.frais()
         if l0 is None:
             return {"refus": "aucune ligne récente du journal (robot muet ?)"}
@@ -292,7 +294,8 @@ class Pilote:
             return {"refus": refus}
         touche = "4" if angle_deg > 0 else "6"
         if self.sait_mouv():                                    # firmware v10 : rotation mesurée et arrêtée par le cerveau
-            r = self._mouvement(f"rot={angle_deg:.1f}", lb_max=5000, vide_stop=vide_stop, duree_max=duree_max + 15.0)
+            r = self._mouvement(f"rot={angle_deg:.1f}" + (f"&v={int(v_roues)}" if v_roues else ""), lb_max=5000, vide_stop=vide_stop,
+                                duree_max=duree_max + 15.0)
             r["touche"] = touche
             return r
         i0 = len(self.lignes) - 1

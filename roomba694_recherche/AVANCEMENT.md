@@ -1,6 +1,6 @@
 # Roomba 694 : où en est le projet
 
-*État au 14 novembre 2026, 10 h. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (46 sections) ; ce résumé n'en garde que l'essentiel.*
+*État au 14 novembre 2026, 11 h. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (47 sections) ; ce résumé n'en garde que l'essentiel.*
 
 ## En bref
 
@@ -37,7 +37,7 @@ Dire « va dans telle pièce » et que le robot y aille seul. L'ordre que tu as 
 | Sujet | Où on en est |
 |---|---|
 | Monter sur sa base | L'ordre « rentre à la base » du robot a réussi le 13 (21 s) et échoué le 14 : trois contacts en route, arrêt hors de la base. Quelque chose gêne l'approche |
-| Portes et passages étroits | La porte H12 (62 cm), le couloir entre J15 et J17 (68 cm), le passage de E22 (48 cm) : je les fais encore pas à pas, 10 minutes sur les 23 du dernier trajet |
+| Portes et passages étroits | La porte H12 (62 cm), le couloir entre J15 et J17 (68 cm), le passage de E22 (48 cm) : je les fais encore pas à pas, 10 minutes sur les 23 du dernier trajet. Un centrage automatique est écrit depuis ce matin, pas encore essayé sur le robot |
 | Vitesse | 32 m en 23 min, soit 1,4 m par minute en moyenne. Les tours sur place, ceux où il regarde autour de lui, prenaient 46 % du temps sur une boucle d'essai du 13 |
 | Position loin des repères | Le calcul seul s'est trompé de 20 à 30 cm devant la base ; il faut passer par les endroits à repères |
 | Patinage d'une roue | Le code qui le détecte et ralentit est écrit et vérifié sur les enregistrements, mais aucune roue n'a patiné depuis : pas encore prouvé sur le robot |
@@ -65,11 +65,11 @@ Le gain vient surtout du vrai chemin de la pièce centrale, de la méthode pour 
 
 ## La suite que je propose, dans l'ordre
 
-1. **Passages étroits sans mon aide** : le robot se centre lui-même au capteur de distance. Je le prépare et je l'essaie en simulation ; il restera à l'essayer dans le couloir et à la porte H12.
+1. **Passages étroits sans mon aide** : le robot se centre lui-même au capteur de distance. C'est écrit. En simulation, 75 départs sur 75 passent sans contact dans un couloir qui se resserre à 68 cm et devant une porte de 62 cm ; et sur les mesures de ce matin, le programme aurait décidé ce que j'avais fait à la main. Il reste à l'essayer sur le robot : d'abord des regards sans avancer, puis le couloir, puis la porte H12.
 2. **Accostage fiable** : dégager le devant de la base, puis réessayer ; sinon, un accostage lent mené par le cerveau sur les faisceaux.
 3. **Aller plus vite** : moins de tours sur place, seulement là où ils servent.
 4. **« Va dans telle pièce »** : tu me donnes le nom des pièces, je les attache aux cases ; une seule commande enchaîne trajet, portes et repères.
-5. **La carte vivante sur ton téléphone** : l'autre session s'est arrêtée sur une limite d'usage, reprise possible le 18 novembre ; cinq fichiers modifiés n'y sont pas enregistrés.
+5. **La carte vivante sur ton téléphone** : l'autre session l'a mise à jour ce matin (la base en B16, le robot reconnu sur sa base, les obstacles et les repères). Elle n'a pas encore été vue sur ton téléphone ; un VPN actif sur le PC peut la bloquer.
 
 ## Ce dont j'ai besoin de toi
 
