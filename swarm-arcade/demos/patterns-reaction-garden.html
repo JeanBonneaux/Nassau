@@ -74,8 +74,8 @@ body.preview #hud { display: none; }
   var hiR = 255, hiG = 214, hiB = 245;
 
   var W = 0, H = 0, N = 0;
-  var U, V, U2, V2, img, img32;
-  var cw = 1, ch = 1, dpr = 1, grad = null;
+  var U, V, U2, V2, img, img32, VIG;
+  var cw = 1, ch = 1, dpr = 1;
 
   var presetIdx = 0, Fb = PRESETS[0].F, kb = PRESETS[0].k, paletteIdx = 0;
   var userUntil = 0, time = 0, blobT = 0, presetT = 0, meanT = 0, hudT = 0, lastWheel = 0;
@@ -111,6 +111,16 @@ body.preview #hud { display: none; }
     off.width = w; off.height = h;
     img = octx.createImageData(w, h);
     img32 = new Uint32Array(img.data.buffer);
+    VIG = new Float32Array(N);
+    for (var y = 0; y < h; y++) {
+      var ny = (y + 0.5) / h * 2 - 1;
+      for (var x = 0; x < w; x++) {
+        var nx = (x + 0.5) / w * 2 - 1;
+        var d = Math.sqrt(nx * nx + ny * ny) / Math.SQRT2;
+        var t = Math.min(1, Math.max(0, (d - 0.35) / 0.65));
+        VIG[y * w + x] = 1 - 0.7 * t * t * (3 - 2 * t);
+      }
+    }
     reset(WARM);
   }
 
@@ -204,7 +214,7 @@ body.preview #hud { display: none; }
     var lr = LUT_R, lg = LUT_G, lb = LUT_B;
     var Lx = LIGHT[0], Ly = LIGHT[1], Lz = LIGHT[2];
     var Hx = HALF[0], Hy = HALF[1], Hz = HALF[2];
-    var vScale = 255 / VMAX;
+    var vScale = 255 / VMAX, vig = VIG;
     for (var y = 0; y < h; y++) {
       var row = y * w;
       var yu = (y > 0 ? y - 1 : h - 1) * w, yd = (y < h - 1 ? y + 1 : 0) * w;
@@ -224,6 +234,8 @@ body.preview #hud { display: none; }
         var r = lr[idx] * sh + hiR * spec;
         var g = lg[idx] * sh + hiG * spec;
         var bl = lb[idx] * sh + hiB * spec;
+        var m = vig[c];
+        r = r * m; g = g * m; bl = bl * m;
         r = r > 255 ? 255 : r; g = g > 255 ? 255 : g; bl = bl > 255 ? 255 : bl;
         p[c] = (255 << 24) | ((bl | 0) << 16) | ((g | 0) << 8) | (r | 0);
       }
@@ -236,10 +248,6 @@ body.preview #hud { display: none; }
     cw = Math.max(1, Math.round(innerWidth * dpr));
     ch = Math.max(1, Math.round(innerHeight * dpr));
     cv.width = cw; cv.height = ch;
-    grad = ctx.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * 0.3, cw / 2, ch / 2, Math.max(cw, ch) * 0.72);
-    grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(0.6, 'rgba(2,1,8,0.25)');
-    grad.addColorStop(1, 'rgba(2,1,8,0.75)');
     var gs = gridSize();
     if (W === 0 || Math.abs(gs[0] - W) > W * 0.1 || Math.abs(gs[1] - H) > H * 0.1) allocate(gs[0], gs[1]);
   }
@@ -376,8 +384,6 @@ body.preview #hud { display: none; }
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'low';
     ctx.drawImage(off, 0, 0, cw, ch);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, cw, ch);
 
     hudT += dt;
     if (hudT > 0.25) {

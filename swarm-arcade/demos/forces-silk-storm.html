@@ -270,14 +270,6 @@ canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair
 
     // additive glow lines along constraints
     ctx.globalCompositeOperation = 'lighter';
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (let c = 0; c < NC; c++) {
-      if (!CL[c] || CK[c] !== 0) continue;
-      const a = CA[c], b = CB[c];
-      ctx.moveTo(X[a], Y[a]); ctx.lineTo(X[b], Y[b]);
-    }
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 3; ctx.stroke();
     for (let g = 0; g < GRAD; g++) {
       ctx.beginPath();
       for (let c = 0; c < NC; c++) {
@@ -285,7 +277,7 @@ canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair
         const a = CA[c], b = CB[c];
         ctx.moveTo(X[a], Y[a]); ctx.lineTo(X[b], Y[b]);
       }
-      ctx.strokeStyle = LC[g]; ctx.lineWidth = 0.9; ctx.stroke();
+      ctx.strokeStyle = LC[g]; ctx.lineWidth = 1; ctx.stroke();
     }
     ctx.beginPath();
     for (let c = 0; c < NC; c++) {

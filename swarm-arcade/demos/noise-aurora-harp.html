@@ -365,33 +365,44 @@ function smoothPath(pts) {
   g.lineTo(last.x, last.y);
 }
 
+const AURORA_SEG = 12;
+function bandEdges(b, pad) {
+  const top = [], bot = [];
+  for (let j = 0; j <= AURORA_SEG; j++) {
+    const x = W * j / AURORA_SEG;
+    const q = x / W;
+    const y = H * (b.base + b.amp * Math.sin(q * TAU * b.fq + T * b.sp * 2 + b.ph)
+                  + 0.03 * Math.sin(q * Math.PI * 5.3 - T * b.sp * 1.7 + b.ph * 0.5)) - pad;
+    const th = H * b.th * (0.8 + 0.2 * Math.sin(q * 7 + T * b.sp + b.ph)) + 2 * pad;
+    top.push({ x, y });
+    bot.push({ x, y: y + th });
+  }
+  return { top, bot };
+}
+
+function fillBand(b, pad, alpha) {
+  const { top, bot } = bandEdges(b, pad);
+  const yMin = H * (b.base - b.amp - 0.06) - pad;
+  const yMax = H * (b.base + b.th + b.amp + 0.06) + pad;
+  const grad = g.createLinearGradient(0, yMin, 0, yMax);
+  const [r, gg, bl] = b.c;
+  grad.addColorStop(0, `rgba(${r},${gg},${bl},0)`);
+  grad.addColorStop(0.5, `rgba(${r},${gg},${bl},${alpha})`);
+  grad.addColorStop(1, `rgba(${r},${gg},${bl},0)`);
+  g.beginPath();
+  smoothPath(top);
+  const rb = bot.slice().reverse();
+  g.lineTo(rb[0].x, rb[0].y);
+  smoothPath(rb);
+  g.closePath();
+  g.fillStyle = grad;
+  g.fill();
+}
+
 function drawAurora() {
-  const SEG = 12;
   for (const b of BANDS) {
-    const top = [], bot = [];
-    for (let j = 0; j <= SEG; j++) {
-      const x = W * j / SEG;
-      const q = x / W;
-      const y = H * (b.base + b.amp * Math.sin(q * TAU * b.fq + T * b.sp * 2 + b.ph)
-                    + 0.03 * Math.sin(q * Math.PI * 5.3 - T * b.sp * 1.7 + b.ph * 0.5));
-      top.push({ x, y });
-      const th = H * b.th * (0.8 + 0.2 * Math.sin(q * 7 + T * b.sp + b.ph));
-      bot.push({ x, y: y + th });
-    }
-    const yMin = H * (b.base - 0.12), yMax = H * (b.base + b.th + 0.12);
-    const grad = g.createLinearGradient(0, yMin, 0, yMax);
-    const [r, gg, bl] = b.c;
-    grad.addColorStop(0, `rgba(${r},${gg},${bl},0)`);
-    grad.addColorStop(0.5, `rgba(${r},${gg},${bl},${b.a})`);
-    grad.addColorStop(1, `rgba(${r},${gg},${bl},0)`);
-    g.beginPath();
-    smoothPath(top);
-    const rb = bot.slice().reverse();
-    g.lineTo(rb[0].x, rb[0].y);
-    smoothPath(rb);
-    g.closePath();
-    g.fillStyle = grad;
-    g.fill();
+    fillBand(b, H * 0.035, b.a * 0.45);   // soft wide halo
+    fillBand(b, 0, b.a);                  // core curtain
   }
 }
 

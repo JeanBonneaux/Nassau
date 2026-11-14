@@ -47,7 +47,7 @@ const JITTER = 0.12;                  // tiny random wobble per step
 const STEP = 1.1;                     // cells moved per step
 const DEP = 1;                        // deposit per agent per step
 const DEP_CAP = 6;                    // trail values never exceed this
-const PREWARM = 60;                   // steps run at init without rendering
+const PREWARM = PREVIEW ? 150 : 60;   // steps run at init without rendering (cheap in preview)
 const NORM_SCALE = 255 / DEP_CAP;     // trail -> LUT index (v^0.6 applied in LUT)
 const LE = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 
