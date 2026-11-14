@@ -1,0 +1,10 @@
+va=770,74,50 : 1058 mm au cap 163.6° (reste de cap +0.7°), 50 mm/s demandés
+   avance de 1060.6 mm pour 1058 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 53, sol 2469 ; robot en (770.1, 73.7), cap 166.2°, devant 579 mm
+eventail=172 : paroi à gauche à 643 mm, à droite à 699 mm (du centre du robot) ; 113 lectures pendant le demi-tour
+   écho à 776 mm vers +54° de l'axe (cap 226°), large de 41°, 25 lectures : direction incertaine
+   écho à 624 mm vers -2° de l'axe (cap 170°), large de 20°, 12 lectures : direction incertaine
+   écho à 525 mm vers -25° de l'axe (cap 147°), large de 24°, 15 lectures : direction incertaine
+   écho à 356 mm vers -57° de l'axe (cap 115°), large de 36°, 22 lectures : direction incertaine
+   trouée de +9° à +33° de l'axe (caps 181° à 205°), milieu au cap 193°, bords à 644 mm à droite et 809 mm à gauche
+fin : mode 3, roues en marche False, pare-chocs 00, devant 607 mm
+POSE=770.0,73.4,171.9

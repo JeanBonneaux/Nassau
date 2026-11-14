@@ -1,15 +1,15 @@
 # Roomba 694 : où en est le projet
 
-*État au 14 novembre 2026, 15 h. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (48 sections) ; ce résumé n'en garde que l'essentiel.*
+*État au 14 novembre 2026, 16 h 15. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (51 sections) ; ce résumé n'en garde que l'essentiel.*
 
 ## En bref
 
 - Le robot **va seul d'une case à l'autre de l'appartement**, conduit par le cerveau et par le programme du PC. Trajet le plus long : de sa base jusqu'en C28 et retour, **32 m en 23 minutes, 5 contacts légers**.
-- Il **sait où il est à 1 cm près** là où il a déjà fait un tour sur lui-même (81 repères enregistrés). Loin d'un repère, l'erreur a atteint 20 à 30 cm.
+- Il **sait où il est à 1 cm près** là où il a déjà fait un tour sur lui-même (97 repères enregistrés, dont 16 dans la cuisine). Loin d'un repère, l'erreur a atteint 20 à 30 cm.
 - **Trois choses ne sont pas au point** : rentrer sur sa base tout seul (réussi 1 fois sur 2), passer les portes et les passages étroits sans que je le guide pas à pas, et rouler plus vite.
-- **La cuisine est explorée** depuis le 14 après-midi (8 tours sur place, un contact léger), sauf le passage étroit qui mène à la marche.
-- **Un défaut de sécurité trouvé le 14** : par moments le cerveau reste plusieurs secondes sans nouvelles des capteurs du robot, aux moments où le Wi-Fi décroche. Il laisse alors le robot rouler jusqu'à 1,5 s sans rien surveiller (20 cm une fois). Le robot a aussi redémarré tout seul pendant un essai immobile. Les causes ne sont pas trouvées : à régler avant de le refaire rouler.
-- En ce moment : robot **endormi dans la cuisine, en F36**. Il n'est pas sur sa base : **il ne charge pas**. Cerveau allumé, rien ne roule.
+- **La cuisine est explorée et a ses repères** depuis le 14 après-midi : trois passages, 16 repères d'accord entre eux à 3,5 cm. Le passage étroit qui mène à la marche est franchi, sans contact (42 cm au plus serré).
+- **Un défaut de sécurité trouvé et corrigé le 14** : à chaque accroc du Wi-Fi, le cerveau se figeait une à cinq secondes et ne surveillait plus le pare-chocs (20 cm roulés ainsi une fois). Ton idée du tampon est en service, c'est la version 11 : plus aucun trou en quinze minutes de route, même quand le Wi-Fi décroche.
+- En ce moment : robot **devant la marche, en C29**, dans l'encadrement de la porte entre la cuisine et la pièce centrale. La marche est mesurée (1,7 cm, elle monte vers la pièce centrale) mais pas encore franchie : j'attends de savoir si la batterie portable est fixée. Il n'est pas sur sa base : **il ne charge pas**.
 
 ## Le but, pour mémoire
 
@@ -40,12 +40,12 @@ Dire « va dans telle pièce » et que le robot y aille seul. L'ordre que tu as 
 | Sujet | Où on en est |
 |---|---|
 | Monter sur sa base | L'ordre « rentre à la base » du robot a réussi le 13 (21 s) et échoué le 14 : trois contacts en route, arrêt hors de la base. Quelque chose gêne l'approche |
-| Portes et passages étroits | La porte H12 (62 cm), le couloir entre J15 et J17 (68 cm), le passage de E22 (48 cm) : je les fais encore pas à pas, 10 minutes sur les 23 du dernier trajet. Un centrage automatique est écrit depuis ce matin, pas encore essayé sur le robot |
+| Portes et passages étroits | La porte H12 (62 cm), le couloir entre J15 et J17 (68 cm), le passage de E22 (48 cm) : menés pas à pas le 14 au matin, 10 minutes sur les 23 du trajet. Le centrage automatique a passé seul, le 14 après-midi, le passage de la cuisine (42 à 49 cm) sans contact, mais lentement : 1,5 m en 2 min 20 |
 | Vitesse | 32 m en 23 min, soit 1,4 m par minute en moyenne. Les tours sur place, ceux où il regarde autour de lui, prenaient 46 % du temps sur une boucle d'essai du 13 |
 | Position loin des repères | Le calcul seul s'est trompé de 20 à 30 cm devant la base ; il faut passer par les endroits à repères |
 | Patinage d'une roue | Le code qui le détecte et ralentit est écrit et vérifié sur les enregistrements, mais aucune roue n'a patiné depuis : pas encore prouvé sur le robot |
-| Trous dans les lectures | Par moments le cerveau reste sans nouvelles des capteurs : 0,4 à 5 s, cinq fois plus d'une seconde le 14 après-midi, aux moments où le Wi-Fi décroche. Il laisse alors le robot rouler jusqu'à 1,5 s sans surveiller le pare-chocs ; une fois, 20 cm. Le robot a aussi redémarré tout seul pendant un essai immobile. Rien n'a été touché, mais les causes ne sont pas trouvées |
-| Cuisine | Explorée à 10 ou 20 cm près, sans repères encore (il faut y repasser). Le passage étroit vers la marche (55 cm sur le plan) et la marche elle-même ne sont pas vus |
+| Trous dans les lectures | Corrigé le 14 par la version 11 du cerveau (ton tampon) : le cerveau n'attend plus le Wi-Fi. Restent deux choses sans explication : le robot a redémarré tout seul une fois, et un tour sur place a tourné trop vite une fois. L'audit signale aussi trois points à durcir encore (note I) |
+| Cuisine | Trois passages, 16 repères. Sans repère encore : le coin de la porte du balcon (G36) et le côté droit de l'îlot, vus deux fois seulement. La marche vers la pièce centrale (1,7 cm) est mesurée, pas franchie |
 | « Va dans telle pièce » | Pas encore : il manque les noms des pièces sur la carte, et une commande unique qui enchaîne tout sans moi |
 
 ## Les chiffres : le même trajet, base → C28 → base
@@ -70,9 +70,9 @@ Le gain vient surtout du vrai chemin de la pièce centrale, de la méthode pour 
 
 ## La suite que je propose, dans l'ordre
 
-1. **Retrouver des lectures sûres, avant tout** : toi, un coup d'œil à la batterie du cerveau et à ses fils ; moi, cinq minutes robot immobile sans aucun trou ; puis, avec ton accord parce que cela change le programme du cerveau, qu'il n'attende jamais le Wi-Fi et qu'il coupe les roues dès 0,3 s sans nouvelles des capteurs.
-2. **La marche de la cuisine** : d'abord le passage étroit qui y mène (de D32 à D34), puis la marche entre C28 et C29, lentement.
-3. **Passages étroits sans mon aide** : le robot se centre lui-même au capteur de distance. C'est écrit. En simulation, 75 départs sur 75 passent sans contact dans un couloir qui se resserre à 68 cm et devant une porte de 62 cm ; et sur les mesures de ce matin, le programme aurait décidé ce que j'avais fait à la main. Il reste à l'essayer sur le robot : d'abord des regards sans avancer, puis le couloir, puis la porte H12.
+1. **La marche de la cuisine** : la franchir plusieurs fois dans les deux sens pour trouver la bonne façon (dès que la batterie portable est fixée), puis revenir face à la base.
+2. **Lire l'audit ensemble** : la session « regard neuf » a rendu sa note (`notes/I_audit_regard_neuf.md`). Ses premières conclusions : le robot n'avance que 17 % du temps ; c'est la carte des repères qu'il faut rendre cohérente ; le gyroscope est monté penché et le cerveau n'en lit qu'un axe.
+3. **Passages étroits plus rapides** : le centrage automatique marche sur le robot (passage de la cuisine), mais il s'arrête tous les 20 à 40 cm. L'audit propose de lire les distances de côté en roulant, ce qui demande un petit changement de montage.
 4. **Accostage fiable** : dégager le devant de la base, puis réessayer ; sinon, un accostage lent mené par le cerveau sur les faisceaux.
 5. **Aller plus vite** : moins de tours sur place, seulement là où ils servent.
 6. **« Va dans telle pièce »** : tu me donnes le nom des pièces, je les attache aux cases ; une seule commande enchaîne trajet, portes et repères.
@@ -80,7 +80,7 @@ Le gain vient surtout du vrai chemin de la pièce centrale, de la méthode pour 
 
 ## Ce dont j'ai besoin de toi
 
-- **Le robot dort dans la cuisine, en F36, et ne charge pas.** Si on ne continue pas aujourd'hui, repose-le sur sa base.
+- **Fixer la batterie portable au ruban**, loin du bouton CLEAN, avant que le robot franchisse la marche. Il attend devant elle, en C29, et ne charge pas.
 - **Avant une séance qui part de la base** : rebrancher le cerveau s'il est débranché, et tirer le robot de sa base à la main (posé dessus, il refuse de rouler).
 - **Dégager le devant de la base** : rien à moins de 50 cm de chaque côté de son axe, sur 1,2 m.
 - **Trois réponses courtes, quand tu veux** :
@@ -94,6 +94,7 @@ Le gain vient surtout du vrai chemin de la pièce centrale, de la méthode pour 
 |---|---|
 | Le journal de tous les essais | `code/journal_wifi.md` |
 | La stratégie et ce que les mesures ont changé | `notes/H_cartographie_strategie.md` |
+| L'audit « regard neuf » et ses propositions | `notes/I_audit_regard_neuf.md` |
 | Les outils et leur mode d'emploi | `code/README.md` |
 | Les enregistrements | `mesures/` |
 | Le plan de l'appartement et les cartes | `plan_lidar/`, sur ton PC seulement : jamais envoyé sur GitHub |

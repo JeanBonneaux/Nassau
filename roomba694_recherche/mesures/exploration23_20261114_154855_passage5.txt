@@ -1,0 +1,6 @@
+va=768,77,50 : 78 mm au cap 241.8° (reste de cap -0.9°), 50 mm/s demandés
+   avance de 82.2 mm pour 78 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 23, sol 2478 ; robot en (768.0, 77.2), cap 242.4°, devant 608 mm
+cap 180.0° demandé : cap 179.1°, devant 0 mm
+   regard au cap  179.1° : médiane     0 mm (de 0 à 0), soit 27 mm du centre du robot
+fin : mode 3, roues en marche False, pare-chocs 00, devant 0 mm
+POSE=768.0,77.2,179.1

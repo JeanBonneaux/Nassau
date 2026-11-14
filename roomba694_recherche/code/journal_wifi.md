@@ -1732,3 +1732,57 @@ Enregistrement `mesures/exploration22_20261114_153302_*`, sans la touche `e`, fi
 - 15 h 33 min 58 : second tour arrêté par le cerveau avant d'avoir tourné, « le robot ne répond plus » : 4,9 s sans lecture.
 
 Dans les quatre premières minutes de l'enregistrement : 24 trous de plus de 250 ms, dont 18 de plus d'une seconde ; 15 % du temps sans lecture (par minute : 4, 4, 11, 4, 1). Je n'ai pas relancé : avec la v10 et une liaison dans cet état, le robot roulerait sans surveillance une bonne partie du temps. La suite attend l'accord de l'utilisateur pour installer la v11.
+
+## 51. Firmware v11 installé et vérifié ; la cuisine refaite deux fois, ses repères ; le passage étroit franchi au centrage automatique ; la marche trouvée et mesurée (2026-11-14, 15 h 39 à 16 h 13)
+
+Accords de l'utilisateur : « Vas y installe la nouvelle version », puis, à ma remarque sur le Wi-Fi : « cest car il capte moins bien ou il est ca ira mieux des le couloir le pense, continue ». Enregistrements : `mesures/repos_g36_v11_*`, `mesures/exploration23_20261114_154855_*` (passages `a` et `b`, sorties `_passage1.txt` à `_passage6.txt`) et `mesures/exploration23_20261114_ping.csv` (un ping du PC deux fois par seconde pendant toute la séance). Cartes hors dépôt : `plan_lidar/carte_grille_20261114_marche*.png`.
+
+### Installation de la v11
+
+Par `curl -F firmware=@… http://192.168.18.25/update`, robot endormi. Quatre envois : les trois premiers coupés par la liaison (458, 131 et 393 ko partis sur 1 142), le cerveau gardant chaque fois la v10 intacte ; le quatrième réussi à 15 h 40 min 59, en 15,8 s. Au redémarrage : « v11 Nov 14 2026 15:25:48 », raison « redémarrage logiciel (mise à jour) », `console` présent dans `/api/state`.
+
+Au même moment, pings envoyés en parallèle depuis le PC : 25 sur 25 vers la box (3 ms en moyenne), 20 sur 25 vers le cerveau (152 ms). **C'est entre la box et le cerveau que la liaison décroche**, pas du côté du PC. L'utilisateur le dit autrement : le robot capte moins bien là où il est.
+
+### Vérification robot immobile
+
+Mode Safe, 1,9 min (début d'`exploration23`) : 2 153 lectures, **aucun trou de plus de 250 ms** (le plus long écart 0,16 s) alors que 16 pings sur 233 sont restés sans réponse ; les lignes arrivent au PC avec jusqu'à 2,2 s de retard, aucune n'est perdue (`perdus` 0, tampon rempli jusqu'à 2 316 octets), aucune n'est mal formée, l'horloge du cerveau y est toujours croissante. Sur les quinze minutes de route qui ont suivi : 17 966 lectures, aucun trou, 24 pings perdus sur 1 799, 3,3 s de retard au pire, tampon rempli jusqu'à 6 384 octets sur 24 576.
+
+Un essai immobile d'avant (`repos_g36_v11`, 15 h 44) n'a rien mesuré : le robot avait cessé de répondre 110 s après son réveil, sans texte de redémarrage cette fois ; réveillé de nouveau à 15 h 48, il a répondu. Non expliqué, comme le redémarrage de 15 h 05.
+
+### La cuisine, deuxième et troisième passages
+
+`explorer3.py` par destinations (`--cibles-seules`), 75 mm/s demandés, mêmes endroits que le § 48 plus le côté droit de l'îlot.
+
+- **Passage `a`** (15 h 51 à 15 h 55) : 10 tours sur place en 4,7 min ; notes du filtre de 0,69 à 0,96. Un contact du pare-chocs droit en remontant à gauche de l'îlot : son pied nord-ouest, pixel (946, 122), E36 ; roues arrêtées par le réflexe, obstacle contourné. Ce pied est ajouté à `plan_lidar/obstacles.json`. Le côté droit de l'îlot (E38, F38) est parcouru sans contact.
+- **Passage `b`** (15 h 56 à 16 h 01) : 11 tours, 9,0 m en 5,0 min. Un contact du pare-chocs droit en quittant C38, au pixel (993, 66) : sans doute la poubelle.
+
+**Repères** (`reperes.py` sur les cinq fichiers de tours des § 48, 50 et 51). Avec les 30 tours : 12 gardés, corrections de 75 mm en médiane et jusqu'à 312 mm, les tours de gauche de l'îlot rejetés. En écartant cinq tours faits avec la v10 (`e21a3`, `e21a4`, `e21b0`, `e21b1`, `e22a0` : ceux d'après les 196 mm non comptés du § 48, et celui du § 50) : **16 repères gardés sur 25 tours, corrections de 35 mm en médiane, neuf sur dix sous 75 mm**, la plus grande 138 mm. Les endroits qui n'ont que deux visites (G36, E38, F38, C38) s'accordent à 21 à 55 mm mais ne sont pas gardés (il faut deux voisins). Ajoutés à `plan_lidar/reperes_tours.json` : 97 repères (l'ancien fichier est gardé sous `reperes_tours_20261114_0859.json`).
+
+### Le passage étroit : premier essai réel de `eventail=` et de `centre=`
+
+- `eventail=180` à l'entrée, pixel (902,6 ; 88,6) : parois à 237 mm à gauche et 460 mm à droite du centre du robot ; les deux coins de l'entrée à 517 et 552 mm, soit **49 cm d'ouverture**, comme sur le plan.
+- `centre=180,900,300,60` : 0,88 m en 4 arrêts et 73 s, sans contact. Largeurs lues : 491, 754, 414 et 419 mm. À un arrêt le capteur a lu 104 mm à droite du centre du robot, moins que son rayon : quelque chose passait au-dessus de sa coque, à la hauteur du capteur (le bord de la table aux bacs).
+- `centre=180,600,200,50` : 0,60 m en 4 arrêts et 67 s, sans contact. Une ouverture à gauche (861 mm de vide) vers le pixel (845, 104), puis 459 et 488 mm de large. Arrivée en D32, pixel (824,0 ; 89,2).
+
+**Le centrage automatique du § 47 marche sur le robot** : 1,48 m en 8 arrêts et 140 s, sans aucun contact, dans un passage de 42 à 49 cm (4 à 7 cm de chaque côté). Il reste lent (1 cm par seconde). Sa décision de biais n'a servi qu'une fois (`CAP_MURS` : 2,2° d'écart avec l'estime sur 2 mesures).
+
+### La porte et la marche
+
+- `eventail=172` en C30, pixel (770,0 ; 73,4) : les deux montants de la porte, **75 cm d'ouverture** environ, la trouée vers le cap 193°.
+- Robot mis dans l'axe de la porte, pixel (768,0 ; 77,2), cap 179°, puis avances de 5 cm à 50 mm/s en lisant les capteurs de vide et l'accéléromètre :
+
+| Chemin fait depuis (768, 77) | Capteurs de vide de devant | Capteurs de vide de côté | Inclinaison |
+|---|---|---|---|
+| 0 à 38 cm | 2 490 à 2 540 | 2 480 à 2 550 | à plat |
+| 44 cm | montent à 3 316 et 2 873 | inchangés | à plat |
+| 49 cm | creux à 1 180 et 1 132, puis 2 470 | inchangés | à plat |
+| 55 cm | 2 720 et 2 600 | montent à 3 673 et 3 372 | **nez levé de 7 à 8°** |
+
+La roulette avant est montée sur la marche à 50 mm/s sans que le pare-chocs soit enfoncé, sans roue levée, le mode Safe tenu, les moteurs à 450 mA au plus. **La marche monte quand on va de la cuisine vers la pièce centrale ; elle fait environ 17 mm** (13 cm entre la roulette et l'axe des roues, inclinaison de 7,6°) ; son bord est vers le pixel 733 à 737 en travers, c'est-à-dire **dans C28, 9 cm à gauche de la limite C28/C29** que donnait l'utilisateur, à la précision de l'estime près (2,6 m et beaucoup de rotations depuis le dernier repère). Les capteurs de vide la voient venir 10 cm avant : c'est un signal utilisable pour la franchir.
+- Recul de 108 mm pour remettre le robot à plat : il a pivoté de 6° en redescendant.
+
+**La marche n'est pas franchie.** J'avais demandé à l'utilisateur de fixer d'abord la batterie portable au ruban (si elle glisse et débranche le cerveau, le robot garde son dernier ordre de roues) ; il n'a pas encore répondu à cette question, posée trois fois.
+
+**Bilan de la liaison sur tout l'enregistrement** (27 min, v11) : 32 221 lectures, aucun trou de plus de 250 ms (0,16 s au plus), 87 pings sans réponse sur 3 243, jusqu'à 3,3 s de retard d'arrivée des lignes, aucune ligne perdue.
+
+**État à la fin** : `s` puis `x` à 16 h 16 ; robot endormi, à plat dans l'encadrement de la porte entre la cuisine et la pièce centrale, pixel (744 ; 77), C29, tourné vers 186° ; hors de sa base, il ne charge pas ; batterie 1 784 mAh. Cerveau allumé (v11). Capteur de distance arrêté. Non fait : la marche, le retour face à la base.

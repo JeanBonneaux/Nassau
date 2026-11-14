@@ -1,0 +1,446 @@
+# exploration23_20261114_154855 — carte 192.168.18.25 — début 15:48:55.476 le 2026-11-14
+# firmware v11 : deux minutes robot immobile, puis cuisine (second passage pour les reperes), passage vers la marche, la marche, retour face a la base ; sans la touche e
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794689335.528	15:48:55.528	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794689335.530	15:48:55.530	Client TCP connecté : 192.168.18.6
+1794689336.538	15:48:56.538	>> j
+1794689336.578	15:48:56.577	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794689371.348	15:49:31.348	Envoyé : Safe (131)
+1794689372.878	15:49:32.877	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1794689373.298	15:49:33.298	Radar : capteur HC-SR04 détecté (premier écho reçu).
+1794689468.560	15:51:08.560	Vitesse réglée à 75 mm/s (page web).
+1794689470.974	15:51:10.973	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689472.443	15:51:12.442	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689475.090	15:51:15.089	Tour sur place : 90° (25 mesures).
+1794689477.650	15:51:17.649	Tour sur place : 180° (49 mesures).
+1794689480.199	15:51:20.198	Tour sur place : 270° (73 mesures).
+1794689482.763	15:51:22.763	Tour sur place : 360° (97 mesures).
+1794689483.325	15:51:23.325	Tour sur place terminé : 380° en 10.9 s, 102 mesures. Roues arrêtées.
+1794689484.611	15:51:24.610	Mouvement 1 : rotation de +146.6°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689488.071	15:51:28.071	Mouvement 1 : rotation de 145.7° pour 146.6° demandés, angle atteint. Roues arrêtées.
+1794689491.403	15:51:31.402	Mouvement 2 : avance de 879 mm à 75 mm/s au plus, cap tenu à -1.5° du cap actuel. 5 ou espace pour arrêter.
+1794689500.490	15:51:40.490	Mouvement 2 : 877 mm pour 879 mm demandés, cap -1.8°, distance atteinte. Roues arrêtées.
+1794689502.157	15:51:42.156	Mouvement 3 : rotation de -33.2°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689503.255	15:51:43.254	Mouvement 3 : rotation de -31.9° pour -33.2° demandés, angle atteint. Roues arrêtées.
+1794689504.446	15:51:44.445	Mouvement 4 : avance de 732 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794689506.112	15:51:46.112	Réflexe : pare-chocs, à droite, roues arrêtées par le cerveau. Reculez pour vous dégager (flèche du bas).
+1794689506.112	15:51:46.112	Mouvement 4 : 144 mm pour 732 mm demandés, cap -0.3°, pare-chocs touché. Roues arrêtées.
+1794689508.546	15:51:48.545	Recule (75 mm/s).
+1794689509.506	15:51:49.506	Roues arrêtées.
+1794689510.586	15:51:50.585	Recule (75 mm/s).
+1794689511.563	15:51:51.562	Roues arrêtées.
+1794689512.908	15:51:52.907	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689514.411	15:51:54.410	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689517.099	15:51:57.098	Tour sur place : 90° (24 mesures).
+1794689519.648	15:51:59.648	Tour sur place : 180° (48 mesures).
+1794689522.268	15:52:02.267	Tour sur place : 270° (72 mesures).
+1794689524.768	15:52:04.768	Tour sur place : 360° (96 mesures).
+1794689525.331	15:52:05.330	Tour sur place terminé : 380° en 10.9 s, 101 mesures. Roues arrêtées.
+1794689526.916	15:52:06.916	Mouvement 5 : avance de 394 mm à 75 mm/s au plus, cap tenu à +13.1° du cap actuel. 5 ou espace pour arrêter.
+1794689531.185	15:52:11.185	Mouvement 5 : 391 mm pour 394 mm demandés, cap +13.2°, distance atteinte. Roues arrêtées.
+1794689532.333	15:52:12.333	Mouvement 6 : rotation de -58.8°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689534.337	15:52:14.337	Mouvement 6 : rotation de -57.5° pour -58.8° demandés, angle atteint. Roues arrêtées.
+1794689535.634	15:52:15.634	Mouvement 7 : avance de 389 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794689539.797	15:52:19.796	Mouvement 7 : 387 mm pour 389 mm demandés, cap +1.2°, distance atteinte. Roues arrêtées.
+1794689540.952	15:52:20.952	Mouvement 8 : rotation de -36.7°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689542.202	15:52:22.201	Mouvement 8 : rotation de -35.1° pour -36.7° demandés, angle atteint. Roues arrêtées.
+1794689543.299	15:52:23.298	Mouvement 9 : avance de 584 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794689549.524	15:52:29.523	Mouvement 9 : 582 mm pour 584 mm demandés, cap -1.0°, distance atteinte. Roues arrêtées.
+1794689550.667	15:52:30.666	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689552.161	15:52:32.160	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689554.822	15:52:34.821	Tour sur place : 90° (25 mesures).
+1794689557.391	15:52:37.391	Tour sur place : 180° (48 mesures).
+1794689559.988	15:52:39.988	Tour sur place : 270° (71 mesures).
+1794689562.457	15:52:42.456	Tour sur place : 360° (95 mesures).
+1794689563.053	15:52:43.052	Tour sur place terminé : 380° en 10.9 s, 100 mesures. Roues arrêtées.
+1794689564.194	15:52:44.193	Mouvement 10 : rotation de -108.4°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689567.031	15:52:47.030	Mouvement 10 : rotation de -107.5° pour -108.4° demandés, angle atteint. Roues arrêtées.
+1794689568.051	15:52:48.051	Mouvement 11 : avance de 497 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794689573.278	15:52:53.278	Mouvement 11 : 495 mm pour 497 mm demandés, cap -0.6°, distance atteinte. Roues arrêtées.
+1794689574.132	15:52:54.131	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689575.608	15:52:55.607	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689578.226	15:52:58.225	Tour sur place : 90° (25 mesures).
+1794689580.899	15:53:00.899	Tour sur place : 180° (49 mesures).
+1794689583.437	15:53:03.437	Tour sur place : 270° (72 mesures).
+1794689585.992	15:53:05.991	Tour sur place : 360° (97 mesures).
+1794689586.532	15:53:06.532	Tour sur place terminé : 380° en 10.9 s, 102 mesures. Roues arrêtées.
+1794689587.582	15:53:07.581	Mouvement 12 : rotation de -28.9°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689588.683	15:53:08.683	Mouvement 12 : rotation de -27.6° pour -28.9° demandés, angle atteint. Roues arrêtées.
+1794689589.557	15:53:09.556	Mouvement 13 : avance de 530 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794689595.441	15:53:15.441	Mouvement 13 : 529 mm pour 530 mm demandés, cap +0.8°, distance atteinte. Roues arrêtées.
+1794689596.091	15:53:16.090	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689597.586	15:53:17.585	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689600.205	15:53:20.204	Tour sur place : 90° (24 mesures).
+1794689602.805	15:53:22.804	Tour sur place : 180° (48 mesures).
+1794689605.578	15:53:25.577	Tour sur place : 270° (72 mesures).
+1794689607.992	15:53:27.991	Tour sur place : 360° (96 mesures).
+1794689608.546	15:53:28.545	Tour sur place terminé : 380° en 11.0 s, 101 mesures. Roues arrêtées.
+1794689609.618	15:53:29.617	Mouvement 14 : rotation de +154.1°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689613.218	15:53:33.217	Mouvement 14 : rotation de 152.8° pour 154.1° demandés, angle atteint. Roues arrêtées.
+1794689614.990	15:53:34.989	Mouvement 15 : avance de 876 mm à 75 mm/s au plus, cap tenu à -0.9° du cap actuel. 5 ou espace pour arrêter.
+1794689624.382	15:53:44.382	Mouvement 15 : 875 mm pour 876 mm demandés, cap +0.5°, distance atteinte. Roues arrêtées.
+1794689625.360	15:53:45.359	Mouvement 16 : rotation de -40.7°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689626.702	15:53:46.702	Mouvement 16 : rotation de -40.0° pour -40.7° demandés, angle atteint. Roues arrêtées.
+1794689627.672	15:53:47.671	Mouvement 17 : avance de 777 mm à 75 mm/s au plus, cap tenu à +1.8° du cap actuel. 5 ou espace pour arrêter.
+1794689636.044	15:53:56.044	Mouvement 17 : 775 mm pour 777 mm demandés, cap +2.3°, distance atteinte. Roues arrêtées.
+1794689637.024	15:53:57.024	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689638.575	15:53:58.575	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689641.164	15:54:01.163	Tour sur place : 90° (25 mesures).
+1794689643.784	15:54:03.783	Tour sur place : 180° (49 mesures).
+1794689646.361	15:54:06.360	Tour sur place : 270° (73 mesures).
+1794689648.947	15:54:08.946	Tour sur place : 360° (97 mesures).
+1794689649.489	15:54:09.488	Tour sur place terminé : 380° en 11.0 s, 102 mesures. Roues arrêtées.
+1794689650.583	15:54:10.583	Mouvement 18 : rotation de +138.2°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689653.772	15:54:13.771	Mouvement 18 : rotation de 136.8° pour 138.2° demandés, angle atteint. Roues arrêtées.
+1794689654.813	15:54:14.813	Mouvement 19 : avance de 881 mm à 75 mm/s au plus, cap tenu à -0.9° du cap actuel. 5 ou espace pour arrêter.
+1794689664.321	15:54:24.321	Mouvement 19 : 881 mm pour 881 mm demandés, cap +0.1°, distance atteinte. Roues arrêtées.
+1794689665.341	15:54:25.341	Mouvement 20 : rotation de -63.8°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689667.221	15:54:27.221	Mouvement 20 : rotation de -62.7° pour -63.8° demandés, angle atteint. Roues arrêtées.
+1794689668.134	15:54:28.133	Mouvement 21 : avance de 656 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794689675.228	15:54:35.227	Mouvement 21 : 654 mm pour 656 mm demandés, cap +1.2°, distance atteinte. Roues arrêtées.
+1794689676.029	15:54:36.028	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689677.527	15:54:37.526	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689680.186	15:54:40.186	Tour sur place : 90° (24 mesures).
+1794689682.762	15:54:42.762	Tour sur place : 180° (48 mesures).
+1794689685.246	15:54:45.245	Tour sur place : 270° (71 mesures).
+1794689687.821	15:54:47.820	Tour sur place : 360° (95 mesures).
+1794689688.368	15:54:48.368	Tour sur place terminé : 380° en 10.8 s, 100 mesures. Roues arrêtées.
+1794689689.511	15:54:49.511	Mouvement 22 : rotation de +58.3°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689691.116	15:54:51.115	Mouvement 22 : rotation de 57.4° pour 58.3° demandés, angle atteint. Roues arrêtées.
+1794689692.066	15:54:52.065	Mouvement 23 : avance de 486 mm à 75 mm/s au plus, cap tenu à -1.1° du cap actuel. 5 ou espace pour arrêter.
+1794689697.315	15:54:57.314	Mouvement 23 : 485 mm pour 486 mm demandés, cap +0.0°, distance atteinte. Roues arrêtées.
+1794689698.125	15:54:58.125	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689699.625	15:54:59.624	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689702.271	15:55:02.271	Tour sur place : 90° (24 mesures).
+1794689704.909	15:55:04.908	Tour sur place : 180° (48 mesures).
+1794689707.514	15:55:07.513	Tour sur place : 270° (72 mesures).
+1794689710.081	15:55:10.081	Tour sur place : 360° (97 mesures).
+1794689710.658	15:55:10.657	Tour sur place terminé : 380° en 11.0 s, 102 mesures. Roues arrêtées.
+1794689711.657	15:55:11.657	Mouvement 24 : rotation de +18.9°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689712.446	15:55:12.446	Mouvement 24 : rotation de 17.7° pour 18.9° demandés, angle atteint. Roues arrêtées.
+1794689713.367	15:55:13.366	Mouvement 25 : avance de 437 mm à 75 mm/s au plus, cap tenu à -1.0° du cap actuel. 5 ou espace pour arrêter.
+1794689718.159	15:55:18.158	Mouvement 25 : 436 mm pour 437 mm demandés, cap -0.3°, distance atteinte. Roues arrêtées.
+1794689718.989	15:55:18.989	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689720.472	15:55:20.471	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689723.115	15:55:23.115	Tour sur place : 90° (25 mesures).
+1794689725.688	15:55:25.687	Tour sur place : 180° (48 mesures).
+1794689728.306	15:55:28.305	Tour sur place : 270° (73 mesures).
+1794689730.795	15:55:30.794	Tour sur place : 360° (96 mesures).
+1794689731.363	15:55:31.363	Tour sur place terminé : 380° en 10.9 s, 101 mesures. Roues arrêtées.
+1794689732.299	15:55:32.298	Mouvement 26 : avance de 276 mm à 75 mm/s au plus, cap tenu à -7.4° du cap actuel. 5 ou espace pour arrêter.
+1794689735.415	15:55:35.414	Mouvement 26 : 273 mm pour 276 mm demandés, cap -5.8°, distance atteinte. Roues arrêtées.
+1794689736.123	15:55:36.122	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689737.635	15:55:37.635	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689740.251	15:55:40.250	Tour sur place : 90° (25 mesures).
+1794689742.835	15:55:42.835	Tour sur place : 180° (48 mesures).
+1794689745.467	15:55:45.467	Tour sur place : 270° (72 mesures).
+1794689748.040	15:55:48.040	Tour sur place : 360° (96 mesures).
+1794689748.622	15:55:48.622	Tour sur place terminé : 380° en 11.0 s, 101 mesures. Roues arrêtées.
+1794689749.556	15:55:49.555	Roues arrêtées.
+1794689749.594	15:55:49.593	Vitesse réglée à 150 mm/s (page web).
+1794689800.810	15:56:40.809	Vitesse réglée à 75 mm/s (page web).
+1794689801.205	15:56:41.204	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689802.709	15:56:42.708	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689805.455	15:56:45.454	Tour sur place : 90° (26 mesures).
+1794689808.097	15:56:48.097	Tour sur place : 180° (50 mesures).
+1794689810.675	15:56:50.674	Tour sur place : 270° (74 mesures).
+1794689813.309	15:56:53.309	Tour sur place : 360° (98 mesures).
+1794689813.864	15:56:53.864	Tour sur place terminé : 380° en 11.2 s, 103 mesures. Roues arrêtées.
+1794689815.112	15:56:55.112	Mouvement 27 : rotation de -80.3°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689817.324	15:56:57.323	Mouvement 27 : rotation de -78.8° pour -80.3° demandés, angle atteint. Roues arrêtées.
+1794689818.478	15:56:58.478	Mouvement 28 : avance de 690 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794689826.272	15:57:06.272	Mouvement 28 : 689 mm pour 690 mm demandés, cap -0.6°, distance atteinte. Roues arrêtées.
+1794689828.947	15:57:08.946	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689830.427	15:57:10.426	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689833.151	15:57:13.150	Tour sur place : 90° (26 mesures).
+1794689835.801	15:57:15.800	Tour sur place : 180° (50 mesures).
+1794689838.394	15:57:18.394	Tour sur place : 270° (74 mesures).
+1794689841.040	15:57:21.040	Tour sur place : 360° (99 mesures).
+1794689843.585	15:57:23.585	Tour sur place terminé : 380° en 11.2 s, 105 mesures. Roues arrêtées.
+1794689844.169	15:57:24.169	Mouvement 29 : rotation de +166.0°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689848.030	15:57:28.030	Mouvement 29 : rotation de 164.7° pour 166.0° demandés, angle atteint. Roues arrêtées.
+1794689849.009	15:57:29.008	Mouvement 30 : avance de 887 mm à 75 mm/s au plus, cap tenu à -1.2° du cap actuel. 5 ou espace pour arrêter.
+1794689858.283	15:57:38.283	Mouvement 30 : 887 mm pour 887 mm demandés, cap -0.4°, distance atteinte. Roues arrêtées.
+1794689859.219	15:57:39.219	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689860.715	15:57:40.714	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689863.282	15:57:43.282	Tour sur place : 90° (23 mesures).
+1794689865.847	15:57:45.846	Tour sur place : 180° (47 mesures).
+1794689868.383	15:57:48.383	Tour sur place : 270° (71 mesures).
+1794689870.956	15:57:50.956	Tour sur place : 360° (94 mesures).
+1794689871.483	15:57:51.483	Tour sur place terminé : 380° en 10.8 s, 99 mesures. Roues arrêtées.
+1794689873.298	15:57:53.297	Mouvement 31 : rotation de -21.6°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689874.205	15:57:54.205	Mouvement 31 : rotation de -20.8° pour -21.6° demandés, angle atteint. Roues arrêtées.
+1794689875.190	15:57:55.189	Mouvement 32 : avance de 458 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794689880.037	15:58:00.036	Mouvement 32 : 458 mm pour 458 mm demandés, cap +0.6°, distance atteinte. Roues arrêtées.
+1794689880.895	15:58:00.895	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689882.382	15:58:02.382	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689885.040	15:58:05.040	Tour sur place : 90° (25 mesures).
+1794689887.621	15:58:07.620	Tour sur place : 180° (48 mesures).
+1794689890.161	15:58:10.160	Tour sur place : 270° (72 mesures).
+1794689892.690	15:58:12.689	Tour sur place : 360° (95 mesures).
+1794689893.255	15:58:13.255	Tour sur place terminé : 380° en 10.9 s, 100 mesures. Roues arrêtées.
+1794689894.441	15:58:14.441	Mouvement 33 : rotation de -61.7°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689896.175	15:58:16.175	Mouvement 33 : rotation de -60.4° pour -61.7° demandés, angle atteint. Roues arrêtées.
+1794689897.220	15:58:17.220	Mouvement 34 : avance de 464 mm à 75 mm/s au plus, cap tenu à +0.7° du cap actuel. 5 ou espace pour arrêter.
+1794689902.044	15:58:22.043	Mouvement 34 : 461 mm pour 464 mm demandés, cap +1.8°, distance atteinte. Roues arrêtées.
+1794689902.917	15:58:22.917	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689904.398	15:58:24.397	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689907.073	15:58:27.073	Tour sur place : 90° (25 mesures).
+1794689909.693	15:58:29.693	Tour sur place : 180° (49 mesures).
+1794689912.266	15:58:32.265	Tour sur place : 270° (73 mesures).
+1794689914.790	15:58:34.790	Tour sur place : 360° (96 mesures).
+1794689915.328	15:58:35.327	Tour sur place terminé : 380° en 10.9 s, 101 mesures. Roues arrêtées.
+1794689916.396	15:58:36.395	Mouvement 35 : rotation de -99.5°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689919.098	15:58:39.098	Mouvement 35 : rotation de -99.0° pour -99.5° demandés, angle atteint. Roues arrêtées.
+1794689920.045	15:58:40.045	Mouvement 36 : avance de 735 mm à 75 mm/s au plus, cap tenu à +1.6° du cap actuel. 5 ou espace pour arrêter.
+1794689928.022	15:58:48.021	Mouvement 36 : 733 mm pour 735 mm demandés, cap +2.4°, distance atteinte. Roues arrêtées.
+1794689928.952	15:58:48.952	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689930.439	15:58:50.439	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689933.126	15:58:53.125	Tour sur place : 90° (25 mesures).
+1794689935.751	15:58:55.750	Tour sur place : 180° (50 mesures).
+1794689938.391	15:58:58.390	Tour sur place : 270° (74 mesures).
+1794689940.961	15:59:00.961	Tour sur place : 360° (97 mesures).
+1794689941.545	15:59:01.544	Tour sur place terminé : 380° en 11.1 s, 103 mesures. Roues arrêtées.
+1794689942.519	15:59:02.518	Mouvement 37 : rotation de -91.3°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689944.981	15:59:04.980	Mouvement 37 : rotation de -90.5° pour -91.3° demandés, angle atteint. Roues arrêtées.
+1794689946.092	15:59:06.092	Mouvement 38 : avance de 487 mm à 75 mm/s au plus, cap tenu à +1.1° du cap actuel. 5 ou espace pour arrêter.
+1794689951.352	15:59:11.351	Mouvement 38 : 484 mm pour 487 mm demandés, cap +0.4°, distance atteinte. Roues arrêtées.
+1794689952.548	15:59:12.548	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689954.036	15:59:14.035	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689956.799	15:59:16.798	Tour sur place : 90° (25 mesures).
+1794689959.417	15:59:19.417	Tour sur place : 180° (49 mesures).
+1794689962.056	15:59:22.055	Tour sur place : 270° (74 mesures).
+1794689964.719	15:59:24.719	Tour sur place : 360° (99 mesures).
+1794689965.302	15:59:25.302	Tour sur place terminé : 380° en 11.3 s, 104 mesures. Roues arrêtées.
+1794689966.249	15:59:26.249	Mouvement 39 : rotation de -29.2°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689967.253	15:59:27.252	Mouvement 39 : rotation de -27.9° pour -29.2° demandés, angle atteint. Roues arrêtées.
+1794689968.160	15:59:28.159	Mouvement 40 : avance de 563 mm à 75 mm/s au plus, cap tenu à +0.5° du cap actuel. 5 ou espace pour arrêter.
+1794689974.499	15:59:34.499	Mouvement 40 : 563 mm pour 563 mm demandés, cap +0.3°, distance atteinte. Roues arrêtées.
+1794689975.239	15:59:35.238	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794689976.722	15:59:36.722	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794689979.506	15:59:39.506	Tour sur place : 90° (26 mesures).
+1794689983.740	15:59:43.739	Tour sur place : 180° (50 mesures).
+1794689984.780	15:59:44.779	Tour sur place : 270° (75 mesures).
+1794689987.416	15:59:47.415	Tour sur place : 360° (100 mesures).
+1794689988.030	15:59:48.030	Tour sur place terminé : 380° en 11.3 s, 105 mesures. Roues arrêtées.
+1794689989.102	15:59:49.101	Mouvement 41 : rotation de +152.0°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794689992.643	15:59:52.642	Mouvement 41 : rotation de 150.7° pour 152.0° demandés, angle atteint. Roues arrêtées.
+1794689993.619	15:59:53.619	Mouvement 42 : avance de 883 mm à 75 mm/s au plus, cap tenu à -1.3° du cap actuel. 5 ou espace pour arrêter.
+1794690003.171	16:00:03.171	Mouvement 42 : 880 mm pour 883 mm demandés, cap -0.1°, distance atteinte. Roues arrêtées.
+1794690004.092	16:00:04.092	Mouvement 43 : rotation de -41.1°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690005.379	16:00:05.378	Mouvement 43 : rotation de -40.3° pour -41.1° demandés, angle atteint. Roues arrêtées.
+1794690006.334	16:00:06.333	Mouvement 44 : avance de 786 mm à 75 mm/s au plus, cap tenu à +1.0° du cap actuel. 5 ou espace pour arrêter.
+1794690014.807	16:00:14.807	Mouvement 44 : 784 mm pour 786 mm demandés, cap +2.8°, distance atteinte. Roues arrêtées.
+1794690015.766	16:00:15.765	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794690017.255	16:00:17.255	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794690019.938	16:00:19.937	Tour sur place : 90° (25 mesures).
+1794690022.547	16:00:22.546	Tour sur place : 180° (48 mesures).
+1794690025.093	16:00:25.093	Tour sur place : 270° (72 mesures).
+1794690027.698	16:00:27.697	Tour sur place : 360° (96 mesures).
+1794690028.276	16:00:28.275	Tour sur place terminé : 380° en 11.0 s, 101 mesures. Roues arrêtées.
+1794690029.240	16:00:29.240	Mouvement 45 : rotation de +135.6°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690032.381	16:00:32.380	Mouvement 45 : rotation de 134.0° pour 135.6° demandés, angle atteint. Roues arrêtées.
+1794690033.331	16:00:33.331	Mouvement 46 : avance de 881 mm à 75 mm/s au plus, cap tenu à -0.7° du cap actuel. 5 ou espace pour arrêter.
+1794690033.637	16:00:33.637	Réflexe : pare-chocs, à droite, roues arrêtées par le cerveau. Reculez pour vous dégager (flèche du bas).
+1794690033.637	16:00:33.637	Mouvement 46 : 19 mm pour 881 mm demandés, cap -0.3°, pare-chocs touché. Roues arrêtées.
+1794690034.208	16:00:34.207	Recule (75 mm/s).
+1794690035.111	16:00:35.110	Roues arrêtées.
+1794690036.043	16:00:36.042	Recule (75 mm/s).
+1794690036.956	16:00:36.956	Roues arrêtées.
+1794690037.984	16:00:37.983	Mouvement 47 : avance de 133 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690039.512	16:00:39.512	Mouvement 47 : 131 mm pour 133 mm demandés, cap +0.7°, distance atteinte. Roues arrêtées.
+1794690040.237	16:00:40.236	Mouvement 48 : rotation de +35.4°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690041.326	16:00:41.326	Mouvement 48 : rotation de 34.8° pour 35.4° demandés, angle atteint. Roues arrêtées.
+1794690042.262	16:00:42.262	Mouvement 49 : avance de 373 mm à 75 mm/s au plus, cap tenu à -1.6° du cap actuel. 5 ou espace pour arrêter.
+1794690046.347	16:00:46.347	Mouvement 49 : 373 mm pour 373 mm demandés, cap -1.1°, distance atteinte. Roues arrêtées.
+1794690047.123	16:00:47.123	Mouvement 50 : rotation de -55.6°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690048.850	16:00:48.849	Mouvement 50 : rotation de -54.3° pour -55.6° demandés, angle atteint. Roues arrêtées.
+1794690051.779	16:00:51.779	Mouvement 51 : avance de 397 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690056.032	16:00:56.031	Mouvement 51 : 396 mm pour 397 mm demandés, cap +0.3°, distance atteinte. Roues arrêtées.
+1794690056.819	16:00:56.818	Mouvement 52 : rotation de -33.3°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690057.874	16:00:57.873	Mouvement 52 : rotation de -32.0° pour -33.3° demandés, angle atteint. Roues arrêtées.
+1794690058.757	16:00:58.756	Mouvement 53 : avance de 771 mm à 75 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690066.926	16:01:06.925	Mouvement 53 : 769 mm pour 771 mm demandés, cap +1.1°, distance atteinte. Roues arrêtées.
+1794690067.763	16:01:07.763	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794690069.263	16:01:09.262	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794690071.944	16:01:11.943	Tour sur place : 90° (24 mesures).
+1794690074.464	16:01:14.464	Tour sur place : 180° (47 mesures).
+1794690077.044	16:01:17.043	Tour sur place : 270° (71 mesures).
+1794690079.680	16:01:19.680	Tour sur place : 360° (96 mesures).
+1794690080.249	16:01:20.249	Tour sur place terminé : 380° en 11.0 s, 101 mesures. Roues arrêtées.
+1794690081.357	16:01:21.357	Mouvement 54 : rotation de +40.2°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690082.540	16:01:22.540	Mouvement 54 : rotation de 39.0° pour 40.2° demandés, angle atteint. Roues arrêtées.
+1794690083.478	16:01:23.478	Mouvement 55 : avance de 440 mm à 75 mm/s au plus, cap tenu à -1.0° du cap actuel. 5 ou espace pour arrêter.
+1794690088.284	16:01:28.284	Mouvement 55 : 438 mm pour 440 mm demandés, cap -0.4°, distance atteinte. Roues arrêtées.
+1794690089.041	16:01:29.040	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794690090.541	16:01:30.540	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794690093.180	16:01:33.180	Tour sur place : 90° (24 mesures).
+1794690095.801	16:01:35.801	Tour sur place : 180° (48 mesures).
+1794690098.375	16:01:38.375	Tour sur place : 270° (72 mesures).
+1794690101.025	16:01:41.025	Tour sur place : 360° (96 mesures).
+1794690101.552	16:01:41.551	Tour sur place terminé : 380° en 11.0 s, 101 mesures. Roues arrêtées.
+1794690102.555	16:01:42.555	Roues arrêtées.
+1794690102.578	16:01:42.577	Vitesse réglée à 150 mm/s (page web).
+1794690168.055	16:02:48.054	Mouvement 56 : rotation de -111.0°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690170.951	16:02:50.950	Mouvement 56 : rotation de -110.2° pour -111.0° demandés, angle atteint. Roues arrêtées.
+1794690172.274	16:02:52.274	Mouvement 57 : rotation de +1.2°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690172.440	16:02:52.440	Mouvement 57 : rotation de 1.1° pour 1.2° demandés, angle atteint. Roues arrêtées.
+1794690173.314	16:02:53.313	Mouvement 58 : rotation de -1.9°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690173.468	16:02:53.467	Mouvement 58 : rotation de -0.7° pour -1.9° demandés, angle atteint. Roues arrêtées.
+1794690174.342	16:02:54.342	Vitesse réglée à 60 mm/s (page web).
+1794690174.522	16:02:54.522	Mouvement 59 : avance de 532 mm à 60 mm/s au plus, cap tenu à +0.6° du cap actuel. 5 ou espace pour arrêter.
+1794690181.971	16:03:01.970	Mouvement 59 : 530 mm pour 532 mm demandés, cap +2.8°, distance atteinte. Roues arrêtées.
+1794690182.917	16:03:02.917	Mouvement 60 : rotation de +121.8°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690185.486	16:03:05.485	Mouvement 60 : rotation de 120.6° pour 121.8° demandés, angle atteint. Roues arrêtées.
+1794690187.456	16:03:07.456	Mouvement 61 : rotation de -179.8°, roues à 50 mm/s au plus. 5 ou espace pour arrêter.
+1794690193.114	16:03:13.113	Mouvement 61 : rotation de -178.8° pour -179.8° demandés, angle atteint. Roues arrêtées.
+1794690195.127	16:03:15.127	Mouvement 62 : rotation de +90.1°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690197.193	16:03:17.193	Mouvement 62 : rotation de 89.3° pour 90.1° demandés, angle atteint. Roues arrêtées.
+1794690198.075	16:03:18.074	Vitesse réglée à 150 mm/s (page web).
+1794690314.188	16:05:14.187	Mouvement 63 : rotation de +88.7°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690316.149	16:05:16.149	Mouvement 63 : rotation de 87.3° pour 88.7° demandés, angle atteint. Roues arrêtées.
+1794690318.095	16:05:18.095	Mouvement 64 : rotation de -179.3°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690322.260	16:05:22.259	Mouvement 64 : rotation de -177.7° pour -179.3° demandés, angle atteint. Roues arrêtées.
+1794690324.215	16:05:24.215	Mouvement 65 : rotation de +89.2°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690326.173	16:05:26.172	Mouvement 65 : rotation de 87.9° pour 89.2° demandés, angle atteint. Roues arrêtées.
+1794690327.090	16:05:27.089	Vitesse réglée à 60 mm/s (page web).
+1794690327.241	16:05:27.241	Mouvement 66 : avance de 387 mm à 60 mm/s au plus, cap tenu à -0.5° du cap actuel. 5 ou espace pour arrêter.
+1794690332.664	16:05:32.664	Mouvement 66 : 385 mm pour 387 mm demandés, cap +0.9°, distance atteinte. Roues arrêtées.
+1794690333.677	16:05:33.676	Mouvement 67 : rotation de +88.5°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690335.686	16:05:35.686	Mouvement 67 : rotation de 87.7° pour 88.5° demandés, angle atteint. Roues arrêtées.
+1794690336.665	16:05:36.664	Mouvement 68 : rotation de -1.0°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690336.781	16:05:36.781	Mouvement 68 : rotation de -0.1° pour -1.0° demandés, angle atteint. Roues arrêtées.
+1794690338.832	16:05:38.831	Mouvement 69 : rotation de -178.8°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690343.162	16:05:43.162	Mouvement 69 : rotation de -177.5° pour -178.8° demandés, angle atteint. Roues arrêtées.
+1794690345.156	16:05:45.155	Mouvement 70 : rotation de +70.4°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690346.861	16:05:46.861	Mouvement 70 : rotation de 69.8° pour 70.4° demandés, angle atteint. Roues arrêtées.
+1794690347.714	16:05:47.713	Vitesse réglée à 60 mm/s (page web).
+1794690347.883	16:05:47.883	Mouvement 71 : avance de 318 mm à 60 mm/s au plus, cap tenu à -0.9° du cap actuel. 5 ou espace pour arrêter.
+1794690352.431	16:05:52.431	Mouvement 71 : 314 mm pour 318 mm demandés, cap +1.0°, distance atteinte. Roues arrêtées.
+1794690353.417	16:05:53.416	Mouvement 72 : rotation de +107.1°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690355.780	16:05:55.779	Mouvement 72 : rotation de 105.9° pour 107.1° demandés, angle atteint. Roues arrêtées.
+1794690357.742	16:05:57.741	Mouvement 73 : rotation de -179.7°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690362.012	16:06:02.012	Mouvement 73 : rotation de -178.6° pour -179.7° demandés, angle atteint. Roues arrêtées.
+1794690364.032	16:06:04.031	Mouvement 74 : rotation de +109.6°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690366.489	16:06:06.489	Mouvement 74 : rotation de 109.0° pour 109.6° demandés, angle atteint. Roues arrêtées.
+1794690367.328	16:06:07.328	Vitesse réglée à 60 mm/s (page web).
+1794690367.448	16:06:07.448	Mouvement 75 : avance de 207 mm à 60 mm/s au plus, cap tenu à -0.8° du cap actuel. 5 ou espace pour arrêter.
+1794690370.515	16:06:10.515	Mouvement 75 : 206 mm pour 207 mm demandés, cap +0.3°, distance atteinte. Roues arrêtées.
+1794690371.585	16:06:11.584	Mouvement 76 : rotation de +68.4°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690373.303	16:06:13.302	Mouvement 76 : rotation de 67.4° pour 68.4° demandés, angle atteint. Roues arrêtées.
+1794690374.232	16:06:14.232	Mouvement 77 : rotation de -1.0°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690374.324	16:06:14.324	Mouvement 77 : rotation de -0.1° pour -1.0° demandés, angle atteint. Roues arrêtées.
+1794690375.273	16:06:15.272	Mouvement 78 : rotation de +1.0°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690375.373	16:06:15.372	Mouvement 78 : rotation de 0.1° pour 1.0° demandés, angle atteint. Roues arrêtées.
+1794690377.413	16:06:17.413	Mouvement 79 : rotation de -179.7°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690381.749	16:06:21.748	Mouvement 79 : rotation de -179.0° pour -179.7° demandés, angle atteint. Roues arrêtées.
+1794690383.713	16:06:23.713	Mouvement 80 : rotation de +92.8°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690385.817	16:06:25.817	Mouvement 80 : rotation de 91.6° pour 92.8° demandés, angle atteint. Roues arrêtées.
+1794690386.785	16:06:26.784	Vitesse réglée à 150 mm/s (page web).
+1794690423.328	16:07:03.328	Mouvement 81 : rotation de +86.7°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690425.330	16:07:05.329	Mouvement 81 : rotation de 86.0° pour 86.7° demandés, angle atteint. Roues arrêtées.
+1794690426.157	16:07:06.156	Mouvement 82 : rotation de -1.1°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690426.257	16:07:06.257	Mouvement 82 : rotation de -0.2° pour -1.1° demandés, angle atteint. Roues arrêtées.
+1794690427.123	16:07:07.122	Mouvement 83 : rotation de +1.0°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690427.223	16:07:07.222	Mouvement 83 : rotation de 0.2° pour 1.0° demandés, angle atteint. Roues arrêtées.
+1794690429.228	16:07:09.228	Mouvement 84 : rotation de -179.9°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690433.522	16:07:13.522	Mouvement 84 : rotation de -178.5° pour -179.9° demandés, angle atteint. Roues arrêtées.
+1794690435.609	16:07:15.609	Mouvement 85 : rotation de +100.3°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690437.806	16:07:17.806	Mouvement 85 : rotation de 99.4° pour 100.3° demandés, angle atteint. Roues arrêtées.
+1794690438.729	16:07:18.728	Vitesse réglée à 50 mm/s (page web).
+1794690438.964	16:07:18.963	Mouvement 86 : avance de 203 mm à 50 mm/s au plus, cap tenu à -0.7° du cap actuel. 5 ou espace pour arrêter.
+1794690442.035	16:07:22.034	Mouvement 86 : 202 mm pour 203 mm demandés, cap +1.1°, distance atteinte. Roues arrêtées.
+1794690442.983	16:07:22.982	Mouvement 87 : rotation de +77.3°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690444.723	16:07:24.723	Mouvement 87 : rotation de 75.4° pour 77.3° demandés, angle atteint. Roues arrêtées.
+1794690446.727	16:07:26.727	Mouvement 88 : rotation de -179.2°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690451.058	16:07:31.057	Mouvement 88 : rotation de -178.0° pour -179.2° demandés, angle atteint. Roues arrêtées.
+1794690453.092	16:07:33.091	Mouvement 89 : rotation de +102.5°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690455.299	16:07:35.298	Mouvement 89 : rotation de 100.8° pour 102.5° demandés, angle atteint. Roues arrêtées.
+1794690456.164	16:07:36.163	Vitesse réglée à 50 mm/s (page web).
+1794690456.302	16:07:36.302	Mouvement 90 : avance de 204 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690459.238	16:07:39.237	Mouvement 90 : 201 mm pour 204 mm demandés, cap +2.7°, distance atteinte. Roues arrêtées.
+1794690460.233	16:07:40.232	Mouvement 91 : rotation de +74.5°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690461.993	16:07:41.993	Mouvement 91 : rotation de 73.2° pour 74.5° demandés, angle atteint. Roues arrêtées.
+1794690463.976	16:07:43.976	Mouvement 92 : rotation de -179.6°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690468.226	16:07:48.225	Mouvement 92 : rotation de -178.1° pour -179.6° demandés, angle atteint. Roues arrêtées.
+1794690470.390	16:07:50.389	Mouvement 93 : rotation de +72.2°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690472.145	16:07:52.145	Mouvement 93 : rotation de 70.5° pour 72.2° demandés, angle atteint. Roues arrêtées.
+1794690473.001	16:07:53.001	Vitesse réglée à 50 mm/s (page web).
+1794690473.131	16:07:53.131	Mouvement 94 : avance de 213 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690476.283	16:07:56.283	Mouvement 94 : 210 mm pour 213 mm demandés, cap -0.6°, distance atteinte. Roues arrêtées.
+1794690477.314	16:07:57.314	Mouvement 95 : rotation de +108.1°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690479.616	16:07:59.615	Mouvement 95 : rotation de 106.7° pour 108.1° demandés, angle atteint. Roues arrêtées.
+1794690481.636	16:08:01.635	Mouvement 96 : rotation de -179.3°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690485.850	16:08:05.849	Mouvement 96 : rotation de -177.8° pour -179.3° demandés, angle atteint. Roues arrêtées.
+1794690487.841	16:08:07.841	Mouvement 97 : rotation de +92.1°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690489.893	16:08:09.892	Mouvement 97 : rotation de 91.1° pour 92.1° demandés, angle atteint. Roues arrêtées.
+1794690490.745	16:08:10.744	Vitesse réglée à 150 mm/s (page web).
+1794690533.950	16:08:53.949	Mouvement 98 : rotation de -18.3°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690534.712	16:08:54.712	Mouvement 98 : rotation de -16.8° pour -18.3° demandés, angle atteint. Roues arrêtées.
+1794690535.596	16:08:55.596	Vitesse réglée à 50 mm/s (page web).
+1794690535.742	16:08:55.742	Mouvement 99 : avance de 1058 mm à 50 mm/s au plus, cap tenu à +0.7° du cap actuel. 5 ou espace pour arrêter.
+1794690550.878	16:09:10.877	Mouvement 99 : 1055 mm pour 1058 mm demandés, cap +2.6°, distance atteinte. Roues arrêtées.
+1794690551.923	16:09:11.923	Mouvement 100 : rotation de +95.3°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690554.034	16:09:14.033	Mouvement 100 : rotation de 94.2° pour 95.3° demandés, angle atteint. Roues arrêtées.
+1794690556.034	16:09:16.034	Mouvement 101 : rotation de -180.1°, roues à 50 mm/s au plus. 5 ou espace pour arrêter.
+1794690561.681	16:09:21.680	Mouvement 101 : rotation de -179.5° pour -180.1° demandés, angle atteint. Roues arrêtées.
+1794690563.707	16:09:23.707	Mouvement 102 : rotation de +90.4°, roues à 100 mm/s au plus. 5 ou espace pour arrêter.
+1794690565.672	16:09:25.672	Mouvement 102 : rotation de 88.7° pour 90.4° demandés, angle atteint. Roues arrêtées.
+1794690566.502	16:09:26.501	Vitesse réglée à 150 mm/s (page web).
+1794690640.417	16:10:40.416	Mouvement 103 : rotation de +69.0°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690642.286	16:10:42.286	Mouvement 103 : rotation de 67.6° pour 69.0° demandés, angle atteint. Roues arrêtées.
+1794690643.173	16:10:43.172	Vitesse réglée à 50 mm/s (page web).
+1794690643.320	16:10:43.320	Mouvement 104 : avance de 78 mm à 50 mm/s au plus, cap tenu à -0.9° du cap actuel. 5 ou espace pour arrêter.
+1794690644.481	16:10:44.480	Mouvement 104 : 76 mm pour 78 mm demandés, cap +0.3°, distance atteinte. Roues arrêtées.
+1794690645.501	16:10:45.500	Mouvement 105 : rotation de -62.4°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794690647.244	16:10:47.243	Mouvement 105 : rotation de -61.7° pour -62.4° demandés, angle atteint. Roues arrêtées.
+1794690649.777	16:10:49.777	Vitesse réglée à 150 mm/s (page web).
+1794690662.000	16:11:01.999	Vitesse réglée à 50 mm/s (page web).
+1794690662.177	16:11:02.176	Mouvement 106 : avance de 50 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690662.989	16:11:02.989	Mouvement 106 : 48 mm pour 50 mm demandés, cap -0.5°, distance atteinte. Roues arrêtées.
+1794690663.965	16:11:03.964	Vitesse réglée à 150 mm/s (page web).
+1794690665.697	16:11:05.697	Vitesse réglée à 50 mm/s (page web).
+1794690665.844	16:11:05.844	Mouvement 107 : avance de 50 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690666.656	16:11:06.655	Mouvement 107 : 48 mm pour 50 mm demandés, cap -0.1°, distance atteinte. Roues arrêtées.
+1794690667.596	16:11:07.595	Vitesse réglée à 150 mm/s (page web).
+1794690669.622	16:11:09.621	Vitesse réglée à 50 mm/s (page web).
+1794690669.768	16:11:09.767	Mouvement 108 : avance de 50 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690670.568	16:11:10.568	Mouvement 108 : 47 mm pour 50 mm demandés, cap +0.4°, distance atteinte. Roues arrêtées.
+1794690671.608	16:11:11.607	Vitesse réglée à 150 mm/s (page web).
+1794690683.035	16:11:23.034	Vitesse réglée à 50 mm/s (page web).
+1794690683.180	16:11:23.179	Mouvement 109 : avance de 50 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690684.002	16:11:24.002	Mouvement 109 : 48 mm pour 50 mm demandés, cap -0.8°, distance atteinte. Roues arrêtées.
+1794690684.907	16:11:24.906	Vitesse réglée à 150 mm/s (page web).
+1794690686.938	16:11:26.937	Vitesse réglée à 50 mm/s (page web).
+1794690687.144	16:11:27.143	Mouvement 110 : avance de 50 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690687.926	16:11:27.925	Mouvement 110 : 49 mm pour 50 mm demandés, cap +0.5°, distance atteinte. Roues arrêtées.
+1794690688.913	16:11:28.913	Vitesse réglée à 150 mm/s (page web).
+1794690691.043	16:11:31.042	Vitesse réglée à 50 mm/s (page web).
+1794690691.252	16:11:31.251	Mouvement 111 : avance de 50 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690692.079	16:11:32.078	Mouvement 111 : 50 mm pour 50 mm demandés, cap -0.0°, distance atteinte. Roues arrêtées.
+1794690693.059	16:11:33.059	Vitesse réglée à 150 mm/s (page web).
+1794690695.030	16:11:35.030	Vitesse réglée à 50 mm/s (page web).
+1794690695.219	16:11:35.219	Mouvement 112 : avance de 50 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690696.006	16:11:36.005	Mouvement 112 : 48 mm pour 50 mm demandés, cap +0.1°, distance atteinte. Roues arrêtées.
+1794690696.997	16:11:36.997	Vitesse réglée à 150 mm/s (page web).
+1794690716.485	16:11:56.485	Vitesse réglée à 50 mm/s (page web).
+1794690716.637	16:11:56.636	Mouvement 113 : avance de 50 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690717.439	16:11:57.438	Mouvement 113 : 47 mm pour 50 mm demandés, cap -0.2°, distance atteinte. Roues arrêtées.
+1794690718.404	16:11:58.404	Vitesse réglée à 150 mm/s (page web).
+1794690720.397	16:12:00.397	Vitesse réglée à 50 mm/s (page web).
+1794690720.603	16:12:00.603	Mouvement 114 : avance de 50 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690721.346	16:12:01.346	Mouvement 114 : 47 mm pour 50 mm demandés, cap +0.8°, distance atteinte. Roues arrêtées.
+1794690722.347	16:12:02.347	Vitesse réglée à 150 mm/s (page web).
+1794690724.345	16:12:04.345	Vitesse réglée à 50 mm/s (page web).
+1794690724.544	16:12:04.543	Mouvement 115 : avance de 50 mm à 50 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1794690725.346	16:12:05.345	Mouvement 115 : 50 mm pour 50 mm demandés, cap +0.2°, distance atteinte. Roues arrêtées.
+1794690726.352	16:12:06.351	Vitesse réglée à 150 mm/s (page web).
+1794690774.192	16:12:54.191	Recule (150 mm/s).
+1794690774.948	16:12:54.947	Roues arrêtées.
+1794690776.021	16:12:56.020	Vitesse réglée à 150 mm/s (page web).
+1794690959.548	16:15:59.548	Radar : arrêt, servo recentré puis relâché.
+1794690959.778	16:15:59.777	Envoyé : Start (128) -> Passive
+1794690961.336	16:16:01.335	Envoyé : Stop (173) -> OI fermée
+1794690963.578	16:16:03.577	>> j
+1794690963.648	16:16:03.648	Journal CSV désactivé.
+1794690964.665	16:16:04.665	## fin de l'enregistrement après 1629.2 s

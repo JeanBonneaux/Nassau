@@ -1,0 +1,39 @@
+arrêt 1 à 0.00 m : 248 mm à gauche, 173 mm à droite, passage de 421 mm ; robot 38 mm à droite du milieu
+   devant : écho à 530 mm vers +46°, large de 11° (placé)
+   devant : écho à 745 mm vers +28°, large de 19° (direction incertaine)
+   devant : écho à 1071 mm vers +11°, large de 11° (direction incertaine)
+   devant : écho à 1410 mm vers -15°, large de 36° (direction incertaine)
+   devant : écho à 1023 mm vers -43°, large de 17° (direction incertaine)
+   devant : trouée de +52° à +69° (milieu +61°), bords à 530 et 906 mm
+   quelque chose à 1071 mm dans la direction prise
+   avance de 203 mm au cap 190.6°
+arrêt 2 à 0.20 m : 861 mm à gauche, 212 mm à droite ; robot 38 mm à droite du milieu ; cap par rapport aux murs -1.7° (1 mesure)
+   devant : écho à 564 mm vers +43°, large de 23° (direction incertaine)
+   devant : écho à 832 mm vers +14°, large de 28° (direction incertaine)
+   devant : écho à 1207 mm vers -8°, large de 14° (direction incertaine)
+   devant : écho à 1301 mm vers -23°, large de 12° (direction incertaine)
+   devant : écho à 959 mm vers -42°, large de 13° (direction incertaine)
+   cible ramenée de -2 à +38 mm : jamais à moins de 8 cm d'une paroi mesurée de côté
+   quelque chose à 832 mm dans la direction prise
+   avance de 204 mm au cap 192.4°
+arrêt 3 à 0.40 m : 156 mm à gauche, 303 mm à droite, passage de 459 mm ; robot 74 mm à gauche du milieu ; cap par rapport aux murs -1.7° (1 mesure)
+   devant : écho à 984 mm vers +45°, large de 4° (direction incertaine)
+   devant : écho à 629 mm vers +28°, large de 26° (placé)
+   devant : écho à 836 mm vers +8°, large de 10° (direction incertaine)
+   devant : écho à 962 mm vers -2°, large de 7° (direction incertaine)
+   devant : écho à 1380 mm vers -39°, large de 19° (direction incertaine)
+   devant : écho à 980 mm vers -51°, large de 3° (direction incertaine)
+   devant : trouée de -28° à -7° (milieu -18°), bords à 1384 et 962 mm
+   écho large à 629 mm vers +26° : si c'est une paroi, elle coupe le chemin à 910 mm
+   avance de 213 mm au cap 161.7°
+arrêt 4 à 0.60 m : 259 mm à gauche, 229 mm à droite, passage de 488 mm ; robot 15 mm à droite du milieu ; cap par rapport aux murs -2.2° (2 mesures)
+   devant : écho à 499 mm vers +45°, large de 33° (direction incertaine)
+   devant : écho à 773 mm vers +13°, large de 27° (direction incertaine)
+   devant : écho à 1231 mm vers -32°, large de 10° (direction incertaine)
+   devant : écho à 1010 mm vers -44°, large de 11° (direction incertaine)
+   devant : trouée de -26° à -8° (milieu -17°), bords à 1231 et 1467 mm
+   les deux parois ne disent pas le même cap (-10.9° et -2.5°) : la largeur change
+centre=180,600,200,50 : distance faite ; 4 arrêts en 67 s ; robot en (824.0, 89.2), cap 182.6° à l'estime
+CAP_MURS=180.0  (le robot est tourné dans l'axe des murs ; son cap à l'estime s'en écarte de +2.2°, 2 mesures) : à reprendre seulement si l'axe 180° du plan est sûr
+fin : mode 3, roues en marche False, pare-chocs 00, devant 786 mm
+POSE=824.0,89.2,182.6
