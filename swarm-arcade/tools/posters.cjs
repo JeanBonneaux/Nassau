@@ -10,7 +10,7 @@ const fs = require('fs');
   fs.mkdirSync(out, { recursive: true });
   let slugs = process.argv.slice(2);
   if (!slugs.length) slugs = fs.readdirSync(path.join(root, 'demos')).filter((f) => f.endsWith('.html')).map((f) => f.slice(0, -5));
-  const browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+  const browser = await chromium.launch({ args: ['--disable-accelerated-2d-canvas', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
   for (const slug of slugs) {
     const page = await browser.newPage({ viewport: { width: 840, height: 525 } });
     await page.goto('file://' + path.join(root, 'demos', slug + '.html') + '#preview');

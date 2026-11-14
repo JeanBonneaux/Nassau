@@ -121,7 +121,7 @@ async function checkOne(browser, file) {
   const files = process.argv.slice(2);
   if (!files.length) { console.error('usage: check.cjs <file.html> ...'); process.exit(2); }
   await acquire();
-  const browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+  const browser = await chromium.launch({ args: ['--disable-accelerated-2d-canvas', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
   const results = [];
   for (const f of files) {
     try { results.push(await checkOne(browser, f)); }

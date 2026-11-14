@@ -29,7 +29,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
   const COLS = PREVIEW ? 36 : 64, ROWS = PREVIEW ? 22 : 40, N = COLS * ROWS;
   const ITER = PREVIEW ? 3 : 5;
   const GRAD = 8, SHADES = 16, MAXC = N * 4;
-  const G = 0.22, DAMP = 0.995, GHOST_K = 2.2, GRAB_R = 40, CUT_R = 22, TOP = 92;
+  const G = 0.22, DAMP = 0.995, GHOST_K = 1.6, GRAB_R = 40, CUT_R = 22, TOP = 92;
 
   const X = new Float32Array(N), Y = new Float32Array(N);
   const PX = new Float32Array(N), PY = new Float32Array(N);
@@ -64,7 +64,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
 
   // ---- build topology ----
   function build() {
-    for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) PIN[j * COLS + i] = (j === 0 && (i % 9 === 0 || i === COLS - 1)) ? 1 : 0;
+    for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) PIN[j * COLS + i] = (j === 0 && (i % 6 === 0 || i === COLS - 1)) ? 1 : 0;
     NC = 0;
     const add = (a, b, r, kind) => {
       CA[NC] = a; CB[NC] = b; CR[NC] = r; CK[NC] = kind; CL[NC] = 1;
@@ -157,7 +157,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
 
     for (let j = 0; j < ROWS; j++) {
       const rowF = 0.35 + 0.65 * (j / (ROWS - 1));
-      const W0 = 0.62 * rowF;
+      const W0 = 0.11 * rowF;
       for (let i = 0; i < COLS; i++) {
         const q = j * COLS + i;
         if (PIN[q]) { X[q] = RX[q]; Y[q] = RY[q]; PX[q] = X[q]; PY[q] = Y[q]; continue; }
@@ -168,8 +168,8 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
           continue;
         }
         // wind: smooth sum of sines over x, y, time
-        let ax = W0 * (Math.sin(x * 0.007 + t * 0.9) + 0.6 * Math.sin(y * 0.011 - t * 0.6 + 1.3) + 0.4 * Math.sin((x + y) * 0.0045 + t * 1.7));
-        let ay = W0 * 0.5 * Math.sin(x * 0.005 - t * 0.8) * Math.cos(y * 0.004 + t * 0.4) + G;
+        let ax = W0 * (0.45 + Math.sin(x * 0.007 + t * 0.9) + 0.6 * Math.sin(y * 0.011 - t * 0.6 + 1.3) + 0.4 * Math.sin((x + y) * 0.0045 + t * 1.7));
+        let ay = W0 * 0.3 * Math.sin(x * 0.005 - t * 0.8) * Math.cos(y * 0.004 + t * 0.4) + G;
         // invisible wind ghost drifting through the cloth
         const ddx = x - gX, ddy = y - gY, d2 = ddx * ddx + ddy * ddy;
         if (d2 < gR2) {
@@ -179,7 +179,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
         // gust sweep
         if (gAmp > 0) {
           const gx = x - gustX, e = Math.exp(-(gx * gx) / gsig2) * gAmp;
-          ax += e * 1.6; ay -= e * 0.9;
+          ax += e * 1.0; ay -= e * 0.15;
         }
         const nx = x + (x - PX[q]) * DAMP + ax * s2;
         const ny = y + (y - PY[q]) * DAMP + ay * s2;
@@ -295,7 +295,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
   }
 
   // ---- loop ----
-  let last = performance.now();
+  let last = performance.now(), acc = 0;
   function frame(now) {
     let dt = (now - last) / 1000; last = now;
     if (!(dt > 0)) dt = 1 / 60;
@@ -316,7 +316,10 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
       }
     }
 
-    step(dt, simT);
+    acc += dt;
+    let n = 0;
+    while (acc >= 1 / 60 && n < 2) { step(1 / 60, simT); acc -= 1 / 60; n++; }
+    if (n === 2) acc = 0;
     draw();
     requestAnimationFrame(frame);
   }
