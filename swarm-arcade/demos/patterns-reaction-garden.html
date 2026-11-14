@@ -65,7 +65,7 @@ body.preview #hud { display: none; }
   var cv = document.getElementById('c');
   var ctx = cv.getContext('2d');
   var off = document.createElement('canvas');
-  var octx = off.getContext('2d');
+  var octx = off.getContext('2d', { willReadFrequently: true });
   var presetRow = document.getElementById('presets');
   var toolRow = document.getElementById('tools');
   var readout = document.getElementById('readout');

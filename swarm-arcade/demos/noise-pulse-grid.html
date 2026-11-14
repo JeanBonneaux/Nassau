@@ -536,14 +536,15 @@ function draw() {
   g.fillStyle = 'rgba(5,6,10,0.26)';
   g.fillRect(0, 0, W, H);
 
-  g.globalCompositeOperation = 'lighter';
-  // ambient centre glow plus the kick-driven brightness pulse
+  // ambient centre glow plus the kick-driven brightness pulse (normal blend: additive here would haze up over the trails)
   const R = maxR * 1.15;
   const gr = g.createRadialGradient(cxC, cyC, 0, cxC, cyC, R);
-  gr.addColorStop(0, col(RGB[KICK], 0.035 + 0.22 * bgPulse));
+  gr.addColorStop(0, col(RGB[KICK], (0.02 + 0.23 * bgPulse).toFixed(3)));
   gr.addColorStop(1, col(RGB[KICK], 0));
+  g.globalCompositeOperation = 'source-over';
   g.fillStyle = gr;
   g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'lighter';
 
   // drifting stars
   for (const st of stars) {
@@ -575,16 +576,21 @@ function draw() {
       if (v) {
         const dim = (t === KICK && v === 2) ? 0.55 : 1;
         const gs = Math.max(w, h) * (2.3 + 0.8 * p);
-        g.globalAlpha = clamp((0.3 + 0.5 * p + 0.35 * cg) * dim, 0, 1);
+        // glow is the only additive part; bodies are painted normally so colours stay saturated
+        g.globalCompositeOperation = 'lighter';
+        g.globalAlpha = clamp((0.2 + 0.35 * p + 0.25 * cg) * dim, 0, 1);
         g.drawImage(SPR[t], P.cx - gs / 2, P.cy - gs / 2, gs, gs);
         g.globalAlpha = 1;
+        g.globalCompositeOperation = 'source-over';
         rr(x, y, w, h, r);
-        g.fillStyle = col(C, clamp((0.45 + 0.4 * p + 0.15 * cg) * dim, 0, 1));
+        g.fillStyle = col(C, clamp((0.72 + 0.2 * p + 0.08 * cg) * dim, 0, 1));
         g.fill();
-        rr(x + w * 0.2, y + h * 0.2, w * 0.6, h * 0.6, r * 0.5);
-        g.fillStyle = `rgba(255,255,255,${(0.1 + 0.5 * p * dim).toFixed(3)})`;
+        rr(x + w * 0.22, y + h * 0.18, w * 0.56, h * 0.4, r * 0.5);
+        g.fillStyle = `rgba(255,255,255,${clamp((0.08 + 0.3 * p) * dim, 0, 1).toFixed(3)})`;
         g.fill();
+        g.globalCompositeOperation = 'lighter';
       } else {
+        g.globalCompositeOperation = 'source-over';
         rr(x, y, w, h, r);
         g.strokeStyle = col(C, (0.16 + 0.4 * cg).toFixed(3));
         g.lineWidth = 1;
