@@ -41,14 +41,19 @@ const glow = document.createElement('canvas');
 const gctx = glow.getContext('2d');
 
 const TWO_PI = Math.PI * 2;
-const N = PREVIEW ? 3000 : 12000;     // agent count (typed arrays, fixed)
+const N = PREVIEW ? 4000 : 12000;     // agent count (typed arrays, fixed)
 const TURN = 0.3;                     // turn rate toward strongest sensor
-const JITTER = 0.12;                  // tiny random wobble per step
+const JITTER = 0.06;                  // tiny random wobble per step (low = crisp veins)
 const STEP = 1.1;                     // cells moved per step
-const DEP = 1;                        // deposit per agent per step
+const DEP = 1.6;                      // deposit per agent per step
 const DEP_CAP = 6;                    // trail values never exceed this
-const PREWARM = PREVIEW ? 150 : 60;   // steps run at init without rendering (cheap in preview)
+const PREWARM = PREVIEW ? 150 : 120;  // steps run at init after seeding, before the first render
 const NORM_SCALE = 255 / DEP_CAP;     // trail -> LUT index (v^0.6 applied in LUT)
+const FOOD_R = 60;                    // food boost radius in cells
+const FOOD_R2 = FOOD_R * FOOD_R;
+const FOOD_BOOST = 3;                 // extra deposit per agent near food
+const PULSE_EVERY = 8;                // seconds between new branching blooms
+const PULSE_N = 600;                  // agents recruited into each bloom
 const LE = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 
 // Palettes: [position 0..1, [r,g,b]]
@@ -85,38 +90,59 @@ let trail = null, scratch = null;
 let img = null, img32 = null;
 let xl = null, xr = null;
 let px = null, py = null, ang = null;
-let sensorDist = 9;
-let sensorAngle = 0.575;
+let sensorDist = 11;
+let sensorAngle = 0.55;
 let simTime = 0;
 let nextFood = 0.4;
+let nextPulse = PULSE_EVERY;
 const food = { x: 0, y: 0, t: 0 };
 const pointers = new Map();
 
 // Canvas state
 let cw = 1, ch = 1, dpr = 1;
+let vig = null;                       // full-mode vignette gradient (built on resize)
 
 function gridSize() {
   const iw = Math.max(1, innerWidth), ih = Math.max(1, innerHeight);
-  let gw = Math.min(640, Math.max(64, Math.floor(iw / 2)));
+  let gw = Math.min(PREVIEW ? 240 : 640, Math.max(64, Math.floor(iw / 2)));
   let gh = Math.max(48, Math.round(gw * ih / iw));
   if (gh > 400) {
     gh = 400;
-    gw = Math.min(640, Math.max(64, Math.round(gh * iw / ih)));
+    gw = Math.min(PREVIEW ? 240 : 640, Math.max(64, Math.round(gh * iw / ih)));
   }
   return { W: gw, H: gh };
 }
 
-function seedRing() {
-  const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.42;
+// Wrap a coordinate into [0, m). Keeps every agent inside the torus.
+function wrap(v, m) {
+  v %= m;
+  if (v < 0) v += m;
+  return v >= m ? 0 : v;
+}
+
+// Seed 8 to 12 soft Gaussian clusters plus ~15% uniform agents. No ring.
+function seedClusters() {
+  const R = Math.min(W, H) * 0.12;      // Gaussian sigma per cluster
+  const K = 8 + ((Math.random() * 5) | 0);
+  const mx = W * 0.08, my = H * 0.08;   // centres kept 8% inside the edges
+  const cxs = new Float32Array(K), cys = new Float32Array(K);
+  for (let k = 0; k < K; k++) {
+    cxs[k] = mx + Math.random() * (W - 2 * mx);
+    cys[k] = my + Math.random() * (H - 2 * my);
+  }
   for (let i = 0; i < N; i++) {
-    const t = (i / N) * TWO_PI;
-    const r = R * (0.9 + Math.random() * 0.2);
-    px[i] = cx + Math.cos(t) * r;
-    py[i] = cy + Math.sin(t) * r;
-    // mostly random headings so the ring breaks into branches fast; some face inward
-    const roll = Math.random();
-    ang[i] = roll < 0.7 ? Math.random() * TWO_PI
-           : t + Math.PI + (Math.random() - 0.5) * 1.2;
+    if (Math.random() < 0.15) {
+      px[i] = Math.random() * W;
+      py[i] = Math.random() * H;
+    } else {
+      // Box-Muller: two independent normals scaled by R
+      const k = (Math.random() * K) | 0;
+      const u = Math.random() || 1e-9, v = Math.random();
+      const m = Math.sqrt(-2 * Math.log(u)) * R;
+      px[i] = wrap(cxs[k] + m * Math.cos(TWO_PI * v), W);
+      py[i] = wrap(cys[k] + m * Math.sin(TWO_PI * v), H);
+    }
+    ang[i] = Math.random() * TWO_PI;    // fully random heading
   }
 }
 
@@ -124,6 +150,18 @@ function scatter() {
   for (let i = 0; i < N; i++) {
     px[i] = Math.random() * W;
     py[i] = Math.random() * H;
+    ang[i] = Math.random() * TWO_PI;
+  }
+}
+
+// New branching bloom: recruit PULSE_N agents into a small disc with random headings.
+function pulse() {
+  const cx = Math.random() * W, cy = Math.random() * H;
+  for (let k = 0; k < PULSE_N; k++) {
+    const i = (Math.random() * N) | 0;
+    const r = 2.5 * Math.sqrt(Math.random()), t = Math.random() * TWO_PI;
+    px[i] = wrap(cx + Math.cos(t) * r, W);
+    py[i] = wrap(cy + Math.sin(t) * r, H);
     ang[i] = Math.random() * TWO_PI;
   }
 }
@@ -142,12 +180,13 @@ function rescaleGrid(nW, nH) {
   for (let x = 0; x < W; x++) { xl[x] = (x - 1 + W) % W; xr[x] = (x + 1) % W; }
   if (!px) {
     px = new Float32Array(N); py = new Float32Array(N); ang = new Float32Array(N);
-    seedRing();
+    seedClusters();
   } else {
     const sx = W / oW, sy = H / oH;
     for (let i = 0; i < N; i++) { px[i] *= sx; py[i] *= sy; }
   }
   food.t = 0;
+  // Pre-warm after seeding and before the first render, so frame one already shows a web.
   for (let i = 0; i < PREWARM; i++) update(1 / 60);
 }
 
@@ -156,6 +195,12 @@ function resize() {
   cw = Math.max(1, Math.floor(innerWidth * dpr));
   ch = Math.max(1, Math.floor(innerHeight * dpr));
   canvas.width = cw; canvas.height = ch;
+  if (!PREVIEW) {
+    vig = ctx.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * 0.35,
+                                   cw / 2, ch / 2, Math.hypot(cw, ch) / 2);
+    vig.addColorStop(0, 'rgba(5,6,10,0)');
+    vig.addColorStop(1, 'rgba(5,6,10,0.55)');
+  }
   const g = gridSize();
   if (g.W !== W || g.H !== H) rescaleGrid(g.W, g.H);
 }
@@ -196,11 +241,12 @@ function step() {
   for (let i = 0; i < N; i++) {
     let ix = px[i] | 0, iy = py[i] | 0;
     if (ix >= W) ix = W - 1; if (iy >= H) iy = H - 1;
+    if (ix < 0) ix = 0; if (iy < 0) iy = 0;
     const idx = iy * W + ix;
     let v = trail[idx] + DEP;
     if (foodOn) {
       const dx = px[i] - fx, dy = py[i] - fy;
-      if (dx * dx + dy * dy < 3600) v += 2;   // brief boost near the food source
+      if (dx * dx + dy * dy < FOOD_R2) v += FOOD_BOOST;   // agents stream toward the food
     }
     trail[idx] = v > DEP_CAP ? DEP_CAP : v;
   }
@@ -239,7 +285,7 @@ function paintPointer(p) {
 
 function update(dt) {
   simTime += dt;
-  sensorAngle = 0.575 + 0.225 * Math.sin(simTime * TWO_PI / 25);
+  sensorAngle = 0.55 + 0.2 * Math.sin(simTime * TWO_PI / 25);
 
   // Invisible wanderer on a Lissajous path drops a food source every ~6 s.
   if (simTime >= nextFood) {
@@ -253,6 +299,12 @@ function update(dt) {
     stampDisk(food.x, food.y, 3, 2.5);
   }
 
+  // Every ~8 s a fresh bloom grows out of a random point.
+  if (simTime >= nextPulse) {
+    pulse();
+    nextPulse = simTime + PULSE_EVERY;
+  }
+
   for (const p of pointers.values()) paintPointer(p);
 
   step();
@@ -260,7 +312,7 @@ function update(dt) {
 }
 
 // 3x3 box blur (wrapped), done as two separable 3-tap passes, then
-// mix 0.9 blur + 0.1 original and decay by 0.96.
+// mix 0.9 blur + 0.1 original and decay by 0.94.
 function diffuse() {
   const s = scratch, t = trail;
   // Horizontal sums into scratch (reads trail only).
@@ -276,7 +328,7 @@ function diffuse() {
     for (let x = 0; x < W; x++) {
       const i = rc + x;
       const blur = (s[ru + x] + s[i] + s[rd + x]) * (1 / 9);
-      const v = (blur * 0.9 + t[i] * 0.1) * 0.96;
+      const v = (blur * 0.9 + t[i] * 0.1) * 0.94;
       t[i] = v > DEP_CAP ? DEP_CAP : v;
     }
   }
@@ -305,6 +357,11 @@ function render() {
     ctx.drawImage(glow, 0, 0, cw, ch);
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
+    // Gentle vignette to frame the composition (full mode only).
+    if (vig) {
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, cw, ch);
+    }
   }
 
 }
@@ -340,10 +397,10 @@ addEventListener('keydown', (e) => {
     buildLUT();
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
-    sensorDist = Math.min(20, sensorDist + 1);
+    sensorDist = Math.min(22, sensorDist + 1);
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
-    sensorDist = Math.max(4, sensorDist - 1);
+    sensorDist = Math.max(5, sensorDist - 1);
   }
 });
 

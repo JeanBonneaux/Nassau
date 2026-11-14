@@ -148,7 +148,7 @@ canvas{display:block;width:100vw;height:100vh}
     "  vec2 uv = gl_FragCoord.xy/uRes;",
     "  vec2 q = (gl_FragCoord.xy-0.5*uRes)/uRes.y;",
     "  float yaw = sin(uTime*0.1)*0.4 + (uMouse.x-0.5)*1.8;",
-    "  float pitch = clamp(0.07 + (uMouse.y-0.5)*0.5, -0.3, 0.25);",
+    "  float pitch = clamp((uMouse.y-0.5)*0.15, -0.3, 0.25);",
     "  vec3 rd = normalize(vec3(q.x, q.y, -1.4));",
     "  float cp = cos(pitch), sp = sin(pitch);",
     "  rd = vec3(rd.x, rd.y*cp - rd.z*sp, rd.y*sp + rd.z*cp);",

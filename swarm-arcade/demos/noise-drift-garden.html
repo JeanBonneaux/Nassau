@@ -205,7 +205,9 @@ body.preview #hud{display:none}
       v.o1.stop(now + 0.06);
       v.o2.stop(now + 0.06);
     } catch (e) {}
-    releaseVoice(v);
+    var i = audio.voices.indexOf(v);
+    if (i !== -1) audio.voices.splice(i, 1);
+    setTimeout(function () { releaseVoice(v); }, 200);
   }
 
   // one plucked triangle voice: two detuned oscs -> lowpass -> envelope -> dry + reverb + delay sends
@@ -269,7 +271,7 @@ body.preview #hud{display:none}
 
   // ---- canvas -----------------------------------------------------------
   var W = 0, H = 0, DPR = 1;
-  var fadeGrad = null;
+  var fadeGrad = null, fadeGrad2 = null, frameN = 0;
 
   function makeBgGradient(alpha) {
     var g = ctx.createLinearGradient(0, 0, 0, H);
@@ -289,7 +291,8 @@ body.preview #hud{display:none}
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = makeBgGradient(1);
     ctx.fillRect(0, 0, W, H);
-    fadeGrad = makeBgGradient(0.085);
+    fadeGrad = makeBgGradient(0.05);
+    fadeGrad2 = makeBgGradient(0.35);
     orbs.forEach(function (o) {
       o.x = clamp(o.x, o.r, Math.max(o.r, W - o.r));
       o.y = clamp(o.y, o.r, Math.max(o.r, H - o.r));
@@ -496,7 +499,7 @@ body.preview #hud{display:none}
 
   function render() {
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = fadeGrad;
+    ctx.fillStyle = (++frameN % 6 === 0) ? fadeGrad2 : fadeGrad;
     ctx.fillRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
 

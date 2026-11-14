@@ -22,8 +22,8 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
 
   var PREVIEW = /preview/.test(location.hash);
   var NW = 2048;                 // walker pool
-  var ITERS = PREVIEW ? 12 : 60; // iterations per walker per frame (~25k pts in preview, ~120k otherwise)
-  var DECAY = 0.985;
+  var ITERS = PREVIEW ? 8 : 40; // iterations per walker per frame (~16k pts in preview, ~80k otherwise)
+  var DECAY = 0.9;
   var MAX_W = 1280, MAX_H = 800;
   var LUT_N = 4096;
 
@@ -38,9 +38,9 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
 
   // Palette stops: [position 0..1, colour]. Position is the speed-driven hue index.
   var PALETTES = [
-    [[0, '#1a0508'], [0.22, '#ff7a3d'], [0.45, '#ffe08a'], [0.62, '#ffffff'], [0.8, '#ff2f7e'], [1, '#6a3dff']], // ember
+    [[0, '#1a0508'], [0.2, '#b3261e'], [0.4, '#ff7a3d'], [0.6, '#ffe08a'], [0.8, '#ff2f7e'], [1, '#7a4dff']], // ember
     [[0, '#03201a'], [0.25, '#00e5a0'], [0.5, '#33e0ff'], [0.72, '#7f5bff'], [0.88, '#d08cff'], [1, '#f0e8ff']], // aurora
-    [[0, '#050a14'], [0.35, '#1d3a5c'], [0.65, '#5fa8d3'], [0.85, '#cfeaff'], [1, '#ffffff']]                   // ice
+    [[0, '#050a14'], [0.35, '#1d3a5c'], [0.65, '#5fa8d3'], [0.85, '#cfeaff'], [1, '#e6f4ff']]                   // ice
   ];
 
   var canvas = document.getElementById('c');
@@ -63,7 +63,7 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
   // morph state
   var base = PRESETS[1].slice();
   var fromP = PRESETS[1].slice(), toP = PRESETS[1].slice();
-  var toIdx = 1, morphT = 0, morphDur = 12;
+  var toIdx = 1, morphT = 0, morphDur = 9;
 
   var ptr = { tx: 0, ty: 0, ox: 0, oy: 0, active: false, down: false };
   var downAt = null;
@@ -117,7 +117,7 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
     }
     for (var hq = 0; hq < 256; hq++) {
       for (var dq = 0; dq < 256; dq++) {
-        var m = (dq / 255) * 0.92;
+        var m = Math.min(0.85, (dq / 255) * 0.92);
         var R = Math.min(255, (5 + pal[hq * 3] * m) | 0);
         var G = Math.min(255, (6 + pal[hq * 3 + 1] * m) | 0);
         var B = Math.min(255, (10 + pal[hq * 3 + 2] * m) | 0);
@@ -129,7 +129,7 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
   // Log tone-map as a lookup: density -> brightness index. Range follows the smoothed max.
   function buildLut() {
     var SHOULDER = 1 / (1 - Math.exp(-3));
-    var K = 20; // gain: lifts faint filaments before the log compresses the peaks
+    var K = 6; // gain: lifts faint filaments before the log compresses the peaks
     var range = maxS * 1.5;
     lutScale = (LUT_N - 1) / range;
     var invLog = 1 / Math.log(1 + maxS * K);
@@ -160,7 +160,7 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
           dsc--;
         } else {
           var dx = nx - x, dy = ny - y;
-          var hv = Math.sqrt(dx * dx + dy * dy) * 0.45;
+          var hv = Math.sqrt(dx * dx + dy * dy) * 0.7;
           if (hv > 1) hv = 1;
           var rx = nx * cr - ny * sr, ry = nx * sr + ny * cr;
           var ix = (cx + rx * scale) | 0, iy = (cy + ry * scale) | 0;
@@ -224,7 +224,7 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
     toP = fromP.slice();
     base = fromP.slice();
     morphT = 0;
-    morphDur = 12;
+    morphDur = 9;
     reseedAll();
   }
 
@@ -324,7 +324,7 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
       toIdx = pickNext();
       toP = PRESETS[toIdx].slice();
       morphT -= morphDur;
-      morphDur = 12;
+      morphDur = 9;
     }
     var s = smooth(clamp(morphT / morphDur, 0, 1));
     for (var i = 0; i < 4; i++) base[i] = fromP[i] + (toP[i] - fromP[i]) * s;
@@ -338,9 +338,9 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
     var B = base[1] + ptr.oy * 0.4;
     var C = base[2], D = base[3];
 
-    var ang = time * 0.05;
+    var ang = time * 0.08;
     var cr = Math.cos(ang), sr = Math.sin(ang);
-    var scale = Math.min(W, H) / 6.8;
+    var scale = Math.min(W, H) / 5.2;
 
     deposit(A, B, C, D, cr, sr, scale, W / 2, H / 2);
     buildLut();
@@ -353,7 +353,7 @@ canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-ac
     // cheap glow: half-res copy drawn back additively
     glowCtx.drawImage(canvas, 0, 0, glowCv.width, glowCv.height);
     ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.35;
+    ctx.globalAlpha = 0.25;
     ctx.drawImage(glowCv, 0, 0, W, H);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
