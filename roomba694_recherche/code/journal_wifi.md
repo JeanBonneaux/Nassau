@@ -1825,3 +1825,21 @@ Accord de l'utilisateur, à ma question sur la batterie portable : « Rentre à 
 **Non fait** : l'accostage (l'ordre « rentre à la base » du robot demande l'accord de l'utilisateur à chaque fois ; demandé).
 
 **État à la fin** : `s` puis `x` à 16 h 36 min 40 ; robot endormi en D16, pixel (401 ; 84), tourné vers 70°, à un mètre de sa base, pas posé dessus : il ne charge pas ; batterie 1 725 mAh sur 2 068. Cerveau allumé (v11). Capteur de distance arrêté.
+
+## 53. Accostage : non lancé, l'utilisateur a posé le robot sur sa base ; ce qu'il y a devant la base (2026-11-14, 16 h 42 à 16 h 46)
+
+Accord de l'utilisateur pour l'accostage : « Oui, accoste-le ». Enregistrement : `mesures/exploration25_20261114_164147_*`. **L'ordre `h` n'a pas été envoyé.**
+
+Avant de le lancer, regards au capteur de distance depuis D16, pixel (401 ; 84), caps du plan d'après l'estime :
+
+| Cap | Distance au centre du robot |
+|---|---|
+| 49° à 71° | 69 cm |
+| 80° à 100° | **29 à 32 cm** |
+| 111° à 121° | 88 cm |
+
+Le tour sur place d'arrivée, à 16 h 35, donnait la même chose (268 à 279 mm de 80° à 98°) : ce n'est donc pas quelqu'un qui passait. Les récepteurs de devant voient la base autour du cap 75° ; la surface à 69 cm de ce côté-là est sans doute la base elle-même, ce qui mettrait le robot à une cinquantaine de centimètres de sa place sur la base, et non à un mètre comme le dit le plan (non tranché). **Un objet d'une dizaine de centimètres de large se tient donc à 30 cm devant le robot, à peine à gauche de l'axe de la base, à 40 cm environ devant elle.** C'est là que le pare-chocs gauche touche à chaque accostage (les 13 et 14, § 40 et § 46 ; relevé par l'audit, note I). Je l'ai écrit à l'utilisateur en lui demandant de l'enlever.
+
+À 16 h 43 min 07, pendant que j'analysais ces regards, les deux roues se sont levées : l'utilisateur a porté le robot (« je l<ai pos'e »). À 16 h 43 min 12 le pare-chocs est enfoncé des deux côtés et le courant remonte : le robot est sur sa base. Le cerveau a redémarré à ce moment-là (« mise sous tension » : son alimentation a été coupée un instant pendant le geste ; la batterie portable n'est pas fixée) ; il est reparti en v11.
+
+**État à la fin** : robot sur sa base, en charge (16,6 V, 1,29 A, état de charge 2, 1 768 mAh sur 2 068 à 16 h 45) ; `x` envoyé à 16 h 45 min 54 ; cerveau allumé (v11). L'objet devant la base n'est pas identifié et, à ma connaissance, pas enlevé.

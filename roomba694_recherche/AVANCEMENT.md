@@ -1,6 +1,6 @@
 # Roomba 694 : où en est le projet
 
-*État au 14 novembre 2026, 16 h 40. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (52 sections) ; ce résumé n'en garde que l'essentiel.*
+*État au 14 novembre 2026, 16 h 50. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (53 sections) ; ce résumé n'en garde que l'essentiel.*
 
 ## En bref
 
@@ -9,7 +9,7 @@
 - **Trois choses ne sont pas au point** : rentrer sur sa base tout seul (réussi 1 fois sur 2), aller plus vite (il s'arrête encore beaucoup), et garder une position juste dans les longs passages menés au capteur (30 cm d'erreur devant la porte H12, rattrapés au capteur).
 - **La cuisine est explorée et a ses repères** depuis le 14 après-midi : trois passages, 16 repères d'accord entre eux à 3,5 cm. Le passage étroit (42 cm au plus serré) et le seuil de sa porte (1,7 cm) sont franchis.
 - **Un défaut de sécurité trouvé et corrigé le 14** : à chaque accroc du Wi-Fi, le cerveau se figeait une à cinq secondes et ne surveillait plus le pare-chocs (20 cm roulés ainsi une fois). Ton idée du tampon est en service, c'est la version 11 : plus aucun trou en quinze minutes de route, même quand le Wi-Fi décroche.
-- En ce moment : robot **face à sa base, en D16**, à un mètre d'elle et à 4 cm de son axe, endormi. Il n'est pas posé dessus : **il ne charge pas**. Cerveau allumé (version 11).
+- En ce moment : robot **sur sa base, en charge** (tu l'y as posé à 16 h 43 ; 1,3 A). Cerveau allumé (version 11).
 
 ## Le but, pour mémoire
 
@@ -70,7 +70,7 @@ Le gain vient surtout du vrai chemin de la pièce centrale, de la méthode pour 
 
 ## La suite que je propose, dans l'ordre
 
-1. **L'accostage** : le robot est face à sa base. Dégager le devant de la base (il y touche quelque chose à gauche, à 50 à 75 cm d'elle, d'après l'audit), puis lancer l'ordre « rentre à la base » avec ton accord.
+1. **L'accostage** : enlever l'objet qui se tient devant la base, à 40 cm d'elle et à peine à gauche de son axe (le capteur le voit, c'est là que le robot touche à chaque fois), puis réessayer l'ordre « rentre à la base » avec ton accord.
 2. **Lire l'audit ensemble** : la session « regard neuf » a rendu sa note (`notes/I_audit_regard_neuf.md`). Ses premières conclusions : le robot n'avance que 17 % du temps ; c'est la carte des repères qu'il faut rendre cohérente ; le gyroscope est monté penché et le cerveau n'en lit qu'un axe.
 3. **Le seuil de la cuisine dans le sens difficile** : vers la cuisine, essayer plus vite que 60 mm/s, ou de biais. Et chercher pourquoi le calcul de position dérive de 30 cm dans le couloir mené au centrage.
 4. **Passages étroits plus rapides** : le centrage automatique marche sur le robot (passage de la cuisine), mais il s'arrête tous les 20 à 40 cm. L'audit propose de lire les distances de côté en roulant, ce qui demande un petit changement de montage.
@@ -80,7 +80,7 @@ Le gain vient surtout du vrai chemin de la pièce centrale, de la méthode pour 
 
 ## Ce dont j'ai besoin de toi
 
-- **Poser le robot sur sa base**, ou me dire de lancer l'accostage : il est devant elle, en D16, et ne charge pas.
+- **Enlever ce qui est devant la base**, à 40 cm d'elle, légèrement à gauche quand on la regarde : un objet d'une dizaine de centimètres de large. Et fixer la batterie portable au ruban : le cerveau s'est éteint un instant quand tu as porté le robot.
 - **Avant une séance qui part de la base** : rebrancher le cerveau s'il est débranché, et tirer le robot de sa base à la main (posé dessus, il refuse de rouler).
 - **Dégager le devant de la base** : rien à moins de 50 cm de chaque côté de son axe, sur 1,2 m.
 - **Trois réponses courtes, quand tu veux** :

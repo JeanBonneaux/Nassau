@@ -1,0 +1,34 @@
+# exploration25_20261114_164147 — carte 192.168.18.25 — début 16:41:47.868 le 2026-11-14
+# firmware v11 : accostage par l'ordre du robot (touche h), avec l'accord de l'utilisateur, depuis D16 face a la base
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794692507.982	16:41:47.982	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794692507.982	16:41:47.982	Client TCP connecté : 192.168.18.6
+1794692508.916	16:41:48.916	>> j
+1794692508.944	16:41:48.944	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794692514.622	16:41:54.622	Impulsion BRC envoyée.
+1794692514.622	16:41:54.622	Le robot envoie du texte : il vient de démarrer ou de se réveiller (fois numéro 1). Pour reprendre la main : s, puis f.
+1794692518.174	16:41:58.174	  texte du robot : key-wakeup-any slept for 0 minutes 14 seconds 2020-05-13-1928-L r3-robot/branches/aero-sup
+1794692518.174	16:41:58.174	  texte du robot : port:7587 CLEAN wifi-version: 3.5.62 bootloader id: 80B5 0114 4033 358
+1794692518.914	16:41:58.913	Envoyé : Start (128) -> Passive
+1794692521.010	16:42:01.010	Envoyé : Safe (131)
+1794692522.544	16:42:02.543	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1794692525.906	16:42:05.906	Mouvement 264 : rotation de -19.7°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794692526.813	16:42:06.813	Mouvement 264 : rotation de -18.8° pour -19.7° demandés, angle atteint. Roues arrêtées.
+1794692529.424	16:42:09.423	Mouvement 265 : rotation de +10.8°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794692529.973	16:42:09.973	Mouvement 265 : rotation de 9.6° pour 10.8° demandés, angle atteint. Roues arrêtées.
+1794692532.560	16:42:12.560	Mouvement 266 : rotation de +9.3°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794692533.060	16:42:13.060	Mouvement 266 : rotation de 8.4° pour 9.3° demandés, angle atteint. Roues arrêtées.
+1794692535.622	16:42:15.621	Mouvement 267 : rotation de +9.4°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794692536.072	16:42:16.072	Mouvement 267 : rotation de 7.9° pour 9.4° demandés, angle atteint. Roues arrêtées.
+1794692538.666	16:42:18.665	Mouvement 268 : rotation de +9.9°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794692539.166	16:42:19.165	Mouvement 268 : rotation de 8.9° pour 9.9° demandés, angle atteint. Roues arrêtées.
+1794692541.729	16:42:21.728	Mouvement 269 : rotation de +9.2°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794692542.185	16:42:22.185	Mouvement 269 : rotation de 7.7° pour 9.2° demandés, angle atteint. Roues arrêtées.
+1794692544.784	16:42:24.784	Mouvement 270 : rotation de +9.8°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794692545.288	16:42:25.287	Mouvement 270 : rotation de 8.1° pour 9.8° demandés, angle atteint. Roues arrêtées.
+1794692547.897	16:42:27.897	Mouvement 271 : rotation de +9.2°, roues à 75 mm/s au plus. 5 ou espace pour arrêter.
+1794692548.333	16:42:28.333	Mouvement 271 : rotation de 7.8° pour 9.2° demandés, angle atteint. Roues arrêtées.
+1794692551.003	16:42:31.003	Vitesse réglée à 150 mm/s (page web).
+1794692756.982	16:45:56.982	>> j
+1794692757.106	16:45:57.105	## liaison TCP perdue : [WinError 10054] An existing connection was forcibly closed by the remote host
+1794692757.984	16:45:57.983	## fin de l'enregistrement après 250.1 s
