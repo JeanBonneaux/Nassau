@@ -1,0 +1,4 @@
+av=150,60 : 150 mm au cap 4.2° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 157.7 mm pour 150 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 41, sol 2436 ; robot en (752.0, 75.2), cap 4.3°, devant 774 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 775 mm
+POSE=752.0,75.2,4.3

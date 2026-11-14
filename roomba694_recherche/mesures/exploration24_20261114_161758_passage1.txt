@@ -1,0 +1,5 @@
+cap 180.0° demandé : cap 179.1°, devant 0 mm
+av=380,60 : 380 mm au cap 179.1° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 382.8 mm pour 380 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 23, sol 1626 ; robot en (724.0, 76.9), cap 180.8°, devant 0 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 0 mm
+POSE=724.0,76.9,180.8

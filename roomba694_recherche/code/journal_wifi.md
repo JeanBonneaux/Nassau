@@ -1786,3 +1786,42 @@ La roulette avant est montée sur la marche à 50 mm/s sans que le pare-chocs so
 **Bilan de la liaison sur tout l'enregistrement** (27 min, v11) : 32 221 lectures, aucun trou de plus de 250 ms (0,16 s au plus), 87 pings sans réponse sur 3 243, jusqu'à 3,3 s de retard d'arrivée des lignes, aucune ligne perdue.
 
 **État à la fin** : `s` puis `x` à 16 h 16 ; robot endormi, à plat dans l'encadrement de la porte entre la cuisine et la pièce centrale, pixel (744 ; 77), C29, tourné vers 186° ; hors de sa base, il ne charge pas ; batterie 1 784 mAh. Cerveau allumé (v11). Capteur de distance arrêté. Non fait : la marche, le retour face à la base.
+
+## 52. Le seuil de la cuisine franchi trois fois, et retour face à la base sans un contact (2026-11-14, 16 h 18 à 16 h 37)
+
+Accord de l'utilisateur, à ma question sur la batterie portable : « Rentre à la base franchi la marche tout est bon ». Enregistrement : `mesures/exploration24_20261114_161758_*` (passages `a` et `b`, sorties `_passage1.txt` à `_passage10.txt`, `_balise0.txt`). Carte hors dépôt : `plan_lidar/carte_grille_20261114_retour*.png`. Firmware v11 : 22 041 lectures en 18,4 min, aucun trou de plus de 250 ms.
+
+### Le seuil : trois franchissements
+
+| | Sens | Vitesse demandée | Ce qui s'est passé |
+|---|---|---|---|
+| 1 | vers la pièce centrale | 60 mm/s | 38 cm d'avance en 12 s, sans alarme : ni pare-chocs, ni roue levée, mode Safe tenu, moteurs à 490 mA au plus. Le robot lève le nez de 7 à 8°, puis se remet à plat |
+| 2 | vers la cuisine | 60 mm/s | aucune alarme non plus, mais le robot est resté le nez baissé de 5°, moteurs à 700 mA, sur les 39 cm demandés puis sur 16 cm de plus : son arrière était posé sur le seuil et ses roues patinaient. Un pivot sur place l'a dégagé |
+| 3 | vers la pièce centrale | 100 mm/s | 48 cm d'avance, sans alarme, moteurs à 375 mA |
+
+**Ce que c'est.** Pas un changement de niveau franc, mais un **seuil en relief sous la porte**, d'environ 17 mm, avec le sol de la cuisine un peu plus bas : en allant vers la pièce centrale les roues sont déjà sur le sol haut quand l'arrière passe, en allant vers la cuisine les roues retombent sur le sol bas et l'arrière se pose sur le seuil. C'est ce sens-là qui demande d'« insister », comme le disait l'utilisateur.
+
+**Où il est.** Les capteurs de vide du robot le voient passer comme une bande claire (3 000 à 3 700) : d'après eux il est à 141 mm de l'endroit où le robot attendait, les capteurs de devant étant à 154 mm du centre du robot et ceux de côté à 81 mm (déduit des passages 1 et 2). **Correction du § 51** : j'y plaçais le seuil « dans C28, à 9 cm de la limite C28/C29 ». C'était l'erreur de mon estime : le tour sur place fait ensuite en C28, calé sur le repère de la veille, a placé le robot 35 cm plus haut sur le plan que je ne le croyais, et les quatre tours suivants ont confirmé ce calage (corrections de 2 à 11 cm seulement). Le seuil est donc bien sous la porte, à la limite de C28 et C29, comme l'utilisateur l'avait dit ; les positions du § 51 dans le passage étroit et devant la porte sont à lire avec cette réserve (une trentaine de centimètres, surtout de travers).
+
+**Le patinage du passage 2 n'a pas été vu comme tel** : l'estime a compté 546 mm vers la cuisine alors que le robot n'en a fait qu'environ 350 (les capteurs de vide ont revu le seuil pendant le pivot). Le retrait du patinage de `carto.py` ne joue que sur une roue qui tourne plus que le gyroscope ne le dit, pas sur deux roues qui patinent ensemble.
+
+**Non essayé** : le sens difficile à plus de 60 mm/s, ou de biais.
+
+### Le retour, de C28 à D16
+
+| Tronçon | Heures | Durée | Contacts | Remarque |
+|---|---|---|---|---|
+| C28 → G26 → H23 → J20 (`explorer3.py`, passage `a`, 100 mm/s demandés, `--voies-fortes 3`) | 16 h 22 min 30 à 16 h 25 | 2,3 min | 0 | 5 tours sur place, tous calés sur leurs repères (3 contacts sur ce tronçon le matin) |
+| Couloir J20 → J12, `centre=180,3900,400,100` | 16 h 25 min 15 à 16 h 29 | 3,8 min | 0 | 12 arrêts ; 5,3 min à la main le matin |
+| Porte H12 vers le nord (`passage.py` : deux éventails, un décalage, dix regards, 35 cm d'approche, un éventail, passage au cap 100°) | 16 h 29 à 16 h 33 min 30 | 4,5 min | 0 | 3,3 min le matin |
+| G12 → E12 → D15 → D16 (passage `b`) | 16 h 33 min 45 à 16 h 35 min 30 | 1,8 min | 0 | 4 tours, calés sur 10 et 4 repères |
+
+**13 minutes de C28 à D16, aucun contact** (le matin : 15 minutes et 4 contacts sur le même chemin). Sur tout l'après-midi depuis l'installation de la v11 : 37 m, 30 tours sur place, 2 contacts légers, tous deux dans la cuisine.
+
+**Devant la porte H12, l'estime était fausse de 28 à 32 cm** (le robot plus à droite sur le plan que son calcul) après le couloir mené par `centre=` : 318 mm de saut au premier tour calé en G12. Le matin, 14 cm au même endroit après le couloir mené à la main. Vu de la même façon les deux fois : une paroi droit devant à 67 cm, l'ouverture sur la gauche. Cause non cherchée ; `centre=` fait un tour complet de rotations à chaque arrêt (douze ici), et l'audit a montré que l'échelle du gyroscope n'est pas la même dans les deux sens (note I).
+
+**Arrivée** (`balise_base.py`) : la base est vue par les récepteurs de devant autour du cap 75° du plan ; son axe est à 44 mm à droite du centre du robot, le « couloir » rouge et vert fait 66 mm de large à cet endroit ; 67 cm de vide au capteur de distance dans cette direction.
+
+**Non fait** : l'accostage (l'ordre « rentre à la base » du robot demande l'accord de l'utilisateur à chaque fois ; demandé).
+
+**État à la fin** : `s` puis `x` à 16 h 36 min 40 ; robot endormi en D16, pixel (401 ; 84), tourné vers 70°, à un mètre de sa base, pas posé dessus : il ne charge pas ; batterie 1 725 mAh sur 2 068. Cerveau allumé (v11). Capteur de distance arrêté.
