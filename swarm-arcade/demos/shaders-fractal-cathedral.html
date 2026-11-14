@@ -135,11 +135,11 @@ void main(){
     float lamp = clamp(dot(n, toEye / tl), 0.0, 1.0) / (1.0 + 0.15 * tHit * tHit);  // warm light at the camera
 
     float mixK = 0.5 + 0.5 * sin(dot(pos, vec3(0.7, 1.3, 0.9)));
-    vec3 base = mix(uCool, uWarm, 0.35 + 0.65 * mixK) * 0.85;
+    vec3 base = mix(uCool, uWarm, 0.15 + 0.7 * mixK) * 0.9;
     float blk = hash3(floor(pos * 0.5));
     base *= mix(vec3(1.0), 0.5 + 0.5 * cos(6.2831 * (uHue + blk)), 0.12);  // per-block tint
 
-    vec3 lit = uWarm * dif * 1.6 + uCool * fil * 0.18 + uWarm * lamp * 0.7 + uCool * 0.01;
+    vec3 lit = uWarm * dif * 1.5 + uCool * fil * 0.55 + uWarm * lamp * 0.6 + uCool * 0.05;
     c = base * lit * (0.03 + 0.97 * ao);
 
     float fogK = exp(-tHit * 0.08);

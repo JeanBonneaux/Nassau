@@ -29,7 +29,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
   const COLS = PREVIEW ? 36 : 64, ROWS = PREVIEW ? 22 : 40, N = COLS * ROWS;
   const ITER = PREVIEW ? 3 : 5;
   const GRAD = 8, SHADES = 16, MAXC = N * 4;
-  const G = 0.22, DAMP = 0.995, GHOST_K = 1.1, GRAB_R = 40, CUT_R = 22, TOP = 92;
+  const G = 0.22, DAMP = 0.995, GHOST_K = 2.2, GRAB_R = 40, CUT_R = 22, TOP = 92;
 
   const X = new Float32Array(N), Y = new Float32Array(N);
   const PX = new Float32Array(N), PY = new Float32Array(N);
@@ -53,21 +53,18 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
     return [255 + (61 - 255) * t, 61 + (231 - 61) * t, 154 + (255 - 154) * t].map((v) => Math.round(v));
   };
   const FILLS = new Array(GRAD * SHADES);
-  const LG = [], LC = [], LD = [];
+  
   for (let g = 0; g < GRAD; g++) {
     const c = col(g);
     for (let s = 0; s < SHADES; s++) {
       const sh = (s / (SHADES - 1)) * 1.25, m = Math.min(sh, 1), ex = Math.max(0, sh - 1) * 200;
       FILLS[g * SHADES + s] = `rgb(${Math.min(255, c[0] * m + ex) | 0},${Math.min(255, c[1] * m + ex) | 0},${Math.min(255, c[2] * m + ex) | 0})`;
     }
-    LG[g] = `rgba(${c[0]},${c[1]},${c[2]},0.10)`;
-    LC[g] = `rgba(${c[0]},${c[1]},${c[2]},0.55)`;
-    LD[g] = `rgba(${c[0]},${c[1]},${c[2]},0.20)`;
   }
 
   // ---- build topology ----
   function build() {
-    for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) PIN[j * COLS + i] = (j === 0 && i % 4 === 0) ? 1 : 0;
+    for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) PIN[j * COLS + i] = (j === 0 && (i % 9 === 0 || i === COLS - 1)) ? 1 : 0;
     NC = 0;
     const add = (a, b, r, kind) => {
       CA[NC] = a; CB[NC] = b; CR[NC] = r; CK[NC] = kind; CL[NC] = 1;
@@ -90,7 +87,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
 
   // ---- layout (recomputed on resize, cloth mapped by uniform scale) ----
   let W = 0, H = 0, dpr = 1, ox = 0, oy = TOP, sp = 10, clothW = 0, clothH = 0;
-  let railG = null, inited = false;
+  let railG = null, lineG = null, inited = false;
   function layout() {
     W = innerWidth; H = innerHeight;
     dpr = PREVIEW ? 1 : Math.min(2, window.devicePixelRatio || 1);
@@ -112,6 +109,8 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
     clothW = sp * (COLS - 1); clothH = sp * (ROWS - 1);
     railG = ctx.createLinearGradient(ox, 0, ox + clothW, 0);
     railG.addColorStop(0, '#ff3d9a'); railG.addColorStop(1, '#3de7ff');
+    lineG = ctx.createLinearGradient(ox, 0, ox + clothW, 0);
+    lineG.addColorStop(0, 'rgba(255,120,190,0.30)'); lineG.addColorStop(1, 'rgba(120,240,255,0.30)');
     inited = true;
   }
 
@@ -158,7 +157,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
 
     for (let j = 0; j < ROWS; j++) {
       const rowF = 0.35 + 0.65 * (j / (ROWS - 1));
-      const W0 = 0.17 * rowF;
+      const W0 = 0.62 * rowF;
       for (let i = 0; i < COLS; i++) {
         const q = j * COLS + i;
         if (PIN[q]) { X[q] = RX[q]; Y[q] = RY[q]; PX[q] = X[q]; PY[q] = Y[q]; continue; }
@@ -180,7 +179,7 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
         // gust sweep
         if (gAmp > 0) {
           const gx = x - gustX, e = Math.exp(-(gx * gx) / gsig2) * gAmp;
-          ax += e * 0.9; ay -= e * 0.45;
+          ax += e * 1.6; ay -= e * 0.9;
         }
         const nx = x + (x - PX[q]) * DAMP + ax * s2;
         const ny = y + (y - PY[q]) * DAMP + ay * s2;
@@ -265,22 +264,13 @@ canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-actio
 
     // additive glow lines along constraints
     ctx.globalCompositeOperation = 'lighter';
-    for (let g = 0; g < GRAD; g++) {
-      ctx.beginPath();
-      for (let c = 0; c < NC; c++) {
-        if (!CL[c] || CK[c] !== 0 || CG[c] !== g) continue;
-        const a = CA[c], b = CB[c];
-        ctx.moveTo(X[a], Y[a]); ctx.lineTo(X[b], Y[b]);
-      }
-      ctx.strokeStyle = LC[g]; ctx.lineWidth = 1; ctx.stroke();
-    }
     ctx.beginPath();
     for (let c = 0; c < NC; c++) {
-      if (!CL[c] || CK[c] !== 1) continue;
+      if (!CL[c] || CK[c] !== 0) continue;
       const a = CA[c], b = CB[c];
       ctx.moveTo(X[a], Y[a]); ctx.lineTo(X[b], Y[b]);
     }
-    ctx.strokeStyle = 'rgba(160,190,255,0.16)'; ctx.lineWidth = 0.7; ctx.stroke();
+    ctx.strokeStyle = lineG; ctx.lineWidth = 0.8; ctx.stroke();
 
     // rail with the only shadowBlur in the scene
     ctx.globalCompositeOperation = 'source-over';
