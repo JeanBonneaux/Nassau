@@ -118,7 +118,7 @@ void main(){
       if (i >= uSteps) break;
       vec3 pos = ro + rd * t;
       float d = DE(pos);
-      float eps = 0.0012 * t;
+      float eps = (uSteps < 50 ? 0.0028 : 0.0012) * t;   // looser hit test when the step budget is small (preview)
       glow += 0.006 / (1.0 + d * d * 50.0);
       if (d < eps){ hit = 1.0; tHit = t; trapHit = gTrap; break; }
       t += d * 0.9;
