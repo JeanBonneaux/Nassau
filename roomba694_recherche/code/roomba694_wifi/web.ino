@@ -8,6 +8,7 @@
 //          /api/cmd?c=X envoie la touche X (mêmes touches que la console série)
 //          /api/speed?v=N  vitesse des flèches, 50 à SPEED_MM_S mm/s
 //          /api/log?since=N  dernières lignes de la console (journal en mémoire, voir TeeOut)
+//          /api/texte?depuis=N  v13 : texte écrit par le robot de lui-même, en entier, daté par la carte (voir handleTexte)
 //          /api/scan    réseaux Wi-Fi à portée (lance une recherche, puis renvoie la liste)
 //          /api/radar   radar à ultrasons (radar.ino) : état et carte polaire en JSON ; paramètres facultatifs : mode=off|fixe|balayage,
 //                       angle=-80..80, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..80, ech=1..3, inv=0|1, effacer=1,
@@ -80,10 +81,10 @@ void handleRoot() { http.send_P(200, "text/html; charset=utf-8", PAGE_INDEX); }
 void handleState() {
   loadSavedSsid();
   String j;
-  j.reserve(2400);
+  j.reserve(2700);   // v13 : 2400 + la dernière ligne « bat: »
   char b[800];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v12 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
+    "{\"ms\":%lu,\"ver\":\"v13 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u,\"wall\":%u,\"cur\":[%d,%d],\"base\":%s},"
@@ -113,6 +114,10 @@ void handleState() {
   j += ",\"perdus\":"; j += (unsigned long)consPerdus; j += "},";
   j += "\"bauds19200\":"; j += (unsigned long)baudRescues; j += ',';   // retours du robot de 19200 à 115200 bauds depuis le démarrage
   j += "\"robot_redem\":"; j += (unsigned long)robotBoots; j += ',';   // redémarrages du robot vus (texte de démarrage reçu)
+  // v13 : texte écrit par le robot (mémoire tournante lue par /api/texte) et dernière ligne « bat: » reçue (âge en ms, -1 = aucune)
+  long batAge = batLignes ? (long)(millis() - batMs) : -1L;
+  j += "\"texte\":{\"pos\":"; j += (unsigned long)txtPos; j += ",\"lignes\":"; j += (unsigned long)txtLignes; j += "},";
+  j += "\"bat\":{\"n\":"; j += (unsigned long)batLignes; j += ",\"age\":"; j += batAge; j += ",\"ligne\":"; jsonStr(j, batLigne); j += "},";
   j += "\"ap\":{\"ssid\":"; jsonStr(j, AP_SSID);
   j += ",\"ip\":\""; j += WiFi.softAPIP().toString(); j += "\",\"clients\":"; j += (int)WiFi.softAPgetStationNum(); j += "},";
   j += "\"rst\":"; jsonStr(j, resetReasonText()); j += ',';
@@ -161,6 +166,24 @@ void handleLog() {
   for (uint32_t i = start; i < end; i++) { if (i > start) j += ','; jsonStr(j, logBuf[i % LOG_LINES]); }
   j += "]}";
   http.send(200, "application/json", j);
+}
+
+// v13 : texte écrit par le robot de lui-même (réveil, charge, redémarrage...), gardé en entier par sniffByte().
+// /api/texte?depuis=N renvoie du texte brut : une première ligne « pos P depuis D ms M », puis les caractères de la
+// mémoire tournante de la position D à la position P. Chaque ligne du robot y est précédée de l'heure de la carte en
+// millisecondes et d'une tabulation. L'outil qui lit redemande ensuite depuis=P ; si P a diminué, la carte a redémarré.
+// Lecture seule : rien n'est envoyé au robot.
+void handleTexte() {
+  uint32_t depuis = http.hasArg("depuis") ? strtoul(http.arg("depuis").c_str(), nullptr, 10) : 0;
+  uint32_t fin = txtPos;
+  uint32_t debut = (fin > TXT_RING) ? fin - TXT_RING : 0;   // le plus ancien caractère encore en mémoire
+  if (depuis > debut) debut = depuis;
+  if (debut > fin) debut = fin;
+  String r;
+  r.reserve((fin - debut) + 64);
+  r += "pos "; r += (unsigned long)fin; r += " depuis "; r += (unsigned long)debut; r += " ms "; r += (unsigned long)millis(); r += '\n';
+  for (uint32_t i = debut; i < fin; i++) r += txtRing[i % TXT_RING];
+  http.send(200, "text/plain; charset=utf-8", r);
 }
 
 // Réseaux à portée : la première requête lance une recherche (asynchrone, 2 à 3 s), les suivantes renvoient la liste

@@ -1,5 +1,14 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 13 — 2026-11-14 (nuit) : le texte que le robot écrit de lui-même est gardé en entier (sondage 10 de la revue,
+    choisi par l'utilisateur : « J'aime bien le 10 »). Une seule retouche, en lecture : aucun ordre nouveau vers le robot,
+    rien de changé à la conduite ni aux sécurités.
+    Jusqu'à la v12 le cerveau n'affichait que les 160 premiers caractères d'un texte, sans ses retours à la ligne, et
+    seulement sur la console. Désormais chaque ligne reçue est gardée entière, avec l'heure de la carte, dans une
+    mémoire tournante de 4 ko : /api/texte?depuis=N la renvoie (web.ino) et la console l'affiche ligne par ligne.
+    Les lignes « bat: » que le robot envoie chaque seconde quand il charge ne remplissent pas cette mémoire : la
+    dernière est gardée à part (« bat » dans /api/state) ; une ligne n'est rangée que si son champ « state » ou
+    « mode » change, ou une fois par minute.
   Version 12 — 2026-11-14 (soir) : corrections demandées par l'utilisateur après la revue du jour (notes/J_revue_localisation.md).
     Sept retouches indépendantes ; aucune ne change la conduite du robot ni une sécurité existante.
     (1) Le cap du gyroscope est cumulé dans un nombre à 53 bits (double) propre à sa tâche ; imu.yawDeg n'en est plus que
@@ -414,19 +423,72 @@ void writeI16(int16_t v) {
 // s'arrête (sniffTick). Les suites plus courtes sont ignorées : des octets binaires ressemblent parfois à des lettres.
 constexpr uint8_t TEXT_RUN_MIN = 12;
 uint32_t robotBoots = 0;          // démarrages ou réveils du robot vus depuis le démarrage de la carte
-char     robotText[161];          // début du texte reçu
-size_t   robotTextLen = 0;
 char     runBuf[TEXT_RUN_MIN];    // caractères de la suite en cours, tant qu'elle est trop courte pour compter
 uint8_t  textRun = 0;             // longueur de la suite en cours (plafonnée à TEXT_RUN_MIN)
 bool     textActive = false;      // un texte est en cours de réception
 bool     textAnnounce = false;    // démarrage vu, pas encore signalé sur la console
 uint32_t textLastMs = 0;
 
-void textAppend(char c) {
-  if (c == '\r' || c == '\n') c = ' ';
-  if (robotTextLen >= sizeof(robotText) - 1) return;
-  if (c == ' ' && (robotTextLen == 0 || robotText[robotTextLen - 1] == ' ')) return;
-  robotText[robotTextLen++] = c;
+// v13 : le texte du robot est gardé en entier. Chaque ligne terminée est rangée dans une mémoire tournante, précédée
+// de l'heure de la carte (millisecondes depuis son démarrage) et d'une tabulation, et suivie d'un retour à la ligne.
+// /api/texte la renvoie (web.ino) ; la console l'affiche ligne par ligne (sniffTick). Tout se passe dans la boucle
+// principale : aucune autre tâche ne touche à ces variables.
+constexpr size_t TXT_RING = 4096;
+char     txtRing[TXT_RING];
+uint32_t txtPos = 0;              // caractères rangés depuis le démarrage de la carte : la position « absolue »
+uint32_t txtLignes = 0;           // lignes rangées depuis le démarrage de la carte
+uint32_t txtConsPos = 0;          // jusqu'où la console a déjà affiché cette mémoire
+char     ligneBuf[241];           // ligne en cours de réception
+size_t   ligneLen = 0;
+uint32_t ligneMs = 0;             // heure de son premier caractère
+// Lignes « bat: » : le robot en envoie une par seconde quand il charge, liaison fermée (vu le 2026-11-10). La dernière
+// est gardée à part ; elle n'est rangée dans la mémoire tournante que si « state » ou « mode » change, ou une fois par minute.
+char     batLigne[121] = "";
+uint32_t batMs = 0;               // heure de la dernière ligne « bat: »
+uint32_t batLignes = 0;           // nombre reçu depuis le démarrage de la carte
+uint32_t batRangeeMs = 0;         // heure de la dernière qui a été rangée
+bool     batRangee = false;       // au moins une a été rangée
+int      batState = -1, batMode = -1;
+
+void txtPut(char c) { txtRing[txtPos % TXT_RING] = c; txtPos++; }
+
+// Nombre entier qui suit un mot dans une ligne « bat: » (« state 18 » -> 18) ; -1 si le mot n'y est pas
+int batChamp(const char* ligne, const char* mot) {
+  const char* p = strstr(ligne, mot);
+  return p ? atoi(p + strlen(mot)) : -1;
+}
+
+// Range la ligne en cours (si elle n'est pas vide) dans la mémoire tournante
+void ligneRange() {
+  if (ligneLen == 0) return;
+  ligneBuf[ligneLen] = 0;
+  ligneLen = 0;
+  if (strncmp(ligneBuf, "bat:", 4) == 0) {
+    strncpy(batLigne, ligneBuf, sizeof(batLigne) - 1);
+    batLigne[sizeof(batLigne) - 1] = 0;
+    batMs = ligneMs;
+    batLignes++;
+    int s = batChamp(ligneBuf, " state "), m = batChamp(ligneBuf, " mode ");
+    bool change = (s != batState) || (m != batMode);
+    batState = s;
+    batMode = m;
+    if (!change && batRangee && ligneMs - batRangeeMs < 60000UL) return;   // rien de neuf depuis moins d'une minute
+    batRangee = true;
+    batRangeeMs = ligneMs;
+  }
+  char t[14];
+  int n = snprintf(t, sizeof(t), "%lu\t", (unsigned long)ligneMs);
+  for (int i = 0; i < n; i++) txtPut(t[i]);
+  for (const char* p = ligneBuf; *p; p++) txtPut(*p);
+  txtPut('\n');
+  txtLignes++;
+}
+
+void ligneAppend(char c) {
+  if (c == '\r' || c == '\n') { ligneRange(); return; }
+  if (ligneLen >= sizeof(ligneBuf) - 1) ligneRange();   // ligne plus longue que la place prévue : coupée ici
+  if (ligneLen == 0) ligneMs = millis();
+  ligneBuf[ligneLen++] = c;
 }
 
 void sniffByte(uint8_t c) {
@@ -435,16 +497,17 @@ void sniffByte(uint8_t c) {
   if (textRun < TEXT_RUN_MIN) {
     runBuf[textRun++] = (char)c;
     if (textRun < TEXT_RUN_MIN) return;                // suite encore trop courte pour compter
-    if (!textActive) { textActive = true; textAnnounce = true; robotBoots++; robotTextLen = 0; }
-    else textAppend(' ');
-    for (uint8_t i = 0; i < TEXT_RUN_MIN; i++) textAppend(runBuf[i]);
+    if (!textActive) { textActive = true; textAnnounce = true; robotBoots++; }
+    else { ligneAppend(' '); ligneAppend('~'); ligneAppend(' '); }   // v13 : « ~ » marque l'endroit où des octets binaires ont coupé le texte
+    for (uint8_t i = 0; i < TEXT_RUN_MIN; i++) ligneAppend(runBuf[i]);
   } else {
-    textAppend((char)c);
+    ligneAppend((char)c);
   }
   textLastMs = millis();
 }
 
-// Appelée par la boucle principale : signale le démarrage du robot, puis affiche le texte reçu 2 s après son dernier caractère.
+// Appelée par la boucle principale : signale le démarrage du robot, range la dernière ligne 2 s après son dernier
+// caractère, et affiche sur la console les lignes rangées.
 void sniffTick();
 
 void flushInput() { while (robot.available()) sniffByte((uint8_t)robot.read()); }
@@ -875,8 +938,9 @@ void pollTick() {
   pollSend(useSplitGroups ? 6 : 100);
 }
 
-// Appelée par la boucle principale : signale un démarrage du robot vu par sniffByte(), puis affiche le début du
-// texte reçu 2 s après son dernier caractère.
+// Appelée par la boucle principale : signale un démarrage du robot vu par sniffByte(), range la dernière ligne du
+// texte 2 s après son dernier caractère, puis affiche les lignes rangées (v13 : en entier ; avant, les 160 premiers
+// caractères seulement).
 void sniffTick() {
   if (textAnnounce) {
     textAnnounce = false;
@@ -884,10 +948,24 @@ void sniffTick() {
                (unsigned long)robotBoots);
   }
   if (textActive && millis() - textLastMs > 2000) {
-    robotText[robotTextLen] = 0;
-    for (size_t i = 0; i < robotTextLen; i += 90) out.printf("  texte du robot : %.90s\n", robotText + i);
+    ligneRange();                 // v13 : la dernière ligne, même si le robot ne l'a pas terminée par un retour à la ligne
     textActive = false;
-    robotTextLen = 0;
+    textRun = 0;                  // v13 : le texte suivant est un nouveau texte, annoncé et compté. Avant, sans octet binaire
+                                  // entre les deux, il passait sans annonce et n'était jamais affiché.
+  }
+  // v13 : une ligne rangée par passage est affichée en entier sur la console (l'heure de la carte, puis le texte)
+  if (txtConsPos != txtPos) {
+    if (txtPos - txtConsPos > TXT_RING) txtConsPos = txtPos - TXT_RING;   // en retard de plus d'un tour : le plus ancien est perdu
+    char b[260];
+    size_t n = 0;
+    while (txtConsPos != txtPos && n < sizeof(b) - 1) {
+      char c = txtRing[txtConsPos % TXT_RING];
+      txtConsPos++;
+      if (c == '\n') break;
+      b[n++] = (c == '\t') ? ' ' : c;
+    }
+    b[n] = 0;
+    if (n) out.printf("  texte du robot : %s\n", b);
   }
 }
 
@@ -1093,16 +1171,20 @@ void printInfo() {
              st.ok ? "joignable" : "sans réponse", (unsigned long)(millis() - st.lastOkMs),
              useSplitGroups ? "lecture par les groupes 6 et 101" : "lecture par le groupe 100",
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
-  out.printf("Firmware roomba694_wifi v12, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
+  out.printf("Firmware roomba694_wifi v13, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
              __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
   out.printf("Depuis le démarrage de la carte : robot vu redémarrer %lu fois ; retrouvé à 19200 bauds et ramené à 115200 : %lu fois.\n",
              (unsigned long)robotBoots, (unsigned long)baudRescues);
+  out.printf("Texte écrit par le robot : %lu ligne(s) gardée(s) (/api/texte) ; lignes « bat: » reçues : %lu",   // v13
+             (unsigned long)txtLignes, (unsigned long)batLignes);
+  if (batLignes) out.printf(", la dernière il y a %lu s : %s", (unsigned long)((millis() - batMs) / 1000), batLigne);
+  out.println();
   posePrint();
 }
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v12 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v13 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"
@@ -1261,6 +1343,7 @@ void setupWifi() {
   http.on("/api/cmd", HTTP_GET, handleCmd);
   http.on("/api/speed", HTTP_GET, handleSpeed);
   http.on("/api/log", HTTP_GET, handleLog);
+  http.on("/api/texte", HTTP_GET, handleTexte);   // v13 : texte écrit par le robot, en entier (web.ino)
   http.on("/api/scan", HTTP_GET, handleScan);
   http.on("/api/radar", HTTP_GET, handleRadar);
   http.on("/api/tour", HTTP_GET, handleTour);
