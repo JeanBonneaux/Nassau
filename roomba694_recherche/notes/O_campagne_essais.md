@@ -15,6 +15,7 @@ Cette note est le plan de travail. Elle est tenue à jour : chaque essai y reço
 5. **Les ordres inconnus du robot sont permis depuis le 15 à 10 h 50** : à ma question « est-ce que j'essaie aussi des ordres inconnus ? », posée après lui avoir redit le risque, l'utilisateur a répondu « Oui, essaie ». Marche à suivre et garde-fous dans la note L § 4.7 ; c'est l'essai 7.
 6. **La trouvaille du 15 à 11 h 30 : le capteur de distance n'est pas où les outils de carte le comptent** (§ 5.6). Ils le placent 27 mm en avant du centre du robot ; l'approche du mur de l'essai 4 montre qu'il est à plus de 86 mm, et la photo du robot le montre vers 125 mm. Si la règle le confirme, chaque écho est placé 9 cm trop près du robot depuis le 10. C'est la première erreur systématique trouvée dans la mesure elle-même, et non dans le calcul. À midi une seconde est apparue, liée à la première : l'échelle du plan (53 pixels par mètre) avait été réglée le 10 avec le capteur mal placé, et vaudrait plutôt 51 (§ 5.10). Les deux se compenseraient dans une pièce. Mais un rejeu fait à 12 h 25 montre qu'elles n'expliquent pas le décalage de 25 à 50 cm entre la pièce de la base et sa voisine.
 7. **L'explication de ces décalages, trouvée par la session de navigation à 12 h 26 et confirmée par le gyroscope : le cap retenu était faux de 10 à 22° depuis 9 h 55** (§ 5.11). Il avait été repris au filtre après des patinages. Le gyroscope, lui, a tenu 1° en deux heures et demie. L'axe de la base « incliné de 10,6° » n'était que cela.
+8. **Le résultat de la grande boucle (§ 5.14) : 45 m, six pièces, 79 minutes, et le robot revient à 27 mm de son point de départ ; la position tenue par la session de navigation s'y retrouve à 2 à 5 cm, l'estime seule à 60 ou 70 cm.** Avec un cap juste, la méthode tient donc 5 cm. Le gyroscope tient 1° sur des heures de sol plat mais perd 5° quand le robot se bat sur une marche. L'échelle du plan serait fausse de 2,5 %.
 
 ## 1. Les essais courts, dans l'ordre
 
@@ -346,3 +347,34 @@ Pendant le retour de la grande boucle, dans la pièce du bas à droite (`explora
 Les parois de la cuisine penchent pour la seconde : dans le repère de la navigation, les deux paliers les plus larges tombent à 86° (48° de large) et à 92° (58° de large), 89° en moyenne pour 90° attendus ; avec le gyroscope ils seraient attendus vers 95°. Mais une direction de paroi ne se lit qu'à 3° près, et le gyroscope a traversé sans dommage une douzaine de montées de tapis ce matin. **Non tranché** : les deux murs du couloir, au retour, le diront à 1° près.
 
 **Ce que cela change au § 5.11.** La règle « le gyroscope est le témoin du cap » vaut sur sol plat. Après un seuil ou un bord pris en force, le cap se reprend sur des parois franches avant de continuer.
+
+### 5.14 La grande boucle (12 h 17 à 13 h 36) : le résultat
+
+**Le parcours**, mené par la session de navigation, enregistré en trois morceaux (`exploration33`, `34`, `35`) : point P devant la base → pièce du tapis → porte H12 → couloir → porte K23 → pièce du bas à droite (jamais vue) → retour → pièce centrale → seuil → cuisine jusqu'au coin C38 → retour par le seuil, le couloir et H12 → P. 79 minutes, environ 45 m de parcours (54,8 m comptés par les roues, manœuvres et patinages compris), 31 tours sur place, 104 tours de rotation cumulée. Dépouillement : `rv_boucle.py`, `rv_boucle_trajets.py`, `rv_cap_chaine.py` ; résultats dans `results_rv_boucle_exploration33_1217_1336.txt`, `results_rv_boucle_trajets_exploration33_exploration34_exploration35.txt` et `results_rv_cap_chaine_20261115.txt`.
+
+**Mesuré.**
+
+- **Le retour au point de départ.** Les deux tours faits en P (12:17:23 et 13:36:10), comparés paroi par paroi (6 parois communes, 9 mm de reste) : le robot est revenu à **27 mm** de son point de départ. Cette mesure ne dépend ni du plan ni de la place du capteur de distance.
+- **Ce que chacun croyait de ce même retour.**
+
+| Façon de se situer | Erreur à l'arrivée |
+|---|---|
+| positions tenues par la session de navigation (filtre aux stations, passages au capteur, cap pris sur les murs) | **18 mm** ; 50 mm avant la correction du dernier tour |
+| estime seule, roues et gyroscope, patinage retiré | 58 à 74 cm, soit 1,1 à 1,3 % du chemin |
+| compteur du cerveau tel quel | 4,2 m |
+
+- **L'axe de la base à l'arrivée** : la session de navigation le retrouve à u = 404,5 dans son repère, pour 405 sur le plan.
+- **Le cap.** Entre les deux passages dans le couloir (12:26:36 et 13:27:52), où le cap est aligné sur les deux murs à 1,5° près, le gyroscope enchaîné a perdu 4,7°. Tout se perd pendant les essais manqués sur le seuil de la cuisine (+4,4° entre les tours de 12:52 et 13:00) ; rien au retour, où le seuil passe sans forcer. **Le § 5.13 est tranché : c'est le gyroscope qui compte mal quand le robot se bat sur une marche.** (La comparaison des deux tours de P donne 5,1° ± 1,6, mais le centre d'un palier bouge de plusieurs degrés quand un objet de la pièce a changé : je ne m'en sers pas pour le cap.)
+- **L'échelle du plan.** Sur les 12 trajets propres de la boucle (aucun patinage, roues qui ne forcent pas, note du filtre de 0,7 ou plus aux deux bouts), la correction va contre le trajet : −2,4 % (± 1,1) d'est en ouest sur 14 m, −2,8 % (± 1,0) du nord au sud sur 6 m. Les 210 trajets des 10, 13 et 14 donnaient −3,4 % (± 0,7). Deux jeux de données, le même sens : le plan vaudrait 51,5 à 51,8 pixels par mètre et non 53.
+- **Les incidents** : une chute du mode Safe (§ 5.12) ; le seuil (§ 5.13) ; cinq contacts légers, tous contre des choses basses ou minces que ni le capteur de distance ni les capteurs optiques n'ont vues (un meuble bas, une poubelle, un objet apparu dans la pièce centrale entre l'aller et le retour).
+- **Les endroits où le filtre se perd** : le milieu du couloir (notes −0,36 à l'aller, −0,24 au retour, 30 cm d'erreur : deux murs parallèles ne disent rien de la position le long du couloir), l'entrée de la cuisine (−0,09), l'entrée de la pièce du bas à droite (0,34 et 0,44). La session de navigation y a gardé l'estime, à raison.
+
+**Ce que cela dit.**
+
+1. **Avec un cap juste, la méthode tient 5 cm sur 45 m et six pièces.** C'est la réponse à « augmentons nos capacités de localisation précise » : le filtre aux stations où sa note est bonne, l'estime là où elle est mauvaise, les passages étroits au capteur de distance, le cap repris sur des murs francs.
+2. **C'est le cap qui commande tout.** Dix degrés d'erreur faisaient 35 cm tous les 2 m (§ 5.11) ; le même robot, cap corrigé, ferme la boucle à 5 cm.
+3. **L'estime seule vaut 1 % du chemin** : bonne d'une station à la suivante, pas sur une boucle.
+4. **Le gyroscope tient 1° sur des heures de sol plat et perd 5° en une minute de lutte sur une marche.** Après un seuil pris en force, le cap se reprend sur des murs.
+5. **L'échelle du plan est sans doute fausse de 2,5 %** : à confirmer au mètre, puis à corriger avec la place du capteur, après rejeu (§ 5.10).
+
+**Ce qui reste.** Les mesures à la règle et au mètre de l'utilisateur (essais 8 et 9, largeur du couloir ou d'une porte) ; les essais 6 et 7 ; trois idées pour le firmware, à décider avec lui : un arrêt sur le capteur optique centre gauche (§ 5.5), un arrêt quand les roues tournent sans que le capteur de distance bouge (seuil, § 5.13), les quatre indicateurs « vide » du robot dans le journal.

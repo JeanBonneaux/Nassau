@@ -1,0 +1,31 @@
+# heure <tab> importance (1 à 3) <tab> événement — suivi en direct
+12:34:00.704	2	je suis la séance exploration33_20261115_121629
+12:34:00.704	1	rattrapage : 20561 lignes et 9 stations déjà écrites ont été relues sans rien redire
+12:35:04.001	1	avance de 484 mm à 57 mm/s vers une cible à 2546 mm : le capteur de distance voit 1.020 mm par mm compté (écart 7 mm)
+12:35:23.604	2	station 0 : 7 paliers ; le filtre a corrigé la position de 254 mm et -0.2° après 0.8 m (321 mm par mètre) ; note 0.44, étalement 559 mm ; aucun repère ici ; À REGARDER : forte correction, note basse, ou filtre et repères en désaccord
+12:35:25.175	1	tour de la station 0 : terminé, 380° en 13.7 s, 122 mesures ; pas de paroi nette pour vérifier la fermeture
+12:35:25.175	3	SAUT DE POSITION à la station 0 (12:35:23) : la position retenue est à 254 mm de ce que donnent les roues et le gyroscope depuis le tour précédent (2.1 m de chemin) ; écart (+242, +75) mm ; filtre ou repères à vérifier
+12:35:27.870	2	explorateur : [  0.4 min]     arrêté : avance refusée : obstacle à 356 mm devant (marge 400.0 mm) ; robot en (11886, 2828)
+12:35:27.870	2	explorateur : [  0.4 min]   vers la cible (617, 288) du plan : 1 étapes (essai 2, en contournant l'obstacle)
+12:35:27.870	2	explorateur : [  0.4 min]     arrêté : avance refusée : obstacle à 356 mm devant (marge 400.0 mm) ; robot en (11886, 2828)
+12:35:27.870	2	explorateur : [  0.4 min]   vers la cible (617, 288) du plan : 1 étapes (essai 3, en contournant l'obstacle)
+12:35:27.870	2	explorateur : [  0.4 min]     arrêté : avance refusée : obstacle à 356 mm devant (marge 400.0 mm) ; robot en (11886, 2828)
+12:35:28.411	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 4 sauts, 3 trajets arrêtés, 3 obstacles touchés ou vus devant | 0.1 m | batterie 1346 mAh
+12:35:57.385	2	station 0 : 6 paliers ; le filtre a corrigé la position de 317 mm et -0.9° ; note 0.34, étalement 577 mm ; aucun repère ici ; À REGARDER : forte correction, note basse, ou filtre et repères en désaccord
+12:35:59.502	2	explorateur : [  0.3 min]     arrêté : avance refusée : obstacle à 363 mm devant (marge 400.0 mm) ; robot en (11938, 2868)
+12:35:59.502	2	explorateur : [  0.3 min]   vers la cible (617, 288) du plan : 1 étapes (essai 2, en contournant l'obstacle)
+12:35:59.502	2	explorateur : [  0.3 min]     arrêté : avance refusée : obstacle à 363 mm devant (marge 400.0 mm) ; robot en (11938, 2868)
+12:35:59.502	2	explorateur : [  0.3 min]   vers la cible (617, 288) du plan : 1 étapes (essai 3, en contournant l'obstacle)
+12:35:59.502	2	explorateur : [  0.3 min]     arrêté : avance refusée : obstacle à 363 mm devant (marge 400.0 mm) ; robot en (11938, 2868)
+12:36:00.026	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 4 sauts, 3 trajets arrêtés, 3 obstacles touchés ou vus devant | 0.0 m | batterie 1345 mAh
+12:36:02.140	1	tour de la station 0 : terminé, 380° en 13.7 s, 122 mesures ; la même paroi relue à la fin est à +2 mm (3 directions)
+12:36:02.140	1	station 0 (12:35:57) : position retenue à 66 mm de l'estime depuis le tour précédent, après 0.0 m
+12:37:28.798	1	la distance devant ne baisse pas (1486 mm) alors que les roues comptent 88 mm en 1,5 s
+12:38:17.252	2	station 0 : 9 paliers ; le filtre a corrigé la position de 172 mm et -0.1° après 1.0 m (174 mm par mètre) ; note 0.95, étalement 407 mm ; aucun repère ici
+12:38:17.830	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1338 mAh
+12:38:19.400	1	tour de la station 0 : terminé, 380° en 13.7 s, 124 mesures ; pas de paroi nette pour vérifier la fermeture
+12:38:19.400	3	SAUT DE POSITION à la station 0 (12:38:17) : la position retenue est à 389 mm de ce que donnent les roues et le gyroscope depuis le tour précédent (1.0 m de chemin) ; écart (-389, +17) mm ; filtre ou repères à vérifier
+12:38:36.888	2	station 0 : 11 paliers ; le filtre a corrigé la position de 134 mm et +0.0° ; note 0.86, étalement 415 mm ; aucun repère ici
+12:38:36.888	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1337 mAh
+12:38:40.596	1	tour de la station 0 : terminé, 380° en 13.7 s, 124 mesures ; pas de paroi nette pour vérifier la fermeture
+12:38:40.596	1	station 0 (12:38:36) : position retenue à 39 mm de l'estime depuis le tour précédent, après 0.0 m

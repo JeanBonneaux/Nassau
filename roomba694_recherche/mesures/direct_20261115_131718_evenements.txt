@@ -1,0 +1,10 @@
+# heure <tab> importance (1 à 3) <tab> événement — suivi en direct
+13:17:18.286	2	je suis la séance exploration35_20261115_131131
+13:17:18.286	1	rattrapage : 6847 lignes et 2 stations déjà écrites ont été relues sans rien redire
+13:17:19.901	1	la distance devant ne baisse pas (815 mm) alors que les roues comptent 85 mm en 1,5 s
+13:18:27.251	1	sol sombre ou bord sous un capteur de vide : 2777, 1034, 2802, 2459 (gauche, avant gauche, avant droit, droit)
+13:19:10.880	2	station 0 : 6 paliers ; le filtre a corrigé la position de 71 mm et -0.5° après 1.6 m (44 mm par mètre) ; note 0.86, étalement 299 mm ; aucun repère ici
+13:19:10.880	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1228 mAh
+13:19:13.513	1	tour de la station 0 : terminé, 380° en 13.7 s, 124 mesures ; pas de paroi nette pour vérifier la fermeture
+13:19:13.513	1	station 0 (13:19:10) : position retenue à 71 mm de l'estime depuis le tour précédent, après 4.0 m
+13:20:08.419	1	avance de 497 mm à 57 mm/s vers une cible à 2898 mm : le capteur de distance voit 1.014 mm par mm compté (écart 9 mm)

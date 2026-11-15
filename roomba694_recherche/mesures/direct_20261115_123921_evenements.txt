@@ -1,0 +1,23 @@
+# heure <tab> importance (1 à 3) <tab> événement — suivi en direct
+12:39:21.660	2	je suis la séance exploration34_20261115_123906
+12:39:21.660	1	rattrapage : 272 lignes et 0 stations déjà écrites ont été relues sans rien redire
+12:39:36.341	2	station 0 : 10 paliers ; le filtre a corrigé la position de 37 mm et +0.1° ; note 0.97, étalement 300 mm ; aucun repère ici
+12:39:36.341	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1334 mAh
+12:39:37.386	1	tour de la station 0 : terminé, 380° en 13.7 s, 124 mesures ; pas de paroi nette pour vérifier la fermeture
+12:40:10.195	2	contact du pare-chocs gauche à 57 mm/s ; le capteur de distance lisait 354 mm ; capteurs optiques du centre 49 et 0
+12:40:10.287	1	avance de 797 mm à 57 mm/s vers une cible à 1141 mm : le capteur de distance voit 0.985 mm par mm compté (écart 6 mm)
+12:40:10.195	2	console : Réflexe : pare-chocs, à gauche, roues arrêtées par le cerveau. Reculez pour vous dégager (flèche du bas).
+12:41:30.611	1	sol sombre ou bord sous un capteur de vide : 1071, 2656, 2616, 2569 (gauche, avant gauche, avant droit, droit)
+12:41:36.708	1	sol sombre ou bord sous un capteur de vide : 175, 2659, 2610, 2599 (gauche, avant gauche, avant droit, droit)
+12:41:36.967	3	mode lu 3 -> 2 : le mode Safe est tombé pendant un mouvement
+12:44:21.710	2	bilan : chemin compté 2.1 m en 5.2 min ; temps : arrêt 79 %, avance 10 %, pivot 6 %, tour 4 % ; lectures : une toutes les 47 ms (95 % sous 63 ms) ; 3 avances, 6 pivots, 1 tours sur place ; murs de face : 1 avances, 0.8 m, le capteur de distance voit 0.9852 mm par mm compté ; cibles devant : 1 avances, roues et capteur de distance diffèrent de 12 mm en médiane, 12 mm au pire ; cap : gyroscope / roues = 1.0085 sur 7 pivots
+12:44:21.710	2	bilan, suite : alertes : roues qui forcent 0, avances déviées 0, pivots en désaccord 0, contacts 1, roues levées 0, trous de lecture 0 (le plus long 0 ms), retards du Wi-Fi 0 (le plus long 0.0 s), mode Safe tombé en roulant 1 (changements de mode en tout : 1), compteurs à l'arrêt 0 ; courant au repos -143 mA ; batterie : 1336 -> 1323 mAh en 5 min, soit 2.5 mAh par minute dépensés (à ce rythme, 533 min au plus avant qu'elle soit vide)
+12:44:21.710	2	bilan, cartographie : 1 stations, 0 portes possibles ; corrections du filtre : médiane 37 mm, la plus forte 37 mm ; note médiane 0.97, la plus basse 0.97
+12:44:21.710	1	capteurs optiques du pare-chocs selon la distance lue devant (médianes) : 300 à 450 mm : centre gauche 45, centre droit 0, avant gauche 17, avant droit 34 (582 lectures)
+12:46:39.154	3	console : Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+12:47:40.593	1	le robot s'est tu 63 s (liaison fermée ou robot endormi)
+12:47:42.609	3	console : Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+12:47:43.555	3	console : Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+12:47:44.572	3	console : Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+12:47:45.741	1	mode lu 2 -> 3
+12:47:45.741	1	compteurs de roues qui avancent alors que le robot est immobile : gauche -2 pas, droite +1 pas en 1 lecture(s)
