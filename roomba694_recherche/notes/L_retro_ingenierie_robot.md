@@ -5,7 +5,8 @@ Session de revue, 2026-11-14 au soir. Demandes de l'utilisateur, dans l'ordre :
 - « Qu'est ce que on pourrait probe pour reverse engeneer le contrôle [ou] le système du robot […] Avant de procéder donne moi une liste de ce que tu suggère et je choisirai » ;
 - « Plus dans la catégorie reverse engineering » ;
 - « creusons [ce] genre de choses : d'essai d'usine des réparateurs. Peut on reprogrammer des choses DANS le robot ? Jaime bien le 10 » ;
-- « oui mais avant ca prepare aussi quelque chose pour trouver les autre commandes et ou ce que tu peux inserer dans le robot par ce port ».
+- « oui mais avant ca prepare aussi quelque chose pour trouver les autre commandes et ou ce que tu peux inserer dans le robot par ce port » ;
+- « Capteurs seuls pour le moment / Prépare tout pour que demain j'ai juste à brancher / L'autre session pilotera et tu analysera en live pour le reverse engenNERING et la précision possible d'amélioration d'utilisation optimale des capteurs ».
 
 Chaque affirmation dit d'où elle vient : **mesuré** (sur les enregistrements ou sur le PC), **lu** (documentation ou témoignage, avec le modèle concerné), **supposé**. Rien n'a roulé pour cette note et aucun ordre n'a été envoyé au robot.
 
@@ -19,8 +20,9 @@ Les parties « lu » des § 3 et 4 viennent de deux recherches déléguées. J'a
 4. **Le mode d'essai d'usine** (lu) est décrit en détail pour la série 500 et a été vu sur un 655 et un 690 ; rien pour le 694. Il écrit un bilan sur la prise : bon ou mauvais par contrôle, et les courants des moteurs avec leurs limites. Deux dangers : la variante automatique peut bloquer le robot jusqu'à ce qu'on retire sa batterie, et la combinaison de touches est voisine de la remise à zéro d'usine.
 5. **Sondage 10** : le robot a déjà écrit 16 textes dans les enregistrements, dont 12 coupés. Le firmware version 13 les garde en entier.
 6. **La sonde** demandée est prête : une route du firmware fermée par une clé, et un outil du PC à trois genres de recherche (numéros de capteurs en lecture seule, écritures documentées, ordres inconnus).
-7. **Mon avis sur les ordres inconnus** : ne pas les balayer à l'aveugle. Le gain attendu est faible et le risque, petit, est sans retour.
+7. **Ordres inconnus** : mon avis était de ne pas les balayer à l'aveugle (gain faible, risque petit mais sans retour). **L'utilisateur a tranché le 14 au soir : « Capteurs seuls pour le moment ».**
 8. Tout cela est vérifié sur le PC seulement. La version 13 n'est pas installée : le 14 à 20 h 40 le cerveau ne répondait plus sur le réseau.
+9. **Pour le lendemain** (§ 7) : un veilleur attend le cerveau et fera seul l'installation, l'écoute et la lecture des numéros de capteurs ; un outil d'analyse en direct suivra le pilotage de la session de navigation.
 
 ## 1. Les sondages proposés, et où ils en sont
 
@@ -39,7 +41,7 @@ Les parties « lu » des § 3 et 4 viennent de deux recherches déléguées. J'a
 | 11 | Le Wi-Fi propre au robot | un second moyen de dire « arrête » | proposé |
 | 12 | Nos propres balises infrarouges | un repère sûr à chaque porte | proposé |
 | 13 | Le mode d'essai d'usine | les limites d'usine des moteurs | creusé sur le papier (§ 3) ; je déconseille de le lancer pour l'instant |
-| 14 | Les capteurs sans numéro officiel, les autres ordres | peut-être un capteur de plus ; pour les ordres, sans doute rien | **demandé** ; l'outil est prêt (§ 4) |
+| 14 | Les capteurs sans numéro officiel, les autres ordres | peut-être un capteur de plus ; pour les ordres, sans doute rien | **décidé : capteurs seuls pour le moment** ; lecture prévue dès que le cerveau répond (§ 7) |
 
 ## 2. Ce que le robot écrit de lui-même (sondage 10)
 
@@ -57,6 +59,7 @@ Les parties « lu » des § 3 et 4 viennent de deux recherches déléguées. J'a
 - Le journal (§ 21) lisait « aero-sup… port:7587 » : c'est la console qui coupait le mot en deux. Le texte dit « aero-support:7587 ».
 - D'après le journal (§ 20), « min » et « sec » de la ligne de charge comptent depuis le dernier redémarrage du robot. Le sens de « state » et de « mode » n'est pas connu.
 - **Mesuré.** Le 14 à 14 h 37 min 11, à l'instant où le robot écrit « Performing eEEProm transfer », ses compteurs de roues avancent de 2 et 3 pas alors qu'il est immobile (gyroscope à zéro, cap inchangé).
+- **Mesuré** (`rv_direct.py`, rejeu des enregistrements). Ce n'est pas un cas isolé : les compteurs de roues avancent de 1 à 3 pas, robot immobile, à chaque changement de mode regardé. Mode Safe pris (le 14 à 14 h 35 min 27), mode Safe quitté (14 h 50 min 46 et 16 h 36 min 39), départ de « rentre à la base » (le 13 à 14 h 35 min 03). **Supposé** : le robot met ses moteurs de roues sous tension ou les relâche à ces instants, et il a fait de même à 14 h 37 min 11. Pour la position c'est sans conséquence : un millimètre au plus à chaque fois.
 - **Mesuré.** Sur 18 impulsions de réveil, 11 sont suivies du texte de réveil ; le robot répond alors à toutes les lectures des trois minutes suivantes. Les 7 autres ne donnent pas de texte (le robot ne dormait sans doute pas). Une seule est suivie de lectures sans réponse : celle du 14 à 14 h 34 min 40 (six en trois minutes). C'est aussi la séance du tour arrêté pour « rotation trop rapide » (14 h 35 min 51) et du premier « eEEProm transfer » de la journée.
 - **Supposé.** Le robot muet après ce réveil, la rotation trop rapide, le « eEEProm transfer » et le redémarrage de 15 h 05 pourraient avoir une même cause du côté du robot. Rien ne le montre encore. Le texte complet, daté, est ce qui manque pour le savoir.
 - **Lu** (recherche, témoignages sur d'autres robots). Le texte « Soft reset! » suivi d'une ligne de version est aussi ce qu'écrit un robot Create 2 à processeur STM32. Aucune mention publique de « Performing eEEProm transfer » ni de la branche « aero » n'a été trouvée.
@@ -222,7 +225,41 @@ L'application range dans le robot des préférences de nettoyage (deux passages,
 - Le 14 à 20 h 40, 20 h 50, 20 h 52 et 21 h 08, le cerveau ne répondait pas sur le réseau (dernière lecture réussie connue : 18 h 46, par la session de navigation). Cause non cherchée : sa batterie portable est la première chose à regarder.
 - Les témoignages du forum robotreviews.com (essai d'usine sur un 655 et un 690, ordres non documentés) : lus en extraits de moteur de recherche, le site refusant les lectures automatiques.
 
-## 7. Sources
+## 7. Pour le lendemain : ce qui est prêt
+
+Demande : « Prépare tout pour que demain j'ai juste à brancher. L'autre session pilotera et tu analysera en live ».
+
+### 7.1 Le veilleur (`data_analysis/rv_matin.py`)
+
+Lancé le 14 à 22 h 45, détaché, pour vingt heures au plus. Il attend que le cerveau réponde sur le réseau, puis :
+
+1. vérifie que rien ne roule et que personne ne pilote ;
+2. installe la version 13 (accord donné) et vérifie que la carte redémarre dessus ; seulement sur un cerveau allumé depuis moins de dix minutes, jamais au milieu d'une séance ;
+3. écoute le robot huit minutes : endormi, puis deux impulsions de réveil, liaison ouverte, batterie lue, liaison refermée ;
+4. pendant que la liaison est ouverte, lit les 256 numéros de capteurs (lecture seule) ;
+5. écrit `mesures/matin_AAAAMMJJ_HHMMSS_rapport.txt` et tient à jour `mesures/matin_dernier.txt`, dont la première ligne dit « en attente », « en cours », « fini, bon » ou « fini, avec un échec ».
+
+Il n'envoie aucun ordre de roues ; ses seules touches sont `w`, `s`, `b`, `x`, et il n'en envoie aucune si le robot est en mode Safe ou bouge. Pour l'arrêter : créer `mesures/matin_STOP`.
+
+**Mesuré** : essayé de bout en bout sur un faux cerveau qui apparaît après quelques secondes (attente, écoute, lecture des capteurs, rapport). **Non vérifié** : l'installation elle-même, que le faux cerveau ne sait pas recevoir ; elle reprend la suite d'ordres qui a installé la version 12. Et il ne tourne que si le PC reste allumé.
+
+### 7.2 L'analyse en direct (`data_analysis/rv_direct.py`)
+
+Pendant que la session de navigation pilote, cet outil lit l'enregistrement à mesure qu'il s'écrit (le `_capteurs.csv` le plus récent et sa console) et, avec la version 13, le texte du robot. Il ne parle pas au robot et n'ouvre pas la console du cerveau.
+
+Il signale au fil de l'eau : les roues qui forcent (courant de la batterie à +250 mA sur le repos ou roues à 330 mA pendant 1,5 s, note J § 2.1), un pivot où roues et gyroscope diffèrent de plus de 6°, les trous dans les lectures, le mode Safe qui tombe, les contacts, une roue levée, les compteurs qui avancent à l'arrêt, tout texte du robot. À la fin de chaque avance il compare la distance lue devant au chemin compté par les roues (note J § 2.2). Toutes les cinq minutes il donne un bilan, avec ce que lisent les capteurs optiques du pare-chocs selon la distance (pour le sondage 4).
+
+**Mesuré**, en lui faisant relire trois enregistrements :
+
+| Enregistrement | Ce qu'il retrouve |
+|---|---|
+| `exploration24` (le 14, seuil de la cuisine) | deux alertes « les roues forcent » à 16 h 19 min 27 et 16 h 19 min 53 ; le pivot de 16 h 20 min 20 où les roues comptent 145° et le gyroscope 86° ; le mode Safe tombé à 16 h 36 min 39 |
+| `exploration21` (le 14, début d'après-midi) | les compteurs qui avancent de 2 et 3 pas à 14 h 37 min 11 ; neuf trous de lecture, dont un de 5 s ; un contact ; le mode Safe tombé à 14 h 50 min 46 |
+| `exploration13` (le 13, « rentre à la base ») | trois contacts du pare-chocs gauche ; aucune alerte de courant, parce qu'elle ne vaut qu'en mode Safe |
+
+**Mesuré** aussi : le suivi d'un fichier en train de s'écrire, avec un enregistrement recopié par petits paquets pendant l'analyse (lignes coupées en deux comprises). Il retrouve les mêmes alertes. **Non vérifié** : le suivi d'un vrai pilotage, et la lecture du texte du robot sur un vrai cerveau en version 13.
+
+## 8. Sources
 
 - Manuel de service de la série 500 (iRobot, 2007) : [copie en ligne](https://hallaweb.jlab.org/tech/Detectors/public_html/manuals/data_sheets-manuals/G-I/I/irobot/roomba_570.pdf)
 - Spécification de l'interface de la série 600, mise à jour en 2021 : [copie en ligne](https://cdn.hackaday.io/files/1835247851890816/2021-04-13_iRobot_Roomba_600_Open_Interface_Spec-3.pdf)
