@@ -2389,11 +2389,11 @@ Mes erreurs : le coin de la cuisine annoncé sans l'avoir vérifié ; la brosse 
 
 ---
 
-## 61. Vers la cuisine par la nouvelle porte du mur sud (case H18) ; le seuil manqué au premier essai ; l'enregistreur coupé par une liaison morte (2026-11-15, 13 h 45 à … — séance en cours)
+## 61. À la cuisine par la nouvelle porte (case H18), jusqu'au vrai coin du fond, et retour calé sur les faisceaux de la base ; le seuil franchi par un pivot sur place ; l'enregistreur coupé par un VPN du PC (2026-11-15, 13 h 45 à 15 h 53)
 
 **La demande.** À ma proposition de 13 h 42 (retourner dans la cuisine, l'explorer en détail jusqu'au vrai coin du fond, puis revenir devant la base), l'utilisateur a répondu à 13 h 45 : « Go en passant par nouvelle Porte ouverte mais étroite car y'a un truc qui gêne en g18 ». J'ai lu : la porte du mur sud de la pièce de la base, qui donne sur le couloir (sur le plan, une ouverture de u = 435 à 477 vers v = 188, cases H17 et H18), restée fermée jusque-là ; quelque chose en G18 en réduit le passage.
 
-**Les enregistrements** : `exploration36_20261115_134922` (13 h 49 à 14 h 23 min 18, arrêté seul, voir plus bas) et `exploration37_20261115_142437` (trois lignes : la carte a refusé l'enregistreur). Firmware v14, sans repères, brosse latérale demandée aux franchissements.
+**Les enregistrements** : `exploration36_20261115_134922` (13 h 49 à 14 h 23 min 18, arrêté seul, voir § 61.5), `exploration37_20261115_142437` (trois lignes : la carte a refusé l'enregistreur), `exploration38_20261115_144243` (14 h 42 à 14 h 44, robot à l'arrêt, en-tête du fichier complété à la main, voir § 61.5), `exploration39_20261115_144458` (14 h 45 à 15 h 30 : le seuil, la cuisine, le coin) et `exploration40_20261115_153046` (15 h 30 à 15 h 53 : le retour). Firmware v14, sans repères, brosse latérale demandée aux franchissements.
 
 ### 61.1 La nouvelle porte, aux capteurs (13 h 49 à 14 h 06)
 
@@ -2445,7 +2445,7 @@ Ce que j'en retiens :
 
 Recul de 34 cm le long de la même ligne pour refaire l'essai.
 
-### 61.5 L'enregistreur coupé, et une faiblesse du firmware trouvée (14 h 23 à …)
+### 61.5 L'enregistreur coupé, et une faiblesse du firmware trouvée (14 h 23 à 14 h 45)
 
 À 14 h 23 min 18, pendant le dernier recul, l'enregistreur s'est arrêté : « liaison TCP perdue : connexion fermée par l'hôte distant ». Au même instant la réponse à un ordre HTTP s'est perdue (le recul, lui, s'est fait : 144 mm pour 150).
 
@@ -2458,3 +2458,83 @@ Deux conséquences à retenir :
 - **correction proposée pour un firmware v15** (rien n'est changé sans l'accord de l'utilisateur) : fermer le client de la console quand il n'a rien accepté depuis quelques secondes.
 
 Le robot n'a pas bougé pendant l'attente : mode Safe, à l'arrêt devant le seuil, côté pièce centrale.
+
+**La suite.** La carte a lâché l'ancienne liaison entre 14 h 42 min 23 et 14 h 42 min 41, soit 19 minutes après la coupure (un essai de connexion toutes les 15 secondes, par un petit outil d'attente hors dépôt). L'enregistreur est reparti aussitôt (`exploration38`), mais mes outils de pilotage ont refusé ses lignes : quand le journal du cerveau est déjà actif à son démarrage, `enregistreur.py` écrit lui-même l'en-tête du fichier, et il l'écrivait trop court (27 noms de colonnes pour 32 valeurs : une comparaison décalée d'un cran, jamais exercée jusque-là). Corrigé (une ligne), l'en-tête de `exploration38` complété à la main, et `exploration39` lancé à 14 h 44 min 58 après avoir éteint le journal du cerveau (touche j par HTTP) pour que la carte redonne son propre en-tête.
+
+### 61.6 Le seuil : trois autres échecs, puis le pivot sur place (14 h 45 à 14 h 57)
+
+| Heure | Essai | Ce que le journal à 20 Hz montre |
+|---|---|---|
+| 14 h 48 | 2 : sur la ligne exacte de 13 h 02 (7 cm plus près du montant nord), 880 mm, 150 mm/s, brosse à 40, outil réglé pour ne couper qu'à 45° | roue gauche sur la baguette à 514 mm (481 à 550 mA), elle patine 7 cm pendant que le robot pivote de 15° à gauche, puis monte ; la roue droite arrive à 642 mm, bute (jusqu'à 690 mA), patine 27 cm ; le robot pivote de 37° à droite autour d'elle ; « distance atteinte » |
+| 14 h 51 | 3 : roue droite seule, après un recul de 22 cm et un redressement à 335°, 350 mm à 150 mm/s, brosse à 40 | même chose : jusqu'à 811 mA, 32 cm de patinage, pivot de 44° |
+| 14 h 53 | 4 : le même à 330°, **brosse arrêtée** | même chose : 744 mA, pivot de 40° |
+| 14 h 55 | pivot sur place vers la gauche, de 290° à 350° (`cap=350`) | les deux compteurs avancent de 134 mm, opposés, pour 60° : le robot a tourné sur son centre, et la roue droite est montée pendant le pivot (780 mA au plus) |
+| 14 h 56 | contrôle : 150 mm à 100 mm/s | cap tenu à 0,3°, 267 mA au plus, le capteur de distance se rapproche de 174 mm pour 152 comptés : les deux roues sont dans la cuisine |
+
+Ni chute du mode Safe, ni roue levée, ni contact du pare-chocs pendant ces essais.
+
+Ce que cela dit, et ce que cela remplace :
+- **le § 60 disait « de biais à 25° et 150 mm/s il passe d'un trait ». Ce n'est pas une recette sûre** : la même avance, sur la même ligne, a échoué deux fois aujourd'hui. Ce qui a marché : de biais pour la première roue, puis un pivot sur place du côté de la roue restée derrière. C'est le « wiggle » que l'utilisateur avait proposé à 13 h.
+- pourquoi, d'après les mesures (une lecture, non une preuve) : la roue qui arrive la première bute, le robot pivote autour d'elle et se présente de plus en plus de face, elle finit par monter. Pour la roue qui suit c'est l'inverse : le robot pivote autour d'elle en s'écartant, elle se présente de plus en plus de travers et ne monte jamais. Et le firmware, qui corrige le cap, ralentit justement cette roue au moment où elle arrive (4 mm/s par degré d'écart, jusqu'à la moitié de la vitesse).
+- **la brosse latérale n'y change rien** (essais 3 et 4 identiques). Son courant : 41 à 64 mA à vide, 68 à 119 mA au passage de la baguette ; elle n'a pas calé.
+- l'accéléromètre lit le robot à plat sur le parquet, à plat avec une roue de chaque côté, et penché seulement quand une roue est sur la baguette : **la baguette est une bosse entre deux sols de même niveau**, non une marche.
+
+### 61.7 La cuisine et le coin du fond (14 h 57 à 15 h 30)
+
+**Entrée.** Tour sur place en C30 : note 0,93, position (792,3 ; 75,6). C'est la seule bonne note de la cuisine.
+
+**Le passage étroit**, par pas de 30 cm avec un regard de chaque côté (lectures du capteur, en mm, nord / sud) : 286 / 301 en u = 832 ; 361 / 369 en 849 ; 74 / 351 en 865 ; 52 / 344 en 881 (le robot frôle le côté nord) ; 104 / 257 en 896 ; **158 / 183 en 912**, le plus serré : 54 cm de large si le capteur est à 10 cm du centre ; 385 / 294 en 929. L'outil de centrage s'est arrêté seul à l'entrée (un côté en retrait, l'angle d'un meuble à 34 cm) : il ne convient pas là. Aucun contact à l'aller.
+
+**La partie ouverte.** Trois tours sur place (D36, E37, D39 de mon estime) : notes 0,44, 0,42 et 0,45. Le plan ne ressemble pas à ce que le capteur voit ici (meubles déplacés ou absents du plan) ; j'ai gardé l'estime.
+
+**Mes erreurs dans la cuisine, corrigées par l'utilisateur.**
+- À 15 h 10 j'ai lu une façade lisse à 3 cm du flanc nord du robot, puis une « paroi » en retrait de 17 cm plus à l'est, et j'ai pris la seconde pour le mur du fond. C'était **la porte du réfrigérateur**. Des lectures en biais donnaient 1,5 m de libre vers le nord-est : c'était faux, le capteur ne reçoit rien d'une façade lisse prise de biais et lit alors très loin. À 15 h 11 min 47, contact léger du pare-chocs gauche en approchant (sans doute la planche de bois qui sépare la cuisinière du réfrigérateur).
+- À 15 h 12 j'ai écrit « je crois être dans le coin du fond », puis je suis parti explorer le sud. À 15 h 18 min 49, contact léger du pare-chocs gauche contre le pied d'une desserte en bois sur roulettes. L'utilisateur a coupé mon geste et envoyé une photo : « En ce moment tu es ici pas encore allé dans la coin ». La photo montre la cuisinière, une planche de bois, le réfrigérateur, et la desserte contre le robot.
+- Le vrai coin est **une poche à droite du réfrigérateur** : entrée à 15 h 23 par le sud, à 5 cm/s, en mesurant les côtés. Dans la poche : flanc du réfrigérateur à 169 mm lus à l'ouest, 293 mm au nord, 281 mm à l'est ; elle fait environ 65 cm sur 57. Le robot s'y est enfoncé de 19 cm de plus en diagonale. Seconde photo de l'utilisateur à 15 h 29 : le réfrigérateur à gauche du robot, la poubelle devant lui contre le mur, une porte blanche fermée à sa droite. Ce que j'avais pris pour le mur nord est donc le devant de la poubelle, et la paroi de l'est est la porte.
+- J'ai annoncé « case D41 » ; l'utilisateur a répondu « En ce moment ça correspond à c 39 ». **Mon estime plaçait le robot deux cases (un mètre) trop à l'est au fond de la cuisine**, alors qu'elle était juste à l'entrée (C30). Je n'ai pas trouvé pourquoi : les longueurs mesurées (cuisinière, réfrigérateur, poche) sont plausibles, c'est donc peut-être le plan qui est resserré à cet endroit ; non tranché.
+
+Non fait : le sud de la cuisine (au-delà de la desserte), abandonné quand l'utilisateur a demandé de rentrer.
+
+### 61.8 Le retour, « rapidement » (15 h 30 à 15 h 47)
+
+L'utilisateur, à 15 h 29 : « On rentre rapidement » ; à 15 h 33 : « J'ai dit rapidement donc continue c bien rapide continue rapide / Donne la positon à la map oour quelle ce mette a jour » ; à 15 h 40 : « Rapide go couloir par le petit passage nouveau ». J'ai roulé à 80-150 mm/s avec peu de regards, et donné une position à la carte vivante à la fin de chaque geste (elle lit les lignes `POSE=` de mes fichiers).
+
+| Heure | Tronçon | Résultat |
+|---|---|---|
+| 15 h 31 | sortie de la poche, partie ouverte, à 100 mm/s | contact léger du pare-chocs gauche contre l'angle d'un meuble au sud de la sortie du passage, que je croyais 7 cm plus loin |
+| 15 h 32 à 15 h 36 | passage étroit vers l'ouest | deux contacts légers du pare-chocs gauche contre le côté sud ; les regards de côté montrent le robot 11 puis 15 cm trop au sud : cap décalé de quelques degrés depuis les manœuvres du coin ; repris de 7,5° sur les deux côtés du passage (le filtre en retirera 5 en D28) |
+| 15 h 37 | seuil vers la pièce centrale : 1 050 mm au cap 160°, 120 mm/s, brosse à 40 | d'un trait, 468 mA au plus, cap tenu à 0,2° ; le pare-chocs droit effleure le montant nord à l'arrivée |
+| 15 h 38 | deux tours sur place en D28 | notes 0,62 puis 0,86 ; correction de 24 cm et -5° en tout |
+| 15 h 39 | pièce centrale, huit tronçons à 100 mm/s | aucun contact |
+| 15 h 40 | couloir à 150 mm/s, tour sur place | **calage faux** : note 0,84, mais la position rendue était décalée de 40 cm le long du couloir ; le robot s'est présenté face au mur, à côté de la porte (293 mm lus devant). Trouvé par des regards de côté ; la porte retrouvée à vue (54 cm de libre entre ses deux côtés) |
+| 15 h 44 à 15 h 46 | porte H18 vers le nord, à 5-8 cm/s | deux contacts légers du pare-chocs gauche contre le côté ouest ; dans l'encadrement, 232 mm lus à l'est et 347 à l'ouest ; passage refait 7 cm plus à l'est, sans contact |
+| 15 h 47 | jusqu'au point P à 120 mm/s | arrivée « au point P » d'après mon estime |
+
+Dix contacts légers du pare-chocs sur toute la séance, dont sept au retour ; aucune chute du mode Safe, aucune roue levée.
+
+Mesuré en passant : l'encadrement de la porte H18 fait 579 mm lus plus deux fois la distance du capteur au centre (587 à 605 à l'aller).
+
+### 61.9 Le calage sur les faisceaux de la base (15 h 47 à 15 h 53)
+
+Mon estime disait « au point P », et le filtre aussi (note 0,75, correction de 10 cm). J'avais commencé à fermer la séance quand l'utilisateur a écrit : « Vérifie que tu es bien calé avec le signal de la base qui ne bouge pas ». Il avait raison.
+
+| Heure | Geste | Ce que les récepteurs infrarouges ont lu |
+|---|---|---|
+| 15 h 48 | un tour sur place (`balise_base.py`) | vert seulement ; la base vue au cap 72° au lieu de 90° : le robot est du côté vert, à l'ouest de l'axe |
+| 15 h 49 | traversée d'ouest en est, 600 mm à 60 mm/s | récepteur du dessus : vert jusqu'à 116 mm, les deux faisceaux de 124 à 144, rouge à partir de 154. Le centre du robot était donc **28 cm à l'ouest de l'axe** au départ de la traversée |
+| 15 h 50 | retour de 328 mm, puis 124 mm vers la base | capteur de distance face à la base : 562 à 567 mm (559 à 564 à 13 h 36) |
+| 15 h 51 | un tour sur place (`balise_base.py`) | axe à 40 mm à droite du centre |
+| 15 h 52 | 43 mm vers l'est, face à la base, à l'arrêt | récepteur du dessus : **les deux faisceaux** (ce couloir fait 21 mm de large) ; pied de meuble à 566 mm |
+| 15 h 52 min 42 à 15 h 53 min 01 | dernier tour sur place (passe « e ») | filtre : 4 cm, note 0,66, axes des murs à 0,0° |
+
+Les deux façons de lire l'axe (la traversée, et le tour sur place) diffèrent de 3 à 4 cm entre elles ; la lecture à l'arrêt, face à la base, tranche.
+
+**Ce que cela dit** : 28 cm d'erreur à l'arrivée, après 7 m depuis le dernier bon calage (D28) et un calage faux dans le couloir ; l'estime et le filtre étaient d'accord entre eux et faux tous les deux. Les faisceaux de la base restent le seul repère qui ne se trompe pas ; un calage par le filtre dans un couloir peut glisser le long du couloir même avec une bonne note.
+
+**Une idée de l'utilisateur**, à 15 h 50 : « Si le servo tourne doucement on pourrais le faire aller à 90C / Nous permetans de nous situer en live par rapport à des repères et d'accélérer les voyages ? ». Aujourd'hui chaque regard de côté fait pivoter tout le robot (dix secondes, et du cap perdu à chaque fois). Un capteur qui regarde de côté en roulant lirait les murs en continu. Cela demande de lever la limite de 30° que le firmware impose au servo à sa demande, et de garder un regard vers l'avant pendant les avances : à proposer pour un firmware v15, rien n'est changé.
+
+**Mes erreurs de la séance** : une avance lancée de travers après un regard de côté (14 h 05) ; un outil de suivi du seuil qui coupait trop tôt (14 h 20) ; la porte du réfrigérateur prise pour le mur du fond, et le coin annoncé sans y être, une seconde fois dans la journée ; reparti du coin sans attendre la confirmation de l'utilisateur ; une case annoncée d'après une estime décalée ; au retour, des meubles serrés de trop près à 100 mm/s ; un calage du filtre accepté dans le couloir sur sa seule note ; l'arrivée au point P annoncée sans la vérifier sur la base.
+
+**Non fait** : le sud de la cuisine ; l'essai 4 devant un vrai mur ; les essais 6 et 7 de la session de revue ; la mesure à la règle.
+
+**État à la fin** (15 h 53 min 17) : séance fermée (5, capteur de distance arrêté, s, x) ; robot sur l'axe de sa base, au point P devant elle, pas dessus ; 840 mAh (41 %) ; cerveau en v14 ; seuil du capteur de distance à 30 cm.
