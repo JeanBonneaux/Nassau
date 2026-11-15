@@ -139,7 +139,8 @@ Sur un mètre, l'estime ne peut pas se tromper de 20 cm : le § 2.4 la donne à 
 | 9 h 30 min 27 et 29 | les roues forcent | second essai, même patinage |
 
 - **Aucune fausse alerte de niveau fort** en dehors de celle que ma sonde a causée.
-- **Une chose que l'outil n'a pas vue** : le saut de position du § 3. Il affichait bien « repères à 252 mm du filtre » pour le tour `b3`, mais sans dire que l'estime contredisait les repères. À ajouter à l'outil.
+- **Une chose que l'outil n'a pas vue** : le saut de position du § 3. Il affichait bien « repères à 252 mm du filtre » pour le tour `b3`, mais sans dire que l'estime contredisait les repères.
+- **Ajouté le jour même** : à chaque tour, `rv_direct.py` compare maintenant la position retenue à l'estime depuis le tour précédent, et donne une alerte forte au-delà de 12 cm sur moins de 2,5 m de chemin. **Vérifié par rejeu** : sur `exploration26` il signale `b3` (311 mm), `e1` (204 mm), `e2` (169 mm) et aucun autre tour (7 à 80 mm) ; sur `exploration27` il en signale deux de plus, 290 mm au second tour (les repères) et 172 mm au troisième (le filtre, note 0,47). Il n'a pas encore servi en direct.
 
 ## 5. Le bord du tapis fait patiner la roue droite
 
