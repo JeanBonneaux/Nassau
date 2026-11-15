@@ -9,6 +9,8 @@
 //          /api/speed?v=N  vitesse des flèches, 50 à SPEED_MM_S mm/s
 //          /api/log?since=N  dernières lignes de la console (journal en mémoire, voir TeeOut)
 //          /api/texte?depuis=N  v13 : texte écrit par le robot de lui-même, en entier, daté par la carte (voir handleTexte)
+//          /api/sonde   v13 : recherche de ce que le robot accepte par sa prise ; sous clé, compilée seulement si secrets.h
+//                       définit CLE_SONDE (voir handleSonde)
 //          /api/scan    réseaux Wi-Fi à portée (lance une recherche, puis renvoie la liste)
 //          /api/radar   radar à ultrasons (radar.ino) : état et carte polaire en JSON ; paramètres facultatifs : mode=off|fixe|balayage,
 //                       angle=-80..80, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..80, ech=1..3, inv=0|1, effacer=1,
@@ -118,6 +120,9 @@ void handleState() {
   long batAge = batLignes ? (long)(millis() - batMs) : -1L;
   j += "\"texte\":{\"pos\":"; j += (unsigned long)txtPos; j += ",\"lignes\":"; j += (unsigned long)txtLignes; j += "},";
   j += "\"bat\":{\"n\":"; j += (unsigned long)batLignes; j += ",\"age\":"; j += batAge; j += ",\"ligne\":"; jsonStr(j, batLigne); j += "},";
+  // v13 : la sonde (/api/sonde) est-elle dans ce firmware, suspend-elle la lecture périodique, la liaison est-elle restée douteuse
+  j += "\"sonde\":{\"compilee\":"; j += SONDE_COMPILEE ? "true" : "false"; j += ",\"suspend\":"; j += sondeActive() ? "true" : "false";
+  j += ",\"douteux\":"; j += sondeDouteux ? "true" : "false"; j += "},";
   j += "\"ap\":{\"ssid\":"; jsonStr(j, AP_SSID);
   j += ",\"ip\":\""; j += WiFi.softAPIP().toString(); j += "\",\"clients\":"; j += (int)WiFi.softAPgetStationNum(); j += "},";
   j += "\"rst\":"; jsonStr(j, resetReasonText()); j += ',';
@@ -185,6 +190,235 @@ void handleTexte() {
   for (uint32_t i = debut; i < fin; i++) r += txtRing[i % TXT_RING];
   http.send(200, "text/plain; charset=utf-8", r);
 }
+
+// ---------- Sonde (v13) : chercher ce que le robot accepte par sa prise ----------
+// /api/sonde?cle=...&action=lire|ecrire|essai|aplomb&o=HEX&ecoute=MS
+//   cle     la clé CLE_SONDE de secrets.h ; sans elle, rien
+//   o       octets à envoyer, en hexadécimal sans séparateur (« 8E23 » = 142, 35) ; vide = écouter seulement
+//   ecoute  durée d'écoute après l'envoi, de 20 à 3000 ms (80 par défaut)
+// Quatre actions, de la plus anodine à la plus risquée :
+//   lire    les octets doivent former des ordres de lecture documentés et complets : 142 + numéro, 149 + liste,
+//           128 (Start), 150 + un octet. Sert à demander au robot des numéros de capteurs que la documentation ne cite pas.
+//   ecrire  ordres documentés et complets qui ne font tourner aucun moteur : 139 (voyants), 140 (suite de notes),
+//           141 (la jouer), 162, 163, 164 (voyants et afficheur), 168 (jour et heure), 173 (Stop), plus ceux de « lire ».
+//   essai   au plus 12 octets quelconques, SAUF ceux de la liste interdite, pour chercher des ordres non documentés.
+//           Un ordre inconnu peut tout faire, y compris lancer un moteur. Le cerveau vérifie donc lui-même, juste avant
+//           d'envoyer, que le robot répond, que ses DEUX roues sont levées et qu'il n'est ni sur sa base ni sur son
+//           chargeur. Après l'écoute il pose une question de contrôle (142, 35) : si le robot n'y répond pas par un
+//           octet, il attend peut-être la suite d'un ordre ; la liaison est dite « douteuse » et tout est refusé
+//           jusqu'à un « aplomb » réussi.
+//   aplomb  remet la liaison d'aplomb : 40 zéros (pour finir un ordre qui attendrait sa suite), pause du flux (150, 0),
+//           Start (128), puis la question de contrôle. Permis seulement dans la minute qui suit un essai.
+// Interdits dans « essai » à n'importe quelle place, et jamais permis comme ordre dans « lire » et « ecrire » :
+//   132 (mode Full), 131 (mode Safe : il se demande par la touche f), 137, 145, 146 (roues), 138, 144 (brosses et
+//   aspiration), 134, 135, 136 (nettoyage), 143 (retour à la base), 129 (débit de la liaison), 133 (extinction),
+//   148 (flux continu), 165 (appui simulé sur un bouton : il lancerait un nettoyage), 167 (horaires de nettoyage),
+//   7 (Reset).
+// Toujours refusé pendant que les roues tournent, pendant un tour ou un mouvement. Après « ecrire », « essai » et
+// « aplomb », l'état du robot est tenu pour inconnu (st.ok faux) : aucun ordre de roues ne repart avant une nouvelle
+// lecture complète réussie, et le robot est alors en mode passif ou dans le mode où l'essai l'a laissé.
+#ifdef CLE_SONDE
+uint32_t sondeEssaiMs = 0;          // heure du dernier essai
+bool     sondeEssaiFait = false;
+
+bool sondeCleOk() {
+  String c = http.arg("cle");
+  const char* k = CLE_SONDE;
+  size_t n = strlen(k);
+  if (n < 12 || c.length() != n) return false;      // une clé de moins de 12 caractères ne protège rien : route fermée
+  uint8_t d = 0;
+  for (size_t i = 0; i < n; i++) d |= (uint8_t)(c[i] ^ k[i]);
+  return d == 0;
+}
+
+bool sondeInterdit(uint8_t v) {
+  switch (v) {
+    case 7: case 129: case 131: case 132: case 133: case 134: case 135: case 136: case 137: case 138:
+    case 143: case 144: case 145: case 146: case 148: case 165: case 167:
+      return true;
+  }
+  return false;
+}
+
+// Nombre d'octets de données d'un ordre documenté permis ; -1 = pas permis dans cette action ; -2 = nombre variable
+int sondeLongueur(uint8_t op, bool ecrire) {
+  switch (op) {
+    case 128: return 0;                 // Start
+    case 142: return 1;                 // un paquet de capteurs
+    case 150: return 1;                 // pause ou reprise du flux
+    case 149: return -2;                // liste de paquets : n, puis n numéros
+  }
+  if (!ecrire) return -1;
+  switch (op) {
+    case 139: return 3;                 // voyants
+    case 141: return 1;                 // jouer une suite de notes
+    case 162: return 2;                 // voyants des horaires
+    case 163: return 4;                 // afficheur, segments
+    case 164: return 4;                 // afficheur, lettres
+    case 168: return 3;                 // jour, heure, minute
+    case 173: return 0;                 // Stop
+    case 140: return -2;                // suite de notes : numéro, n, puis 2 n octets
+  }
+  return -1;
+}
+
+// Vrai si les octets forment une suite d'ordres documentés, permis dans cette action, et complets
+bool sondeComplet(const uint8_t* b, size_t n, bool ecrire) {
+  size_t i = 0;
+  while (i < n) {
+    uint8_t op = b[i++];
+    int l = sondeLongueur(op, ecrire);
+    if (l == -1) return false;
+    if (l == -2) {
+      if (op == 149) {
+        if (i >= n) return false;
+        l = b[i++];
+        if (l < 1 || l > 14) return false;
+      } else {                          // 140
+        if (i + 1 >= n) return false;
+        if (b[i] > 4 || b[i + 1] < 1 || b[i + 1] > 16) return false;
+        l = 2 * b[i + 1];
+        i += 2;
+      }
+    }
+    if (i + (size_t)l > n) return false;
+    i += (size_t)l;
+  }
+  return true;
+}
+
+int sondeHexVal(char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  return -1;
+}
+
+void sondeHex(String& j, const uint8_t* b, size_t n) {
+  static const char H[] = "0123456789ABCDEF";
+  for (size_t i = 0; i < n; i++) { j += H[b[i] >> 4]; j += H[b[i] & 15]; }
+}
+
+// Écoute le robot pendant « ms » millisecondes au plus ; range ce qui arrive dans rx (« max » octets au plus) et le
+// montre à sniffByte(), pour que le texte du robot soit gardé. Si « calme » n'est pas nul, s'arrête dès que le robot
+// s'est tu pendant « calme » millisecondes après un premier octet. Renvoie le nombre total d'octets reçus.
+size_t sondeEcoute(uint8_t* rx, size_t max, uint32_t ms, uint32_t calme, uint32_t* premier) {
+  size_t got = 0;
+  uint32_t t0 = millis(), dernier = t0;
+  *premier = 0;
+  while (millis() - t0 < ms) {
+    if (robot.available()) {
+      uint8_t c = (uint8_t)robot.read();
+      dernier = millis();
+      if (!got) *premier = dernier - t0;
+      sniffByte(c);
+      if (got < max) rx[got] = c;
+      got++;
+    } else {
+      if (got && calme && millis() - dernier >= calme) break;
+      delay(1);
+    }
+  }
+  lastExchangeMs = millis();
+  return got;
+}
+
+void handleSonde() {
+  const char* TXT = "text/plain; charset=utf-8";
+  if (!sondeCleOk()) { http.send(403, TXT, "clé refusée"); return; }
+  if (driving || tourActive() || mouvActive()) { http.send(409, TXT, "refusé : le robot bouge"); return; }
+  String action = http.arg("action");
+  bool lire = action == "lire", ecrire = action == "ecrire", essai = action == "essai", aplomb = action == "aplomb";
+  if (!lire && !ecrire && !essai && !aplomb) { http.send(400, TXT, "action : lire, ecrire, essai ou aplomb"); return; }
+
+  uint8_t b[40];
+  size_t n = 0;
+  String o = http.arg("o");
+  if (o.length() % 2 || o.length() > 2 * sizeof(b)) { http.send(400, TXT, "o : octets en hexadécimal, deux caractères par octet, 40 octets au plus"); return; }
+  for (size_t i = 0; i < o.length(); i += 2) {
+    int h = sondeHexVal(o[i]), l = sondeHexVal(o[i + 1]);
+    if (h < 0 || l < 0) { http.send(400, TXT, "o : octets en hexadécimal, deux caractères par octet, 40 octets au plus"); return; }
+    b[n++] = (uint8_t)(h * 16 + l);
+  }
+  uint32_t ecoute = http.hasArg("ecoute") ? (uint32_t)constrain(http.arg("ecoute").toInt(), 20L, 3000L) : 80;
+  uint32_t calme = http.hasArg("calme") ? (uint32_t)constrain(http.arg("calme").toInt(), 5L, 500L) : 0;
+
+  static uint8_t rx[200];
+  uint8_t q[8];
+  size_t got = 0, nq = 0;
+  uint32_t premier = 0, premierQ = 0;
+  uint8_t roues = 0, base = 0, modeAvant = 0;
+
+  if (aplomb) {
+    if (n) { http.send(400, TXT, "aplomb : sans octets"); return; }
+    if (!sondeEssaiFait || millis() - sondeEssaiMs > 60000UL) { http.send(409, TXT, "aplomb : permis seulement dans la minute qui suit un essai"); return; }
+    finishPendingRead();
+    waitInterQuery();
+    flushInput();
+    for (int i = 0; i < 40; i++) {
+      robot.write((uint8_t)0);
+      if (i % 8 == 7) { robot.flush(); delay(5); }
+    }
+    robot.write((uint8_t)OI_STREAM_PAUSE);            // au cas où un ordre inconnu aurait lancé le flux continu
+    robot.write((uint8_t)0);
+    robot.write((uint8_t)OI_START);
+    robot.flush();
+    got = sondeEcoute(rx, sizeof(rx), 80, 0, &premier);
+  } else {
+    if (sondeDouteux) { http.send(409, TXT, "refusé : la liaison est restée douteuse après le dernier essai ; action=aplomb d'abord"); return; }
+    if (essai) {
+      if (n == 0 || n > 12) { http.send(400, TXT, "essai : de 1 à 12 octets"); return; }
+      for (size_t i = 0; i < n; i++) {
+        if (sondeInterdit(b[i])) { http.send(400, TXT, String("essai : octet interdit ") + String((int)b[i])); return; }
+      }
+      if (!readSensor(7, &roues, 1) || !readSensor(34, &base, 1) || !readSensor(35, &modeAvant, 1)) {
+        http.send(409, TXT, "essai refusé : le robot ne répond pas"); return;
+      }
+      if ((roues & 0x0C) != 0x0C) { http.send(409, TXT, "essai refusé : les deux roues du robot doivent être levées (robot posé sur un support, roues dans le vide)"); return; }
+      if (base != 0) { http.send(409, TXT, "essai refusé : le robot est sur sa base ou sur son chargeur"); return; }
+    } else if (n && !sondeComplet(b, n, ecrire)) {
+      http.send(400, TXT, "octets refusés : seulement des ordres documentés, permis dans cette action, et complets (voir web.ino)"); return;
+    }
+    finishPendingRead();
+    waitInterQuery();
+    flushInput();
+    if (n) { robot.write(b, n); robot.flush(); }
+    got = sondeEcoute(rx, sizeof(rx), ecoute, calme, &premier);
+  }
+  if (essai || aplomb) {                              // la question de contrôle : un octet attendu, le mode de la liaison
+    robot.write((uint8_t)OI_SENSORS);
+    robot.write((uint8_t)35);
+    nq = sondeEcoute(q, sizeof(q), 80, 15, &premierQ);
+    sondeDouteux = (nq != 1);
+  }
+  if (essai) { sondeEssaiMs = millis(); sondeEssaiFait = true; }
+  if (!lire) st.ok = false;                           // état du robot tenu pour inconnu jusqu'à la prochaine lecture complète
+  sondeFinMs = millis() + (sondeDouteux ? 60000UL : 3000UL);
+  sondeSuspend = true;
+
+  size_t gardes = got < sizeof(rx) ? got : sizeof(rx);
+  size_t gardesQ = nq < sizeof(q) ? nq : sizeof(q);
+  String j;
+  j.reserve(260 + 2 * (n + gardes + gardesQ));
+  j += "{\"action\":\""; j += action; j += "\",\"envoye\":\""; sondeHex(j, b, n);
+  j += "\",\"recus\":"; j += (unsigned long)got; j += ",\"octets\":\""; sondeHex(j, rx, gardes);
+  j += "\",\"premier_ms\":"; j += (unsigned long)premier;
+  if (essai || aplomb) {
+    j += ",\"question_n\":"; j += (unsigned long)nq; j += ",\"question\":\""; sondeHex(j, q, gardesQ); j += "\"";
+  }
+  if (essai) {
+    j += ",\"roues\":"; j += (int)roues; j += ",\"base\":"; j += (int)base; j += ",\"mode_avant\":"; j += (int)modeAvant;
+  }
+  j += ",\"douteux\":"; j += sondeDouteux ? "true" : "false"; j += "}";
+  if (!lire) {
+    String h;
+    sondeHex(h, b, n);
+    out.printf("Sonde, %s : %u octet(s) envoyé(s) [%s], %lu reçu(s)%s\n", action.c_str(), (unsigned)n, h.c_str(), (unsigned long)got,
+               (essai || aplomb) ? (sondeDouteux ? " ; question de contrôle SANS réponse : liaison douteuse" : " ; question de contrôle : bonne") : "");
+  }
+  http.send(200, "application/json", j);
+}
+#endif   // CLE_SONDE
 
 // Réseaux à portée : la première requête lance une recherche (asynchrone, 2 à 3 s), les suivantes renvoient la liste
 void handleScan() {

@@ -4,6 +4,9 @@
 // #define AP_SSID  "Roomba694"    // nom du réseau Wi-Fi créé par la carte
 // #define AP_PASS  "roomba694"    // mot de passe, 8 caractères minimum : point d'accès et ArduinoOTA (la page /update n'en demande plus)
 // #define HOSTNAME "roomba694"    // nom sur le réseau : http://roomba694.local une fois la carte sur le réseau de la maison
+// #define CLE_SONDE "une-longue-suite-de-caracteres-au-hasard"   // v13 : clé de la route /api/sonde, 12 caractères au moins,
+//                                 // lettres, chiffres, - et _ seulement. Tant que cette ligne reste en commentaire, la route
+//                                 // n'est pas compilée du tout. L'outil rv_sonde_robot.py lit cette clé dans secrets.h.
 //
 // Le réseau Wi-Fi de la maison ne se règle pas ici : il s'enregistre depuis la page /wifi de la carte
 // et reste stocké dans la mémoire de la carte (effacé par le bouton « Oublier » de cette page).

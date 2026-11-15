@@ -1,14 +1,21 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
-  Version 13 — 2026-11-14 (nuit) : le texte que le robot écrit de lui-même est gardé en entier (sondage 10 de la revue,
-    choisi par l'utilisateur : « J'aime bien le 10 »). Une seule retouche, en lecture : aucun ordre nouveau vers le robot,
-    rien de changé à la conduite ni aux sécurités.
+  Version 13 — 2026-11-14 (nuit) : deux ajouts demandés par l'utilisateur ; la conduite et les sécurités existantes ne
+    changent pas.
+    (1) Le texte que le robot écrit de lui-même est gardé en entier (sondage 10 de la revue : « J'aime bien le 10 »).
     Jusqu'à la v12 le cerveau n'affichait que les 160 premiers caractères d'un texte, sans ses retours à la ligne, et
     seulement sur la console. Désormais chaque ligne reçue est gardée entière, avec l'heure de la carte, dans une
     mémoire tournante de 4 ko : /api/texte?depuis=N la renvoie (web.ino) et la console l'affiche ligne par ligne.
     Les lignes « bat: » que le robot envoie chaque seconde quand il charge ne remplissent pas cette mémoire : la
     dernière est gardée à part (« bat » dans /api/state) ; une ligne n'est rangée que si son champ « state » ou
     « mode » change, ou une fois par minute.
+    (2) La route /api/sonde (web.ino), pour chercher ce que le robot accepte par sa prise au-delà des ordres
+    documentés (« prépare aussi quelque chose pour trouver les autres commandes et ou ce que tu peux inserer dans le
+    robot par ce port »). Elle n'existe que si secrets.h définit CLE_SONDE et exige cette clé à chaque demande. Elle
+    refuse toujours les ordres de roues, de brosses, de nettoyage, de retour à la base, de débit, et le mode Full.
+    Un ordre inconnu ne part que si le cerveau constate lui-même, juste avant, que les deux roues du robot sont
+    levées et qu'il n'est pas sur sa base. Pendant une sonde la lecture périodique est suspendue ; ensuite aucun
+    ordre de roues ne repart avant une lecture complète réussie.
   Version 12 — 2026-11-14 (soir) : corrections demandées par l'utilisateur après la revue du jour (notes/J_revue_localisation.md).
     Sept retouches indépendantes ; aucune ne change la conduite du robot ni une sécurité existante.
     (1) Le cap du gyroscope est cumulé dans un nombre à 53 bits (double) propre à sa tâche ; imu.yawDeg n'en est plus que
@@ -145,6 +152,24 @@ constexpr uint32_t POLL_BACKOFF_MS   = 2000;   // période quand le robot ne ré
 // octet seul : un ordre permis mais incomplet (une chanson annoncée plus longue qu'elle n'est) laissait le robot attendre
 // la suite, et il prenait alors pour elle les octets des ordres suivants du cerveau.
 #define ESSAI_LIAISON 0
+// v13 : /api/sonde (web.ino) sert à chercher ce que le robot accepte par sa prise au-delà des ordres documentés
+// (demande de l'utilisateur, 2026-11-14 : « prépare aussi quelque chose pour trouver les autres commandes »).
+// Elle n'est compilée que si secrets.h définit CLE_SONDE, et chaque demande doit porter cette clé : un firmware compilé
+// sans le fichier secrets.h de ce PC ne contient pas cette route. Les règles sont écrites devant handleSonde().
+// Pendant une sonde, puis 3 s (60 s si la liaison est restée douteuse), la lecture périodique, l'impulsion anti-veille
+// et l'essai automatique à 19200 bauds sont suspendus : leurs octets se mêleraient à ceux de la sonde.
+#ifdef CLE_SONDE
+constexpr bool SONDE_COMPILEE = true;
+#else
+constexpr bool SONDE_COMPILEE = false;
+#endif
+uint32_t sondeFinMs = 0;            // heure jusqu'à laquelle ces automatismes sont suspendus
+bool     sondeSuspend = false;      // une sonde a eu lieu et cette heure n'est pas passée
+bool     sondeDouteux = false;      // le dernier essai n'a pas eu de réponse à sa question de contrôle : le robot attend peut-être la suite d'un ordre
+bool sondeActive() {
+  if (sondeSuspend && (int32_t)(sondeFinMs - millis()) <= 0) sondeSuspend = false;
+  return sondeSuspend;
+}
 
 // ---------- Opcodes OI utilisés ----------
 enum : uint8_t {
@@ -184,6 +209,7 @@ volatile bool    staGotIp = false;
 void handleRoot();  void handleState();  void handleCmd();  void handleSpeed();  void handleLog();  void handleScan();
 void handleWifiGet();  void handleWifiPost();  void handleWifiForget();
 void handleUpdateGet();  void handleUpdateDone();  void handleUpdateUpload();  void handleRadar();  void handleEssai();
+void handleTexte();  void handleSonde();   // v13
 // Radar à ultrasons (HC-SR04 sur servo SG90) : défini dans radar.ino (troisième fichier du sketch), déclaré ici pour la boucle
 void radarSetup();  void radarTick();  bool radarForwardBlocked();  void radarCycleMode();  void radarPrintStatus();
 int  radarFrontMm();  void radarStateJson(String& j);
@@ -898,6 +924,7 @@ bool pollFinish(bool ok, const uint8_t* buf) {
 
 // Appelée en boucle : demande les capteurs à la cadence voulue et ramasse la réponse sans bloquer.
 void pollTick() {
+  if (!allPending && sondeActive()) return;   // v13 : pas de lecture périodique pendant une sonde (web.ino)
   if (allPending) {                // réponse attendue : on ramasse ce qui est arrivé
     int r = pollCollect();
     if (r == 0) return;
@@ -1344,6 +1371,9 @@ void setupWifi() {
   http.on("/api/speed", HTTP_GET, handleSpeed);
   http.on("/api/log", HTTP_GET, handleLog);
   http.on("/api/texte", HTTP_GET, handleTexte);   // v13 : texte écrit par le robot, en entier (web.ino)
+#ifdef CLE_SONDE
+  http.on("/api/sonde", HTTP_GET, handleSonde);   // v13 : recherche de ce que le robot accepte par sa prise, sous clé (web.ino)
+#endif
   http.on("/api/scan", HTTP_GET, handleScan);
   http.on("/api/radar", HTTP_GET, handleRadar);
   http.on("/api/tour", HTTP_GET, handleTour);
@@ -1496,7 +1526,7 @@ void setup() {
 
 void loop() {
   if (driving && millis() - lastDriveMs > DRIVE_TIMEOUT_MS) stopWheels();
-  if (keepAwake && millis() - lastKeepAwakeMs > KEEP_AWAKE_MS) { brcPulse(); lastKeepAwakeMs = millis(); }
+  if (keepAwake && !sondeActive() && millis() - lastKeepAwakeMs > KEEP_AWAKE_MS) { brcPulse(); lastKeepAwakeMs = millis(); }   // v13 : pas pendant une sonde
   while (Serial.available()) {
     char c = (char)Serial.read();
     if (c < 0x20 || c > 0x7E) continue;   // fins de ligne et octets parasites ignorés (l'espace, touche stop, passe)
@@ -1511,5 +1541,5 @@ void loop() {
   radarTick();   // arrêt des roues devant un obstacle, messages du radar
   tourTick();    // tour sur place : ordres de roues répétés, conditions d'arrêt
   mouvTick();    // v10 : avance ou rotation exécutée par le cerveau (mouv.ino)
-  if (baudRescuePending && !driving && !tourActive()) { baudRescuePending = false; baudRescue(true); }
+  if (baudRescuePending && !driving && !tourActive() && !sondeActive()) { baudRescuePending = false; baudRescue(true); }   // v13 : pas pendant une sonde
 }
