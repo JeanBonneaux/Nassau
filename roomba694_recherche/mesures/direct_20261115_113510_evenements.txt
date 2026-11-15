@@ -1,0 +1,166 @@
+# heure <tab> importance (1 à 3) <tab> événement — suivi en direct
+11:35:10.133	2	je suis la séance exploration31_20261115_110551
+11:35:10.133	1	rattrapage : 34309 lignes et 1 stations déjà écrites ont été relues sans rien redire
+11:36:19.803	2	station 0 : 9 paliers ; le filtre a corrigé la position de 51 mm et -0.9° après 0.3 m (166 mm par mètre) ; note 0.83, étalement 278 mm ; aucun repère ici
+11:36:20.367	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1472 mAh
+11:36:23.550	1	tour de la station 0 : terminé, 382° en 13.7 s, 123 mesures ; la même paroi relue à la fin est à +2 mm (4 directions)
+11:36:23.550	1	station 0 (11:36:19) : position retenue à 52 mm de l'estime depuis le tour précédent, après 1.8 m
+11:37:29.876	2	avance de 398 mm à 84 mm/s vers une cible à 898 mm : le capteur de distance voit 0.884 mm par mm compté (écart 5 mm) : cible de biais, ou roues qui comptent trop
+11:37:44.832	1	avance de 835 mm à 85 mm/s vers une cible à 2318 mm : le capteur de distance voit 1.018 mm par mm compté (écart 7 mm)
+11:38:12.967	1	sol sombre ou bord sous un capteur de vide : 1174, 2630, 2616, 2286 (gauche, avant gauche, avant droit, droit)
+11:38:18.102	1	sol sombre ou bord sous un capteur de vide : 2450, 1812, 1203, 1057 (gauche, avant gauche, avant droit, droit)
+11:38:23.111	1	sol sombre ou bord sous un capteur de vide : 1112, 1561, 1385, 1100 (gauche, avant gauche, avant droit, droit)
+11:38:52.552	1	sol sombre ou bord sous un capteur de vide : 1569, 1553, 1155, 1252 (gauche, avant gauche, avant droit, droit)
+11:38:58.198	1	sol sombre ou bord sous un capteur de vide : 1038, 1116, 1361, 918 (gauche, avant gauche, avant droit, droit)
+11:39:03.236	1	sol sombre ou bord sous un capteur de vide : 1345, 1138, 784, 1049 (gauche, avant gauche, avant droit, droit)
+11:39:08.253	1	sol sombre ou bord sous un capteur de vide : 1710, 1823, 818, 805 (gauche, avant gauche, avant droit, droit)
+11:39:44.085	1	sol sombre ou bord sous un capteur de vide : 1406, 1679, 2222, 1168 (gauche, avant gauche, avant droit, droit)
+11:39:49.117	1	sol sombre ou bord sous un capteur de vide : 1041, 2456, 902, 1070 (gauche, avant gauche, avant droit, droit)
+11:39:54.154	1	sol sombre ou bord sous un capteur de vide : 2449, 2429, 996, 862 (gauche, avant gauche, avant droit, droit)
+11:39:59.701	2	station 0 : 5 paliers ; le filtre a corrigé la position de 178 mm et +1.2° après 2.5 m (72 mm par mètre) ; note 0.89, étalement 295 mm ; aucun repère ici
+11:39:59.701	1	tour de la station 0 : terminé, 380° en 14.2 s, 124 mesures ; la même paroi relue à la fin est à -12 mm (4 directions)
+11:39:59.701	3	SAUT DE POSITION à la station 0 (11:39:59) : la position retenue est à 180 mm de ce que donnent les roues et le gyroscope depuis le tour précédent (2.5 m de chemin) ; écart (-39, -175) mm ; filtre ou repères à vérifier
+11:40:00.275	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1461 mAh
+11:40:10.123	2	bilan : chemin compté 17.4 m en 33.8 min ; temps : arrêt 76 %, avance 9 %, recul 4 %, pivot 9 %, tour 2 % ; lectures : une toutes les 47 ms (95 % sous 63 ms) ; 25 avances, 62 pivots, 3 tours sur place ; 10 séries de centrage (+90, -180, +90) : environ 14 mm de glissement que les roues ne comptent pas, à 1,4 mm par série (mesuré devant un mur nu le 15) ; murs de face : 8 avances, 4.5 m, le capteur de distance voit 0.9971 mm par mm compté ; cibles devant : 11 avances, roues et capteur de distance diffèrent de 15 mm en médiane, 46 mm au pire ; cap : gyroscope / roues = 1.0022 sur 60 pivots
+11:40:10.123	2	bilan, suite : alertes : roues qui forcent 0, avances déviées 1, pivots en désaccord 1, contacts 1, roues levées 0, trous de lecture 0 (le plus long 0 ms), retards du Wi-Fi 0 (le plus long 0.0 s), mode Safe tombé en roulant 0 (changements de mode en tout : 3), compteurs à l'arrêt 3 ; courant au repos -143 mA ; batterie : 1552 -> 1461 mAh en 34 min, soit 2.7 mAh par minute dépensés (à ce rythme, 547 min au plus avant qu'elle soit vide)
+11:40:10.123	2	bilan, cartographie : 3 stations, 0 portes possibles ; position retenue contre estime, d'un tour au suivant : médiane 116 mm, la plus forte 180 mm, 1 sauts de 120 mm ou plus sur moins de 2.5 m ; corrections du filtre : médiane 107 mm, la plus forte 178 mm ; note médiane 0.83, la plus basse 0.72 ; dérive entre deux stations : 119 mm par mètre en médiane ; fermeture des tours : -6 mm en moyenne, 12 mm au pire (3 tours vérifiables)
+11:40:10.123	1	capteurs optiques du pare-chocs selon la distance lue devant (médianes) : 80 à 120 mm : centre gauche 497, centre droit 112, avant gauche 202, avant droit 119 (1101 lectures) | 120 à 160 mm : centre gauche 119, centre droit 20, avant gauche 44, avant droit 64 (601 lectures) | 160 à 220 mm : centre gauche 84, centre droit 16, avant gauche 32, avant droit 62 (29 lectures) | 220 à 300 mm : centre gauche 40, centre droit 22, avant gauche 22, avant droit 44 (738 lectures) | 300 à 450 mm : centre gauche 33, centre droit 6, avant gauche 17, avant droit 35 (1919 lectures)
+11:41:16.685	1	sol sombre ou bord sous un capteur de vide : 1139, 1321, 2431, 1356 (gauche, avant gauche, avant droit, droit)
+11:41:23.040	1	sol sombre ou bord sous un capteur de vide : 2436, 1090, 1694, 760 (gauche, avant gauche, avant droit, droit)
+11:41:28.083	1	sol sombre ou bord sous un capteur de vide : 2071, 1134, 756, 1191 (gauche, avant gauche, avant droit, droit)
+11:41:33.114	1	sol sombre ou bord sous un capteur de vide : 1394, 2438, 660, 2187 (gauche, avant gauche, avant droit, droit)
+11:41:35.397	1	la distance devant ne baisse pas (1068 mm) alors que les roues comptent 85 mm en 1,5 s
+11:41:38.116	1	sol sombre ou bord sous un capteur de vide : 1027, 2234, 1142, 1561 (gauche, avant gauche, avant droit, droit)
+11:41:45.780	1	avance de 1282 mm à 58 mm/s vers une cible à 1656 mm : le capteur de distance voit 0.948 mm par mm compté (écart 9 mm) : cible de biais, ou roues qui comptent trop
+11:43:52.522	2	station 0 : 9 paliers ; le filtre a corrigé la position de 165 mm et -0.6° après 1.4 m (115 mm par mètre) ; note 0.66, étalement 268 mm ; aucun repère ici
+11:43:53.106	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1450 mAh
+11:43:53.106	1	tour de la station 0 : terminé, 382° en 13.7 s, 125 mesures ; la même paroi relue à la fin est à +2 mm (3 directions)
+11:43:53.106	3	SAUT DE POSITION à la station 0 (11:43:52) : la position retenue est à 184 mm de ce que donnent les roues et le gyroscope depuis le tour précédent (1.4 m de chemin) ; écart (-94, -158) mm ; filtre ou repères à vérifier
+11:45:10.133	2	bilan : chemin compté 18.8 m en 38.8 min ; temps : arrêt 77 %, avance 9 %, recul 3 %, pivot 8 %, tour 2 % ; lectures : une toutes les 47 ms (95 % sous 63 ms) ; 27 avances, 64 pivots, 4 tours sur place ; 10 séries de centrage (+90, -180, +90) : environ 14 mm de glissement que les roues ne comptent pas, à 1,4 mm par série (mesuré devant un mur nu le 15) ; murs de face : 8 avances, 4.5 m, le capteur de distance voit 0.9971 mm par mm compté ; cibles devant : 12 avances, roues et capteur de distance diffèrent de 16 mm en médiane, 67 mm au pire ; cap : gyroscope / roues = 1.0028 sur 63 pivots
+11:45:10.133	2	bilan, suite : alertes : roues qui forcent 0, avances déviées 1, pivots en désaccord 1, contacts 1, roues levées 0, trous de lecture 0 (le plus long 0 ms), retards du Wi-Fi 0 (le plus long 0.0 s), mode Safe tombé en roulant 0 (changements de mode en tout : 3), compteurs à l'arrêt 3 ; courant au repos -143 mA ; batterie : 1552 -> 1447 mAh en 39 min, soit 2.7 mAh par minute dépensés (à ce rythme, 539 min au plus avant qu'elle soit vide)
+11:45:10.133	2	bilan, cartographie : 4 stations, 0 portes possibles ; position retenue contre estime, d'un tour au suivant : médiane 180 mm, la plus forte 184 mm, 2 sauts de 120 mm ou plus sur moins de 2.5 m ; corrections du filtre : médiane 136 mm, la plus forte 178 mm ; note médiane 0.77, la plus basse 0.66 ; dérive entre deux stations : 115 mm par mètre en médiane ; fermeture des tours : -4 mm en moyenne, 12 mm au pire (4 tours vérifiables)
+11:45:10.133	1	capteurs optiques du pare-chocs selon la distance lue devant (médianes) : 80 à 120 mm : centre gauche 497, centre droit 112, avant gauche 202, avant droit 119 (1101 lectures) | 120 à 160 mm : centre gauche 119, centre droit 20, avant gauche 44, avant droit 64 (607 lectures) | 160 à 220 mm : centre gauche 80, centre droit 17, avant gauche 32, avant droit 60 (41 lectures) | 220 à 300 mm : centre gauche 52, centre droit 20, avant gauche 65, avant droit 57 (2228 lectures) | 300 à 450 mm : centre gauche 52, centre droit 23, avant gauche 29, avant droit 56 (4174 lectures)
+11:45:13.367	1	sol sombre ou bord sous un capteur de vide : 2673, 2660, 1117, 2636 (gauche, avant gauche, avant droit, droit)
+11:45:18.659	1	sol sombre ou bord sous un capteur de vide : 1615, 1609, 1136, 1799 (gauche, avant gauche, avant droit, droit)
+11:45:20.367	1	la distance devant ne baisse pas (983 mm) alors que les roues comptent 128 mm en 1,5 s
+11:45:23.687	1	sol sombre ou bord sous un capteur de vide : 2438, 1022, 940, 2202 (gauche, avant gauche, avant droit, droit)
+11:45:28.688	1	sol sombre ou bord sous un capteur de vide : 1066, 2215, 837, 893 (gauche, avant gauche, avant droit, droit)
+11:45:40.342	1	sol sombre ou bord sous un capteur de vide : 1055, 2500, 798, 825 (gauche, avant gauche, avant droit, droit)
+11:45:45.394	1	sol sombre ou bord sous un capteur de vide : 2427, 1071, 1356, 1781 (gauche, avant gauche, avant droit, droit)
+11:45:50.409	1	sol sombre ou bord sous un capteur de vide : 1825, 1272, 888, 1096 (gauche, avant gauche, avant droit, droit)
+11:46:42.303	2	contact du pare-chocs gauche à 80 mm/s ; le capteur de distance lisait 1310 mm ; capteurs optiques du centre 37 et 16
+11:46:42.303	2	console : Réflexe : pare-chocs, à gauche, roues arrêtées par le cerveau. Reculez pour vous dégager (flèche du bas).
+11:47:49.312	1	avance de 215 mm à 57 mm/s vers une cible à 2765 mm : le capteur de distance voit 1.097 mm par mm compté (écart 6 mm) : cible de biais, ou roues qui comptent trop
+11:47:58.047	2	contact du pare-chocs gauche à 58 mm/s ; le capteur de distance lisait 2252 mm ; capteurs optiques du centre 31 et 12
+11:47:58.047	2	console : Réflexe : pare-chocs, à gauche, roues arrêtées par le cerveau. Reculez pour vous dégager (flèche du bas).
+11:49:25.122	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 179°
+11:49:48.590	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 168°
+11:50:05.319	1	infrarouge de la base : dessus 172, avant gauche 0, avant droit 0, cap 168°
+11:50:05.538	1	la distance devant ne baisse pas (1290 mm) alors que les roues comptent 84 mm en 1,5 s
+11:50:06.256	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 168°
+11:50:10.161	2	bilan : chemin compté 25.2 m en 43.8 min ; temps : arrêt 75 %, avance 10 %, recul 4 %, pivot 9 %, tour 2 % ; lectures : une toutes les 47 ms (95 % sous 64 ms) ; 33 avances, 77 pivots, 4 tours sur place ; 12 séries de centrage (+90, -180, +90) : environ 17 mm de glissement que les roues ne comptent pas, à 1,4 mm par série (mesuré devant un mur nu le 15) ; murs de face : 8 avances, 4.5 m, le capteur de distance voit 0.9971 mm par mm compté ; cibles devant : 13 avances, roues et capteur de distance diffèrent de 17 mm en médiane, 67 mm au pire ; cap : gyroscope / roues = 1.0032 sur 75 pivots
+11:50:10.161	2	bilan, suite : alertes : roues qui forcent 0, avances déviées 1, pivots en désaccord 1, contacts 3, roues levées 0, trous de lecture 0 (le plus long 0 ms), retards du Wi-Fi 0 (le plus long 0.0 s), mode Safe tombé en roulant 0 (changements de mode en tout : 3), compteurs à l'arrêt 3 ; courant au repos -143 mA ; batterie : 1552 -> 1432 mAh en 44 min, soit 2.7 mAh par minute dépensés (à ce rythme, 526 min au plus avant qu'elle soit vide)
+11:50:10.161	2	bilan, cartographie : 4 stations, 0 portes possibles ; position retenue contre estime, d'un tour au suivant : médiane 180 mm, la plus forte 184 mm, 2 sauts de 120 mm ou plus sur moins de 2.5 m ; corrections du filtre : médiane 136 mm, la plus forte 178 mm ; note médiane 0.77, la plus basse 0.66 ; dérive entre deux stations : 115 mm par mètre en médiane ; fermeture des tours : -4 mm en moyenne, 12 mm au pire (4 tours vérifiables)
+11:50:10.161	1	capteurs optiques du pare-chocs selon la distance lue devant (médianes) : 80 à 120 mm : centre gauche 497, centre droit 112, avant gauche 202, avant droit 119 (1101 lectures) | 120 à 160 mm : centre gauche 119, centre droit 20, avant gauche 44, avant droit 64 (607 lectures) | 160 à 220 mm : centre gauche 80, centre droit 17, avant gauche 32, avant droit 60 (41 lectures) | 220 à 300 mm : centre gauche 52, centre droit 20, avant gauche 65, avant droit 57 (2228 lectures) | 300 à 450 mm : centre gauche 52, centre droit 23, avant gauche 29, avant droit 56 (4174 lectures)
+11:51:12.004	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 152°
+11:51:22.542	1	avance de 303 mm à 57 mm/s vers une cible à 2007 mm : le capteur de distance voit 1.016 mm par mm compté (écart 6 mm)
+11:51:25.752	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 289°
+11:51:26.863	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 0, cap 262°
+11:51:27.014	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 164, cap 260°
+11:51:47.033	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 164, cap 260°
+11:51:52.353	1	infrarouge de la base : dessus 164, avant gauche 160, avant droit 0, cap 263°
+11:51:52.391	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 265°
+11:52:00.558	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 133°
+11:52:04.064	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 168, cap 231°
+11:52:04.168	1	infrarouge de la base : dessus 168, avant gauche 168, avant droit 168, cap 234°
+11:52:04.327	1	infrarouge de la base : dessus 168, avant gauche 172, avant droit 168, cap 238°
+11:52:04.512	1	infrarouge de la base : dessus 172, avant gauche 172, avant droit 168, cap 242°
+11:52:04.602	1	infrarouge de la base : dessus 172, avant gauche 172, avant droit 172, cap 246°
+11:52:04.682	1	infrarouge de la base : dessus 172, avant gauche 164, avant droit 172, cap 248°
+11:52:04.848	1	infrarouge de la base : dessus 172, avant gauche 160, avant droit 172, cap 253°
+11:52:04.933	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 172, cap 255°
+11:52:07.921	2	station 0 : 10 paliers ; le filtre a corrigé la position de 70 mm et -0.1° après 6.9 m (10 mm par mètre) ; note 0.81, étalement 375 mm ; aucun repère ici
+11:52:08.504	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1427 mAh
+11:52:12.547	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 282°
+11:52:12.835	1	tour de la station 0 : terminé, 380° en 13.7 s, 125 mesures ; la même paroi relue à la fin est à +0 mm (3 directions)
+11:52:12.835	2	station 0 (11:52:07) : position retenue à 743 mm de l'estime depuis le tour précédent, après 6.9 m (chemin trop long pour juger)
+11:52:29.079	2	mode lu 3 -> 2 : le mode Safe est tombé
+11:52:29.079	1	compteurs de roues qui avancent alors que le robot est immobile : gauche +1 pas, droite +2 pas en 1 lecture(s)
+11:52:32.036	3	console : Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+12:01:46.421	2	je suis la séance exploration32_20261115_120142
+12:01:46.421	1	rattrapage : 54945 lignes et 5 stations déjà écrites ont été relues sans rien redire
+12:01:55.199	3	console : Le robot envoie du texte : il vient de démarrer ou de se réveiller (fois numéro 5). Pour reprendre la main : s, puis f.
+12:01:55.199	3	console :   texte du robot : 8238378 key-wakeup-any
+12:01:55.199	3	console :   texte du robot : 8238378 slept for 4 minutes 25 seconds
+12:01:55.205	3	console :   texte du robot : 8238379 2020-05-13-1928-L   
+12:01:55.215	3	console :   texte du robot : 8238379 r3-robot/branches/aero-support:7587
+12:01:55.215	3	console :   texte du robot : 8238380  CLEAN
+12:01:55.215	3	console :   texte du robot : 8238380 wifi-version: 3.5.62
+12:01:55.231	3	console :   texte du robot : 8238381 bootloader id: [identifiant masqué] 
+12:01:55.231	3	console :   texte du robot : 8238382 assembly: ningbo-wifi-v2
+12:01:55.231	3	console :   texte du robot : 8238382 revision: 8
+12:01:55.231	3	console :   texte du robot : 8238383 flash version: 13
+12:01:55.242	3	console :   texte du robot : 8238383 flash info crc passed: 1
+12:01:55.244	3	console :   texte du robot : 8238384 battery-current-zero 252
+12:01:55.729	3	le robot écrit : key-wakeup-any
+12:01:55.729	3	le robot écrit : slept for 4 minutes 25 seconds
+12:01:55.729	3	le robot écrit : 2020-05-13-1928-L   
+12:01:55.729	3	le robot écrit : r3-robot/branches/aero-support:7587
+12:01:55.729	3	le robot écrit :  CLEAN
+12:01:55.729	3	le robot écrit : wifi-version: 3.5.62
+12:01:55.729	3	le robot écrit : bootloader id: [identifiant masqué] 
+12:01:55.729	3	le robot écrit : assembly: ningbo-wifi-v2
+12:01:55.729	3	le robot écrit : revision: 8
+12:01:55.729	3	le robot écrit : flash version: 13
+12:01:55.729	3	le robot écrit : flash info crc passed: 1
+12:01:55.729	3	le robot écrit : battery-current-zero 252
+12:01:57.198	1	le robot s'est tu 567 s (liaison fermée ou robot endormi)
+12:01:57.294	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 282°
+12:01:59.884	1	mode lu 2 -> 3
+12:01:59.884	1	compteurs de roues qui avancent alors que le robot est immobile : gauche +1 pas, droite +2 pas en 1 lecture(s)
+12:02:23.721	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 131°
+12:02:27.190	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 168, cap 228°
+12:02:27.331	1	infrarouge de la base : dessus 168, avant gauche 160, avant droit 168, cap 232°
+12:02:27.515	1	infrarouge de la base : dessus 168, avant gauche 168, avant droit 168, cap 234°
+12:02:27.534	1	infrarouge de la base : dessus 168, avant gauche 172, avant droit 168, cap 237°
+12:02:27.644	1	infrarouge de la base : dessus 172, avant gauche 172, avant droit 168, cap 240°
+12:02:27.786	1	infrarouge de la base : dessus 172, avant gauche 172, avant droit 172, cap 244°
+12:02:27.895	1	infrarouge de la base : dessus 172, avant gauche 160, avant droit 172, cap 247°
+12:02:28.009	1	infrarouge de la base : dessus 0, avant gauche 160, avant droit 172, cap 250°
+12:02:28.147	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 172, cap 254°
+12:02:28.190	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 164, cap 256°
+12:02:28.347	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 160, cap 260°
+12:02:28.515	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 262°
+12:02:30.795	2	station 0 : 10 paliers ; le filtre a corrigé la position de 49 mm et +0.2° ; note 0.80, étalement 260 mm ; aucun repère ici
+12:02:31.331	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1414 mAh
+12:02:33.409	1	tour de la station 0 : terminé, 380° en 13.7 s, 124 mesures ; pas de paroi nette pour vérifier la fermeture
+12:02:33.409	1	station 0 (12:02:30) : position retenue à 48 mm de l'estime depuis le tour précédent, après 0.0 m
+12:02:43.783	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 179°
+12:02:46.319	1	infrarouge de la base : dessus 164, avant gauche 160, avant droit 172, cap 250°
+12:02:46.580	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 0, cap 258°
+12:02:50.307	2	station 0 : 10 paliers ; le filtre a corrigé la position de 20 mm et +0.2° ; note 0.85, étalement 247 mm ; aucun repère ici
+12:02:50.307	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1413 mAh
+12:02:54.577	1	tour de la station 0 : terminé, 380° en 13.7 s, 124 mesures ; pas de paroi nette pour vérifier la fermeture
+12:02:54.577	1	station 0 (12:02:49) : position retenue à 20 mm de l'estime depuis le tour précédent, après 0.0 m
+12:03:03.847	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 160, cap 223°
+12:03:03.955	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 168, cap 226°
+12:03:04.053	1	infrarouge de la base : dessus 168, avant gauche 168, avant droit 168, cap 228°
+12:03:04.208	1	infrarouge de la base : dessus 168, avant gauche 172, avant droit 168, cap 233°
+12:03:04.311	1	infrarouge de la base : dessus 0, avant gauche 172, avant droit 168, cap 236°
+12:03:04.554	1	infrarouge de la base : dessus 172, avant gauche 172, avant droit 168, cap 240°
+12:03:04.554	1	infrarouge de la base : dessus 172, avant gauche 172, avant droit 172, cap 241°
+12:03:04.612	1	infrarouge de la base : dessus 172, avant gauche 160, avant droit 172, cap 244°
+12:03:04.769	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 172, cap 248°
+12:03:04.861	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 164, cap 251°
+12:03:05.058	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 257°
+12:03:09.293	2	station 0 : 10 paliers ; le filtre a corrigé la position de 21 mm et +0.0° ; note 0.79, étalement 254 mm ; aucun repère ici
+12:03:09.832	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1412 mAh
+12:03:10.359	1	tour de la station 0 : terminé, 380° en 13.7 s, 123 mesures ; la même paroi relue à la fin est à +5 mm (6 directions)
+12:03:10.359	1	station 0 (12:03:09) : position retenue à 21 mm de l'estime depuis le tour précédent, après 0.0 m
+12:03:23.367	2	mode lu 3 -> 2 : le mode Safe est tombé
+12:03:23.367	1	compteurs de roues qui avancent alors que le robot est immobile : gauche +1 pas, droite +2 pas en 1 lecture(s)
+12:03:26.069	3	console : Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+12:03:24.821	2	BILAN FINAL : chemin compté 25.8 m en 47.6 min ; temps : arrêt 75 %, avance 10 %, recul 3 %, pivot 8 %, tour 4 % ; lectures : une toutes les 47 ms (95 % sous 64 ms) ; 35 avances, 79 pivots, 8 tours sur place ; 12 séries de centrage (+90, -180, +90) : environ 17 mm de glissement que les roues ne comptent pas, à 1,4 mm par série (mesuré devant un mur nu le 15) ; murs de face : 9 avances, 4.9 m, le capteur de distance voit 0.9983 mm par mm compté ; cibles devant : 14 avances, roues et capteur de distance diffèrent de 16 mm en médiane, 67 mm au pire ; cap : gyroscope / roues = 1.0051 sur 81 pivots
+12:03:24.821	2	BILAN FINAL, suite : alertes : roues qui forcent 0, avances déviées 1, pivots en désaccord 1, contacts 3, roues levées 0, trous de lecture 0 (le plus long 0 ms), retards du Wi-Fi 0 (le plus long 0.0 s), mode Safe tombé en roulant 0 (changements de mode en tout : 6), compteurs à l'arrêt 6 ; courant au repos -135 mA ; batterie : 1552 -> 1412 mAh en 57 min, soit 2.4 mAh par minute dépensés (à ce rythme, 578 min au plus avant qu'elle soit vide)
+12:03:24.821	2	BILAN FINAL, cartographie : 8 stations, 0 portes possibles ; position retenue contre estime, d'un tour au suivant : médiane 52 mm, la plus forte 743 mm, 2 sauts de 120 mm ou plus sur moins de 2.5 m ; corrections du filtre : médiane 61 mm, la plus forte 178 mm ; note médiane 0.81, la plus basse 0.66 ; dérive entre deux stations : 94 mm par mètre en médiane ; fermeture des tours : -2 mm en moyenne, 12 mm au pire (6 tours vérifiables)
+12:03:24.821	2	capteurs optiques du pare-chocs selon la distance lue devant (médianes) : 80 à 120 mm : centre gauche 497, centre droit 112, avant gauche 202, avant droit 119 (1101 lectures) | 120 à 160 mm : centre gauche 119, centre droit 20, avant gauche 44, avant droit 64 (607 lectures) | 160 à 220 mm : centre gauche 80, centre droit 17, avant gauche 32, avant droit 60 (41 lectures) | 220 à 300 mm : centre gauche 52, centre droit 20, avant gauche 65, avant droit 57 (2228 lectures) | 300 à 450 mm : centre gauche 52, centre droit 23, avant gauche 29, avant droit 56 (4174 lectures)

@@ -30,6 +30,8 @@ Chacun répond à une question. Un tour sur place avant le premier et après le 
 | 7 | Ordres inconnus, un à la fois, par étapes (note L § 4.7) ; robot posé sur un support, les deux roues dans le vide, hors de sa base, quelqu'un à côté ; menée par la session de revue, la navigation ne pilotant pas | Le robot accepte-t-il des ordres que sa documentation ne donne pas ? | peut-être rien ; peut-être un ordre ou une lecture utile | **permis par l'utilisateur le 15 à 10 h 50 (« Oui, essaie »)** ; à faire après les essais roulants |
 
 | 8 | Mesure à la règle, robot arrêté : du devant des deux « yeux » du capteur de distance au devant du pare-chocs ; ou, sans règle, une approche d'un mur nu jusqu'au contact | Où est le capteur de distance sur le robot ? Les outils comptent 143 mm, l'essai 4 et la photo du robot disent 45 à 50 mm | placer chaque écho au bon endroit : 9 cm d'écart sur chaque mur (§ 5.6) | **demandé à l'utilisateur le 15 à 11 h 35** |
+| 9 | Mesure au mètre, robot laissé devant la base où il est depuis 12 h 03 : du devant de la base au bord du robot le plus proche | À quelle distance de la base le robot est-il vraiment ? Quatre façons de la prendre donnent de 1,2 à 1,9 m (§ 5.9) | savoir si le filtre se trompe du nord au sud devant la base | **demandé à l'utilisateur le 15 à 12 h 15** |
+| 10 | Trois tours sur place de suite au même endroit | Le facteur du gyroscope vaut-il encore 1,0045 ? | éviter une erreur de cap de 1° par tour | **fait** à 12 h 02 (§ 5.8) : oui, 1,0040 à 1,0045 |
 
 ## 2. « Mappons loin » : les règles d'une cartographie longue
 
@@ -208,3 +210,31 @@ La session de navigation a cherché la ligne sombre à plusieurs bords du tapis,
 - Le bord du tapis ne se monte pas par petits pas : roues arrêtées contre le bord, elles patinent, le robot pivote de 30° et l'estime compte 11 cm de trop. Il se monte d'un trait, à 60 mm/s.
 - La brosse latérale à 40 cale dans les franges (346 mA, indicateur de surintensité levé) et fait dévier de 8° ; brosse à l'arrêt, la même approche de face tient son cap à 2,6°. Le conseil « brosse en marche » de la note N § 5 ne vaut donc pas pour une approche lente de face dans les franges.
 - Le bas du tapis n'a pas de franges : il se franchit en marche avant sans rien, cap tenu à 0,2°.
+
+### 5.8 Le facteur du gyroscope : vérifié, il n'a pas changé (et une fausse alerte de ma part)
+
+**Ce qui s'est passé.** Entre 11 h 50 et 12 h 00 j'ai envoyé à la session de navigation deux alertes que j'ai dû retirer l'une après l'autre : « votre position est 30 cm trop au sud », tirée de mon estime enchaînée sur vingt minutes, puis « le facteur du gyroscope vaut 1,0013 aujourd'hui et non 1,0045 », tirée de quatre tours du matin. Aucune des deux ne tenait. Je les note ici pour que la leçon reste.
+
+**Mesuré** (`rv_facteur_gyro.py`, résultats dans `results_rv_facteur_gyro.txt` ; `rv_boucle.py` pour un couple de tours).
+
+- Couples de tours faits au même endroit : 1,0040 ± 0,0018 le 10, 1,0039 ± 0,0004 le 13, 1,0040 ± 0,0002 le 14.
+- Le 15, les quatre tours de D12 du matin donnaient 1,0013 ± 0,0007. À ma demande la session de navigation a fait trois tours de suite au même endroit à 12 h 02 (`exploration32_20261115_120142`) : 1,0039, 1,0072 et 1,0080, chacun à 0,002 à 0,004 près. Avec eux le jour donne 1,0025 ± 0,0010.
+- Seconde mesure, indépendante : le recouvrement de la fin de chaque tour sur son début donne 1,0047 ± 0,0011 le 15 (18 tours).
+- Le gyroscope seul, enchaîné du tour de 10 h 41 à celui de 11 h 52 (70 minutes, +2 510° de rotation nette, sept tours dans deux pièces), reste à moins de 2° de chacun des caps retenus par le filtre avec un facteur de 1,0040.
+
+**Ce que cela dit.** Le facteur est le même que les autres jours, entre 1,0040 et 1,0045 ; rien n'est à changer. Une direction de paroi ne se lit qu'à 1,5° près : quelques couples de tours pris au même endroit peuvent tromper de 0,003. Et une estime enchaînée sur plusieurs tours est très sensible à ce facteur (12 cm par millième sur les vingt dernières minutes d'`exploration31`) : elle ne vaut que d'un tour au suivant.
+
+**Ce que j'ai changé dans mes outils.** `rv_direct.py` ne lance plus d'alerte forte quand le trajet depuis le tour précédent passe sur un tapis ou un sol sombre : là, c'est l'estime qui est la moins sûre (sur l'avance de 1,30 m de 11 h 41, le capteur de distance n'a vu le mur se rapprocher que de 1,23 m). `rv_ou_est_le_robot.py` prend le facteur en option et dit combien de degrés un millième d'écart ferait sur le trajet demandé.
+
+### 5.9 Devant la base, la position du nord au sud n'est pas sûre
+
+**Mesuré.**
+
+- **Le filtre remonte vers le nord à chaque tour refait au même endroit.** Aux trois tours de 12 h 02 : +48, +12 et +17 mm, alors que les tours comparés paroi par paroi sont au même point à 12 mm près. Le matin, à l'essai 1 : +154, +102 et +87 mm.
+- **Le tour de 11:52:07 est au même point que celui de l'essai 1 (10:55:36)** à 2 ou 3 cm près : les huit parois lues sont les mêmes (518 et 544 mm au nord, 1 173 et 1 162 au sud, 1 062 et 1 059 à l'est). Et la traversée des faisceaux de 11 h 50 retrouve l'axe de la base à 7 mm près de celui de l'essai 1. D'est en ouest, la position devant la base est donc sûre au centimètre.
+- **Du nord au sud, quatre façons de mesurer la distance du centre du robot à la base ne s'accordent pas**, robot à ce même point : 1,19 m du point de la base sur le plan d'après le filtre ; 1,31 m ± 0,13 du devant de la base d'après la photo de l'utilisateur de 11 h 01 (23 lames de parquet comptées entre la base et le dessous du robot, la lame étalonnée à 58 mm sur le diamètre du robot) ; 18 à 33 cm de plus que le filtre d'après la largeur des faisceaux (§ 5.2) ; 60 à 75 cm de plus d'après deux estimes revenues de la pièce du tapis (la mienne et celle de la session de navigation, qui s'est recalée ensuite sur les faisceaux).
+- **Deux contacts du pare-chocs gauche** au retour de la pièce du tapis, à 11 h 46 min 42 et 11 h 47 min 58, robot allant vers l'est : rien n'avait été vu, ni par le capteur de distance (1,3 et 2,2 m devant) ni par les capteurs optiques (52 au plus). Un troisième, à droite, à 11 h 34 min 51 dans la pièce du tapis, pareil.
+
+**Ce que cela dit.** Rien de tranché. La photo ne contredit pas nettement le filtre (12 cm d'écart, ou 19 si le point de la base est à son milieu, pour 13 cm d'incertitude) ; la largeur des faisceaux dit 18 à 33 cm de plus ; les deux estimes disent bien davantage, mais elles ont traversé le tapis et je ne m'y fie pas. Ce qui est sûr : le filtre n'est pas stable à cet endroit (il remonte à chaque tour), et ce que le robot lit au nord depuis ce point, 52 à 54 cm, reste à identifier.
+
+**Ce qui est demandé.** Une mesure au mètre par l'utilisateur, robot laissé où il est depuis 12 h 03 : du devant de la base au bord du robot le plus proche. Elle dira laquelle des quatre est la bonne.
