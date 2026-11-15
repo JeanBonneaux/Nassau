@@ -1,5 +1,15 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 14 — 2026-11-15 : un seul ajout, demandé par l'utilisateur : la brosse latérale seule, lentement, le temps d'un
+    franchissement (« la brosse latérale ne tournant pas, elle se glisse sous le tapis et bloque le robot, peut-on la
+    faire tourner juste elle très doucement quand on franchit des obstacles ? »). Vu le jour même : deux avances vers
+    le bord d'un tapis à franges, à 100 puis 150 mm/s ; le robot pivote de 41° puis de 67° sur son coin avant droit,
+    roue droite qui patine, sans monter (journal_wifi.md § 57).
+    Ordre 144 du robot : brosse principale 0, brosse latérale à la puissance demandée, aspiration 0. La puissance est
+    plafonnée dans le code (BROSSE_LAT_MAX). La brosse ne tourne que pendant un mouvement de /api/mouv qui la demande
+    (&brosse=N) ou pendant une impulsion de 5 s au plus, robot immobile (/api/brosse), et seulement en mode Safe. Elle
+    est coupée à la fin du mouvement, à tout arrêt des roues, à l'échéance de l'impulsion et au démarrage de la carte.
+    La conduite et les autres sécurités ne changent pas. La brosse principale et l'aspiration restent toujours à l'arrêt.
   Version 13 — 2026-11-14 (nuit) : deux ajouts demandés par l'utilisateur ; la conduite et les sécurités existantes ne
     changent pas.
     (1) Le texte que le robot écrit de lui-même est gardé en entier (sondage 10 de la revue : « J'aime bien le 10 »).
@@ -97,7 +107,9 @@
 
   SÉCURITÉ : vitesse plafonnée à 150 mm/s, pas de mode Full, arrêt automatique des roues 1,5 s après chaque ordre,
   arrêt des roues si le client TCP se déconnecte ou si une mise à jour commence, arrêt des roues dès qu'une lecture montre
-  le pare-chocs enfoncé ou une roue levée (v6). Seul l'ordre d'arrêt des roues est envoyé au robot au démarrage.
+  le pare-chocs enfoncé ou une roue levée (v6). Seuls l'ordre d'arrêt des roues et, depuis la v14, celui d'arrêt de la
+  brosse latérale sont envoyés au robot au démarrage. Brosse principale et aspiration : jamais mises en marche ; brosse
+  latérale : seulement à puissance réduite, le temps d'un mouvement ou d'une impulsion courte (v14).
   Toujours finir par 's' puis 'x' (en Safe/Full le robot ne se recharge pas et ne dort jamais).
 
   MOT DE PASSE : « roomba694 » par défaut (point d'accès et ArduinoOTA). Pour le changer, copier
@@ -175,6 +187,7 @@ bool sondeActive() {
 enum : uint8_t {
   OI_START = 128, OI_SAFE = 131, OI_FULL = 132, OI_POWER = 133, OI_CLEAN = 135,
   OI_LEDS = 139, OI_SONG = 140, OI_PLAY = 141, OI_SENSORS = 142, OI_DOCK = 143,
+  OI_PWM_MOTORS = 144,   // v14 : puissance des trois moteurs de nettoyage ; le cerveau n'en demande qu'un, la brosse latérale
   OI_DRIVE_DIRECT = 145, OI_QUERY_LIST = 149, OI_STREAM_PAUSE = 150, OI_STOP = 173
 };
 
@@ -210,13 +223,15 @@ void handleRoot();  void handleState();  void handleCmd();  void handleSpeed(); 
 void handleWifiGet();  void handleWifiPost();  void handleWifiForget();
 void handleUpdateGet();  void handleUpdateDone();  void handleUpdateUpload();  void handleRadar();  void handleEssai();
 void handleTexte();  void handleSonde();   // v13
+void handleBrosse();                       // v14 (mouv.ino)
 // Radar à ultrasons (HC-SR04 sur servo SG90) : défini dans radar.ino (troisième fichier du sketch), déclaré ici pour la boucle
 void radarSetup();  void radarTick();  bool radarForwardBlocked();  void radarCycleMode();  void radarPrintStatus();
 int  radarFrontMm();  void radarStateJson(String& j);
 // Tour sur place (rotation du robot avec mesure des distances) : défini dans tour.ino (quatrième fichier du sketch)
 void tourStart();  void tourTick();  bool tourActive();  void tourEnd(bool ok, const char* raison);  void handleTour();
 void jsonStr(String& j, const char* s);   // défini plus bas ; mouv.ino s'en sert avant
-void mouvStart(bool rotation, float but, int v, float capRel);  void mouvTick();  bool mouvActive();  void mouvEnd(bool ok, const char* raison);  void handleMouv();  void mouvStateJson(String& j);  float poseDist();   // v10 : mouv.ino
+void mouvStart(bool rotation, float but, int v, float capRel, int brosse);  void mouvTick();  bool mouvActive();  void mouvEnd(bool ok, const char* raison);  void handleMouv();  void mouvStateJson(String& j);  float poseDist();   // v10 : mouv.ino
+void brosseLaterale(int puissance);  void brosseStateJson(String& j);   // v14 : brosse latérale seule (fichier principal et mouv.ino)
 // Position du robot (x, y, cap) : définie dans position.ino (deuxième fichier du sketch)
 void poseUpdate();  void poseReset(bool annonce);  void posePrint();  void poseStateJson(String& j);  void handlePose();
 float poseX();  float poseY();  float poseCap();  float poseCap0();  bool poseFiable();
@@ -1041,10 +1056,36 @@ bool wheelsAllowed() {
   return false;
 }
 
+// ---------- Brosse latérale seule (v14) ----------
+// Demande de l'utilisateur, 2026-11-15 : à l'arrêt, la brosse latérale se glisse sous le bord d'un tapis et bloque le
+// robot ; la faire tourner « juste elle, très doucement », le temps de franchir. Ordre 144 : trois puissances de -127
+// à 127, dans l'ordre brosse principale, brosse latérale, aspiration. Ici la première et la troisième valent toujours 0,
+// et la seconde est bornée à [0, BROSSE_LAT_MAX] : sens normal seulement, puissance réduite.
+// Qui la met en marche : mouvTick() au premier ordre de roues d'un mouvement qui la demande (mouv.ino), et handleBrosse()
+// pour une impulsion robot immobile. Qui l'arrête : mouvEnd(), stopWheels(), l'échéance de l'impulsion et le garde-fou
+// de loop() (brosse en marche sans mouvement ni impulsion en cours, ou robot sorti du mode Safe).
+constexpr int      BROSSE_LAT_MAX = 60;             // sur 127
+constexpr uint32_t BROSSE_IMPULSION_MAX_MS = 5000;
+int8_t   brosseLat = 0;            // puissance en cours ; 0 = arrêtée
+uint32_t brosseFinMs = 0;          // échéance d'une impulsion (millis) ; 0 = pas d'impulsion en cours
+uint32_t brosseMarches = 0;        // mises en marche depuis le démarrage de la carte
+
+void brosseLaterale(int puissance) {
+  puissance = constrain(puissance, 0, BROSSE_LAT_MAX);
+  robot.write((uint8_t)OI_PWM_MOTORS);
+  robot.write((uint8_t)0);                       // brosse principale : toujours 0
+  robot.write((uint8_t)puissance);               // brosse latérale, sens normal
+  robot.write((uint8_t)0);                       // aspiration : toujours 0
+  if (puissance > 0 && brosseLat == 0) brosseMarches++;
+  brosseLat = (int8_t)puissance;
+  if (puissance == 0) brosseFinMs = 0;
+}
+
 // Arrêt des roues : touche stop, garde-fou de 1,5 s, déconnexion d'un client ou mise à jour.
 // L'ordre et le message ne sont répétés que si les roues tournaient, ou au plus une fois par seconde,
 // pour ne jamais inonder la console ni la liaison robot si des touches stop arrivent en rafale.
 void stopWheels() {
+  if (brosseLat) { brosseLaterale(0); out.println(F("Brosse latérale arrêtée.")); }   // v14 : tout arrêt des roues l'arrête aussi
   uint32_t now = millis();
   if (driving || now - lastStopMs > 1000) {
     driveDirect(0, 0);
@@ -1198,7 +1239,7 @@ void printInfo() {
              st.ok ? "joignable" : "sans réponse", (unsigned long)(millis() - st.lastOkMs),
              useSplitGroups ? "lecture par les groupes 6 et 101" : "lecture par le groupe 100",
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
-  out.printf("Firmware roomba694_wifi v13, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
+  out.printf("Firmware roomba694_wifi v14, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
              __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
   out.printf("Depuis le démarrage de la carte : robot vu redémarrer %lu fois ; retrouvé à 19200 bauds et ramené à 115200 : %lu fois.\n",
              (unsigned long)robotBoots, (unsigned long)baudRescues);
@@ -1211,7 +1252,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v13 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v14 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"
@@ -1222,6 +1263,8 @@ void printHelp() {
     " 8  avance   2  recule   4  tourne à gauche   6  tourne à droite   5 ou espace  stop\n"
     "    (mode Safe requis ; chaque ordre dure 1,5 s puis les roues s'arrêtent seules ; 150 mm/s au plus ;\n"
     "     pare-chocs enfoncé : roues arrêtées par le cerveau, puis seul le recul est accepté)\n"
+    "    (brosse latérale seule, lentement, le temps d'un franchissement : /api/mouv?av=…&brosse=N, ou /api/brosse?lat=N\n"
+    "     robot immobile ; aucune touche ne la met en marche, toute touche d'arrêt la coupe)\n"
     " a  anti-veille BRC toutes les 45 s (on/off)\n"
     " j  journal CSV à chaque lecture du robot, 20 par seconde (on/off)   i  informations Wi-Fi et état\n"
     " g  gyroscope MPU-6050 (cap, vitesse)   z  recalibrer le gyroscope et remettre le cap à zéro (robot immobile)\n"
@@ -1378,6 +1421,7 @@ void setupWifi() {
   http.on("/api/radar", HTTP_GET, handleRadar);
   http.on("/api/tour", HTTP_GET, handleTour);
   http.on("/api/mouv", HTTP_GET, handleMouv);   // v10 : avance et rotation exécutées par le cerveau (mouv.ino)
+  http.on("/api/brosse", HTTP_GET, handleBrosse);   // v14 : brosse latérale seule, impulsion courte robot immobile (mouv.ino)
   http.on("/api/pose", HTTP_GET, handlePose);
 #if ESSAI_LIAISON
   http.on("/api/essai", HTTP_GET, handleEssai);   // v12 : plus compilé par défaut (voir ESSAI_LIAISON)
@@ -1507,6 +1551,7 @@ void setup() {
   // roues, le robot attend encore la fin de cet ordre : il la prend dans le premier arrêt (et comprend alors un ordre
   // de roues fait de morceaux des deux), ne voit dans ce qui reste que des zéros sans effet, et lit bien le suivant.
   for (int k = 0; k < 3; k++) { driveDirect(0, 0); robot.flush(); delay(20); }
+  brosseLaterale(0); robot.flush();   // v14 : si la carte a redémarré pendant un franchissement, la brosse latérale ne reste pas en marche
   robot.write(OI_STREAM_PAUSE);   // et fin d'un éventuel flux continu laissé par une session précédente
   robot.write((uint8_t)0);
   prefs.begin("cfg", true);
@@ -1541,5 +1586,16 @@ void loop() {
   radarTick();   // arrêt des roues devant un obstacle, messages du radar
   tourTick();    // tour sur place : ordres de roues répétés, conditions d'arrêt
   mouvTick();    // v10 : avance ou rotation exécutée par le cerveau (mouv.ino)
+  // v14 : la brosse latérale ne tourne jamais seule. Échéance d'une impulsion ; ou brosse en marche alors qu'aucun
+  // mouvement ni aucune impulsion n'est en cours ; ou robot qui a quitté le mode Safe (il coupe alors lui-même ses moteurs).
+  if (brosseLat) {
+    bool echeance = brosseFinMs && (int32_t)(millis() - brosseFinMs) >= 0;
+    bool orpheline = !brosseFinMs && !mouvActive();
+    bool horsSafe = st.ok && st.mode != OI_MODE_SAFE_LU;
+    if (echeance || orpheline || horsSafe) {
+      brosseLaterale(0);
+      out.println(echeance ? F("Brosse latérale arrêtée (fin de l'impulsion).") : F("Brosse latérale arrêtée."));
+    }
+  }
   if (baudRescuePending && !driving && !tourActive() && !sondeActive()) { baudRescuePending = false; baudRescue(true); }   // v13 : pas pendant une sonde
 }

@@ -86,7 +86,7 @@ void handleState() {
   j.reserve(2700);   // v13 : 2400 + la dernière ligne « bat: »
   char b[800];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v13 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
+    "{\"ms\":%lu,\"ver\":\"v14 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u,\"wall\":%u,\"cur\":[%d,%d],\"base\":%s},"
@@ -108,6 +108,7 @@ void handleState() {
   radarStateJson(j);   // "radar":{mode, front_mm, age, present, servo}
   tourStateJson(j);    // "tour":{etat, tourne, n}
   mouvStateJson(j);    // "mouv":{etat, n, fait_mm, fait_deg} (v10)
+  brosseStateJson(j);  // "brosse":{lat, max, marches} (v14 : brosse latérale seule)
   // réflexe pare-chocs (v6) : arrêts décidés par le cerveau, ordres refusés, verrou après un choc, cause du dernier arrêt
   j += "\"reflexe\":{\"arrets\":"; j += (unsigned long)reflexStops; j += ",\"refus\":"; j += (unsigned long)reflexRefused;
   j += ",\"verrou\":"; j += bumpLatch ? "true" : "false"; j += ",\"cause\":"; jsonStr(j, reflexCause); j += "},";

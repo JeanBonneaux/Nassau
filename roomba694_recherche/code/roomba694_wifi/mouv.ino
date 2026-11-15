@@ -23,6 +23,10 @@
 // /api/mouv?rot=DEG[&v=MM_S]          rotation sur place de DEG degrés (positif : vers la gauche), roues à v mm/s (100 au plus).
 // /api/mouv?stop=1                    arrêt.
 // /api/mouv                           état du dernier mouvement en JSON (etat : 0 repos, 1 en cours, 2 terminé, 3 interrompu).
+// v14 : &brosse=N ajouté à une avance ou à une rotation fait tourner la brosse latérale SEULE, à la puissance N sur 127
+//       (plafonnée à BROSSE_LAT_MAX), du premier ordre de roues à la fin du mouvement, quelle que soit cette fin.
+//       /api/brosse?lat=N[&ms=T] : la même brosse pendant T ms (5 s au plus, 2 s par défaut), robot immobile, pour régler
+//       la puissance ; /api/brosse?lat=0 l'arrête ; /api/brosse seul : son état. Voir brosseLaterale() dans le fichier principal.
 // Les fonctions du fichier principal utilisées ici : driveDirect, wheelsAllowed n'est pas appelée (les mêmes
 // vérifications sont faites ici avec leur raison), bumperPressedNow, radarForwardBlocked, radarObstacleAhead, jsonStr.
 
@@ -50,6 +54,7 @@ struct MouvState {
   float    repereMm = 0;                   // pour reconnaître un robot qui n'avance pas
   uint32_t t0 = 0, tFin = 0, dernierOrdreMs = 0, bougeDepuisMs = 0, limiteMs = 0;
   uint32_t numero = 0;                     // compteur de mouvements demandés depuis le démarrage de la carte
+  int8_t   brosse = 0;                     // v14 : puissance de la brosse latérale demandée pour ce mouvement (0 : arrêtée)
   char     raison[96] = "";
 } mouv;
 
@@ -59,6 +64,7 @@ bool mouvActive() { return mouv.etat == MOUV_EN_COURS; }
 void mouvEnd(bool ok, const char* raison) {
   if (!mouvActive()) return;
   if (driving) driveDirect(0, 0);
+  if (brosseLat) brosseLaterale(0);        // v14 : la brosse latérale ne survit jamais au mouvement qui l'a demandée
   lastStopMs = millis();
   mouv.tFin = millis();
   mouv.faitDeg = imu.yawDeg - mouv.cap0;
@@ -72,7 +78,7 @@ void mouvEnd(bool ok, const char* raison) {
 }
 
 // /api/mouv?av=… ou ?rot=… : vérifie que tout est prêt, puis lance le mouvement (le premier ordre part dans mouvTick).
-void mouvStart(bool rotation, float but, int v, float capRel) {
+void mouvStart(bool rotation, float but, int v, float capRel, int brosse) {
   uint32_t now = millis();
   bool recul = !rotation && but < 0;
   if (mouvActive()) {                      // rien n'est touché : le mouvement en cours continue
@@ -94,6 +100,7 @@ void mouvStart(bool rotation, float but, int v, float capRel) {
   mouv.rotation = rotation;
   mouv.faitMm = mouv.faitDeg = 0;
   mouv.t0 = mouv.tFin = now;
+  mouv.brosse = 0;
   if (refus) {
     mouv.but = but;
     mouv.etat = MOUV_INTERROMPU;
@@ -120,7 +127,10 @@ void mouvStart(bool rotation, float but, int v, float capRel) {
   mouv.dernierOrdreMs = 0;
   mouv.bougeDepuisMs = now;
   mouv.raison[0] = 0;
+  mouv.brosse = (int8_t)constrain(brosse, 0, BROSSE_LAT_MAX);
+  if (brosseLat) brosseLaterale(0);        // une impulsion en cours s'arrête ici : pendant un mouvement, la brosse ne dépend que de lui
   mouv.etat = MOUV_EN_COURS;
+  if (mouv.brosse) out.printf("Mouvement %lu : brosse latérale seule à %d sur 127 pendant ce mouvement.\n", (unsigned long)mouv.numero, (int)mouv.brosse);
   if (rotation) out.printf("Mouvement %lu : rotation de %+.1f°, roues à %d mm/s au plus. 5 ou espace pour arrêter.\n",
                            (unsigned long)mouv.numero, mouv.but, (int)mouv.vMax);
   else          out.printf("Mouvement %lu : %s de %.0f mm à %d mm/s au plus, cap tenu à %+.1f° du cap actuel. 5 ou espace pour arrêter.\n",
@@ -146,6 +156,7 @@ void mouvTick() {
   if (stop) { mouvEnd(false, stop); return; }
   if (mouv.parti && now - mouv.dernierOrdreMs < MOUV_CMD_MS) return;
   mouv.dernierOrdreMs = now;
+  if (!mouv.parti && mouv.brosse) { brosseFinMs = 0; brosseLaterale(mouv.brosse); }   // v14 : mise en marche avec le premier ordre de roues, une seule fois
   float ecoule = (now - mouv.t0) * 0.001f;
 
   if (mouv.rotation) {
@@ -187,11 +198,12 @@ void mouvStateJson(String& j) {
 void mouvJson(String& j) {
   static const char* const NOMS[] = { "repos", "en cours", "terminé", "interrompu" };
   uint32_t duree = (mouv.etat == MOUV_EN_COURS) ? millis() - mouv.t0 : mouv.tFin - mouv.t0;
-  char b[280];
+  char b[300];
   snprintf(b, sizeof(b), "{\"etat\":%u,\"texte\":\"%s\",\"n\":%lu,\"genre\":\"%s\",\"but\":%.1f,\"fait_mm\":%.0f,\"fait_deg\":%.1f,"
-           "\"cap_vise\":%.1f,\"v\":%d,\"duree_ms\":%lu,\"raison\":",
+           "\"cap_vise\":%.1f,\"v\":%d,\"duree_ms\":%lu,\"brosse\":%d,\"raison\":",
            (unsigned)mouv.etat, NOMS[mouv.etat <= MOUV_INTERROMPU ? mouv.etat : 0], (unsigned long)mouv.numero,
-           mouv.rotation ? "rot" : "av", mouv.but, mouv.faitMm, mouv.faitDeg, mouv.capCible - mouv.cap0, (int)mouv.vMax, (unsigned long)duree);
+           mouv.rotation ? "rot" : "av", mouv.but, mouv.faitMm, mouv.faitDeg, mouv.capCible - mouv.cap0, (int)mouv.vMax, (unsigned long)duree,
+           (int)mouv.brosse);
   j += b;
   jsonStr(j, mouv.raison);
   j += "}";
@@ -212,10 +224,57 @@ void handleMouv() {
       http.send(400, "text/plain; charset=utf-8", "valeur refusée : av, rot et cap doivent être des nombres finis");
       return;
     }
-    mouvStart(rotation, but, v, capRel);
+    int brosse = http.hasArg("brosse") ? (int)http.arg("brosse").toInt() : 0;   // v14 : brosse latérale seule pendant ce mouvement
+    mouvStart(rotation, but, v, capRel, brosse);
   }
   String j;
-  j.reserve(360);
+  j.reserve(380);
   mouvJson(j);
+  http.send(200, "application/json", j);
+}
+
+// ---------- Brosse latérale seule, robot immobile (v14) ----------
+// Résumé pour /api/state
+void brosseStateJson(String& j) {
+  char b[80];
+  snprintf(b, sizeof(b), "\"brosse\":{\"lat\":%d,\"max\":%d,\"marches\":%lu},", (int)brosseLat, BROSSE_LAT_MAX, (unsigned long)brosseMarches);
+  j += b;
+}
+
+// /api/brosse?lat=N[&ms=T] : une impulsion, pour régler la puissance sous les yeux de l'utilisateur. Refusée si le robot
+// est muet, hors du mode Safe, une roue soulevée, s'il bouge (la brosse se demande alors avec le mouvement) ou pendant une
+// sonde. /api/brosse?lat=0 : arrêt. Sans argument : l'état.
+void handleBrosse() {
+  const char* refus = nullptr;
+  uint32_t now = millis();
+  if (http.hasArg("lat")) {
+    int n = (int)http.arg("lat").toInt();
+    long ms = http.hasArg("ms") ? http.arg("ms").toInt() : 2000L;
+    ms = constrain(ms, 200L, (long)BROSSE_IMPULSION_MAX_MS);
+    if (n <= 0) {
+      if (brosseLat) { brosseLaterale(0); out.println(F("Brosse latérale arrêtée.")); }
+    }
+    else if (!st.ok || now - st.lastOkMs > 1500)        refus = "le robot ne répond pas (CLEAN sur le robot, puis s, puis f)";
+    else if (st.mode != OI_MODE_SAFE_LU)                refus = "le robot n'est pas en mode Safe (touche f)";
+    else if (st.bumpsDrops & 0x0C)                      refus = "une roue est soulevée";
+    else if (driving || mouvActive() || tourActive())   refus = "le robot bouge : demander la brosse avec le mouvement (&brosse=N)";
+    else if (sondeActive())                             refus = "une sonde est en cours";
+    else {
+      brosseLaterale(n);
+      brosseFinMs = now + (uint32_t)ms;
+      if (brosseFinMs == 0) brosseFinMs = 1;
+      out.printf("Brosse latérale seule à %d sur 127 pendant %ld ms (impulsion, robot immobile).\n", (int)brosseLat, ms);
+    }
+    if (refus) out.printf("Brosse latérale refusée : %s.\n", refus);
+  }
+  long reste = (brosseLat && brosseFinMs) ? (long)(int32_t)(brosseFinMs - millis()) : 0L;
+  String j;
+  j.reserve(200);
+  char b[120];
+  snprintf(b, sizeof(b), "{\"lat\":%d,\"max\":%d,\"reste_ms\":%ld,\"marches\":%lu,\"refus\":",
+           (int)brosseLat, BROSSE_LAT_MAX, reste > 0 ? reste : 0L, (unsigned long)brosseMarches);
+  j += b;
+  jsonStr(j, refus ? refus : "");
+  j += "}";
   http.send(200, "application/json", j);
 }
