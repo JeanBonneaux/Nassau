@@ -11,7 +11,8 @@ Cette note est le plan de travail. Elle est tenue à jour : chaque essai y reço
 1. **Les rôles.** La session de revue choisit les essais, les commande à la session de navigation, écoute et analyse. La session de navigation pilote, et reste seule à juger de la sécurité d'un geste : elle peut refuser ou adapter un essai. La session de revue n'envoie aucun ordre de roues.
 2. **Deux buts** : savoir ce que le robot fait et cache d'utile ; savoir où il est, plus précisément.
 3. **Ce que la matinée a appris** (note N) : les roues et les tours sur place sont bons à 1 à 3 cm ; c'est le calcul de la position qui saute de 16 à 31 cm. La campagne commence donc par ce qui donne un repère sûr, et par ce qui empêche un saut.
-4. **Ce qui reste interdit sans un mot de l'utilisateur** : chercher des ordres inconnus du robot (« Capteurs seuls pour le moment », le 14) ; le mode Full ; les brosses autres que la brosse latérale ; l'ordre « rentre à la base » (son accord à chaque fois).
+4. **Ce qui reste interdit sans un mot de l'utilisateur** : le mode Full ; le mode d'essai d'usine ; les brosses autres que la brosse latérale ; l'ordre « rentre à la base » (son accord à chaque fois).
+5. **Les ordres inconnus du robot sont permis depuis le 15 à 10 h 50** : à ma question « est-ce que j'essaie aussi des ordres inconnus ? », posée après lui avoir redit le risque, l'utilisateur a répondu « Oui, essaie ». Marche à suivre et garde-fous dans la note L § 4.7 ; c'est l'essai 7.
 
 ## 1. Les essais courts, dans l'ordre
 
@@ -25,6 +26,7 @@ Chacun répond à une question. Un tour sur place avant le premier et après le 
 | 4 | Approche lente d'un mur nu, de 45 cm à 3 cm, à 40 mm/s | Que lisent les six capteurs optiques du pare-chocs selon la distance ? | une distance de près, et un arrêt avant le contact | commandé |
 | 5 | Essai des pivots devant un mur nu | Les séries de pivots reculent-elles vraiment le robot de 3 à 5 mm ? | corriger l'estime dans les couloirs (note J § 2.3) | commandé |
 | 6 | Lecture des numéros cachés, robot sur sa base en charge | Que deviennent les numéros 62, 128, 132 et 145 en charge ? | finir de lire ce que le robot cache | à faire en fin de séance, robot posé sur sa base |
+| 7 | Ordres inconnus, un à la fois, par étapes (note L § 4.7) ; robot posé sur un support, les deux roues dans le vide, hors de sa base, quelqu'un à côté ; menée par la session de revue, la navigation ne pilotant pas | Le robot accepte-t-il des ordres que sa documentation ne donne pas ? | peut-être rien ; peut-être un ordre ou une lecture utile | **permis par l'utilisateur le 15 à 10 h 50 (« Oui, essaie »)** ; à faire après les essais roulants |
 
 ## 2. « Mappons loin » : les règles d'une cartographie longue
 

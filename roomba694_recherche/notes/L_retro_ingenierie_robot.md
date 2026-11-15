@@ -45,7 +45,7 @@ Les parties « lu » des § 3 et 4 viennent de deux recherches déléguées. J'a
 | 11 | Le Wi-Fi propre au robot | un second moyen de dire « arrête » | proposé |
 | 12 | Nos propres balises infrarouges | un repère sûr à chaque porte | proposé |
 | 13 | Le mode d'essai d'usine | les limites d'usine des moteurs | creusé sur le papier (§ 3) ; je déconseille de le lancer pour l'instant |
-| 14 | Les capteurs sans numéro officiel, les autres ordres | peut-être un capteur de plus ; pour les ordres, sans doute rien | **décidé : capteurs seuls pour le moment** ; deux lectures le 15 (§ 4.8 et § 4.10) : de vraies variables, dont l'horloge du robot ; à relire dans d'autres états |
+| 14 | Les capteurs sans numéro officiel, les autres ordres | peut-être un capteur de plus ; pour les ordres, sans doute rien | capteurs : trois lectures le 15 (§ 4.8 et § 4.10), de vraies variables, dont l'horloge et le mode du robot ; ordres inconnus : **« Capteurs seuls pour le moment » le 14, puis « Oui, essaie » le 15 à 10 h 50** (§ 4.7) : à mener par étapes, robot sur un support |
 
 ## 2. Ce que le robot écrit de lui-même (sondage 10)
 
@@ -245,6 +245,16 @@ L'application range dans le robot des préférences de nettoyage (deux passages,
 - **`capteurs` : oui.** Lecture seule, deux minutes, robot sur sa base. C'est la seule recherche qui peut rapporter quelque chose pour l'objectif (un capteur de plus).
 - **`notes` : si la curiosité y est.** Cela montrera ce que le robot garde après un sommeil, et donnerait au robot un bip d'arrivée.
 - **`commandes` : je déconseille le balayage à l'aveugle.** Rien de ce qui a été lu ne laisse espérer un ordre caché utile pour rouler ou se repérer. Un ordre inconnu peut effacer un réglage ou bloquer le robot, et le programme du robot ne se remet pas. Si l'utilisateur y tient, une courte liste d'abord : les numéros 130, 147 et 151 à 161, qui sont des ordres connus sur des robots cousins plus anciens.
+
+**Décision de l'utilisateur, le 15 à 10 h 50.** Je lui avais redit que je ne touchais pas aux ordres inconnus (« un ordre inconnu peut bloquer le robot sans retour possible ») et demandé : « "Voir ce qu'il nous cache" : est-ce que j'essaie aussi des ordres inconnus ? ». Réponse : **« Oui, essaie »**. Ce oui vaut pour la recherche d'ordres inconnus par la sonde. Il ne vaut ni pour le mode Full, ni pour le mode d'essai d'usine, ni pour les brosses autres que la latérale.
+
+**Comment je compte la mener** (rien n'est encore envoyé) :
+
+- **Les garde-fous, tenus par le firmware et non par l'outil** : le robot doit répondre, être hors de sa base, et avoir **les deux roues levées** (posé sur un support, roues dans le vide) ; sans cela le cerveau refuse l'essai. Roues levées, le robot ne peut pas prendre le mode Safe : tout se passe donc en mode passif, où ses moteurs n'obéissent pas. Les octets des ordres dangereux connus ne partent jamais (remise à zéro, débit, modes Safe et Full, nettoyage, roues, brosses, retour à la base, flux, boutons, horaires).
+- **Un ordre à la fois.** Avant et après : les 80 octets de capteurs, le texte que le robot écrit, et une question de contrôle. Si l'ordre attend une suite, elle est comptée avec des zéros (un à huit), puis la liaison est remise d'aplomb.
+- **Par étapes, du moins risqué au plus aveugle**, avec un compte rendu entre deux étapes : (1) 130, 147, 151 à 161, connus sur des robots cousins ; (2) 166, 169 à 172, 174 à 199 ; (3) 200 à 255 ; (4) 1 à 6 et 8 à 127.
+- **Arrêt immédiat** si un moteur prend du courant, si un compteur de roue bouge, si le robot cesse de répondre, s'il écrit un texte de redémarrage, ou si la liaison ne revient pas d'aplomb.
+- **Ce qui reste possible malgré tout** : un ordre qui efface un réglage du robot (horloge, horaires, calibrage de la batterie) ou qui le bloque jusqu'au retrait de sa batterie. Je n'ai lu nulle part qu'un ordre de cette prise réécrive son programme, mais je ne peux pas l'exclure.
 
 ### 4.8 Le 15 au matin : la lecture des 256 numéros de capteurs
 
