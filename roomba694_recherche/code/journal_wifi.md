@@ -2282,3 +2282,107 @@ Trois stations : au sud du tapis (262,0 ; 162,0), note 0,83 ; sur le tapis, note
 - **L'utilisateur a levé « capteurs seuls pour le moment » auprès d'elle** (« Oui, essaie ») : l'essai des ordres inconnus du robot (essai 7) sera mené par elle, robot posé sur un support, les deux roues dans le vide. Je n'y pilote pas ; un tour sur place de ma part ensuite, puisque le robot aura été porté.
 
 **État** (12 h 05) : séance refermée à 12 h 03 min 24 ; robot au point P, pas sur sa base ; 1 412 mAh.
+
+## 60. La grande boucle : de la base à la pièce du bas à droite, puis au fond de la cuisine, et retour ; mon cap était faux de 10° depuis le matin (2026-11-15, 12 h 15 à 13 h 37)
+
+**La demande.** À ma question de midi (« La porte de la pièce du bas à droite (K23) est-elle ouverte, pour que j'y lance la grande boucle ? »), l'utilisateur a répondu à 12 h 15 : « Oui, vas-y ». À 12 h 45, robot arrêté dans cette pièce (plus bas) : « Repars et va tout au fond à gauche comme hier puis rentre / N'oublie pas la marche ». J'ai lu : la cuisine, jusqu'au coin où il avait posé le robot le 14, par le seuil de sa porte, puis le retour. Pendant que le robot roulait il a encore écrit, avec des photos qui ne me sont arrivées qu'une fois le robot rentré (elles ne sont pas gardées) : « Il te faut peut être un peu plus d'élan ou bien continuer quand ça monte / Oublie pas de faire tourner la brosse comme on a dit plus tôt ce matin / Il faut i aller plus vite/fort et peut être wiggle un peu ? », puis « Non explore plus la cuisine en détail tu n'a pas atteints le coin / Voici ou tu es au moment où tu me dis je suis au coin », puis « 2 screenshots simultaneous pour t'aider à localiser », et enfin « Reprend a partir de tout les derniers messages recus pendant, puis propose et je te dirai go ou non ».
+
+La boucle elle-même est le parcours commandé par la session de revue (`notes/O_campagne_essais.md`, § 2) : partir d'un point P devant la base, aller loin par un chemin connu, revenir au même point, avec un tour sur place tous les 2 m, pour mesurer ce que vaut chaque façon de se situer.
+
+**Les enregistrements** : `exploration33_20261115_121629` (12 h 16 à 12 h 38, l'aller jusqu'à la pièce du bas à droite), `exploration34_20261115_123906` (12 h 39 à 13 h 11, cette pièce, la pièce centrale, le seuil, la cuisine) et `exploration35_20261115_131131` (13 h 11 à 13 h 37, le retour). Firmware v14, sans repères. 45 m environ d'après mon suivi, 54,8 m comptés par les roues, 34 tours sur place.
+
+| Heure | Tronçon | Résultat |
+|---|---|---|
+| 12 h 17 | tour sur place au point P (passe « a » de 33) | départ |
+| 12 h 17 à 12 h 20 | passage vers la pièce à gauche, allée ; stations « b », « c », « d » | sans contact |
+| 12 h 20 à 12 h 22 | porte H12 vers le sud : éventail, puis 1 m au cap 280° | sans contact ; stations « e », « f » au bout du couloir |
+| 12 h 23 à 12 h 29 | couloir, `centre=0` en deux fois 1 950 mm, station « g » au milieu | douze arrêts, sans contact ; **le cap repris sur les murs** |
+| 12 h 29 à 12 h 31 | J20 (station « h »), puis devant la porte K23 (station « i ») | notes 0,87 et 0,83 |
+| 12 h 32 à 12 h 35 | porte K23, entrouverte : `centre=282` par pas de 200 mm | passée, 646 mm entre les montants |
+| 12 h 35 à 12 h 39 | pièce du bas à droite : stations doubles « j », « k » puis « l », « m » | 12,6 m depuis P |
+| 12 h 40 | avance face au mur du fond | contact du pare-chocs gauche contre un meuble bas, à 60 mm/s |
+| 12 h 41 min 37 | début du retour | **chute du mode Safe** : capteur de vide gauche à 10 au pied d'un meuble |
+| 12 h 48 | reprise sur le mot de l'utilisateur ; sortie par la porte K23 | sans contact |
+| 12 h 49 à 12 h 53 | pièce centrale jusqu'à la porte de la cuisine ; stations « b », « c », « d » de 34 | sans contact ; 1 cm d'écart entre filtre et estime en G26 |
+| 12 h 55 à 13 h 03 | **le seuil de la cuisine** (plus bas) | passé au troisième essai |
+| 13 h 04 à 13 h 09 | entrée de la cuisine, passage étroit, D36 (station « g ») | sans contact |
+| 13 h 10 | arrêt en C38 après un contact du pare-chocs gauche ; station « h » | **ce n'était pas le coin** (plus bas) |
+| 13 h 12 à 13 h 18 | retour : D36, passage étroit, seuil vers la pièce centrale | sans contact |
+| 13 h 19 à 13 h 24 | pièce centrale jusqu'à J20 | un objet nouveau sur le chemin, touché deux fois presque à l'arrêt, contourné |
+| 13 h 25 à 13 h 30 | couloir, `centre=180` | sans contact ; mon outil de station a roulé 0,4 m au milieu (plus bas) |
+| 13 h 30 à 13 h 32 | porte H12 vers le nord, 1,3 m au cap 108° | sans contact |
+| 13 h 32 à 13 h 34 | allée, passage vers la pièce de la base | sans contact |
+| 13 h 35 à 13 h 36 | traversée de l'axe de la base, retour au point P, tour sur place (passe « j » de 35) | arrivée |
+| 13 h 36 min 51 | `5`, capteur arrêté, `s`, `x` | robot au point P, pas sur sa base, 1 175 mAh |
+
+### Mon cap était trop petit de 10° depuis le matin
+
+Mesuré dans le couloir à 12 h 25 : le centrage lit le cap du robot par rapport aux deux murs, sur trois arrêts, à +6,6°, +7,3° et +7,4° de mon cap à l'estime ; j'avais déjà ajouté 3,4° pris au filtre. Le cap du gyroscope enchaîné depuis P était donc 10,8° trop petit. Le tour suivant, reparti du cap des murs, rend « axes de la pièce 0,0° ».
+
+La session de revue l'a confirmé par le gyroscope seul, enchaîné de tour en tour depuis 9 h 51 : −10,7° au tour de départ de la boucle, et **l'erreur date du tour de 9 h 55 min 40**, fait juste après les patinages au bord du tapis (le filtre y a placé le cap 22,6° sous le gyroscope) ; le tour de contrôle de 10 h 13 n'en a repris qu'une partie.
+
+Ce que cela remplace dans le § 59 :
+
+- **L'axe des faisceaux de la base n'est pas incliné de 10,7° : il est d'équerre au mur.** Les lignes B, C et D, que je croyais tracées d'ouest en est, l'étaient à 10,7° de travers.
+- **Les deux pièces « décalées de 25 à 50 cm »** : en roulant 2 m vers l'ouest au cap que je croyais 180°, le robot partait au cap 190° et arrivait 35 cm plus au sud. C'est ce que le filtre corrigeait à chaque tour, vers le sud dans la pièce à gauche, vers le nord dans la pièce de la base, et ce qui a causé les deux contacts du passage. Ni la place du capteur de distance ni l'échelle du plan ne l'expliquent (rejeu de la session de revue, quatre réglages, même correction).
+- **Les corrections de cap du filtre** (+1,1° à +2,6° par tour) étaient justes et trop timides ; je les avais écartées.
+
+Une fois le cap repris sur les murs, le filtre et l'estime s'accordent : 4 cm en J20, 6 cm devant K23, 1 cm en G26, 4 cm en D28.
+
+### La pièce du bas à droite
+
+La porte K23, fermée le 10 novembre, était entrouverte : l'éventail donne une trouée vers le cap 282°, `centre=282` passe en six arrêts et 115 s. À l'intérieur, vu au capteur de distance : une face à 36 cm à l'ouest de la première station (battant de la porte ou armoire), un angle de meuble à l'est (un lit sur le plan), le mur du fond. Les deux premiers tours ont des notes de 0,44 et 0,34 et veulent déplacer le robot de 25 à 30 cm : cette pièce a des meubles que le plan ne montre pas, j'ai gardé l'estime, qui colle avec les montants de la porte. Les deux tours du fond s'accordent à 2 pixels (notes 0,95 et 0,86).
+
+- **Contact** à 12 h 40 : pare-chocs gauche, à 60 mm/s, pendant l'avance face au mur du fond ; le capteur de distance lisait encore 338 mm (le mur) : un meuble bas devant le mur.
+- **Chute du mode Safe** à 12 h 41 min 37. Le centrage, lancé dans un espace ouvert d'un côté, s'est cru 149 mm à droite du milieu et a mené le robot vers le meuble de l'ouest ; pendant le regard de côté qui a suivi, le capteur de vide gauche a lu 175, 430, 392 puis 10, et le robot a coupé ses roues. Le capteur optique gauche lisait 286 à 295 au même instant : le bord du robot était à 2 ou 3 cm du meuble, sans le toucher. Au repos, sol lu normalement sous les quatre capteurs. Je n'ai pas remis le mode Safe ; l'utilisateur a écrit « Repars » ; recul droit de 150 mm, puis sortie par le trait de l'aller.
+- Pour le seuil du robot (§ 59) : 163 en avançant et 175 en pivotant ne font pas tomber le mode, 10 le fait tomber à la lecture même.
+
+### Le seuil de la porte de la cuisine, dans le sens difficile
+
+C'est une baguette entre le parquet de la pièce centrale et le sol de la cuisine, un peu plus bas (photo de l'utilisateur). Trois essais vers la cuisine :
+
+| Heure | Manière | Ce qui s'est passé |
+|---|---|---|
+| 12 h 55 min 54 | de face, 100 mm/s | la roulette passe, puis les roues patinent au pied du seuil : le capteur de distance reste à 1 245 mm pendant que l'estime compte 215 mm de plus ; roues à 350-640 mA ; nez baissé de 6°. Trois pivots suivis d'une petite avance : le robot tourne de 12 à 15° vers la droite à chaque fois, la roue droite reste prise (analyse de la session de revue) |
+| 13 h 01 min 07 | à reculons, 100 mm/s | l'arrière bute contre le seuil : capteur de distance figé à 2 625 mm pendant 300 mm comptés |
+| 13 h 02 min 52 | **de biais à 25°, 150 mm/s** | **passé d'un trait** : 847 mm, cap tenu à 0,8°, un seul pic de courant (504 mA) |
+
+Dans l'autre sens, au retour (13 h 18 min 21) : 1 046 mm à 100 mm/s au cap 160°, sans rien, comme le 14.
+
+- Aucune chute du mode Safe, aucune roue levée, aucun contact.
+- **Sur un seuil l'estime compte ce que les roues tournent, pas ce que le robot avance** ; le capteur de distance, lui, le voit tout de suite. Mon programme de surveillance jugeait le blocage sur le chemin compté : il n'a donc rien vu. À refaire sur le capteur de distance.
+- **Le gyroscope y perd environ 5°** (4,7° entre mes tours de 12 h 52 et 13 h 00, d'après la session de revue ; rien au retour) : il est monté penché et le robot se cabre sur la baguette. Après un seuil pris en force, le cap se reprend sur des parois franches.
+- **Non fait : la brosse latérale pendant ces franchissements.** L'utilisateur l'avait demandée le matin et me l'a rappelé ; je l'ai oubliée.
+- Cela complète le § 52 (« non essayé : le sens difficile à plus de 60 mm/s, ou de biais »).
+
+### La cuisine : arrêté à un mètre du coin
+
+Le passage étroit (D32 à D34) : le centrage a refusé deux fois d'avancer (obstacle « dans la direction prise » à 208 mm de côté pour une limite à 210) ; fait à la main par pas de 300 mm avec un regard de chaque côté : 237 et 242 mm, 201 et 214, 211 et 187 du centre du robot aux parois, sans contact, à l'aller comme au retour.
+
+Arrêt à 13 h 10 au pixel (1001,7 ; 70,5), case C38, sur un contact du pare-chocs gauche à 50 mm/s. **J'ai écrit à l'utilisateur que le robot était « au coin du fond à gauche ». C'était faux** : sa photo le montre devant le réfrigérateur, à un mètre environ du vrai coin, celui de la poubelle et de la porte (vers C40). Le capteur de distance lisait encore 977 mm de libre devant le robot ; je ne l'ai pas regardé avant d'annoncer. Ce que le pare-chocs a touché n'était donc sans doute pas la poubelle (l'entrée ajoutée à `plan_lidar/obstacles.json` le dit à tort : à corriger en y retournant).
+
+Repères donnés par ses photos : ma station D35/D36 (pixel (925 à 932 ; 88)) est entre le meuble de l'évier et la cuisinière ; C38 est devant le réfrigérateur.
+
+### Le retour
+
+- **Un objet nouveau dans la pièce centrale** à 13 h 20 min 52, sur le trait de l'aller (rien à 12 h 50) : capteur optique gauche à 596, puis pare-chocs gauche presque à l'arrêt, puis pare-chocs droit en cherchant à passer au sud. À l'éventail : un écho mince à 214 mm et un écho large à 559 mm. Contourné par l'est et le sud, sans autre contact. Chaise déplacée ou personne : je ne sais pas.
+- **Mon outil de station a roulé sans que je le veuille** à 13 h 27, au milieu du couloir : le filtre s'est trompé de 30 cm (note −0,24), l'explorateur s'est cru loin de sa destination et a roulé 0,4 m vers elle avant de refaire un tour. Dans un couloir, sans contact. Corrigé : un seul tour par station, aucun trajet. Le filtre se perd au milieu du couloir à l'aller comme au retour.
+- Couloir : cap des murs à 1,5° et 1,7° de mon estime. Porte H12 : éventail (montants à 545 mm vers le cap 82° et 811 mm vers 144°), puis 1,3 m d'un trait au cap 108°.
+- **Arrivée** : traversée de l'axe de la base vers l'est à 60 mm/s, vert de 1 à 223 mm, les deux de 226 à 258, rouge de 263 à 699 : frontière à u = 404,5 dans mon repère, pour une base à 405 sur le plan. Puis tour sur place au point P. Robot tourné vers la base : écho du pied de meuble à 559-564 mm (546 le matin).
+
+### Ce que vaut la boucle (dépouillement de la session de revue, ses chiffres)
+
+- Les deux tours du point P, comparés paroi par paroi : **le robot est revenu à 27 mm de son point de départ** (15 mm à l'ouest, 22 mm au sud).
+- **Mes positions retenues : 18 mm d'erreur à l'arrivée**, 50 mm avant la correction du dernier tour. L'estime seule : 58 à 74 cm, soit 1,1 à 1,3 % des 54,8 m comptés.
+- L'échelle du plan : sur les douze trajets propres de la boucle, la correction va contre le trajet de 2,4 % d'est en ouest et 2,8 % du nord au sud ; avec les trajets des jours d'avant, cela ferait un plan à 51,5 à 51,8 pixels par mètre plutôt que 53. Non tranché, comme la place du capteur de distance (le couloir, 84 cm sur le plan pour 645 mm lus, la mettrait à 97-114 mm du centre) : il manque la mesure à la règle.
+- Sa conclusion : avec le cap juste, la façon de faire de cette séance (le filtre quand sa note est bonne, l'estime quand elle est mauvaise, les passages au capteur, le cap pris sur les murs) tient 5 cm sur 45 m et six pièces.
+
+### Contacts et erreurs
+
+Quatre contacts légers, tous sur des choses que ni le capteur de distance ni les capteurs optiques n'avaient annoncées à temps : le meuble bas de la pièce du bas à droite, l'arrêt de C38, l'objet nouveau de la pièce centrale (deux fois). Une chute du mode Safe. `plan_lidar/obstacles.json` : 22 entrées.
+
+Mes erreurs : le coin de la cuisine annoncé sans l'avoir vérifié ; la brosse latérale oubliée au seuil ; le centrage lancé dans un espace ouvert d'un côté ; un outil de station qui pouvait rouler ; une surveillance du seuil fondée sur le chemin compté ; les corrections de cap du filtre écartées jusqu'au couloir.
+
+**Non fait** : le vrai coin de la cuisine et son exploration en détail (proposés à l'utilisateur à 13 h 42, en attente de son accord) ; l'essai 4 devant un vrai mur ; les essais 6 et 7 de la session de revue ; la mesure à la règle.
+
+**État à la fin** (13 h 43) : robot au point P devant sa base, pas dessus ; 1 175 mAh (57 %) ; cerveau en v14 ; seuil du capteur de distance à 30 cm.
