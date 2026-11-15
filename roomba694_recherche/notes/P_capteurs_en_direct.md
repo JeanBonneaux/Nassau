@@ -13,6 +13,7 @@ Cette note ne refait pas l'audit du 14 (note I) : elle refait ses mesures sur la
 - **Pourquoi il ne longe pas les murs : en roulant, il ne les voit pas.** Le capteur de distance regarde devant (son servo est limité à 30° parce que ses fils sont courts). Les capteurs optiques de côté ne réagissent qu'à moins de 6 cm du flanc, et pas toujours.
 - **Les contacts** : 17 dans la journée, tous avec « rien devant » au capteur de distance. Les capteurs optiques du pare-chocs en annonçaient 7 (41 %) dans la seconde et demie d'avant ; le pilotage n'en tenait pas compte.
 - **Ce qui ferait le plus gagner**, dans l'ordre : un seul programme qui enchaîne un trajet connu au lieu d'ordres donnés un à un ; un réflexe sur les capteurs optiques ; le recalage automatique sur les signaux fixes (base, seuil, portes) ; puis le capteur de distance tourné vers le côté en roulant, qui demande des fils plus longs et un firmware v15.
+- **Ajout du 15 au soir** : la liste de travail est au § 8. Elle réunit ces propositions, celles de la session de revue, et l'essai du gyroscope que l'utilisateur a accepté pour la prochaine séance.
 
 ## 1. Où est passé le temps
 
@@ -113,3 +114,55 @@ Les trois premières ne demandent ni pièce ni firmware.
 - Les « 796 pivots suivis d'un arrêt pour lire » sont comptés d'après le journal seul (un pivot, puis au moins 0,6 s d'immobilité au même endroit) : c'est le nombre de regards à un dixième près, pas un décompte des ordres.
 - « Annoncé » au § 2 veut dire qu'un capteur a dépassé 100 dans la seconde et demie d'avant, pas qu'un réflexe aurait suffi : dans cinq cas la lecture retombe avant le contact.
 - Les gains du § 6 sont des ordres de grandeur ; seul le chiffre du couloir vient d'une simulation, aucune n'est une mesure sur le robot.
+
+## 8. La liste de travail, au 15 au soir
+
+**D'où elle vient.** Le 15 vers 18 h, la session de revue a demandé à l'utilisateur s'il fallait ajouter un essai d'une minute du gyroscope à la prochaine séance de pilotage. Sa réponse, que je tiens de l'autre session (son message, et sa note O § 5.15.8) et non de lui directement : « Yes add it and text that session to add anything you said plus the thing for the radar I suggested to it ». Cette liste réunit donc l'essai, les propositions de la revue (note O § 5.15.7), celles du § 6 et son idée du capteur de distance tourné à 90°. **C'est une liste de travail, pas un accord** : installer un firmware, toucher au montage ou dépasser la butée du servo se demandent au moment de le faire. Rien n'a été envoyé au robot pour l'écrire ; le code du cerveau (v14) a été relu.
+
+### 8.1 À la prochaine séance de pilotage
+
+1. **L'essai du gyroscope** (essai 11 de la note O), accepté par l'utilisateur. Une minute, au point P devant la base, l'utilisateur à côté du robot.
+   - *La question.* Le facteur du gyroscope a valu 1,0035 à 1,0056 selon les jours. La revue pense que la carte est penchée de 5,5° et que le cerveau ne compte qu'un axe. Si c'est cela, pendant un tour sur place les axes X et Y lisent environ −9 % et −4 % de ce que lit Z (−2,5 et −1,0 °/s pour 28 °/s) ; s'ils restent à moins de 0,3 °/s de zéro, l'explication est fausse.
+   - *Le déroulement.* Robot à l'arrêt, en mode Safe, sur l'axe de la base vérifié aux faisceaux, enregistreur en marche. Une touche `g` (`/api/cmd?c=g`). Un tour sur place ordinaire (`/api/tour?go=1`) et, pendant qu'il tourne, une touche `g` deux fois par seconde. Une touche `g` après l'arrêt. Un second tour, pareil. Les lignes « gyroscope (°/s) : X … Y … Z … » arrivent dans `NOM_console.txt` ; la session de revue les dépouille une fois la séance close.
+   - *Relu dans le code avant de l'inscrire.* `g` fait partie des commandes que `/api/cmd` accepte (`web.ino`, ligne 139) et n'appelle que `printImu()` : trois lignes, écrites par le tampon de la v11 qui n'attend pas le Wi-Fi. Elle n'est pas dans les touches qui arrêtent un tour ou une avance (`roomba694_wifi.ino`, lignes 1282 et 1283). Les trois axes affichés sont corrigés du zéro, remesuré pendant la préparation de chaque tour. Un tour : 380° vers la gauche, 62 mm/s aux roues, une treizaine de secondes.
+   - *Deux écarts par rapport à ce que la revue demandait* : deux lectures par seconde au lieu d'une (une vingtaine par tour au lieu d'une dizaine, le bruit d'une lecture n'étant pas connu), et deux tours d'office.
+   - *Avant de commencer* : si le robot a été posé sur sa base pour charger, il faut le tirer à la main devant elle (posé dessus, il refuse de rouler).
+2. **Les deux tours du point P** (essai 12) : un au départ et un au retour de la sortie, au même endroit. Ils se font déjà ; ils donnent le facteur du gyroscope du jour (`rv_cap_profil.py`, outil de la revue).
+3. **Départ et arrivée calés sur les faisceaux de la base** (journal § 61.9) : la traversée d'ouest en est, puis la lecture des deux faisceaux à l'arrêt.
+4. **Ce que seul l'utilisateur peut faire**, demandé et pas encore fait : une photo du capteur de distance et de ses fils, vus du dessus ; à la règle, du devant des deux « yeux » du capteur au devant du pare-chocs (essai 8), et de l'axe du servo au devant du capteur (cette longueur s'ajoutera à chaque lecture de côté) ; au mètre, la largeur de l'encadrement de la porte H18, qui sépare la place du capteur de l'échelle du plan (note O § 5.15.6).
+
+### 8.2 Sans rien changer au robot : les outils du PC
+
+D'abord les points 1 à 3 du § 6 : le trajet rejoué d'une seule commande, le réflexe sur les capteurs optiques, le recalage sur les signaux fixes. S'y ajoutent quatre propositions de la revue ; ce sont mes outils, j'en décide.
+
+| Proposition de la revue | Ce que j'en fais |
+|---|---|
+| **Ne plus accepter un calage du filtre sur sa seule note** : pour 40 tours sur 45 du 15 après-midi, un autre endroit à plus de 15 cm note aussi bien ou mieux (`rv_calage_large.py`) | Retenu dès la prochaine séance, comme règle de pilotage : un calage n'est pris que si un second témoin le confirme (les roues depuis le dernier point sûr, les faisceaux, la baguette du seuil, un montant de porte), surtout dans un couloir, à l'entrée de la cuisine et après un patinage. À écrire ensuite dans l'outil des tours sur place, qui doit montrer les autres endroits possibles et pas seulement le meilleur |
+| **La baguette du seuil de la cuisine comme repère** : les capteurs de vide y lisent plus de 3 200 ; le centre du robot est à 15 cm d'elle quand les deux capteurs de devant la lisent | Retenu, c'est une partie du point 3 du § 6. À vérifier d'abord sur mes enregistrements du 15 (`exploration39` et `exploration40`), dans les deux sens de passage |
+| **Le facteur du gyroscope du jour au lieu de 1,0045** | Retenu. 1,0045 est écrit en dur dans `passage.py` et `balise_base.py`, et par défaut dans `centrage.py`, `localiser.py`, `relance.py` et `trajet_passages.py` : une option commune, et la mesure du jour sur les deux tours de P. Sans objet le jour où le firmware compte la rotation autour de la verticale (§ 8.3) |
+| **Quatre repères à reprendre**, relevés par la revue sur les enregistrements de l'après-midi (note O § 5.15.3 et 5.15.4) : la baguette du seuil à u = 751 et non 775 (colonne 29 et non 30) ; l'entrée de la cuisine vers (758 ; 68), case C29 ; le point des deux tours que j'appelle « D28 » vers u = 700, donc dans la colonne 27 ; le milieu de la porte H18 entre u = 443 et 452 pour 456 lu, à cheval sur les colonnes 17 et 18 | À vérifier sur place avant de corriger mes repères : mon estime était décalée dans cette partie de l'appartement (65 cm vers l'est dès le seuil d'après la revue, deux cases au fond de la cuisine d'après la photo de l'utilisateur), et je ne sais pas encore lequel des deux relevés déplacer. Les noms « porte H18 » et « D28 » restent ceux dont on se sert |
+
+### 8.3 Firmware v15 : rien n'est écrit
+
+La règle du projet vaut pour chacun de ces points : une modification à la fois, compilée, chargée, vérifiée robot immobile avant tout essai en mouvement, et aucun téléversement sans l'accord écrit de l'utilisateur. Dans l'ordre que je propose :
+
+1. **Un sens au choix pour le tour sur place** (revue). Aujourd'hui tous les tours vont vers la gauche (`tour.ino`) : une sortie cumule 9 000 à 11 500° de rotation nette, et un demi-millième d'erreur sur le facteur du gyroscope y fait 5°. En alternant gauche et droite, cette somme tombe presque à zéro. Côté PC, aucun de mes outils n'a jamais lu un tour vers la droite (`balise_base.py`, `relance.py`, `localiser.py`, la carte vivante) : à vérifier et adapter avant le premier.
+2. **Les trois axes du gyroscope dans le journal à 20 lignes par seconde** (revue) : pour voir ce que fait la carte quand une roue patine ou monte sur le seuil. `enregistreur.py` et `pilote.py` comptent les colonnes (journal § 61.5) : à adapter dans le même geste.
+3. **L'angle du servo dans le journal, avec chaque lecture du capteur de distance** (B5 de la note I) : préalable au capteur tourné.
+4. **La console du cerveau qui lâche un client muet** : la panne de 19 minutes du 15 (journal § 61.5).
+5. **La rotation comptée autour de la verticale mesurée** (revue) : les trois axes projetés sur la pesanteur relevée à l'arrêt ; il n'y aurait plus de facteur à régler. Seulement après l'essai 11, et s'il confirme l'inclinaison.
+6. **Le servo lent jusqu'à 90° et le cap retouché pendant une avance** (idée de l'utilisateur ; B3 de la note I) : voir § 8.4, pas avant d'avoir vu les fils.
+
+### 8.4 L'idée de l'utilisateur : le capteur de distance tourné à 90° en roulant
+
+Elle est au § 6, point 4. Ce que la revue y ajoute :
+
+- **elle fournit le second témoin qui manque** (§ 8.2) : un mur lu de côté donne l'écart au mur et un cap qui ne dépend pas du gyroscope ; les montants de porte qui défilent donneraient la position le long d'un couloir, là où le filtre s'est trompé de 40 cm le 15 (journal § 61.8). Non essayé ;
+- **deux constantes du firmware sont en jeu, pas une** (relu dans `radar.ino`) : la butée du servo, `RADAR_BUTEE_MAX = 30`, posée le 9 à la demande de l'utilisateur parce que les fils du capteur sont courts, et la taille de la carte des distances, `RADAR_SPAN_MAX = 80`, qui s'arrête à 80° de chaque côté ;
+- **la place du capteur compte davantage** : les mesures à la règle du § 8.1 deviennent un préalable.
+
+L'ordre : la photo des fils ; s'ils sont trop courts, quatre fils plus longs posés par l'utilisateur, pas à pas ; les mesures à la règle ; le firmware (§ 8.3, points 3 et 6), essayé d'abord robot immobile en regardant les fils pendant que le servo tourne ; enfin le prototype `suivi_lateral.py` de l'audit sur le robot, dans le couloir. La butée ne change qu'avec la confirmation de l'utilisateur.
+
+### 8.5 Toujours en attente
+
+Les essais 6 et 7 de la revue (menés par elle, sur le mot de l'utilisateur) ; le sud de la cuisine ; l'approche lente d'un vrai mur (essai 4) ; et la réponse de l'utilisateur sur l'ordre : je propose de commencer par le trajet rejoué d'une seule commande (§ 6, point 1), qui ne change rien au robot.
