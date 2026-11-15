@@ -1,0 +1,14 @@
+14:20:06 départ : mode 3 vide [2685, 2661, 2601, 2487] pare-chocs [0, 0] roues levées [0, 0]
+14:20:06       0 mm comptés ; devant  841 mm (au départ  846) ; roues    0    0 mA ; vide [2684, 2660, 2599, 2484] ; mode 3
+14:20:06      62 mm comptés ; devant 1789 mm (au départ  846) ; roues  114  179 mA ; vide [2732, 2693, 2662, 2649] ; mode 3
+14:20:07     146 mm comptés ; devant  758 mm (au départ  846) ; roues  137  152 mA ; vide [2668, 2639, 2621, 2550] ; mode 3
+14:20:08     227 mm comptés ; devant 1654 mm (au départ  846) ; roues  227  104 mA ; vide [2668, 2665, 2622, 2589] ; mode 3
+14:20:08     314 mm comptés ; devant 1566 mm (au départ  846) ; roues   45  238 mA ; vide [2669, 2664, 2615, 2551] ; mode 3
+14:20:09     391 mm comptés ; devant 1179 mm (au départ  846) ; roues   94  233 mA ; vide [2667, 2655, 2616, 2570] ; mode 3
+14:20:09     471 mm comptés ; devant 1099 mm (au départ  846) ; roues  116  199 mA ; vide [2620, 2660, 2626, 2608] ; mode 3
+14:20:10     556 mm comptés ; devant 1045 mm (au départ  846) ; roues  143  115 mA ; vide [2653, 2647, 2624, 2611] ; mode 3
+14:20:10     631 mm comptés ; devant  983 mm (au départ  846) ; roues  361  238 mA ; vide [2562, 3024, 2504, 2554] ; mode 3
+14:20:11     714 mm comptés ; devant  871 mm (au départ  846) ; roues  189  122 mA ; vide [2537, 2494, 2490, 2236] ; mode 3
+14:20:12 fin : 779 mm d'après le cerveau (792 au journal), cap +16.7°, « arrêt demandé » ; arrêt demandé d'ici : le cap s'écarte de +16.1°
+14:20:12       devant 1145 mm (au départ 846) : le capteur de distance s'est rapproché de -299 mm pour 792 comptés ; plus grand écart vu 1079 mm
+14:20:12       mode 3 ; vide [2588, 2464, 2461, 2824] ; pare-chocs [0, 0] ; roues levées [0, 0] ; courant le plus fort vu : 445 mA

@@ -1,0 +1,6 @@
+# exploration37_20261115_142437 — carte 192.168.18.25 — début 14:24:37.210 le 2026-11-15
+# Suite de exploration36, dont l'enregistreur s'est arrêté seul à 14 h 23 min 18 (console TCP fermée par la carte, sans doute un hoquet du Wi-Fi) pendant un recul. Robot à l'arrêt devant le seuil de la cuisine, côté pièce centrale, 34 cm en arrière de la baguette, après un premier franchissement manqué (roue gauche butée sur la baguette). Firmware v14, k_gyro 1,0045, sans repères ; brosse latérale aux franchissements.
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794770677.364	14:24:37.363	Un client est déjà connecté à la console.
+1794770677.364	14:24:37.363	## la carte a fermé la console TCP
+1794770678.705	14:24:38.705	## fin de l'enregistrement après 1.5 s

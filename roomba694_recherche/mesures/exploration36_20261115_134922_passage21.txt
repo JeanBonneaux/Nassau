@@ -1,0 +1,9 @@
+re=40 : recul de 37 mm ; robot en (772.0, 81.6), cap 354.1°, pare-chocs 00
+cap 335.4° demandé : cap 336.0°, devant 845 mm
+re=150 : recul de 163 mm ; robot en (764.1, 77.9), cap 334.2°, pare-chocs 00
+   recul refusé : None
+re=150 : recul de 0 mm ; robot en (757.2, 74.6), cap 334.2°, pare-chocs 00
+ordre non exécuté : re=60
+ordre non exécuté : voir=335.4
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1115 mm
+POSE=757.2,74.6,334.2

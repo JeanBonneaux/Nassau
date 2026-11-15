@@ -1,0 +1,8 @@
+   regard au cap    0.1° : médiane   281 mm (de 281 à 285), soit 308 mm du centre du robot
+   regard au cap  329.6° : médiane   954 mm (de 954 à 962), soit 981 mm du centre du robot
+   regard au cap  299.6° : médiane  1841 mm (de 1832 à 1845), soit 1868 mm du centre du robot
+   regard au cap  270.1° : médiane   417 mm (de 417 à 417), soit 444 mm du centre du robot
+   regard au cap  240.1° : médiane   427 mm (de 423 à 427), soit 454 mm du centre du robot
+   regard au cap  179.7° : médiane  1297 mm (de 1284 à 1301), soit 1324 mm du centre du robot
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1297 mm
+POSE=449.2,151.7,179.7

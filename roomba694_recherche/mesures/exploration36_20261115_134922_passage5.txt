@@ -1,0 +1,5 @@
+va=452,151,50 : 396 mm au cap 17.5° (reste de cap -0.0°), 50 mm/s demandés
+   avance de 339.5 mm pour 396 demandés, raison « obstacle à 288 mm devant », alarme None, capteurs optiques jusqu'à 57, sol 2480 ; robot en (449.1, 151.7), cap 18.1°, devant 287 mm
+ordre non exécuté : voir=0/270/315/225/180
+fin : mode 3, roues en marche False, pare-chocs 00, devant 287 mm
+POSE=449.1,151.7,18.1
