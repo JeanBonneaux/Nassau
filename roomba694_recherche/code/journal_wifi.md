@@ -2037,3 +2037,56 @@ J'ai lu la différence, pas les fichiers entiers, et je n'ai pas relu ligne à l
 **État à 9 h 17** : robot en D16, pixel (404,8 ; 88,1), cap 89°, face à sa base à 1 m, en mode Safe, immobile, 1 871 mAh ; enregistreur en marche jusqu'à 9 h 34 min 56 ; l'utilisateur doit dire s'il lance « rentre à la base », s'il continue ailleurs ou s'il arrête.
 
 **Complément, 9 h 23 : la séance fermée, et ce que l'utilisateur demande pour le tapis.** À ma question (lancer « rentre à la base », ou continuer ailleurs), il a répondu à 9 h 19 : « non, va sur le tapis, il va meme falloir au final le designer comme zone focus de nettoyage ». En mode Safe c'est impossible (plus haut). Je ne l'ai pas tenté une troisième fois et je n'ai pas touché au mode Full : la consigne l'interdit, et le firmware ne sait pas le demander. Séance fermée à 9 h 20 min 43 (`5`, capteur de distance arrêté, `s`, `x`) ; enregistreur arrêté par son fichier STOP ; robot laissé en D16, pixel (404,8 ; 88,1), cap 89°, à 1 m devant sa base, pas dessus, 1 855 mAh. Question posée à 9 h 22, réponse attendue. Première façon : le mode Full, avec la surveillance du vide et des roues levées refaite dans le cerveau partout sauf sur le tapis ; il y faut une version 14, sa règle « jamais le mode Full » levée par lui, et son accord pour l'installer ; c'est ma recommandation, parce qu'on garde la lecture des capteurs de vide, qui est ce qui fait reconnaître le tapis. Seconde façon : masquer les quatre capteurs de vide au papier blanc et au ruban ; c'est immédiat, mais le robot devient aveugle au sol partout. Dans les deux cas le robot ne se protège plus seul d'une vraie marche : je lui ai demandé s'il y en a une chez lui. Enregistrement relu avant d'être poussé : treize lignes « texte du robot », identifiant masqué, aucun nom de réseau, aucun chemin du PC.
+
+## 57. Le tapis abordé de face : la brosse latérale se glisse sous son bord ; firmware v14 écrit, pas installé ; trois corrections des repères mises en doute (2026-11-15, 9 h 25 à 9 h 42)
+
+**Les demandes de l'utilisateur.** « mais avant en operant seul il pouvais y monter, on peut reculer et reessayer ? » (9 h 25). Puis, en regardant le robot : « en fait la brosse laterale ne tournant pas, elle se glisse sous l tapis et bloc le robot, peut on la faire tourner juste elle tres doucement quand on franchi des obsracles ? » (9 h 31).
+
+**Ce que sa première phrase corrige.** Je lui avais écrit que le nettoyage normal du robot refuserait « sans doute » ce tapis : c'était une supposition, et lui l'a vu y monter. Les deux essais du § 56 partaient d'un robot de travers sur le bord, un capteur déjà au-dessus du poil sombre : ils ne disaient rien d'une entrée de face.
+
+**Les deux essais** (enregistrement `exploration27_20261115_092602`). Retour vers le tapis par une passe d'`explorer3.py`, puis cap plein ouest, robot entièrement sur le parquet ; une avance droite de 900 mm demandée par `/api/mouv`, sans l'alarme de mes outils du PC : c'est le robot qui décide.
+
+| | Essai 1, 9 h 28 min 38, 100 mm/s | Essai 2, 9 h 30 min 23, 150 mm/s |
+|---|---|---|
+| Avance droite avant le bord | 536 mm | 402 mm |
+| Capteurs de vide avant, à l'arrivée sur les franges | 1 264 puis 904 | 861 et 704 |
+| Cap à la fin | −41° (le robot tourne à droite) | −67° |
+| Compteurs des roues | gauche 776 mm, droite 1 035 mm | gauche 786 mm, droite 1 019 mm |
+| Courants | roue droite 320 à 480 mA, batterie jusqu'à −461 mA | roue droite 320 à 480 mA, batterie jusqu'à −517 mA |
+| Mode Safe | tenu | tenu |
+| Capteurs de vide au plus bas | 744 | 704 |
+| Fin annoncée par le cerveau | « 899 mm pour 900 mm demandés, distance atteinte » | « 897 mm pour 900 mm demandés, distance atteinte » |
+
+- Les capteurs de vide ne sont jamais descendus sous 700 : le poil sombre (36 à 81, § 56) n'a pas été atteint. Cette fois ce n'est donc pas la sécurité du robot contre le vide qui l'a empêché de monter.
+- D'après les compteurs le robot aurait tourné à gauche ; d'après le gyroscope il a tourné à droite. La roue droite tournait sans faire avancer le robot. La session de revue l'a lu de même ; son outil a signalé « les roues forcent » 1,5 s après le début, la première fois qu'il prend un patinage sur le fait.
+- Ni contact du pare-chocs ni roue levée.
+- Dégagements : recul droit de 300 mm, rotation pour revenir face au tapis, second recul. Après le second essai les quatre capteurs de vide lisaient 1 000 à 1 389 (l'avant sur les franges) et le capteur de distance voyait quelque chose à 398 mm, sur le tapis ; un dernier recul de 246 mm a remis le robot sur le parquet. Séance fermée à 9 h 32 min 18 (`5`, `s`, `x`).
+
+**L'explication, donnée par l'utilisateur qui regardait** : à l'arrêt, la brosse latérale se glisse sous le bord du tapis et retient le robot. En nettoyage normal elle tourne et passe par-dessus. Je ne l'ai pas vu moi-même ; les mesures vont dans ce sens (pivot sur le coin avant droit, où est cette brosse ; roue droite qui patine).
+
+**Un défaut du firmware que ces essais montrent.** Le cerveau a poussé jusqu'au bout pendant que le robot pivotait de 41° puis de 67° : les roues tournaient et le chemin compté augmentait, donc aucun de ses arrêts ne jouait. Une avance devrait s'arrêter quand le cap s'écarte de plus d'une quinzaine de degrés. Pas corrigé ici : un changement à la fois.
+
+**Firmware v14 : écrit, compilé, PAS installé** (commit 0a273a3). Un seul ajout ; la conduite et les autres sécurités ne changent pas.
+
+- `brosseLaterale(p)` : ordre 144 du robot, brosse principale 0, brosse latérale `p` bornée dans le code à [0, 60] sur 127, sens normal seulement, aspiration 0.
+- `/api/mouv?…&brosse=N` : la brosse part avec le premier ordre de roues du mouvement et s'arrête à sa fin, quelle qu'elle soit.
+- `/api/brosse?lat=N[&ms=T]` : une impulsion de 5 s au plus, robot immobile, pour régler la puissance sous les yeux de l'utilisateur ; refusée robot muet, hors du mode Safe, roue soulevée, robot qui bouge, sonde en cours.
+- Arrêts : fin de mouvement, tout arrêt des roues (`stopWheels`), échéance de l'impulsion, garde-fou de la boucle (brosse en marche sans mouvement ni impulsion, ou robot sorti du mode Safe), démarrage de la carte. Un mouvement qui ne demande pas la brosse arrête une impulsion en cours.
+- `/api/state` gagne « brosse » ; `/api/mouv` gagne le champ « brosse ». Aucune touche ne met la brosse en marche.
+- Vérifié : compilation sans erreur (1 150 678 octets, 87 % de la place), relecture de la différence ; binaire hors dépôt, `build/roomba694_v14.bin`. Non vérifié : rien sur la carte ni sur le robot ; la logique n'a pas tourné sur le PC face à un faux robot. Relecture demandée à la session de revue.
+- La consigne dit « Brushes and vacuum off ». La v14 la lève pour la brosse latérale seule, à puissance réduite, le temps d'un mouvement ou d'une impulsion courte. L'accord de l'utilisateur pour l'installer est demandé (9 h 42), pas encore donné à l'heure où j'écris.
+- Une fois monté sur le tapis, le robot peut encore être arrêté par ses capteurs de vide sur le poil sombre : la question du § 56 (lever la protection contre le vide) reste ouverte.
+
+**Trois corrections des repères mises en doute** (analyse de la session de revue sur l'enregistrement du § 56 ; ses chiffres, dans `data_analysis/results_rv_gestes_20261115.txt`). Ce que le § 56 affirmait, et ce que cette analyse remplace :
+
+- Le § 56 place la station 3 de la passe « b » en D12, pixel (300, 98), d'après les repères (« calé sur 5 tours », à 250 mm du filtre). D'après elle, trois témoins indépendants disent que cette correction est fausse : le chemin refait avec les roues et le gyroscope seuls (238 mm d'écart sur ce tronçon, 7 à 80 mm sur les autres), les parois comparées d'un tour à l'autre, et la base. Le robot était là où le filtre le voyait, vers le pixel (287, 96), en D11. Même chose pour les stations 1 et 2 de la passe « e » (corrections de 21 cm).
+- Conséquence : à partir de cette station les positions retenues sont décalées d'environ 25 cm vers l'est, puis de 15 à 20 cm de plus au retour. **La position finale du § 56, « face à la base, pixel (404,8 ; 88,1) », est donc fausse** : pendant les sept minutes d'attente aucun récepteur infrarouge n'a vu la base, et le capteur de distance lisait 1 204 mm ; d'après l'estime le robot a fini une cinquantaine de centimètres à l'ouest de son point de départ.
+- Ce qui tient, ce sont les mesures brutes. Roues contre capteur de distance : 1,0000 sur cinq avances face à un mur (6 m). Deux tours au même endroit : 3 et 8 mm d'écart entre leurs parois. Aller et retour de 2 m : d'après les parois le robot revient à (−10, −54) mm de son départ, `passage.py` le comptait à (0, −25) mm : 3 cm d'erreur de l'estime après 4 m. Le « 1 cm » du § 56 comparait l'estime aux repères, pas à une référence indépendante.
+- Le filtre, relancé autour de la position des repères, l'a confirmée avec une note de 0,93 : filtre et repères peuvent donc s'accorder sur une position que les roues, les parois et la base contredisent.
+- Supposé par elle : un objet vu par les anciens tours près de D12 et de la base a changé de place, et plusieurs repères se trompent ensemble.
+- Son idée, pas encore dans le code : ne pas appliquer une correction des repères de plus de 12 cm quand l'estime depuis le tour précédent a moins de 2 m. Ce matin elle aurait écarté ces trois corrections et gardé les autres.
+- Je rapporte sans trancher entre le plan, les repères et l'estime. Les stations nouvelles de la passe « b » faites avant celle-là (E11 deux fois, F11) ne sont pas en cause. La règle « croire les repères » (§ 43) ne vaut donc pas sans contrôle.
+
+**Non vérifié.** La v14 sur la carte ; l'explication par la brosse (vue par l'utilisateur, pas par moi) ; la position du robot en ce moment (les roues ont patiné, aucun tour sur place depuis) ; l'étendue du tapis.
+
+**État à 9 h 42** : robot sur le parquet, face au tapis, à 25 cm des franges environ, vers E11 (position non mesurée), séance fermée, 1 828 mAh ; cerveau en v13 ; v14 prête ; accord de l'utilisateur attendu.
