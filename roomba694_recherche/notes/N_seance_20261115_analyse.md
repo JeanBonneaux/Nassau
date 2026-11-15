@@ -3,7 +3,7 @@
 Session de revue, 2026-11-15. C'est le compte rendu prévu par la note M (§ 6, « Après »).
 
 - **Qui a fait quoi.** La session de navigation a piloté le robot, l'utilisateur à côté. J'ai suivi ses enregistrements avec `rv_direct.py` et je les ai dépouillés. Je n'ai envoyé aucun ordre de roues.
-- **Les séances.** `exploration26` (8 h 44 à 9 h 20) : la minute immobile, l'essai des pivots, la cartographie de la pièce à gauche de la base, les cinq gestes de mesure demandés par l'utilisateur (« Les cinq »). `exploration27` (9 h 26 à 9 h 32) : deux essais de montée sur le tapis, à sa demande.
+- **Les séances.** `exploration26` (8 h 44 à 9 h 20) : la minute immobile, l'essai des pivots, la cartographie de la pièce à gauche de la base, les cinq gestes de mesure demandés par l'utilisateur (« Les cinq »). `exploration27` (9 h 26 à 9 h 32) : deux essais de montée sur le tapis, à sa demande. `exploration28` (à partir de 9 h 44, firmware version 14) : la brosse latérale seule, puis un franchissement du bord du tapis ; elle n'est citée ici qu'au § 5.
 - **Où sont les chiffres.** `data_analysis/results_rv_gestes_20261115.txt` (script `rv_gestes_20261115.py`), `results_rv_pivots_lecture_20261115.txt`, et les fichiers d'événements `mesures/direct_20261115_*_evenements.txt`.
 
 Chaque affirmation dit d'où elle vient : **mesuré**, **lu**, **supposé**.
@@ -12,7 +12,7 @@ Chaque affirmation dit d'où elle vient : **mesuré**, **lu**, **supposé**.
 
 1. **Les mesures brutes sont bonnes** (mesuré). Les roues comptent juste : 1,000 mm vu par le capteur de distance pour 1 mm compté, sur 6 m. Deux tours sur place au même endroit se répètent à moins d'un centimètre. Après 4 m et un demi-tour, l'estime (roues et gyroscope) se trompe de 3 cm.
 2. **La position retenue, elle, a sauté trois fois de 16 à 24 cm** (mesuré), chaque fois quand les repères l'ont corrigée. Trois témoins indépendants le disent : les roues et le gyroscope, la comparaison directe des tours, et le signal de la base. **À la fin, le robot se croyait devant sa base ; d'après l'estime il était environ 40 cm à côté, et la base ne le voyait plus.**
-3. **Le tapis vert foncé est un obstacle pour ce robot**, pour deux raisons mesurées : son poil sombre est lu comme un vide (deux chutes du mode Safe), et son bord fait patiner la roue droite (deux essais : le robot dévie de 41° puis de 67° pendant que les roues comptent 90 cm).
+3. **Le tapis vert foncé pose deux problèmes mesurés** : son poil sombre est lu comme un vide (deux chutes du mode Safe), et son bord fait patiner la roue droite (deux essais : le robot dévie de 41° puis de 67° pendant que les roues comptent 90 cm). **Le second a une parade, trouvée par l'utilisateur** : la brosse latérale à l'arrêt se glissait sous le bord. Brosse en marche (version 14 de la session de navigation), le robot a franchi le bord sans dévier, une fois (§ 5).
 4. **L'outil d'analyse en direct a pris le patinage sur le fait**, une seconde et demie après son début. C'est la première fois.
 5. **Trois propositions chiffrées** au § 7. Aucune n'est décidée.
 
@@ -160,8 +160,12 @@ Sur un mètre, l'estime ne peut pas se tromper de 20 cm : le § 2.4 la donne à 
 
 - **Ce qui se passe** : la roue droite tourne vite sans faire avancer le robot. Le cerveau, qui voit le cap partir à droite, lui demande encore plus de vitesse pour redresser : cela entretient le patinage. Le mouvement se termine « distance atteinte » alors que le robot n'a pas fait ce chemin.
 - **Les roues et le gyroscope se contredisent de plus de 100°.** C'est le signe le plus net d'un patinage.
-- **Le tapis ne se monte pas en mode Safe**, même si les roues y arrivaient : plus loin, le poil sombre est lu comme un vide et le mode tombe (note L § 4.9).
-- **Mon avis** : marquer ce tapis comme un obstacle sur la carte. Son bord se reconnaît : les capteurs de vide y lisent 700 à 1 700, contre 2 500 à 2 700 sur le parquet.
+- **L'explication, donnée par l'utilisateur qui regardait** : « la brosse laterale ne tournant pas, elle se glisse sous l tapis et bloc le robot ». Il a demandé de la faire tourner seule, doucement, pendant un franchissement. La session de navigation a écrit et installé pour cela la version 14 du firmware (9 h 44).
+- **Brosse en marche, le bord se franchit** (mesuré, un essai : `exploration28`, 9 h 46 min 50, avance à 150 mm/s, brosse à 40 sur 127). Le cap reste tenu à 1,5° près, les deux roues comptent le même chemin, une roue monte à 426 mA le temps d'une lecture. Le robot s'arrête après 681 mm, sur le tapis, parce que le capteur de distance voit un obstacle à 29 cm.
+- **Le courant de la brosse latérale** (mesuré, une lecture par seconde) : 40 à 66 mA robot immobile, 56 à 72 mA en roulant sur le parquet, 142 puis 120 mA sur les franges. Le manuel de service donne 30 à 120 mA en marche normale. Rien ne coupe encore la brosse si une frange s'y enroule, sinon la fin du mouvement.
+- **J'ai relu le code de la version 14** à la demande de la session de navigation : rien de bloquant. La brosse principale et l'aspiration restent à zéro, la brosse latérale est bornée à 60 sur 127 et ne peut tourner que pendant un mouvement qui la demande ou une impulsion de cinq secondes.
+- **Ce qui reste vrai** : plus loin sur le tapis, le poil sombre est lu comme un vide et le mode Safe tombe (note L § 4.9). Là où le robot s'est arrêté, les capteurs de vide lisent 980 à 1 630 : il est sur une partie claire.
+- **Mon avis, corrigé** : j'avais d'abord conseillé de marquer tout le tapis comme un obstacle. Le bord n'en est plus un avec la brosse ; le poil sombre en reste un tant que le robot roule en mode Safe. Le bord se reconnaît : les capteurs de vide y lisent 700 à 1 700, contre 2 500 à 2 700 sur le parquet.
 
 ## 6. Ce qui n'a pas pu être mesuré
 
@@ -174,7 +178,7 @@ Sur un mètre, l'estime ne peut pas se tromper de 20 cm : le § 2.4 la donne à 
 Aucune n'est décidée. Les deux premières touchent au code de la session de navigation ou au firmware : elles lui reviennent, ou demandent l'accord de l'utilisateur.
 
 1. **Se servir de l'estime comme garde-fou.** Quand le robot a roulé moins de 2 m depuis le tour précédent, refuser une correction du filtre ou des repères de plus de 12 cm, et le signaler. Aujourd'hui cette règle aurait écarté les trois sauts (`b3`, `e1`, `e2`) et gardé toutes les autres corrections. Erreur attendue ensuite : celle de l'estime, 1 % du chemin.
-2. **Arrêter une avance quand le cap s'écarte de 8°**, ou quand les roues et le gyroscope se contredisent de 8°. Les deux arrivent au même instant, 0,6 à 0,75 s après le bord du tapis. Aujourd'hui l'arrêt aurait évité 29 et 44 cm de chemin compté à tort, et 33° et 59° de déviation. C'est une retouche du firmware (version 14).
+2. **Arrêter une avance quand le cap s'écarte de 8°**, ou quand les roues et le gyroscope se contredisent de 8°. Les deux arrivent au même instant, 0,6 à 0,75 s après le bord du tapis. Aujourd'hui l'arrêt aurait évité 29 et 44 cm de chemin compté à tort, et 33° et 59° de déviation. C'est une retouche du firmware, pour une prochaine version (la version 14, installée à 9 h 44 par la session de navigation, n'ajoute que la brosse latérale).
 3. **Se servir de la base comme d'un repère sûr.** Devant elle, les récepteurs la voient plus d'une fois sur deux ; 40 cm à côté, jamais. Un contrôle simple à chaque retour : si la position dit « devant la base » et qu'aucun récepteur ne la voit, la position est fausse.
 
-Plus petit, pour la même version 14 : garder les quatre indicateurs « vide » du robot (note L § 4.9), et corriger le défaut de ma sonde (note L § 4.10).
+Plus petit, pour la même prochaine version : garder les quatre indicateurs « vide » du robot (note L § 4.9), corriger le défaut de ma sonde (note L § 4.10), et couper la brosse latérale si son courant reste haut.
