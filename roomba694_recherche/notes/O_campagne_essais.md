@@ -475,7 +475,7 @@ Dans un même repère, l'aller et le retour s'accordent à 1,3 cm : c'est le tro
 
 `rv_calage_large.py`, sur les 45 tours de midi et de l'après-midi, cherche à ± 1,2 m d'est en ouest, ± 45 cm du nord au sud et ± 5° : **pour 40 tours sur 45, un autre endroit, à plus de 15 cm, note aussi bien ou mieux que la position retenue ; 2 seulement ont une place seule en tête.** Deux cas où la vérité est connue par ailleurs :
 
-- le tour du couloir de 15:41:43, accepté sur sa note de 0,84 et faux de 30 cm (journal § 61.8) : quatre endroits notent 0,97 à 1,00, étalés sur 1,45 m le long du couloir ;
+- le tour du couloir de 15:41:43, accepté sur sa note de 0,84 et faux de 40 cm d'après le journal § 61.8 (j'avais recopié 30) : quatre endroits notent 0,97 à 1,00, étalés sur 1,45 m le long du couloir ;
 - le dernier tour de P (15:53:00), robot sur l'axe de la base à 1 cm près : le meilleur endroit trouvé est à 1,2 m de là (0,84), et il est faux.
 
 Donc la note ne permet seule ni d'accepter une position, ni d'en proposer une autre. Elle classe des candidats ; il faut un second témoin. Ceux qui existent déjà : les faisceaux de la base (1 cm), la baguette du seuil (3 cm), un mur lu de côté, l'estime sur un trajet court sans patinage.
