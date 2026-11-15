@@ -13,7 +13,7 @@ Cette note est le plan de travail. Elle est tenue à jour : chaque essai y reço
 3. **Ce que la matinée a appris** (note N) : les roues et les tours sur place sont bons à 1 à 3 cm ; c'est le calcul de la position qui saute de 16 à 31 cm. La campagne commence donc par ce qui donne un repère sûr, et par ce qui empêche un saut.
 4. **Ce qui reste interdit sans un mot de l'utilisateur** : le mode Full ; le mode d'essai d'usine ; les brosses autres que la brosse latérale ; l'ordre « rentre à la base » (son accord à chaque fois).
 5. **Les ordres inconnus du robot sont permis depuis le 15 à 10 h 50** : à ma question « est-ce que j'essaie aussi des ordres inconnus ? », posée après lui avoir redit le risque, l'utilisateur a répondu « Oui, essaie ». Marche à suivre et garde-fous dans la note L § 4.7 ; c'est l'essai 7.
-6. **La trouvaille du 15 à 11 h 30 : le capteur de distance n'est pas où les outils de carte le comptent** (§ 5.6). Ils le placent 27 mm en avant du centre du robot ; l'approche du mur de l'essai 4 montre qu'il est à plus de 86 mm, et la photo du robot le montre vers 125 mm. Si la règle le confirme, chaque écho est placé 9 cm trop près du robot depuis le 10. C'est la première erreur systématique trouvée dans la mesure elle-même, et non dans le calcul.
+6. **La trouvaille du 15 à 11 h 30 : le capteur de distance n'est pas où les outils de carte le comptent** (§ 5.6). Ils le placent 27 mm en avant du centre du robot ; l'approche du mur de l'essai 4 montre qu'il est à plus de 86 mm, et la photo du robot le montre vers 125 mm. Si la règle le confirme, chaque écho est placé 9 cm trop près du robot depuis le 10. C'est la première erreur systématique trouvée dans la mesure elle-même, et non dans le calcul. À midi une seconde est apparue, liée à la première : l'échelle du plan (53 pixels par mètre) avait été réglée le 10 avec le capteur mal placé, et vaudrait 51 (§ 5.10). Les deux se compensaient dans une pièce, pas le long d'un trajet ni d'une pièce à l'autre.
 
 ## 1. Les essais courts, dans l'ordre
 
@@ -213,7 +213,7 @@ La session de navigation a cherché la ligne sombre à plusieurs bords du tapis,
 
 ### 5.8 Le facteur du gyroscope : vérifié, il n'a pas changé (et une fausse alerte de ma part)
 
-**Ce qui s'est passé.** Entre 11 h 50 et 12 h 00 j'ai envoyé à la session de navigation deux alertes que j'ai dû retirer l'une après l'autre : « votre position est 30 cm trop au sud », tirée de mon estime enchaînée sur vingt minutes, puis « le facteur du gyroscope vaut 1,0013 aujourd'hui et non 1,0045 », tirée de quatre tours du matin. Aucune des deux ne tenait. Je les note ici pour que la leçon reste.
+**Ce qui s'est passé.** Entre 11 h 50 et 12 h 00 j'ai envoyé à la session de navigation trois messages qui se contredisaient : « votre position est 30 cm trop au sud », tirée de mon estime enchaînée sur vingt minutes ; puis « je retire, c'est le facteur du gyroscope qui vaut 1,0013 aujourd'hui », tiré de quatre tours du matin ; puis « aucun des deux ne tient ». Le bilan, une fois ses mesures reçues : **la première alerte allait dans le bon sens** (dans le repère des faisceaux de la base, sa position retenue au retour était 53 cm trop au sud et 17 cm trop à l'est ; elle s'est recalée sur les faisceaux à 11 h 50, § 5.9) ; **c'est le facteur du gyroscope qui n'a pas changé**, et mon retrait qui était faux. Je note le tout pour que la leçon reste : un bon résultat annoncé sur une mesure fragile, puis retiré sur une autre mesure fragile, vaut moins qu'un silence de dix minutes.
 
 **Mesuré** (`rv_facteur_gyro.py`, résultats dans `results_rv_facteur_gyro.txt` ; `rv_boucle.py` pour un couple de tours).
 
@@ -233,8 +233,33 @@ La session de navigation a cherché la ligne sombre à plusieurs bords du tapis,
 - **Le filtre remonte vers le nord à chaque tour refait au même endroit.** Aux trois tours de 12 h 02 : +48, +12 et +17 mm, alors que les tours comparés paroi par paroi sont au même point à 12 mm près. Le matin, à l'essai 1 : +154, +102 et +87 mm.
 - **Le tour de 11:52:07 est au même point que celui de l'essai 1 (10:55:36)** à 2 ou 3 cm près : les huit parois lues sont les mêmes (518 et 544 mm au nord, 1 173 et 1 162 au sud, 1 062 et 1 059 à l'est). Et la traversée des faisceaux de 11 h 50 retrouve l'axe de la base à 7 mm près de celui de l'essai 1. D'est en ouest, la position devant la base est donc sûre au centimètre.
 - **Du nord au sud, quatre façons de mesurer la distance du centre du robot à la base ne s'accordent pas**, robot à ce même point : 1,19 m du point de la base sur le plan d'après le filtre ; 1,31 m ± 0,13 du devant de la base d'après la photo de l'utilisateur de 11 h 01 (23 lames de parquet comptées entre la base et le dessous du robot, la lame étalonnée à 58 mm sur le diamètre du robot) ; 18 à 33 cm de plus que le filtre d'après la largeur des faisceaux (§ 5.2) ; 60 à 75 cm de plus d'après deux estimes revenues de la pièce du tapis (la mienne et celle de la session de navigation, qui s'est recalée ensuite sur les faisceaux).
-- **Deux contacts du pare-chocs gauche** au retour de la pièce du tapis, à 11 h 46 min 42 et 11 h 47 min 58, robot allant vers l'est : rien n'avait été vu, ni par le capteur de distance (1,3 et 2,2 m devant) ni par les capteurs optiques (52 au plus). Un troisième, à droite, à 11 h 34 min 51 dans la pièce du tapis, pareil.
+- **Deux contacts du pare-chocs gauche** au retour de la pièce du tapis, à 11 h 46 min 42 et 11 h 47 min 58, robot allant vers l'est : rien n'avait été vu, ni par le capteur de distance (1,3 et 2,2 m devant) ni par les capteurs optiques (52 au plus). Explication de la session de navigation, après recalage sur les faisceaux : le robot passait 30 cm plus au nord qu'elle ne le croyait et a touché le bord sud du meuble de C14 à C16. Un troisième contact, à droite, à 11 h 34 min 51 dans la pièce du tapis : une chose basse devant le lit.
+- **Le décalage entre les deux pièces, décompté par la session de navigation** : sa position retenue au retour était 53 cm trop au sud dans le repère des faisceaux ; 25 cm étaient déjà là le matin entre le repère de la pièce du tapis et celui de la pièce de la base, 10 viennent de la correction du filtre acceptée à 11 h 32, 17 de la tournée. À dix minutes d'écart le filtre a eu raison une fois contre l'estime (11 h 39, note 0,89, confirmé par le mur nord) et tort une fois (11 h 43, note 0,66).
 
 **Ce que cela dit.** Rien de tranché. La photo ne contredit pas nettement le filtre (12 cm d'écart, ou 19 si le point de la base est à son milieu, pour 13 cm d'incertitude) ; la largeur des faisceaux dit 18 à 33 cm de plus ; les deux estimes disent bien davantage, mais elles ont traversé le tapis et je ne m'y fie pas. Ce qui est sûr : le filtre n'est pas stable à cet endroit (il remonte à chaque tour), et ce que le robot lit au nord depuis ce point, 52 à 54 cm, reste à identifier.
 
 **Ce qui est demandé.** Une mesure au mètre par l'utilisateur, robot laissé où il est depuis 12 h 03 : du devant de la base au bord du robot le plus proche. Elle dira laquelle des quatre est la bonne.
+
+### 5.10 Deux erreurs qui se compensaient : la place du capteur de distance et l'échelle du plan
+
+À midi la session de navigation a retrouvé d'où vient l'échelle du plan, et tout se range. Rien n'est encore changé dans les outils : il manque la mesure à la règle.
+
+**Les faits, mis côte à côte.**
+
+1. **L'échelle du plan a été réglée le 10 novembre** (journal § 27) par trois chemins qui ne s'accordaient pas : 57 pixels par mètre par la carte du robot seule (ses tours sur place), 51 par le trajet seul (les roues), 50 à 57 par la largeur des portes. 54 puis 53 ont été retenus.
+2. **Mon contrôle du jour sur 210 trajets** (§ 5.6, `rv_dx_par_les_tours.py`) : les corrections de position vont contre le trajet de 3,4 % de sa longueur. Cela fait 51,2 pixels par mètre : la valeur du trajet seul.
+3. **Un capteur compté trop en arrière rétrécit chaque pièce vue par le robot** : pour la poser sur le plan il faut alors plus de pixels par mètre. Passer de 51 à 57 pour des murs à 0,8 m (la distance médiane des murs vus de face dans les tours) demande qu'il manque 10 cm à chaque lecture : selon que la carte du 10 comptait déjà les 27 mm ou pas encore, le capteur serait à 126 ou à 100 mm du centre, et non à 27.
+4. **La photo du robot** le montre à 125 mm du centre, à 1 cm près ; **l'essai 4** à plus de 86 mm (§ 5.6).
+5. **Toutes les corrections du filtre de la journée vont vers la paroi la mieux vue** (relevé de la session de navigation) : vers le nord dans la pièce de la base, sept fois (+154, +102, +87, +70, +49, +12, +17 mm) ; vers le sud dans la pièce du tapis, quatre fois. Les deux pièces se retrouvent décalées de 25 cm l'une par rapport à l'autre.
+6. **Les largeurs mesurées par le robot** ajoutent deux fois la place du capteur : le couloir « de 68 cm » entre J15 et J17 ferait 88 cm, le passage « de 47 cm » près de la porte H12 ferait 67 cm.
+
+**Ce que cela dit.** Deux erreurs de sens contraire, nées le même jour :
+
+- le capteur de distance compté 10 cm trop en arrière : chaque pièce paraît 20 cm trop étroite au robot ;
+- l'échelle du plan trop forte de 4 % (53 pixels par mètre au lieu de 51) : le plan, converti en millimètres, est 4 % trop petit.
+
+Pour une pièce de 3 à 5 m les deux se compensent à quelques centimètres près, et c'est pourquoi 53 « marchait ». Elles ne se compensent ni le long d'un trajet (4 % : 40 cm sur 10 m), ni devant une paroi seule (10 cm, vers elle), ni d'une pièce à l'autre. Ce sont les trois endroits où la position sautait.
+
+**Ce qui n'est pas établi.** Tant que la règle n'a pas parlé, c'est une explication qui range six faits, pas une mesure. Le contact du 10 à 143 mm lus reste à comprendre. Je n'ai pas pu le recouper par le plan seul (§ 5.6, point 4 ; `rv_dx_coherence.py` ne tranche pas).
+
+**Ce qu'il faudra faire, à décider avec la session de navigation et l'utilisateur.** Changer les deux réglages ensemble, jamais l'un sans l'autre ; refaire les repères, relevés avec les anciens ; rejouer d'abord les séances enregistrées avec les nouveaux réglages pour voir si les corrections du filtre rapetissent.
