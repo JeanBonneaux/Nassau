@@ -196,7 +196,7 @@ L'application range dans le robot des préférences de nettoyage (deux passages,
 
 | Genre | Ce qu'il fait | Risque | Conditions |
 |---|---|---|---|
-| `capteurs` | demande les 256 numéros de paquet et note ce qui revient ; la documentation en décrit 59 | aucun connu : ce sont des lectures | robot réveillé, liaison ouverte ; il peut rester sur sa base |
+| `capteurs` | demande les 256 numéros de paquet et note ce qui revient ; la documentation en décrit 63 (52 paquets et 11 groupes) | aucun connu : ce sont des lectures | robot réveillé, liaison ouverte ; il peut rester sur sa base |
 | `notes` | range une suite de trois notes ; avec `--jouer`, la fait jouer (le mode Safe est pris puis rendu) | un bip | robot réveillé |
 | `commandes` | essaie des ordres inconnus un par un, compte leurs arguments avec des zéros, compare les capteurs avant et après, relève le texte du robot, s'arrête à la première chose anormale (plus de réponse, moteur qui démarre, roue qui bouge) | **réel** : voir § 4.7 | `--go`, l'utilisateur à côté, robot hors de sa base, posé sur un support, les deux roues dans le vide |
 
