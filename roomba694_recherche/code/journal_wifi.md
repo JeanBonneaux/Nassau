@@ -2386,3 +2386,73 @@ Mes erreurs : le coin de la cuisine annoncé sans l'avoir vérifié ; la brosse 
 **Non fait** : le vrai coin de la cuisine et son exploration en détail (proposés à l'utilisateur à 13 h 42, en attente de son accord) ; l'essai 4 devant un vrai mur ; les essais 6 et 7 de la session de revue ; la mesure à la règle.
 
 **État à la fin** (13 h 43) : robot au point P devant sa base, pas dessus ; 1 175 mAh (57 %) ; cerveau en v14 ; seuil du capteur de distance à 30 cm.
+
+---
+
+## 61. Vers la cuisine par la nouvelle porte du mur sud (case H18) ; le seuil manqué au premier essai ; l'enregistreur coupé par une liaison morte (2026-11-15, 13 h 45 à … — séance en cours)
+
+**La demande.** À ma proposition de 13 h 42 (retourner dans la cuisine, l'explorer en détail jusqu'au vrai coin du fond, puis revenir devant la base), l'utilisateur a répondu à 13 h 45 : « Go en passant par nouvelle Porte ouverte mais étroite car y'a un truc qui gêne en g18 ». J'ai lu : la porte du mur sud de la pièce de la base, qui donne sur le couloir (sur le plan, une ouverture de u = 435 à 477 vers v = 188, cases H17 et H18), restée fermée jusque-là ; quelque chose en G18 en réduit le passage.
+
+**Les enregistrements** : `exploration36_20261115_134922` (13 h 49 à 14 h 23 min 18, arrêté seul, voir plus bas) et `exploration37_20261115_142437` (trois lignes : la carte a refusé l'enregistreur). Firmware v14, sans repères, brosse latérale demandée aux franchissements.
+
+### 61.1 La nouvelle porte, aux capteurs (13 h 49 à 14 h 06)
+
+Tour sur place au point P à 13 h 49 (passe « a ») : P gardé en (404,3 ; 101,0). Le plan ne montre pas la porte telle qu'elle est aujourd'hui (le battant y est dessiné à mi-course) : je l'ai donc approchée par regards du capteur de distance, robot à l'arrêt (`_passage1.txt` à `_passage10.txt`).
+
+| Heure | Geste | Ce que les capteurs ont montré |
+|---|---|---|
+| 13 h 50 à 13 h 55 | P → (425 ; 140) → (432 ; 157), éventails vers le sud-est | une paroi à 31 cm au sud (le mur), qui finit par un angle vers u = 447 ; par les caps 315° et 322°, 95 cm de libre : l'ouverture |
+| 13 h 55 | vers (452 ; 151) | arrêté par le capteur de distance à 288 mm d'une paroi qui regarde l'ouest (la chose de G18, ou le battant ouvert contre elle) |
+| 13 h 56 | 49 cm au cap 300°, à 5 cm/s, jusqu'en (462,5 ; 174,0) | aucun contact ; regard à l'est : 49 mm lus, la paroi est contre le flanc du robot ; à l'ouest 414 mm ; au sud 0,8 à 1,36 m de libre |
+| 14 h 02 | deux pas de 10 cm plein sud | est : 50 puis 56 mm (la paroi est droite et longe le robot sur 20 cm) ; ouest : 210 puis 531 mm |
+| 14 h 04 | un pas de 15 cm : centre du robot dans l'encadrement | est 89 mm, ouest 498 mm : les deux montants |
+| 14 h 05 | **erreur de ma part** : deux avances lancées après un regard à l'ouest, cap non remis au sud : le robot a roulé 21 cm vers l'ouest dans l'encadrement, puis s'est arrêté seul à 297 mm du montant | aucun contact ; du second point, est 261 mm, ouest 344 mm |
+| 14 h 06 | cap au sud, 39 cm | robot au milieu du couloir |
+
+Mesuré :
+- **le passage libre** entre la paroi de l'est (la chose de G18, ou le battant qu'elle retient : je ne sais pas lequel) et ce qui dépasse à l'ouest fait 41 à 49 cm au plus étroit, selon la place du capteur sur le robot, pour un robot de 34 cm. Le robot est passé en longeant la paroi de l'est à moins d'un centimètre, sans que le pare-chocs touche. La ligne qui a marché : (449 ; 152) → (462,5 ; 174) au cap 300°, puis plein sud ; 5 cm plus à l'ouest aurait été mieux centré.
+- **l'ouverture de la porte, d'un montant à l'autre** : 89 + 498 = 587 mm lus d'un point, 261 + 344 = 605 mm de l'autre, plus deux fois la distance du capteur au centre du robot. Le plan donne 42 pixels, soit 80 cm : le capteur serait alors à **10 cm** environ du centre, et non à 2,7 cm comme le supposent encore les outils (`carto.DX`). C'est la valeur que la session de revue avait avancée (note O) ; rien n'est changé dans les outils avant la mesure à la règle.
+- le milieu de l'ouverture tombe 4 pixels (8 cm) plus à l'ouest dans mon estime que sur le plan.
+
+### 61.2 Le couloir (14 h 06 à 14 h 10)
+
+À 75 cm à l'est de la porte, les deux murs du couloir lus de côté : 184 mm au nord, 546 mm au sud ; 50 cm plus loin, 304 et 454 mm. Largeur : 730 à 758 mm lus plus deux fois la distance du capteur au centre, pour 92 cm sur le plan : de nouveau 8 à 10 cm pour cette distance. Le robot roulait 17 cm trop près du mur nord : mon estime était décalée de 16 cm vers le sud depuis la porte (cause non cherchée ; les regards de côté dans l'encadrement se sont faits par huit pivots de suite). Position reprise à la main sur ces murs, puis tour sur place en J20 : le filtre la corrige de 2 cm et de -1,4° (note 0,75).
+
+### 61.3 La pièce centrale (14 h 10 à 14 h 15)
+
+Par (611 ; 209), puis le détour au sud de l'objet mobile de 13 h 20 : aucun contact. Tour en G26 (note 0,75, correction de 8 cm vers le nord). Puis, sur la ligne suivie trois fois sans encombre plus tôt dans la journée, **un contact léger du pare-chocs gauche à 14 h 12 min 16**, après 17 cm : une chose étroite et sombre en F27, vers (691 ; 147), qui n'était pas là à 13 h. Ni le capteur de distance (qui lisait 1,69 m devant) ni les capteurs optiques (131 au plus, puis 15 au contact) ne l'ont vue ; une fois reculé de 10 cm, le capteur de distance la trouve à 175 mm quand le robot la vise (cap 70°) et ne la voit plus à 20° de part et d'autre : un pied de chaise ou de tabouret, sans doute. Contournée par l'est à 8 cm/s : (702 ; 158) → (706 ; 135) → (711 ; 113) → (720 ; 85), sans contact. Tour en D28 : note 0,86, correction de 8 cm vers l'ouest.
+
+### 61.4 Devant la porte de la cuisine et premier essai du seuil (14 h 15 à 14 h 23)
+
+En arrivant au point de départ de 13 h 02, (739 ; 62), au cap 64°, le pare-chocs droit s'est enfoncé en fin d'avance : sans doute le coin du montant nord, que le plan place à 4 mm du bord du robot en ce point, ou le tabouret que la photo de 12 h 55 montrait près de ce montant (non tranché). Recul de 8 cm : le robot est en (737,4 ; 65,6), face à l'ouverture (60 à 86 cm lus sur tous les caps de 64° à 300°).
+
+**Le seuil, premier essai** (`_seuil1.txt`, 14 h 20 min 06) : avance de 850 mm au cap 335° (de biais à 25°), 150 mm/s, **brosse latérale à 40 sur 127**, suivie par un nouvel outil (`seuil2.py`, hors dépôt) réglé pour couper si le cap s'écartait de 15°.
+
+| Chemin compté | Ce que le journal à 20 Hz montre |
+|---|---|
+| 0 à 600 mm | cap tenu à 0,5° près, roues à 40-250 mA |
+| 609 à 636 mm | le capteur de vide avant gauche passe la baguette : 943 puis 3 266 (2 650 sur le parquet) |
+| 666 mm | le capteur de vide gauche la passe à son tour (3 205) |
+| 727 à 778 mm | la **roue gauche** arrive sur la baguette : 538, 445, 555 mA ; le robot pivote vers la gauche à 27-38° par seconde |
+| 779 mm | mon outil demande l'arrêt : écart de cap de 16° |
+
+Sur les 9 derniers centimètres le compteur de la roue gauche avance de 219 pas et celui de la droite de 197, alors qu'un pivot de 18° vers la gauche demande à la roue droite 70 mm de plus qu'à la gauche : la roue gauche a patiné de 8 cm environ contre la baguette, la droite poussait sur le parquet. Ni chute du mode Safe, ni roue levée, ni contact du pare-chocs.
+
+Ce que j'en retiens :
+- **mon outil a coupé trop tôt.** Le firmware, quand le cap s'écarte, donne plus de vitesse à la roue en retard et moins à l'autre (jusqu'à la moitié de la vitesse demandée, `mouv.ino`) : c'est justement ce qui aide la roue butée à monter, et c'est ce que l'utilisateur avait écrit à 13 h (« continuer quand ça monte »). À refaire avec une limite de 45°.
+- à 13 h 02 la roue gauche avait rencontré la baguette après 47 cm ; cette fois après 73 cm, alors que mes deux points de départ ne diffèrent que de 3 cm d'est en ouest : mon repère de 13 h 02 (après les patinages) et celui de 14 h 20 (tour en D28) diffèrent donc de 22 cm le long de la ligne, sans que je sache lequel est juste. Centre du robot au moment où la roue gauche touche la baguette : (773 ; 82) dans le repère de 14 h 20, (762 ; 72) dans celui de 13 h 02.
+- un calcul d'ordre de grandeur, le mien et non vérifié sur le robot : à 150 mm/s l'élan ne fournit pas le cinquième de l'énergie qu'il faut pour hisser une roue de 17 mm ; ce serait donc surtout l'adhérence des roues, une à la fois, qui fait passer, plus que la vitesse.
+
+Recul de 34 cm le long de la même ligne pour refaire l'essai.
+
+### 61.5 L'enregistreur coupé, et une faiblesse du firmware trouvée (14 h 23 à …)
+
+À 14 h 23 min 18, pendant le dernier recul, l'enregistreur s'est arrêté : « liaison TCP perdue : connexion fermée par l'hôte distant ». Au même instant un ordre HTTP est resté sans réponse. La carte, elle, a fait ce que le firmware prévoit quand son client de console disparaît : roues arrêtées (le recul s'est fini à 143 mm au lieu de 150).
+
+Mais ensuite **la carte a refusé tout nouvel enregistreur** : « Un client est déjà connecté à la console » (14 h 24 min 37, puis à chaque essai). `/api/state` le confirme : tampon de la console plein (23 955 octets), compteur « perdus » à 1,3 million et qui monte. Aucun programme du PC ne tient de liaison vers le port 23. Lecture du code (`tcpTick`, `consVider`) : depuis la v11 la carte n'écrit vers la console que ce que la liaison accepte à l'instant ; une liaison morte dont l'autre bout a disparu sans le dire n'accepte plus rien, ne rend pas d'erreur non plus, et reste comptée comme un client présent tant que la pile TCP de la carte n'a pas renoncé à ses réémissions (d'après ce que je sais de cette pile, sans l'avoir vérifié dans son code : une douzaine, de plus en plus espacées, soit de 7 à 30 minutes). Pendant ce temps : pas de journal à 20 Hz, donc pas de pilotage (`pilote.py` refuse de rouler sans lignes fraîches, et c'est bien ainsi).
+
+Deux conséquences à retenir :
+- quand la carte s'aperçoit enfin que ce client a disparu, elle arrête les roues et met fin au mouvement ou au tour sur place en cours, à un instant quelconque ;
+- **correction proposée pour un firmware v15** (rien n'est changé sans l'accord de l'utilisateur) : fermer le client de la console quand il n'a rien accepté depuis quelques secondes.
+
+Le robot n'a pas bougé pendant l'attente : mode Safe, à l'arrêt devant le seuil, côté pièce centrale.
