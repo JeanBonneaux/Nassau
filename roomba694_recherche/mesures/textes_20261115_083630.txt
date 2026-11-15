@@ -1,0 +1,26 @@
+08:36:30.556	outil	début ; firmware v13 ; source : /api/texte ; veilleur du matin
+08:36:30.556	état	robot muet (dernière réponse il y a 7167 ms), mode lu 0, charge 0, base non, 0 mV, 0 mA ; réveils vus 0 ; lignes bat: 0
+08:37:01.712	état	robot muet (dernière réponse il y a 38322 ms), mode lu 0, charge 0, base non, 0 mV, 0 mA ; réveils vus 0 ; lignes bat: 0
+08:37:32.716	état	robot muet (dernière réponse il y a 69340 ms), mode lu 0, charge 0, base non, 0 mV, 0 mA ; réveils vus 0 ; lignes bat: 0
+08:38:01.066	touche	w envoyée
+08:38:03.738	état	robot muet (dernière réponse il y a 100361 ms), mode lu 0, charge 0, base non, 0 mV, 0 mA ; réveils vus 0 ; lignes bat: 0
+08:38:06.266	touche	w envoyée
+08:38:16.813	touche	s envoyée
+08:38:18.686	état	robot répond (dernière réponse il y a 23 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:38:23.737	touche	b envoyée
+08:38:23.833	état	robot muet (dernière réponse il y a 2118 ms), mode lu 2, charge 0, base non, 16140 mV, -119 mA ; réveils vus 0 ; lignes bat: 0
+08:38:26.674	état	robot répond (dernière réponse il y a 44 ms), mode lu 2, charge 0, base non, 16112 mV, -119 mA ; réveils vus 0 ; lignes bat: 0
+08:38:57.768	état	robot répond (dernière réponse il y a 22089 ms), mode lu 2, charge 0, base non, 16140 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:39:28.723	état	robot répond (dernière réponse il y a 31 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:39:59.766	état	robot répond (dernière réponse il y a 22 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:40:30.779	état	robot répond (dernière réponse il y a 26 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:41:02.734	état	robot répond (dernière réponse il y a 14 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:41:33.761	état	robot répond (dernière réponse il y a 28 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:42:00.847	touche	x envoyée
+08:42:04.797	état	robot muet (dernière réponse il y a 4000 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:42:35.814	état	robot muet (dernière réponse il y a 35019 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:43:07.765	état	robot muet (dernière réponse il y a 66971 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:43:38.791	état	robot muet (dernière réponse il y a 97996 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:44:09.824	état	robot muet (dernière réponse il y a 129031 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:44:30.789	état	robot muet (dernière réponse il y a 149995 ms), mode lu 2, charge 0, base non, 16112 mV, -127 mA ; réveils vus 0 ; lignes bat: 0
+08:44:30.789	outil	fin

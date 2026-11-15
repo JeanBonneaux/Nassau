@@ -21,8 +21,9 @@ Les parties « lu » des § 3 et 4 viennent de deux recherches déléguées. J'a
 5. **Sondage 10** : le robot a déjà écrit 16 textes dans les enregistrements, dont 12 coupés. Le firmware version 13 les garde en entier.
 6. **La sonde** demandée est prête : une route du firmware fermée par une clé, et un outil du PC à trois genres de recherche (numéros de capteurs en lecture seule, écritures documentées, ordres inconnus).
 7. **Ordres inconnus** : mon avis était de ne pas les balayer à l'aveugle (gain faible, risque petit mais sans retour). **L'utilisateur a tranché le 14 au soir : « Capteurs seuls pour le moment ».**
-8. Tout cela est vérifié sur le PC seulement. La version 13 n'est pas installée : le 14 à 20 h 40 le cerveau ne répondait plus sur le réseau.
-9. **Pour le lendemain** (§ 7) : un veilleur attend le cerveau et fera seul l'installation, l'écoute et la lecture des numéros de capteurs ; un outil d'analyse en direct suivra le pilotage de la session de navigation.
+8. **Le 15 à 8 h 36 la version 13 est installée**, par le veilleur, dès que l'utilisateur a rebranché le cerveau. Elle garde bien le texte du robot en entier (douze lignes au réveil, dont cinq jamais vues : § 2.5), et ses rotations sont justes à 1,3° près.
+9. **La lecture des 256 numéros de capteurs a trouvé des réponses non documentées** : trois groupes (108, 109, 110) et les numéros 128 à 178 (§ 4.8). Vrais capteurs ou restes de mémoire : à trancher en les relisant dans d'autres états.
+10. **Pour le lendemain** (§ 7) : un veilleur attend le cerveau et fera seul l'installation, l'écoute et la lecture des numéros de capteurs ; un outil d'analyse en direct suivra le pilotage de la session de navigation.
 
 ## 1. Les sondages proposés, et où ils en sont
 
@@ -104,6 +105,33 @@ Deux ajouts ; la conduite et les sécurités existantes ne changent pas.
 2. Réveiller le robot par son bouton CLEAN plutôt que par l'impulsion : le texte est-il le même ?
 3. Soulever le robot, le reposer.
 4. Robot posé hors de sa base, immobile, dans les conditions du 14 à 15 h 05 (lectures rapprochées après un réveil par impulsion), une demi-heure : redémarre-t-il encore, et qu'écrit-il juste avant ?
+
+### 2.5 Le 15 au matin : la version 13 sur la carte, et le premier texte entier
+
+**Mesuré sur le robot** (rapport du veilleur `mesures/matin_20261115_083534_rapport.txt`, écoute `mesures/textes_20261115_083630.txt`, console de la séance `exploration26`).
+
+- L'utilisateur rebranche le cerveau à 8 h 35 min 36. Le veilleur le voit onze secondes plus tard, envoie la version 13 en 9,3 s au premier essai, et la carte redémarre dessus à 8 h 36 min 22 (« v13 Nov 14 2026 21:15:18 »). Gyroscope présent et calibré, roues à l'arrêt.
+- **La version 13 garde le texte en entier.** Au réveil de 8 h 44 min 46, douze lignes, chacune avec l'heure de la carte, au lieu d'un début coupé à 160 caractères :
+
+  | Ligne | Ce qu'on en comprend |
+  |---|---|
+  | `key-wakeup-any` | la raison du réveil |
+  | `slept for 1 minutes 24 seconds` | la durée du sommeil |
+  | `2020-05-13-1928-L` | la date de construction du programme |
+  | `r3-robot/branches/aero-support:7587` | sa branche et son numéro de révision |
+  | `CLEAN` | sens inconnu (une construction « propre » ? supposé) |
+  | `wifi-version: 3.5.62` | la version côté Wi-Fi |
+  | `bootloader id: …` | l'identifiant matériel (masqué dans nos fichiers) |
+  | `assembly: ningbo-wifi-v2` | **nouveau** : le nom de l'assemblage de la carte |
+  | `revision: 8` | **nouveau** : sa révision |
+  | `flash version: 13` | **nouveau** |
+  | `flash info crc passed: 1` | **nouveau** : le contrôle de sa mémoire est bon |
+  | `battery-current-zero 252` | **nouveau** : le zéro de sa mesure du courant |
+
+- **Un réveil sans texte.** À 8 h 38, après la nuit, deux impulsions de réveil puis l'ouverture de la liaison : le robot répond, mais n'écrit rien. À 8 h 44, après 1 min 24 s de sommeil, il écrit ses douze lignes. **Supposé** : à 8 h 38 il ne dormait déjà plus (l'utilisateur venait de le manipuler), et le texte n'accompagne qu'un vrai réveil.
+- **Il se rendort vite hors de sa base.** Liaison fermée à 8 h 42 min 00 ; d'après son propre texte il s'est endormi vers 8 h 43 min 22, soit 82 secondes plus tard.
+- **Pas de ligne de charge** pendant ces huit minutes : le robot n'était pas en charge (état de charge 0, 127 mA tirés, « sur sa base : non »). Les lignes « bat: » ne viennent que robot sur sa base alimentée.
+- **Les mouvements de la version 13** (menés par la session de navigation à 8 h 47) : rotations de 88,7°, 179,3° et 89,1° pour 90°, 180° et 90° demandés.
 
 ## 3. Le mode d'essai d'usine (sondage 13)
 
@@ -212,6 +240,22 @@ L'application range dans le robot des préférences de nettoyage (deux passages,
 - **`capteurs` : oui.** Lecture seule, deux minutes, robot sur sa base. C'est la seule recherche qui peut rapporter quelque chose pour l'objectif (un capteur de plus).
 - **`notes` : si la curiosité y est.** Cela montrera ce que le robot garde après un sommeil, et donnerait au robot un bip d'arrivée.
 - **`commandes` : je déconseille le balayage à l'aveugle.** Rien de ce qui a été lu ne laisse espérer un ordre caché utile pour rouler ou se repérer. Un ordre inconnu peut effacer un réglage ou bloquer le robot, et le programme du robot ne se remet pas. Si l'utilisateur y tient, une courte liste d'abord : les numéros 130, 147 et 151 à 161, qui sont des ordres connus sur des robots cousins plus anciens.
+
+### 4.8 Le 15 au matin : la lecture des 256 numéros de capteurs
+
+**Mesuré sur le robot** par le veilleur, de 8 h 38 min 34 à 8 h 39 min 19, robot réveillé, liaison ouverte en mode passif, hors de sa base (`mesures/sonde_20261115_083919_capteurs.json`). Lecture seule : l'ordre documenté 142 suivi d'un numéro. Les numéros documentés ont été demandés une fois, les autres trois fois.
+
+| Numéros | Ce que le robot répond |
+|---|---|
+| Les 63 documentés | 59 répondent comme la documentation le dit. Quatre n'ont rien répondu à leur unique demande (20, 35, 37, 106) ; le 35 avait répondu juste avant, donc ce sont des réponses manquées, pas des paquets absents (à redemander). |
+| 59 à 127, hors groupes | deux octets à zéro, toujours |
+| **108, 109, 110** | **cinq, trois et sept octets, les mêmes aux trois demandes** : des groupes non documentés. Le 109 rend les valeurs des numéros 134 à 136, le 110 celles des numéros 137 à 143. |
+| **128 à 178** | **un ou deux octets chacun, les mêmes aux trois demandes** : par exemple 132 → 58, 135 → 8, 136 → 38, 138 → 110, 177 → 140 |
+| 179 à 255 | rien |
+
+- **Ce que cela peut être** (supposé, deux lectures possibles). Soit de vrais paquets ajoutés pour les robots à Wi-Fi et jamais publiés. Soit le programme du robot qui, pour un numéro hors de sa table, lit ce qui se trouve après elle en mémoire : des valeurs fixes sans signification.
+- **Comment trancher** : les redemander dans d'autres états (robot qui roule, pare-chocs enfoncé, bouton tenu, sur sa base). Une valeur qui change avec l'état est un capteur. Cela passe par la sonde, qui suspend trois secondes la lecture périodique : jamais pendant un pilotage.
+- **Un octet parasite, 177 (B1 en hexadécimal).** Une quarantaine de fois en 45 secondes, un octet isolé est arrivé entre deux réponses, à intervalles assez réguliers. Un autre propriétaire en parle sur un 690. **Supposé** : le robot l'émet de lui-même environ une fois par seconde quand la liaison est ouverte en mode passif. S'il tombe au milieu d'une réponse, il la fausse : ce serait une cause des lectures « brouillées » après un réveil. À mesurer avec les heures, que cette première lecture n'a pas gardées.
 
 ## 5. Deux mesures faites en préparant la liste
 

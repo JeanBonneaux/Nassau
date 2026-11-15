@@ -1,0 +1,9 @@
+22:45:40  veilleur lancé ; j'attends le cerveau à 192.168.18.25 (20 h au plus)
+22:45:43  le cerveau ne répond pas encore ; j'attends
+23:15:51  le cerveau ne répond pas encore ; j'attends
+23:45:59  le cerveau ne répond pas encore ; j'attends
+00:16:07  le cerveau ne répond pas encore ; j'attends
+00:46:16  le cerveau ne répond pas encore ; j'attends
+01:16:24  le cerveau ne répond pas encore ; j'attends
+01:46:32  le cerveau ne répond pas encore ; j'attends
+02:16:40  le cerveau ne répond pas encore ; j'attends

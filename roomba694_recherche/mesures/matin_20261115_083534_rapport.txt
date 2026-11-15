@@ -1,0 +1,25 @@
+08:35:34  veilleur lancé ; j'attends le cerveau à 192.168.18.25 (20 h au plus)
+08:35:37  le cerveau ne répond pas encore ; j'attends
+08:35:47  le cerveau répond : v12 Nov 14 2026 17:58:04 ; allumé depuis 11 s ; roues en marche False ; robot muet, mode lu 0, sur sa base non
+08:36:12  fichier à envoyer : 1148368 octets, empreinte afda6aa7b0335ba3, annonce « v13 » : True
+08:36:12  envoi numéro 1…
+08:36:22     réponse : Mise à jour réussie, la carte redémarre. [code 200, 9.336086 s, 1148593 octets envoyés] | erreur de curl : aucune
+08:36:29  la carte a redémarré : v13 Nov 14 2026 21:15:18 ; allumé depuis 6 s ; roues en marche False ; robot muet, mode lu 0, sur sa base non ; dernier redémarrage : redémarrage logiciel (mise à jour)
+08:36:29  écoute du robot pendant 480 s ; touches prévues (seconde:touche) : 90:w,95:w,106:s,113:b,330:x
+08:38:34  lecture des 256 numéros de capteurs (lecture seule)…
+08:39:19       numéro 222, non documenté : 1 octet(s) B1 | 0 octet(s)  | 0 octet(s) 
+08:39:19       numéro 224, non documenté : 0 octet(s)  | 0 octet(s)  | 1 octet(s) B1
+08:39:19       numéro 227, non documenté : 0 octet(s)  | 1 octet(s) B1 | 0 octet(s) 
+08:39:19       numéro 230, non documenté : 1 octet(s) B1 | 0 octet(s)  | 0 octet(s) 
+08:39:19       numéro 232, non documenté : 0 octet(s)  | 0 octet(s)  | 1 octet(s) B1
+08:39:19       numéro 235, non documenté : 0 octet(s)  | 1 octet(s) B1 | 0 octet(s) 
+08:39:19       numéro 240, non documenté : 0 octet(s)  | 0 octet(s)  | 1 octet(s) B1
+08:39:19       numéro 248, non documenté : 0 octet(s)  | 1 octet(s) B1 | 0 octet(s) 
+08:39:19       numéro 251, non documenté : 1 octet(s) B1 | 0 octet(s)  | 0 octet(s) 
+08:39:19       numéro 253, non documenté : 0 octet(s)  | 0 octet(s)  | 1 octet(s) B1
+08:39:19     numéros 0 à 255 demandés ; documentés qui répondent comme prévu : 59 ; documentés qui répondent autrement : [20, 35, 37, 106] ; non documentés qui répondent : [59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 
+08:39:19     écrit : mesures\sonde_20261115_083919_capteurs.json
+08:44:30  écoute finie : 0 ligne(s) écrite(s) par le robot
+08:44:30     écrit : mesures\textes_20261115_083630.txt
+08:44:31  à la fin : v13 Nov 14 2026 21:15:18 ; allumé depuis 488 s ; roues en marche False ; robot muet, mode lu 2, sur sa base non
+08:44:31  FINI, tout est bon. Le robot peut être piloté.
