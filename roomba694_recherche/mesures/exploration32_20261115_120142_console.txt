@@ -1,0 +1,149 @@
+# exploration32_20261115_120142 — carte 192.168.18.25 — début 12:01:42.843 le 2026-11-15
+# Trois tours sur place de suite au point P de l'axe de la base, demandés par la session de revue pour le facteur du gyroscope du jour. Robot pas déplacé depuis 11 h 52. Firmware v14.
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1794762102.977	12:01:42.976	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1794762102.977	12:01:42.976	Client TCP connecté : 192.168.18.6
+1794762103.900	12:01:43.899	>> j
+1794762103.930	12:01:43.929	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1794762114.947	12:01:54.947	Impulsion BRC envoyée.
+1794762115.199	12:01:55.199	Le robot envoie du texte : il vient de démarrer ou de se réveiller (fois numéro 5). Pour reprendre la main : s, puis f.
+1794762115.199	12:01:55.199	  texte du robot : 8238378 key-wakeup-any
+1794762115.199	12:01:55.199	  texte du robot : 8238378 slept for 4 minutes 25 seconds
+1794762115.205	12:01:55.204	  texte du robot : 8238379 2020-05-13-1928-L   
+1794762115.215	12:01:55.215	  texte du robot : 8238379 r3-robot/branches/aero-support:7587
+1794762115.215	12:01:55.215	  texte du robot : 8238380  CLEAN
+1794762115.215	12:01:55.215	  texte du robot : 8238380 wifi-version: 3.5.62
+1794762115.231	12:01:55.230	  texte du robot : 8238381 bootloader id: [identifiant masqué] 
+1794762115.231	12:01:55.230	  texte du robot : 8238382 assembly: ningbo-wifi-v2
+1794762115.231	12:01:55.230	  texte du robot : 8238382 revision: 8
+1794762115.231	12:01:55.230	  texte du robot : 8238383 flash version: 13
+1794762115.242	12:01:55.242	  texte du robot : 8238383 flash info crc passed: 1
+1794762115.244	12:01:55.243	  texte du robot : 8238384 battery-current-zero 252
+1794762116.739	12:01:56.739	Envoyé : Start (128) -> Passive
+1794762119.417	12:01:59.417	>> e
+1794762119.854	12:01:59.853	Envoyé : Safe (131)
+1794762120.426	12:02:00.425	>> e
+1794762121.388	12:02:01.387	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1794762121.437	12:02:01.436	>> e
+1794762122.448	12:02:02.448	>> e
+1794762123.407	12:02:03.406	>> e
+1794762124.417	12:02:04.417	>> e
+1794762125.426	12:02:05.426	>> e
+1794762126.438	12:02:06.438	>> e
+1794762127.452	12:02:07.451	>> e
+1794762128.410	12:02:08.410	>> e
+1794762129.420	12:02:09.419	>> e
+1794762130.431	12:02:10.431	>> e
+1794762131.440	12:02:11.439	>> e
+1794762132.449	12:02:12.449	>> e
+1794762133.406	12:02:13.406	>> e
+1794762134.275	12:02:14.275	Vitesse réglée à 60 mm/s (page web).
+1794762134.416	12:02:14.416	>> e
+1794762134.637	12:02:14.637	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794762135.426	12:02:15.426	>> e
+1794762136.135	12:02:16.135	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794762136.437	12:02:16.437	>> e
+1794762137.447	12:02:17.446	>> e
+1794762138.407	12:02:18.407	>> e
+1794762139.420	12:02:19.419	>> e
+1794762139.519	12:02:19.519	Tour sur place : 90° (30 mesures).
+1794762140.432	12:02:20.432	>> e
+1794762141.442	12:02:21.442	>> e
+1794762142.454	12:02:22.454	>> e
+1794762142.682	12:02:22.681	Tour sur place : 180° (59 mesures).
+1794762143.417	12:02:23.417	>> e
+1794762144.427	12:02:24.427	>> e
+1794762145.438	12:02:25.438	>> e
+1794762145.904	12:02:25.903	Tour sur place : 270° (88 mesures).
+1794762146.450	12:02:26.450	>> e
+1794762147.410	12:02:27.409	>> e
+1794762148.420	12:02:28.420	>> e
+1794762149.106	12:02:29.105	Tour sur place : 360° (118 mesures).
+1794762149.432	12:02:29.431	>> e
+1794762149.822	12:02:29.822	Tour sur place terminé : 380° en 13.7 s, 124 mesures. Roues arrêtées.
+1794762150.441	12:02:30.441	>> e
+1794762150.927	12:02:30.926	Roues arrêtées.
+1794762150.953	12:02:30.953	Vitesse réglée à 150 mm/s (page web).
+1794762151.452	12:02:31.451	>> e
+1794762152.409	12:02:32.408	>> e
+1794762153.365	12:02:33.364	Vitesse réglée à 60 mm/s (page web).
+1794762153.418	12:02:33.418	>> e
+1794762153.743	12:02:33.743	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794762154.427	12:02:34.426	>> e
+1794762155.253	12:02:35.252	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794762155.438	12:02:35.437	>> e
+1794762156.446	12:02:36.446	>> e
+1794762157.404	12:02:37.404	>> e
+1794762158.415	12:02:38.414	>> e
+1794762158.575	12:02:38.575	Tour sur place : 90° (29 mesures).
+1794762159.425	12:02:39.424	>> e
+1794762160.437	12:02:40.436	>> e
+1794762161.446	12:02:41.446	>> e
+1794762161.797	12:02:41.796	Tour sur place : 180° (58 mesures).
+1794762162.406	12:02:42.405	>> e
+1794762163.417	12:02:43.417	>> e
+1794762164.425	12:02:44.425	>> e
+1794762165.018	12:02:45.017	Tour sur place : 270° (88 mesures).
+1794762165.435	12:02:45.434	>> e
+1794762166.446	12:02:46.446	>> e
+1794762167.405	12:02:47.405	>> e
+1794762168.236	12:02:48.235	Tour sur place : 360° (118 mesures).
+1794762168.417	12:02:48.417	>> e
+1794762168.951	12:02:48.950	Tour sur place terminé : 380° en 13.7 s, 124 mesures. Roues arrêtées.
+1794762169.430	12:02:49.429	>> e
+1794762170.077	12:02:50.076	Roues arrêtées.
+1794762170.101	12:02:50.101	Vitesse réglée à 150 mm/s (page web).
+1794762170.441	12:02:50.440	>> e
+1794762171.451	12:02:51.450	>> e
+1794762172.409	12:02:52.408	>> e
+1794762172.650	12:02:52.650	Vitesse réglée à 60 mm/s (page web).
+1794762173.026	12:02:53.025	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1794762173.420	12:02:53.419	>> e
+1794762174.431	12:02:54.431	>> e
+1794762174.537	12:02:54.537	Tour sur place : rotation vers la gauche, roues à 60 mm/s demandés. 5 ou espace pour arrêter.
+1794762175.442	12:02:55.441	>> e
+1794762176.453	12:02:56.453	>> e
+1794762177.413	12:02:57.413	>> e
+1794762177.891	12:02:57.890	Tour sur place : 90° (29 mesures).
+1794762178.423	12:02:58.423	>> e
+1794762179.434	12:02:59.434	>> e
+1794762180.443	12:03:00.442	>> e
+1794762181.111	12:03:01.111	Tour sur place : 180° (58 mesures).
+1794762181.455	12:03:01.454	>> e
+1794762182.415	12:03:02.415	>> e
+1794762183.424	12:03:03.423	>> e
+1794762184.320	12:03:04.319	Tour sur place : 270° (88 mesures).
+1794762184.434	12:03:04.433	>> e
+1794762185.445	12:03:05.445	>> e
+1794762186.406	12:03:06.405	>> e
+1794762187.417	12:03:07.417	>> e
+1794762187.538	12:03:07.537	Tour sur place : 360° (117 mesures).
+1794762188.246	12:03:08.246	Tour sur place terminé : 380° en 13.7 s, 123 mesures. Roues arrêtées.
+1794762188.426	12:03:08.426	>> e
+1794762189.438	12:03:09.437	>> e
+1794762189.548	12:03:09.547	Roues arrêtées.
+1794762189.561	12:03:09.560	Vitesse réglée à 150 mm/s (page web).
+1794762190.449	12:03:10.449	>> e
+1794762191.412	12:03:11.411	>> e
+1794762192.422	12:03:12.422	>> e
+1794762193.433	12:03:13.433	>> e
+1794762194.444	12:03:14.443	>> e
+1794762195.454	12:03:15.454	>> e
+1794762196.414	12:03:16.414	>> e
+1794762197.425	12:03:17.424	>> e
+1794762198.435	12:03:18.434	>> e
+1794762199.446	12:03:19.446	>> e
+1794762200.406	12:03:20.406	>> e
+1794762201.416	12:03:21.415	>> e
+1794762202.108	12:03:22.108	Roues arrêtées.
+1794762202.425	12:03:22.425	>> e
+1794762202.632	12:03:22.631	Radar : arrêt, servo recentré puis relâché.
+1794762203.346	12:03:23.346	Envoyé : Start (128) -> Passive
+1794762203.436	12:03:23.436	>> e
+1794762204.446	12:03:24.445	>> e
+1794762204.898	12:03:24.898	Envoyé : Stop (173) -> OI fermée
+1794762205.406	12:03:25.406	>> e
+1794762206.069	12:03:26.069	Pas de réponse du robot. Est-il réveillé et l'OI ouverte ? Essayez 'w' puis 's' ; sinon appuyez sur CLEAN, ou 'y' (essai à 19200 bauds).
+1794762206.165	12:03:26.165	>> j
+1794762206.170	12:03:26.170	Journal CSV désactivé.
+1794762207.176	12:03:27.175	## fin de l'enregistrement après 104.3 s
