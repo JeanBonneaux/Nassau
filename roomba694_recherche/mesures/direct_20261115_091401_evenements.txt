@@ -1,0 +1,71 @@
+# heure <tab> importance (1 à 3) <tab> événement — suivi en direct
+09:14:01.298	2	je suis la séance exploration26_20261115_084456
+09:14:01.298	1	rattrapage : 28895 lignes et 12 stations déjà écrites ont été relues sans rien redire
+09:19:01.331	2	bilan : chemin compté 11.9 m en 29.3 min ; temps : arrêt 76 %, avance 6 %, pivot 9 %, tour 9 % ; lectures : une toutes les 47 ms (95 % sous 63 ms) ; 15 avances, 49 pivots, 12 tours sur place ; 11 séries de centrage (+90, -180, +90) : environ 55 mm de recul que les roues ne comptent pas, à 5 mm par série (un seul essai, le 15) ; murs de face : 3 avances, 1.9 m, le capteur de distance voit 1.0044 mm par mm compté ; cibles devant : 5 avances, roues et capteur de distance diffèrent de 23 mm en médiane, 90 mm au pire ; cap : gyroscope / roues = 1.0098 sur 61 pivots
+09:19:01.331	2	bilan, suite : alertes : roues qui forcent 0, pivots en désaccord 0, contacts 0, roues levées 0, trous de lecture 3 (le plus long 30547 ms), retards du Wi-Fi 0 (le plus long 0.0 s), mode Safe tombé en roulant 2 (changements de mode en tout : 7), compteurs à l'arrêt 4 ; courant au repos -143 mA ; batterie : 2050 -> 1859 mAh en 34 min, dont 115 mAh retirés d'un coup par le robot (recalage, pas une dépense), soit 2.3 mAh par minute dépensés (à ce rythme, 823 min au plus avant qu'elle soit vide)
+09:19:01.331	2	bilan, cartographie : 12 stations, 3 portes possibles ; corrections du filtre : médiane 34 mm, la plus forte 181 mm ; note médiane 0.84, la plus basse 0.55 ; repères à 100 mm du filtre en médiane, 312 mm au pire (9 stations avec repères) ; fermeture des tours : +0 mm en moyenne, 0 mm au pire (1 tours vérifiables)
+09:20:41.616	2	mode lu 3 -> 2 : le mode Safe est tombé
+09:20:41.616	1	compteurs de roues qui avancent alors que le robot est immobile : gauche +2 pas, droite +1 pas en 1 lecture(s)
+09:26:04.578	2	je suis la séance exploration27_20261115_092602
+09:26:04.578	1	rattrapage : 36923 lignes et 12 stations déjà écrites ont été relues sans rien redire
+09:26:12.600	3	console : Le robot envoie du texte : il vient de démarrer ou de se réveiller (fois numéro 3). Pour reprendre la main : s, puis f.
+09:26:12.600	3	console :   texte du robot : 2989206 key-wakeup-any
+09:26:12.601	3	console :   texte du robot : 2989206 slept for 0 minutes 30 seconds
+09:26:12.603	3	console :   texte du robot : 2989207 2020-05-13-1928-L   
+09:26:12.614	3	console :   texte du robot : 2989208 r3-robot/branches/aero-support:7587
+09:26:12.616	3	console :   texte du robot : 2989209  CLEAN
+09:26:12.617	3	console :   texte du robot : 2989209 wifi-version: 3.5.62
+09:26:12.648	3	console :   texte du robot : 2989209 bootloader id: [identifiant masqué] 
+09:26:12.648	3	console :   texte du robot : 2989210 assembly: ningbo-wifi-v2
+09:26:12.648	3	console :   texte du robot : 2989211 revision: 8
+09:26:12.648	3	console :   texte du robot : 2989211 flash version: 13
+09:26:12.648	3	console :   texte du robot : 2989212 flash info crc passed: 1
+09:26:12.648	3	console :   texte du robot : 2989212 battery-current-zero 252
+09:26:13.885	3	le robot écrit : key-wakeup-any
+09:26:13.885	3	le robot écrit : slept for 0 minutes 30 seconds
+09:26:13.885	3	le robot écrit : 2020-05-13-1928-L   
+09:26:13.885	3	le robot écrit : r3-robot/branches/aero-support:7587
+09:26:13.885	3	le robot écrit :  CLEAN
+09:26:13.885	3	le robot écrit : wifi-version: 3.5.62
+09:26:13.885	3	le robot écrit : bootloader id: [identifiant masqué] 
+09:26:13.885	3	le robot écrit : assembly: ningbo-wifi-v2
+09:26:13.885	3	le robot écrit : revision: 8
+09:26:13.885	3	le robot écrit : flash version: 13
+09:26:13.885	3	le robot écrit : flash info crc passed: 1
+09:26:13.885	3	le robot écrit : battery-current-zero 252
+09:26:18.599	1	le robot s'est tu 336 s (liaison fermée ou robot endormi)
+09:26:21.972	2	console : Flux continu de capteurs (opcode 148) mis en pause (150, 0), tampon vidé.
+09:26:23.913	1	trou de 2156 ms dans les lectures
+09:26:25.078	2	console : Flux continu de capteurs (opcode 148) mis en pause (150, 0), tampon vidé.
+09:26:27.018	1	trou de 2157 ms dans les lectures
+09:26:39.205	1	mode lu 2 -> 3
+09:26:39.205	1	compteurs de roues qui avancent alors que le robot est immobile : gauche +2 pas, droite +1 pas en 1 lecture(s)
+09:26:55.436	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 212°
+09:26:58.486	1	infrarouge de la base : dessus 128, avant gauche 0, avant droit 0, cap 298°
+09:27:02.067	2	station 0 : 11 paliers ; le filtre a corrigé la position de 8 mm et -0.2° ; note 0.90, étalement 95 mm ; repères (2 tours) à 102 mm du filtre
+09:27:06.851	1	tour de la station 0 : terminé, 380° en 13.7 s, 123 mesures ; pas de paroi nette pour vérifier la fermeture
+09:27:27.532	2	station 1 : 8 paliers ; le filtre a corrigé la position de 21 mm et +0.9° après 0.6 m (33 mm par mètre) ; note 0.84, étalement 136 mm ; repères (2 tours) à 312 mm du filtre ; À REGARDER : forte correction, note basse, ou filtre et repères en désaccord
+09:27:28.063	1	tour de la station 1 : terminé, 380° en 13.7 s, 122 mesures ; la même paroi relue à la fin est à +0 mm (3 directions)
+09:27:33.258	1	avance de 382 mm à 134 mm/s vers une cible à 2243 mm : le capteur de distance voit 1.012 mm par mm compté (écart 10 mm)
+09:27:56.828	2	station 2 : 9 paliers ; le filtre a corrigé la position de 171 mm et +2.5° après 1.2 m (143 mm par mètre) ; note 0.47, étalement 264 mm ; aucun repère ici ; À REGARDER : forte correction, note basse, ou filtre et repères en désaccord
+09:27:56.828	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 3 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 5 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 1.9 m | batterie 1840 mAh
+09:28:00.030	1	tour de la station 2 : terminé, 380° en 13.7 s, 120 mesures ; la même paroi relue à la fin est à -3 mm (3 directions)
+09:28:43.187	1	sol sombre ou bord sous un capteur de vide : 2620, 1123, 1060, 2537 (gauche, avant gauche, avant droit, droit)
+09:28:44.885	3	LES ROUES FORCENT : batterie à +254 mA sur le repos et roues à 326 mA en moyenne pendant 1,5 s, 152 mm comptés
+09:28:46.935	3	LES ROUES FORCENT : batterie à +289 mA sur le repos et roues à 356 mA en moyenne pendant 1,5 s, 132 mm comptés
+09:29:46.885	1	sol sombre ou bord sous un capteur de vide : 1336, 1161, 2226, 2603 (gauche, avant gauche, avant droit, droit)
+09:30:26.463	1	sol sombre ou bord sous un capteur de vide : 2580, 1103, 802, 2566 (gauche, avant gauche, avant droit, droit)
+09:30:27.665	3	LES ROUES FORCENT : batterie à +252 mA sur le repos et roues à 296 mA en moyenne pendant 1,5 s, 195 mm comptés
+09:30:28.067	1	la distance devant ne baisse pas (1077 mm) alors que les roues comptent 185 mm en 1,5 s
+09:30:29.681	3	LES ROUES FORCENT : batterie à +285 mA sur le repos et roues à 316 mA en moyenne pendant 1,5 s, 173 mm comptés
+09:31:04.602	2	bilan : chemin compté 16.2 m en 35.7 min ; temps : arrêt 76 %, avance 6 %, recul 1 %, pivot 7 %, tour 10 % ; lectures : une toutes les 47 ms (95 % sous 63 ms) ; 20 avances, 53 pivots, 15 tours sur place ; 11 séries de centrage (+90, -180, +90) : environ 55 mm de recul que les roues ne comptent pas, à 5 mm par série (un seul essai, le 15) ; murs de face : 4 avances, 2.3 m, le capteur de distance voit 1.0056 mm par mm compté ; cibles devant : 6 avances, roues et capteur de distance diffèrent de 19 mm en médiane, 90 mm au pire ; cap : gyroscope / roues = 1.0099 sur 68 pivots
+09:31:04.602	2	bilan, suite : alertes : roues qui forcent 4, pivots en désaccord 0, contacts 0, roues levées 0, trous de lecture 5 (le plus long 30547 ms), retards du Wi-Fi 0 (le plus long 0.0 s), mode Safe tombé en roulant 2 (changements de mode en tout : 9), compteurs à l'arrêt 6 ; courant au repos -143 mA ; batterie : 2050 -> 1831 mAh en 46 min, dont 115 mAh retirés d'un coup par le robot (recalage, pas une dépense), soit 2.3 mAh par minute dépensés (à ce rythme, 804 min au plus avant qu'elle soit vide)
+09:31:04.602	2	bilan, cartographie : 15 stations, 4 portes possibles ; corrections du filtre : médiane 30 mm, la plus forte 181 mm ; note médiane 0.84, la plus basse 0.47 ; dérive entre deux stations : 88 mm par mètre en médiane ; repères à 102 mm du filtre en médiane, 312 mm au pire (11 stations avec repères) ; fermeture des tours : -1 mm en moyenne, 3 mm au pire (3 tours vérifiables)
+09:31:42.747	1	sol sombre ou bord sous un capteur de vide : 2436, 2401, 1150, 2564 (gauche, avant gauche, avant droit, droit)
+09:31:49.399	1	sol sombre ou bord sous un capteur de vide : 1163, 1458, 2544, 2584 (gauche, avant gauche, avant droit, droit)
+09:32:10.230	1	sol sombre ou bord sous un capteur de vide : 1125, 1388, 1000, 992 (gauche, avant gauche, avant droit, droit)
+09:32:16.946	2	mode lu 3 -> 2 : le mode Safe est tombé
+09:32:18.435	2	BILAN FINAL : chemin compté 16.7 m en 36.9 min ; temps : arrêt 76 %, avance 6 %, recul 1 %, pivot 7 %, tour 9 % ; lectures : une toutes les 47 ms (95 % sous 63 ms) ; 20 avances, 54 pivots, 15 tours sur place ; 11 séries de centrage (+90, -180, +90) : environ 55 mm de recul que les roues ne comptent pas, à 5 mm par série (un seul essai, le 15) ; murs de face : 4 avances, 2.3 m, le capteur de distance voit 1.0056 mm par mm compté ; cibles devant : 6 avances, roues et capteur de distance diffèrent de 19 mm en médiane, 90 mm au pire ; cap : gyroscope / roues = 1.0098 sur 69 pivots
+09:32:18.435	2	BILAN FINAL, suite : alertes : roues qui forcent 4, pivots en désaccord 0, contacts 0, roues levées 0, trous de lecture 5 (le plus long 30547 ms), retards du Wi-Fi 0 (le plus long 0.0 s), mode Safe tombé en roulant 2 (changements de mode en tout : 10), compteurs à l'arrêt 6 ; courant au repos -143 mA ; batterie : 2050 -> 1828 mAh en 47 min, dont 115 mAh retirés d'un coup par le robot (recalage, pas une dépense), soit 2.3 mAh par minute dépensés (à ce rythme, 802 min au plus avant qu'elle soit vide)
+09:32:18.435	2	BILAN FINAL, cartographie : 15 stations, 4 portes possibles ; corrections du filtre : médiane 30 mm, la plus forte 181 mm ; note médiane 0.84, la plus basse 0.47 ; dérive entre deux stations : 88 mm par mètre en médiane ; repères à 102 mm du filtre en médiane, 312 mm au pire (11 stations avec repères) ; fermeture des tours : -1 mm en moyenne, 3 mm au pire (3 tours vérifiables)
+09:32:18.435	2	capteurs optiques du pare-chocs selon la distance lue devant (médianes) : 300 à 450 mm : centre gauche 37, centre droit 28, avant gauche 20, avant droit 46 (406 lectures)

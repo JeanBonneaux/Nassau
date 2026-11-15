@@ -12,6 +12,7 @@ Chaque chiffre dit d'où il vient : **mesuré** (en faisant relire à l'outil le
 4. Toutes les cinq minutes un bilan ; à la fin, un compte rendu avec les mêmes chiffres que le tableau du § 5, pour comparer d'une séance à l'autre.
 5. Repère mesuré sur les trois cartographies du 14 : le robot passe **54 à 62 % du temps à l'arrêt**, 14 à 16 % à avancer ; le filtre corrige de **32 à 93 mm** par station en médiane ; les tours sur place se referment à **1 ou 2 mm** en moyenne.
 6. Cinq petits gestes, laissés au choix de l'utilisateur, donneraient des mesures qu'aucune séance n'a encore (§ 4).
+7. **La première séance suivie ainsi a eu lieu le 15 au matin : son compte rendu est la note N** (`N_seance_20261115_analyse.md`). Les cinq gestes y sont dépouillés.
 
 ## 1. Qui fait quoi
 
