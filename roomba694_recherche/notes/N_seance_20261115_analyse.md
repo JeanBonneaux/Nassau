@@ -125,6 +125,7 @@ Sur un mètre, l'estime ne peut pas se tromper de 20 cm : le § 2.4 la donne à 
 - **Les repères ont aussi eu raison une fois** : au tour `a0`, devant la base, ils ont corrigé le filtre de 31 cm, et l'estime leur donne raison (le filtre seul aurait été à 37 cm de l'estime sur le tronçon suivant).
 - **Supposé, pour la cause** : un objet que les anciens tours voyaient près de D12 et de la base a changé de place. Plusieurs repères se trompent alors ensemble, du même côté. À vérifier avec l'utilisateur : a-t-il déplacé quelque chose dans cette pièce depuis le 14 ?
 - **Je ne tranche pas sur le plan lui-même** : je ne sais pas dire, des positions d'avant ou d'après 9 h 07, lesquelles sont justes sur le plan. Le signal de la base penche pour celles d'avant.
+- **Précision venue plus tard** (note O § 5.1) : en recalculant d'un coup tous les tours des trois derniers jours, les tours de D12 tombent vers x = 5 500 mm, entre le filtre (5 414) et les repères (5 664). Le saut est réel, mais le « 25 cm vers l'est » ci-dessus est trop fort de moitié : les deux s'étaient trompés, chacun d'un côté. Et la règle de la proposition 1 du § 7, rejouée sur quinze séances, dégrade la position : je l'ai retirée.
 
 ## 4. Les alertes, et ce qui s'est vraiment passé
 
