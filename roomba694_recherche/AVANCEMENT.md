@@ -1,6 +1,6 @@
 # Roomba 694 : où en est le projet
 
-*État au 15 novembre 2026, 9 h 25. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (56 sections) ; ce résumé n'en garde que l'essentiel.*
+*État au 15 novembre 2026, 9 h 23. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (56 sections) ; ce résumé n'en garde que l'essentiel.*
 
 ## En bref
 
