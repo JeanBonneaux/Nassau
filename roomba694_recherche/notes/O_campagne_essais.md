@@ -313,3 +313,15 @@ La session de navigation a cherché la ligne sombre à plusieurs bords du tapis,
 **La règle que j'en tire, proposée à la session de navigation.** Le gyroscope est le témoin du cap : il a tenu 1° en deux heures et demie. Le filtre ne devrait pas pouvoir déplacer le cap de plus de 1° plus un millième de la rotation nette faite depuis le dernier tour où les parois étaient d'équerre, sauf si les parois du tour le confirment. Le tour de 9 h 55 min 40 aurait été refusé. `rv_cap_chaine.py` signale ces tours : il y en a quatre le 13 (de 5 à 15°) et un le 14, à regarder.
 
 **Ce que je n'ai pas vu.** Mon outil de suivi comparait le cap du gyroscope et celui des roues, pas le cap retenu et le gyroscope enchaîné : il n'a rien dit à 9 h 55. C'est à ajouter.
+
+### 5.12 Une quatrième chute du mode Safe, en pivot, capteur de vide gauche (12 h 41 min 37)
+
+Pendant le retour de la grande boucle, dans la pièce du bas à droite (`exploration34_20261115_123906`, mouvement 431, rotation de +68,7° à 100 mm/s arrêtée à 26°).
+
+**Mesuré** (lectures toutes les 47 ms).
+
+- Capteur de vide gauche : 2 664, 2 647, 2 658, 2 530, **175**, 430, 1 488, 2 402, 392, **10**, 137, puis 2 451 à 2 508 robot arrêté. Les trois autres capteurs de vide restent entre 2 557 et 2 674.
+- Le mode tombe à la lecture qui suit le 10, un quart de seconde après le 175. Le cerveau coupe les roues aussitôt.
+- En même temps le capteur optique gauche du pare-chocs monte de 50 à 295 et l'avant gauche de 13 à 124 (225 et 122 à l'arrêt). Pare-chocs jamais enfoncé, roues jamais levées.
+
+**Ce que cela dit.** Le coin avant gauche du robot est tout près d'un objet, et le capteur de vide gauche est passé pendant la rotation sur une chose sombre et étroite au sol à côté de lui (pied, socle, câble) : pas un vide continu, puisque le sol est lu normalement sous les quatre capteurs une fois le robot arrêté. C'est la première chute observée en pivot avec le capteur gauche ; elle va avec le seuil du § 5.7 (entre 93 et 154) : une seule lecture à 10 a suffi. Les capteurs optiques avaient vu l'objet venir pendant un quart de seconde avant la chute : un arrêt du cerveau sur ces capteurs (§ 5.5) l'aurait évitée.
