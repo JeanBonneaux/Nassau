@@ -73,7 +73,7 @@ Le gain vient surtout du vrai chemin de la pièce centrale, de la méthode pour 
 
 ## La suite que je propose, dans l'ordre
 
-**D'abord, la séance préparée pour le 15 novembre.** Tu branches le cerveau, robot sur sa base : la version 13 s'installe seule et le robot est écouté une dizaine de minutes. Ensuite tu tires le robot de sa base (70 cm, le nez vers elle) et tu enlèves l'objet posé devant. Je pilote, et la session de revue analyse les capteurs en direct. Mon programme, si tu es d'accord : une minute immobile, trois rotations pour comparer le gyroscope aux roues, l'essai des petits pivots (trois minutes sur place), puis la boucle connue de 7,5 m devant la base.
+**D'abord, la séance préparée pour le 15 novembre.** Tu branches le cerveau, robot sur sa base : la version 13 s'installe seule et le robot est écouté une dizaine de minutes. Ensuite tu tires le robot de sa base (70 cm, le nez vers elle) et tu enlèves l'objet posé devant. Je pilote, et la session de revue analyse les capteurs en direct. Mon programme, si tu es d'accord : une minute immobile, trois rotations pour comparer le gyroscope aux roues, l'essai des petits pivots (trois minutes sur place), puis la cartographie de l'endroit que tu choisiras. Deux endroits n'ont encore aucun repère : la grande pièce à gauche de la base (seule la case C9 y a été atteinte) et la pièce derrière la porte H12 (celle de K9 et K10).
 
 1. **L'accostage** : enlever l'objet qui se tient devant la base, à 40 cm d'elle et à peine à gauche de son axe (le capteur le voit, c'est là que le robot touche à chaque fois), puis réessayer l'ordre « rentre à la base » avec ton accord.
 2. **Lire l'audit et la revue ensemble.** L'audit (`notes/I_audit_regard_neuf.md`) : le robot n'avance que 17 % du temps ; c'est la carte des repères qu'il faut rendre cohérente ; le gyroscope est monté penché et le cerveau n'en lit qu'un axe. La revue (`notes/J_revue_localisation.md`) y ajoute : arrêter une avance quand le courant de la batterie monte (les roues forcent), se servir du capteur de distance comme d'une règle pendant les avances, et, avant tout achat, un téléphone posé en hauteur avec un marqueur imprimé collé sur le robot, pour avoir sa position vue de l'extérieur.
@@ -101,6 +101,7 @@ Le gain vient surtout du vrai chemin de la pièce centrale, de la méthode pour 
 | L'audit « regard neuf » et ses propositions | `notes/I_audit_regard_neuf.md` |
 | La revue : ce que le projet pourrait manquer pour se localiser | `notes/J_revue_localisation.md` |
 | Ce que le robot fait et écrit de lui-même, et ce que sa prise permet | `notes/L_retro_ingenierie_robot.md` |
+| Le plan d'analyse en direct d'une séance de cartographie | `notes/M_plan_analyse_en_direct.md` |
 | Les outils et leur mode d'emploi | `code/README.md` |
 | Les enregistrements | `mesures/` |
 | Le plan de l'appartement et les cartes | `plan_lidar/`, sur ton PC seulement : jamais envoyé sur GitHub |
