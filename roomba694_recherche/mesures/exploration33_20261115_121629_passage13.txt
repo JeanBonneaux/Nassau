@@ -1,0 +1,22 @@
+arrêt 1 à 0.00 m : rien à gauche, 378 mm à droite, passage de 763 mm ; robot 3 mm à droite du milieu
+   devant : écho à 499 mm vers +50°, large de 30° (placé)
+   devant : écho à 1327 mm vers +30°, large de 6° (direction incertaine)
+   devant : écho à 1415 mm vers +20°, large de 8° (direction incertaine)
+   devant : trouée de -54° à +15° (milieu -19°), bords à 449 et 1415 mm
+   dans l'axe du passage qui est à 318 mm : franchissement
+   écho large à 499 mm vers +50° : si c'est une paroi, elle coupe le chemin à 778 mm
+   avance de 413 mm au cap 270.3°
+arrêt 2 à 0.42 m : 329 mm à gauche, 1190 mm à droite, passage de 600 mm ; robot 29 mm à droite du milieu
+   devant : écho à 1000 mm vers +41°, large de 54° (placé)
+   devant : écho à 354 mm vers -50°, large de 4° (placé)
+   devant : trouée de -47° à +14° (milieu -17°), bords à 354 et 1064 mm
+   dans l'axe du passage qui est à 228 mm : franchissement
+   écho large à 1000 mm vers +41° : si c'est une paroi, elle coupe le chemin à 1267 mm
+   avance de 485 mm au cap 273.4°
+arrêt 3 à 0.90 m : rien à gauche, 659 mm à droite ; robot 0 mm à droite du milieu
+   devant : écho à 671 mm vers +57°, large de 33° (direction incertaine)
+   devant : écho à 1192 mm vers -3°, large de 85° (direction incertaine)
+   devant : écho à 1129 mm vers -51°, large de 6° (direction incertaine)
+centre=270,900,300,60 : distance faite ; 3 arrêts en 64 s ; robot en (619.0, 336.1), cap 270.2° à l'estime
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1146 mm
+POSE=619.0,336.1,270.2

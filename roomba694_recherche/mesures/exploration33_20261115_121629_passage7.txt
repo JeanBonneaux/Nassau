@@ -1,0 +1,41 @@
+arrêt 1 à 0.00 m : 336 mm à gauche, 341 mm à droite, passage de 677 mm ; robot 2 mm à gauche du milieu
+   devant : écho à 1124 mm vers +35°, large de 45° (direction incertaine)
+   devant : écho à 1221 mm vers +3°, large de 16° (direction incertaine)
+   devant : écho à 1454 mm vers -29°, large de 45° (direction incertaine)
+   quelque chose à 1221 mm dans la direction prise
+   avance de 400 mm au cap 359.6°
+arrêt 2 à 0.40 m : 511 mm à gauche, 344 mm à droite, passage de 855 mm ; robot 84 mm à droite du milieu
+   devant : écho à 802 mm vers +37°, large de 53° (direction incertaine)
+   devant : écho à 1096 mm vers -20°, large de 57° (direction incertaine)
+   les deux parois ne disent pas le même cap (-26.3° et +0.1°) : la largeur change
+   quelque chose à 802 mm dans la direction prise
+   avance de 409 mm au cap 11.8°
+arrêt 3 à 0.81 m : 438 mm à gauche, 520 mm à droite, passage de 958 mm ; robot 41 mm à gauche du milieu
+   devant : écho à 464 mm vers +57°, large de 34° (direction incertaine)
+   devant : écho à 791 mm vers -29°, large de 42° (direction incertaine)
+   devant : trouée de -7° à +39° (milieu +16°), bords à 883 et 521 mm
+   les deux parois ne disent pas le même cap (-1.9° et +13.2°) : la largeur change
+   quelque chose à 791 mm dans la direction prise
+   avance de 402 mm au cap 354.1°
+arrêt 4 à 1.21 m : 415 mm à gauche, 484 mm à droite, passage de 899 mm ; robot 34 mm à gauche du milieu
+   devant : écho à 495 mm vers -57°, large de 32° (direction incertaine)
+   devant : trouée de -41° à +55° (milieu +7°), bords à 575 et 480 mm
+   les deux parois ne disent pas le même cap (+8.9° et +0.6°) : la largeur change
+   avance de 401 mm au cap 355.1°
+arrêt 5 à 1.62 m : 417 mm à gauche, 345 mm à droite, passage de 654 mm ; robot 90 mm à droite du milieu
+   devant : écho à 1374 mm vers -10°, large de 27° (placé)
+   devant : écho à 1486 mm vers -30°, large de 9° (direction incertaine)
+   devant : trouée de +4° à +65° (milieu +35°), bords à 1391 et 466 mm
+   les deux parois ne disent pas le même cap (+4.3° et -15.3°) : la largeur change
+   écho large à 1374 mm vers -10° : si c'est une paroi, elle coupe le chemin à 1516 mm
+   avance de 345 mm au cap 15.1°
+arrêt 6 à 1.95 m : 390 mm à gauche, 450 mm à droite, passage de 592 mm ; robot 94 mm à droite du milieu
+   devant : écho à 1225 mm vers -3°, large de 4° (direction incertaine)
+   devant : écho à 1124 mm vers -10°, large de 6° (placé)
+   devant : écho à 1203 mm vers -19°, large de 7° (direction incertaine)
+   devant : écho à 1095 mm vers -28°, large de 9° (placé)
+   devant : écho à 1283 mm vers -41°, large de 4° (placé)
+   les deux parois ne disent pas le même cap (-11.4° et +1.6°) : la largeur change
+centre=0,1950,400,100 : distance faite ; 6 arrêts en 112 s ; robot en (520.2, 209.8), cap 359.6° à l'estime
+fin : mode 3, roues en marche False, pare-chocs 00, devant 2766 mm
+POSE=520.2,209.8,359.6

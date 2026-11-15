@@ -1,0 +1,8 @@
+eventail=270 : paroi à gauche à 1469 mm, à droite à 1491 mm (du centre du robot) ; 135 lectures pendant le demi-tour
+   écho à 1424 mm vers +73° de l'axe (cap 343°), large de 3°, 3 lectures : direction incertaine
+   écho à 949 mm vers +46° de l'axe (cap 316°), large de 48°, 35 lectures : placé
+   écho à 573 mm vers -14° de l'axe (cap 256°), large de 50°, 37 lectures : placé
+   écho à 3569 mm vers -64° de l'axe (cap 206°), large de 13°, 10 lectures : direction incertaine
+   pas de trouée nette devant (aucune suite de lectures lointaines bordée des deux côtés)
+fin : mode 3, roues en marche False, pare-chocs 00, devant 544 mm
+POSE=594.3,210.2,270.1

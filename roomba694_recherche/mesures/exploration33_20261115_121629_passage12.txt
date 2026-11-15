@@ -1,0 +1,5 @@
+cap 275.0° demandé : cap 275.0°, devant 2547 mm
+av=500,60 : 500 mm au cap 275.0° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 504.1 mm pour 500 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 40, sol 2557 ; robot en (617.1, 288.2), cap 275.3°, devant 2053 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 2053 mm
+POSE=617.1,288.2,275.3

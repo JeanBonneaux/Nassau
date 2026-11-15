@@ -1,0 +1,12 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (617, 288), cap 275°
+[  0.3 min]     filtre : position corrigée de (+242, +77) mm et -0.2° ; note 0.44, étalement 559 mm et 9.1°, gyroscope × 1.0045
+[  0.3 min] station 0 : 7 paliers, 3 lignes de murs, axes de la pièce 89.5°
+[  0.3 min] cibles reçues (série 10) : [(617, 288)]
+[  0.3 min]   vers la cible (617, 288) du plan : 1 étapes
+[  0.4 min]     arrêté : avance refusée : obstacle à 356 mm devant (marge 400.0 mm) ; robot en (11886, 2828)
+[  0.4 min]   vers la cible (617, 288) du plan : 1 étapes (essai 2, en contournant l'obstacle)
+[  0.4 min]     arrêté : avance refusée : obstacle à 356 mm devant (marge 400.0 mm) ; robot en (11886, 2828)
+[  0.4 min]   vers la cible (617, 288) du plan : 1 étapes (essai 3, en contournant l'obstacle)
+[  0.4 min]     arrêté : avance refusée : obstacle à 356 mm devant (marge 400.0 mm) ; robot en (11886, 2828)
+[  0.4 min]   cible (617, 288) laissée après trois essais
+[  0.4 min] fin : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 4 sauts, 3 trajets arrêtés, 3 obstacles touchés ou vus devant | 0.1 m | batterie 1346 mAh
