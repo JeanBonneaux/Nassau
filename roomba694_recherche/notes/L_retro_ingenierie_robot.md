@@ -31,7 +31,7 @@ Les parties « lu » des § 3 et 4 viennent de deux recherches déléguées. J'a
 |---|---|---|---|
 | 1 | Réveil et sommeil du robot | savoir le réveiller et le rendormir sans y toucher | proposé |
 | 2 | Sortir de la base sans les mains | ne plus avoir à tirer le robot à la main | proposé |
-| 3 | Ce qui fait retomber le mode Safe | seuils des capteurs de vide, tapis sombres | proposé |
+| 3 | Ce qui fait retomber le mode Safe | seuils des capteurs de vide, tapis sombres | première mesure le 15, sur un tapis vert foncé (§ 4.9) |
 | 4 | Les six capteurs optiques du pare-chocs | une distance de près, sans contact | proposé |
 | 5 | La roulette avant | savoir pourquoi son signal est mort | proposé |
 | 6 | Réponse du robot à un ordre de roues, arcs, départ et arrêt | rouler plus vite et sans s'arrêter à chaque pivot | proposé |
@@ -256,6 +256,22 @@ L'application range dans le robot des préférences de nettoyage (deux passages,
 - **Ce que cela peut être** (supposé, deux lectures possibles). Soit de vrais paquets ajoutés pour les robots à Wi-Fi et jamais publiés. Soit le programme du robot qui, pour un numéro hors de sa table, lit ce qui se trouve après elle en mémoire : des valeurs fixes sans signification.
 - **Comment trancher** : les redemander dans d'autres états (robot qui roule, pare-chocs enfoncé, bouton tenu, sur sa base). Une valeur qui change avec l'état est un capteur. Cela passe par la sonde, qui suspend trois secondes la lecture périodique : jamais pendant un pilotage.
 - **Un octet parasite, 177 (B1 en hexadécimal).** Une quarantaine de fois en 45 secondes, un octet isolé est arrivé entre deux réponses, à intervalles assez réguliers. Un autre propriétaire en parle sur un 690. **Supposé** : le robot l'émet de lui-même environ une fois par seconde quand la liaison est ouverte en mode passif. S'il tombe au milieu d'une réponse, il la fausse : ce serait une cause des lectures « brouillées » après un réveil. À mesurer avec les heures, que cette première lecture n'a pas gardées.
+
+### 4.9 Le 15 à 8 h 53 : ce qui fait tomber le mode Safe (première mesure du sondage 3)
+
+**Mesuré sur le robot**, sans l'avoir cherché (séance `exploration26`, vu en direct par `rv_direct.py`). Pendant une rotation de 25° vers la droite, le robot quitte le mode Safe et coupe ses roues de lui-même.
+
+| Heure | Capteur de vide droit | Mode |
+|---|---|---|
+| 8 h 53 min 45,75 | 1 215 | Safe |
+| 45,85 | 418 | Safe |
+| 45,95 | 81 | Safe |
+| 46,05 | 36 | **passif** |
+
+- Une seconde plus tôt, les capteurs gauche et avant gauche étaient descendus de 2 460 et 2 170 à 1 061, puis remontés.
+- **La cause, d'après la photo envoyée par l'utilisateur** : le robot est au bord d'un tapis vert foncé à franges blanches. Les franges et le bord donnent 1 060 à 1 700 ; le poil vert foncé, 36 à 81. Le parquet donne 2 100 à 2 600. Le tapis de C27, le 14, donnait 700 à 1 700 et se laissait franchir.
+- **Ce qu'on en tire.** Pour ce robot, un tapis assez sombre est un vide. Le mode Safe a tenu à 418 et à 81 et n'est tombé qu'à la lecture suivante : son seuil est sous 400, peut-être sous 100, avec un dixième de seconde de délai (supposé : une seule chute). Le sondage 3 prévoyait une feuille sombre glissée sous les capteurs ; ce tapis fait le même office.
+- **Ce qu'on pourrait en faire** (non décidé). Arrêter les roues depuis le cerveau dès qu'un capteur de vide passe sous 1 000 environ : le premier creux est arrivé 0,8 s avant la chute. Le mode Safe serait gardé, et le bord du tapis deviendrait un repère.
 
 ## 5. Deux mesures faites en préparant la liste
 
