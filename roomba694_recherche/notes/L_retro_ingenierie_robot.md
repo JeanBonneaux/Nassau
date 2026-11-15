@@ -24,7 +24,7 @@ Les parties « lu » des § 3 et 4 viennent de deux recherches déléguées. J'a
 6. **La sonde** demandée est prête : une route du firmware fermée par une clé, et un outil du PC à trois genres de recherche (numéros de capteurs en lecture seule, écritures documentées, ordres inconnus).
 7. **Ordres inconnus** : mon avis était de ne pas les balayer à l'aveugle (gain faible, risque petit mais sans retour). **L'utilisateur a tranché le 14 au soir : « Capteurs seuls pour le moment ».**
 8. **Le 15 à 8 h 36 la version 13 est installée**, par le veilleur, dès que l'utilisateur a rebranché le cerveau. Elle garde bien le texte du robot en entier (douze lignes au réveil, dont cinq jamais vues : § 2.5), et ses rotations sont justes à 1,3° près.
-9. **La lecture des 256 numéros de capteurs a trouvé des réponses non documentées** : trois groupes (108, 109, 110) et les numéros 128 à 178 (§ 4.8). **Relus le 15 à 9 h 02, ce sont de vraies variables du robot** (§ 4.10) : les numéros 134, 135 et 136 sont son horloge (jour, heure, minute), juste à la minute ; cinq autres ont changé, sens pas encore trouvé. Aucun capteur de distance ou de position nouveau pour l'instant.
+9. **La lecture des 256 numéros de capteurs a trouvé des réponses non documentées** : trois groupes (108, 109, 110) et les numéros 128 à 178 (§ 4.8). **Relus le 15 à 9 h 02 puis à 10 h 28, ce sont de vraies variables du robot** (§ 4.10) : les numéros 134, 135 et 136 sont son horloge (jour, heure, minute), juste à la minute ; le 131 est son mode dans la numérotation de la documentation, et les 128 et 145 suivent aussi le mode. Aucun capteur de distance ou de position nouveau.
 10. **Pour le lendemain** (§ 7) : un veilleur attend le cerveau et fera seul l'installation, l'écoute et la lecture des numéros de capteurs ; un outil d'analyse en direct suivra le pilotage de la session de navigation.
 11. **Le mode Safe et le tapis vert foncé** (§ 4.9, trois chutes mesurées le 15) : ce que le robot lit comme un vide n'est pas le poil du tapis, c'est une ligne sombre de moins d'un centimètre juste derrière ses franges. Le robot ne surveille ses capteurs de vide que s'il roule, et il lui faut un dixième de seconde de signal sous 100 environ : traversée d'équerre sans s'arrêter, la ligne ne fait rien ; un arrêt dessus ou une rotation qui la longe fait tomber le mode. Sur le tapis lui-même le robot a roulé et fait un tour sur place en mode Safe. La documentation dit qu'un recul droit n'est pas surveillé : pas encore tranché.
 
@@ -336,7 +336,23 @@ Ce qui a changé entre la lecture de 8 h 38 (mode passif, devant la base) et cel
 
 **L'octet parasite 177 n'est pas venu une seule fois** en 516 demandes et 28 secondes. À 8 h 38 il s'était glissé dans 34 demandes sur 642, à un rythme régulier. Et le numéro 145 valait 177 aux trois demandes du matin, 0 maintenant : ce numéro semble contenir l'octet que le robot émet. Le robot l'émet donc dans un état où il était à 8 h 38 et plus à 9 h 02. Trois choses différaient : le mode (passif, puis Safe), la base (son signal 168 était reçu à 8 h 38, rien à 9 h 02), et le numéro 62 (1, puis 0). Laquelle compte : non tranché. Une lecture en mode passif loin de la base le dirait.
 
-- **Supposé, si c'est le mode** : les lectures « brouillées » après un réveil viendraient de cet octet, émis tant que le robot est en mode passif, et le pilotage en mode Safe en serait à l'abri.
+- **Supposé, si c'est le mode** : les lectures « brouillées » après un réveil viendraient de cet octet, émis tant que le robot est en mode passif, et le pilotage en mode Safe en serait à l'abri. **Écarté à 10 h 28** (voir la troisième lecture, plus bas) : en mode passif, l'octet n'est pas venu.
+
+**Troisième lecture, le 15 à 10 h 28** (mesuré ; la session de navigation avait fini et m'avait écrit « Tu peux sonder ». J'ai rouvert la liaison en mode passif par la touche s, lu les numéros 59 à 178, 196 à 215 et 7 à 58, trois demandes chacun, 576 demandes, puis refermé par la touche x à 10 h 29 min 30. Robot immobile, à un mètre environ de sa base, aucun de ses récepteurs infrarouges ne la voyant. Fichiers `mesures/sonde_20261115_1028*` et `1029*`.)
+
+| Numéro | 8 h 38, passif, base vue | 9 h 02, Safe | 10 h 28, passif, base non vue | Lecture |
+|---|---|---|---|---|
+| 134, 135, 136 | 0, 8, 38 | 0, 9, 2 | 0, 10, 28 | l'horloge, juste trois fois |
+| **131** | 1 | 2 | 1 | **le mode, dans la numérotation de la documentation** (1 passif, 2 Safe) : confirmé |
+| **128** | 1 | 13 | 1 | suit le mode : 1 en passif, 13 en Safe ; sens exact inconnu |
+| **145** | 177 | 0 | 177 | suit le mode : 177 en passif, 0 en Safe |
+| 62 | 1 | 0 | 0 | 1 une seule fois, quand la base était vue (supposé : « base en vue ») |
+| 132 | 58 | 210 | 209 | ne suit pas le mode ; inconnu |
+
+- **L'octet parasite 177 n'est pas venu non plus à 10 h 28**, en mode passif : aucun en 576 demandes. Il ne vient donc pas du mode passif seul, contrairement à ce que je supposais plus haut. Le numéro 145 vaut 177 dans les deux lectures en mode passif, que l'octet parasite vienne ou non : il ne dit pas si le robot l'émet.
+- **Ce qui distinguait 8 h 38** : la base était vue (signal 168, numéro 62 à 1), et le robot sortait de sa nuit depuis moins d'une minute. Laquelle des deux choses compte : non tranché. Il faudrait une lecture robot posé devant sa base depuis plusieurs minutes, ou juste après un réveil loin d'elle.
+- **Aucun capteur de distance ou de position** dans ces numéros : une horloge, le mode sous trois formes, et des valeurs fixes.
+- **Le défaut de ma sonde s'est répété** : pendant cette lecture le cerveau a compté deux « textes du robot » qui n'en étaient pas (des réponses lues comme des lettres : h, g, K, J…). Le fichier `mesures/textes_20261115_102815.txt` les montre.
 
 **Un défaut de ma sonde, vu à cette occasion.** À 9 h 03 min 09 le cerveau a annoncé « Le robot envoie du texte » et rangé la ligne `d6d6d6G7G7G7`. Le robot n'a rien écrit : ce sont les réponses à mes demandes des deux compteurs de roues (en hexadécimal 64 36 puis 47 37, soit les caractères « d6 » et « G7 », demandés trois fois), que la sonde fait passer par le détecteur de texte. Douze caractères lisibles de suite suffisent à le tromper. À corriger dans une prochaine version : les réponses lues par la sonde ne doivent pas passer par ce détecteur.
 

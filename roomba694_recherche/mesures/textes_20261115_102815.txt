@@ -1,0 +1,35 @@
+10:28:15.158	outil	début ; firmware v14 ; source : /api/texte ; relecture des numeros caches : mode passif, base hors de vue ; avec le mot de la session de navigation
+10:28:15.158	état	robot muet (dernière réponse il y a 91213 ms), mode lu 2, charge 0, base non, 15580 mV, -127 mA ; réveils vus 1 ; lignes bat: 0
+10:28:15.158	outil	le cerveau avait déjà 344 caractères de texte en mémoire : relevés depuis le plus ancien
+09:45:11.090	robot	key-wakeup-any
+09:45:11.091	robot	slept for 7 minutes 53 seconds
+09:45:11.092	robot	2020-05-13-1928-L   
+09:45:11.092	robot	r3-robot/branches/aero-support:7587
+09:45:11.093	robot	 CLEAN
+09:45:11.093	robot	wifi-version: 3.5.62
+09:45:11.094	robot	bootloader id: [identifiant masqué] 
+09:45:11.094	robot	assembly: ningbo-wifi-v2
+09:45:11.095	robot	revision: 8
+09:45:11.095	robot	flash version: 13
+09:45:11.096	robot	flash info crc passed: 1
+09:45:11.096	robot	battery-current-zero 252
+10:28:18.413	touche	s envoyée
+10:28:19.300	état	robot répond (dernière réponse il y a 24 ms), mode lu 2, charge 0, base non, 15580 mV, -135 mA ; réveils vus 1 ; lignes bat: 0
+10:28:49.322	état	robot répond (dernière réponse il y a 6 ms), mode lu 2, charge 0, base non, 15580 mV, -127 mA ; réveils vus 1 ; lignes bat: 0
+10:29:08.969	robot	h
+10:29:08.969	robot	h
+10:29:08.969	robot	g
+10:29:08.969	robot	K
+10:29:08.969	robot	J
+10:29:08.969	robot	J
+10:29:09.032	robot	1
+10:29:09.094	robot	.
+10:29:09.157	robot	/
+10:29:09.223	robot	6
+10:29:09.285	robot	5
+10:29:11.279	état	robot répond (dernière réponse il y a 14165 ms), mode lu 2, charge 0, base non, 15580 mV, -127 mA ; réveils vus 2 ; lignes bat: 0
+10:29:09.346	robot	6
+10:29:30.325	touche	x envoyée
+10:29:34.353	état	robot muet (dernière réponse il y a 4098 ms), mode lu 2, charge 0, base non, 15580 mV, -127 mA ; réveils vus 2 ; lignes bat: 0
+10:29:40.257	état	robot muet (dernière réponse il y a 10009 ms), mode lu 2, charge 0, base non, 15580 mV, -127 mA ; réveils vus 2 ; lignes bat: 0
+10:29:40.257	outil	fin
