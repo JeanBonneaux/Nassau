@@ -327,3 +327,22 @@ Pendant le retour de la grande boucle, dans la pièce du bas à droite (`explora
 **Ce que cela dit.** Le coin avant gauche du robot est tout près d'un objet, et le capteur de vide gauche est passé pendant la rotation sur une chose sombre et étroite au sol à côté de lui (pied, socle, câble) : pas un vide continu, puisque le sol est lu normalement sous les quatre capteurs une fois le robot arrêté. C'est la première chute observée en pivot avec le capteur gauche ; elle va avec le seuil du § 5.7 (entre 93 et 154) : une seule lecture à 10 a suffi. Les capteurs optiques avaient vu l'objet venir pendant un quart de seconde avant la chute : un arrêt du cerveau sur ces capteurs (§ 5.5) l'aurait évitée.
 
 **Complément de la session de navigation (12 h 45).** Le robot est en M23, contre le pied du meuble de l'ouest de cette pièce ; le noir vu par le capteur est sous ce meuble (plinthe sombre, vide ou grille). Pendant l'avance qui précédait, le même capteur était déjà passé à 381 puis 163 sans que le mode tombe : 163 en avance et 175 en rotation ne suffisent pas, 10 suffit à la lecture même. Cause du geste : le centrage, lancé dans un espace ouvert d'un côté (644 mm à gauche, rien à droite), s'est cru décentré et a avancé vers le meuble ; il fallait refaire à l'envers le trait de l'aller. Une minute plus tôt (12 h 40 min 11), contact du pare-chocs gauche à la fin d'une avance face au mur du fond : un meuble bas devant le mur, que le capteur de distance ne voyait pas (338 mm lus au contact, capteurs optiques 80 au plus). Elle ne remet pas le robot en mode Safe sans le mot de l'utilisateur.
+
+### 5.13 Le seuil de la cuisine (12 h 56 à 13 h 03), et une réserve sur le gyroscope
+
+**Le franchissement.** Mesuré dans `exploration34`, mouvements 469 à 486, menés par la session de navigation ; seuil de 17 mm entre la pièce centrale et la cuisine, pris vers la cuisine.
+
+- À 100 mm/s en marche avant : l'avant passe, puis les deux roues patinent ensemble (605 mm comptés, 390 mm faits d'après le capteur de distance ; 350 à 640 mA par roue).
+- Trois reprises à 100 mm/s après un pivot : à chaque fois la roue droite tourne sur place (62, 73 puis 91 mm de trop, jusqu'à 824 mA) et le robot pivote de 12 à 15° autour d'elle. Répéter le geste ne change rien.
+- À reculons, 100 mm/s : le second recul de 300 mm ne déplace pas le robot (capteur de distance à 2 626 puis 2 629 mm).
+- **D'un trait à 150 mm/s, avec 85 cm d'élan, en marche avant : le seuil passe**, sans contact ni roue levée (courants de 450 mA au passage, puis normaux).
+- Aucune chute du mode Safe sur le seuil lui-même : les capteurs de vide y lisent plus fort que le sol (jusqu'à 3 375), pas plus sombre.
+
+**Le cap après le seuil : gyroscope et cap retenu ne s'accordent plus, de 4,8°.** L'écart se crée pendant les essais sur le seuil (entre les tours de 12:52:03 et 13:00:31) et reste le même ensuite. Deux lectures :
+
+- le suivi du cap de la navigation perd 1,4 à 1,7° à chacune des trois avances arrêtées (le robot finit de tourner après le message de fin du mouvement) : c'est ce que j'ai d'abord écrit ;
+- ou le gyroscope a mal compté sur le seuil : il est monté penché et le cerveau n'en lit qu'un axe, et un robot qui se cabre sur une marche fait passer une part de ce mouvement dans le cap.
+
+Les parois de la cuisine penchent pour la seconde : dans le repère de la navigation, les deux paliers les plus larges tombent à 86° (48° de large) et à 92° (58° de large), 89° en moyenne pour 90° attendus ; avec le gyroscope ils seraient attendus vers 95°. Mais une direction de paroi ne se lit qu'à 3° près, et le gyroscope a traversé sans dommage une douzaine de montées de tapis ce matin. **Non tranché** : les deux murs du couloir, au retour, le diront à 1° près.
+
+**Ce que cela change au § 5.11.** La règle « le gyroscope est le témoin du cap » vaut sur sol plat. Après un seuil ou un bord pris en force, le cap se reprend sur des parois franches avant de continuer.
