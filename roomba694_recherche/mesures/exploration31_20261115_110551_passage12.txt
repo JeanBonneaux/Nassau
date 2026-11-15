@@ -1,0 +1,6 @@
+va=284,152,80 : 876 mm au cap 269.0° (reste de cap +0.1°), 80 mm/s demandés
+   avance de 880.3 mm pour 876 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 48, sol 2556 ; robot en (284.1, 152.3), cap 269.5°, devant 727 mm
+va=250,152,60 : 643 mm au cap 178.8° (reste de cap +0.7°), 60 mm/s demandés
+   avance de 562.6 mm pour 643 demandés, raison « pare-chocs touché », alarme pare-chocs  droit, capteurs optiques jusqu'à 52, sol 2456 ; robot en (254.3, 151.7), cap 178.5°, devant 355 mm
+fin : mode 3, roues en marche False, pare-chocs 01, devant 355 mm
+POSE=254.3,151.7,178.5

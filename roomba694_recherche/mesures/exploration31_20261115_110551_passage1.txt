@@ -1,0 +1,3 @@
+cap 90.0° demandé : cap 90.9°, devant 545 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 545 mm
+POSE=410.2,113.3,90.9

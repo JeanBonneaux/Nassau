@@ -1,0 +1,3 @@
+cap 180.0° demandé : cap 179.5°, devant 1534 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1534 mm
+POSE=287.8,100.5,179.5

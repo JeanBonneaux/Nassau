@@ -1,0 +1,7 @@
+re=150 : recul de 150 mm ; robot en (392.2, 118.8), cap 358.9°, pare-chocs 00
+re=150 : recul de 164 mm ; robot en (383.6, 118.6), cap 358.7°, pare-chocs 00
+re=150 : recul de 164 mm ; robot en (374.9, 118.5), cap 358.8°, pare-chocs 00
+av=1000,60 : 1000 mm au cap 358.8° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 1005.3 mm pour 1000 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 47, sol 2562 ; robot en (428.2, 119.2), cap 359.5°, devant 1098 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1098 mm
+POSE=428.2,119.2,359.5

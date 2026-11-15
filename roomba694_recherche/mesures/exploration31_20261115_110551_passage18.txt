@@ -1,0 +1,4 @@
+av=90,60 : 90 mm au cap 91.5° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 94.6 mm pour 90 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 72, sol 2581 ; robot en (219.9, 49.5), cap 91.5°, devant 340 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 340 mm
+POSE=219.9,49.5,91.5

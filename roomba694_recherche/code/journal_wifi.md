@@ -2163,3 +2163,109 @@ Ce que j'en retiens pour la méthode :
 - **La position perdue** : son calcul à partir du tour de 9 h 55, patinage retiré (`data_analysis/rv_ou_est_le_robot.py`), place le robot au pixel (305,7 ; 123,3), case E12, à 10 h 06 ; mon tour de contrôle de 10 h 13 donne (299,5 ; 131,5) : même case, 19 cm d'écart. Le tour interrompu avait tourné de 375,3° au gyroscope, soit +17° de cap ; je l'avais compté +110°. Elle se fierait à sa position à 10 cm près et au cap du gyroscope plutôt qu'aux 5° du filtre.
 - **Le contact de 10 h 21** : le capteur de distance n'a jamais vu l'obstacle ; le capteur optique centre gauche lisait 47 au repos, 72 à 10 cm, 176 à 6 cm, 333 à 2,5 cm, 428 puis 475 au choc. Un arrêt quand un capteur optique dépasse trois fois son repos aurait arrêté les roues 6 à 7 cm avant. Un seul cas.
 - **Pour trancher la question du recul sur le sombre** (non faite) : partir avec un capteur posé sur la ligne. Avancer d'équerre vers le bord le plus lentement possible (le firmware ne descend pas sous 50 mm/s), laisser le robot couper ses roues, vérifier au repos qu'un capteur lit moins de 100, reprendre le mode Safe, puis reculer droit de 100 mm : si le mode tient, le robot ne surveille pas le vide en reculant. À proposer à l'utilisateur.
+
+## 59. Campagne d'essais commandée par la session de revue : les faisceaux de la base, les pivots, une approche lente, la ligne sombre du tapis cherchée, le contour du tapis, et un retour recalé sur les faisceaux (2026-11-15, 10 h 34 à 11 h 53)
+
+**La demande.** L'utilisateur a écrit à la session de revue à 10 h 30 : « une fois cette run process, continue d<explorer les coins sombres du fonctionnement, et de mapper par des tests et d<ameliorer le software et de voir ce qu<il nous cache, ce qui pourrait nous etre utile, tu parle a l<autre session, elle execute le pilotage et tu ecoute et commande, et analyse, mappons loin, augmentons nos capacites de localisation precise ». La session de revue a écrit le plan (`notes/O_campagne_essais.md`, cinq essais courts) ; j'ai piloté, en restant seul juge de la sécurité de chaque geste. Je lui ai écrit le début de chaque essai ; aucun message d'elle ne m'est parvenu pendant la séance.
+
+**Les enregistrements** : `exploration30_20261115_104014` (10 h 40 à 11 h 00, essai 1) et `exploration31_20261115_110551` (11 h 05 à 11 h 52, le reste). Firmware v14. Aucune roue levée, aucune chute du mode Safe, trois contacts légers du pare-chocs.
+
+| Heure | Geste | Résultat |
+|---|---|---|
+| 10 h 34 | contrôle avant de rouler (`etat_cerveau.py`) | robot pas déplacé depuis 10 h 26 (même cap au gyroscope, 357,8°) |
+| 10 h 41 | tour sur place au départ, point P0 (passe « a » d'`exploration30`) | filtre (399,8 ; 78,5), note 0,89 ; 10 cm au nord du tour de 10 h 26 fait au même endroit |
+| 10 h 47 à 10 h 53 | **essai 1** : trois traversées de l'axe de la base à 60 mm/s, chacune dans les deux sens (lignes B, C, D : à la hauteur de P0, 400 mm et 800 mm plus au sud) | tableau ci-dessous ; aucun contact ; cap tenu à 1° près |
+| 10 h 55 | tour sur place sur l'axe (passe « b ») | ce que voient les trois récepteurs selon le cap |
+| 10 h 58 | cinq arrêts de 5 s sur l'axe, caps 180°, 270°, 90°, 135°, 0° | idem, robot immobile |
+| 11 h 00 à 11 h 05 | **essai 2** : robot en mode passif sur l'axe, base vue ; lecture des numéros cachés par la session de revue (11 h 01 min 03 à 20) | ses fichiers `sonde_…` ; le robot s'est endormi à 11 h 05 min 10, cinq minutes après la touche `s` |
+| 11 h 07 à 11 h 10 | **essai 5** : dix séries de pivots (`rv_essai_pivots.py`) face à la paroi est de la pièce, à 77 cm | +1,2 mm par série |
+| 11 h 10 à 11 h 11 | **essai 4** : approche lente de cette paroi, 440 mm puis 61 mm à 50 mm/s | pas de contact ; tableau ci-dessous ; cette paroi n'est pas un mur nu |
+| 11 h 13 | retour dans la pièce à gauche par la porte, 1,31 m puis 1,99 m | sans contact |
+| 11 h 14 à 11 h 32 | **essai 3** : chercher au bord du tapis un endroit que le robot prend pour un vide, y poser un capteur, reculer | non conclu : l'endroit trouvé n'est pas assez sombre |
+| 11 h 32 à 11 h 46 | stations au sud du tapis, sur le tapis, au nord du tapis (passes « b », « c », « d » d'`exploration31`) ; bords nord et sud du tapis | notes 0,83, 0,89, 0,66 ; un contact près du lit |
+| 11 h 46 à 11 h 49 | retour par la porte | deux contacts du pare-chocs gauche |
+| 11 h 49 à 11 h 52 | traversée de l'axe, retour au point de l'axe du matin, tour sur place (passe « e ») | position retrouvée à 3 cm près |
+| 11 h 52 min 30 | fin : `5`, capteur de distance arrêté, `s`, `x` | robot devant sa base, sur l'axe, pas dessus ; 1 426 mAh |
+
+### Essai 1 : les faisceaux de la base
+
+Mesuré, au récepteur infrarouge du dessus, en millimètres vers l'est comptés depuis P0 (ma lecture ; la session de revue a refait le calcul de son côté et trouve la même chose, commits `59bb49b` et `631ea99`) :
+
+| Ligne | vert seul (code 164) | rouge et vert (172) | rouge seul (168) |
+|---|---|---|---|
+| B, à la hauteur de P0 | de −40 à +138 | de +146 à +201 | de +208 à +475 |
+| C, 400 mm plus au sud | de −167 à +80 | de +85 à +105 | de +116 à +535 |
+| D, 800 mm plus au sud | de −300 à +6 | aucun (un trou de 2 à 5 cm) | de +40 à +580 |
+
+- **Le récepteur du dessus est à 146 mm en avant du centre du robot** (144 pour la session de revue). Avec ce décalage, les bords lus à l'aller (cap 0°) et au retour (cap 180°) coïncident à 1 cm près. Sans lui, la même frontière paraît à 29 cm d'écart selon le sens de marche.
+- **Le passage du vert au rouge est une droite** : +174, +95, +23 mm sur les trois lignes. Elle est inclinée de 10,7° sur la perpendiculaire à mes traversées. C'est un repère absolu au centimètre, d'est en ouest, devant la base.
+- **La largeur dit à quelle distance on est** : le vert seul fait 18, 25 puis 30 cm, le recouvrement 5,5, 2 puis 0 cm. Une seule traversée donne donc aussi la position nord-sud, à quelques centimètres près (utilisé au retour, plus bas).
+- Les deux récepteurs de devant ne voient rien en traversée. Ils voient la base quand le robot est tourné vers elle (caps 60° à 105° au tour sur l'axe). Robot immobile sur l'axe, face à la base : dessus 164, devant gauche 164, devant droit 172. Ils ne lisent pas le même code : c'est une indication de cap, à exploiter.
+- Le récepteur du dessus ne voit pas la base quand le robot lui tourne le dos (rien du cap 135° au cap 318° au tour sur l'axe, rien à l'arrêt aux caps 180° et 270°). Non expliqué : en traversée au cap 180°, au même endroit, il voyait le vert 45 % du temps. Supposé, non vérifié : ce qui est monté sur le robot masque le récepteur vers l'arrière.
+- **Ce que je n'ai pas pu dire : la distance à la base.** Les largeurs des faisceaux mettent leur source entre 0,7 et 1,2 m au nord de la ligne B, selon le bord qu'on prolonge.
+
+**Quelque chose en hauteur devant la base.** Depuis le point de l'axe (ligne C), cap 90°, le capteur de distance lit 546 mm, au millimètre près à dix minutes d'intervalle. Cela met un obstacle 17 cm au nord de la ligne B, là où le robot venait de passer sans rien toucher ni rien voir de côté, et où, depuis P0, le même capteur lisait un fond plat à 715 mm. Supposé : le bord d'un meuble au-dessus du robot, que le capteur ne voit pas de près et attrape de loin par le haut de son cône ; les deux échos étroits du tour de 10 h 41, à 44 et 45 cm de part et d'autre, seraient ses pieds. J'ai posé la question à l'utilisateur ; pas de réponse à 11 h 53. Conséquence tenue pendant la séance : ne pas aller plus au nord que la ligne B, parce que ce qui est monté sur le robot dépasse du pare-chocs en hauteur.
+
+### Essai 5 : les pivots, face à une paroi
+
+Dix séries +90°, −180°, +90°. Distance de départ 769 mm (étendue 8 mm sur 19 tirs). Après les séries 1 à 9 : +1, +2, −1, 0, 0, +6, +9, +8, +10 mm ; la dixième lecture est vide. **+1,2 mm par série.** Cap revenu à 1° près à chaque fois. Cela remplace le chiffre du § 56 (+44 mm en dix séries, soit 5 mm par série) : la cible de ce matin-là n'était pas une paroi sûre. Fichier : `revue_20261115_110746_pivots.json` (session de revue).
+
+### Essai 4 : approche lente
+
+Le cerveau ne descend pas sous 50 mm/s. Je n'ai pas retiré l'arrêt du capteur de distance : j'ai abaissé son seuil de 30 à 17 cm, puis à 10 cm (le minimum), le temps de l'approche, et je l'ai remis à 30 cm à la fin (relu). Petit programme jeté après usage ; sortie dans `exploration31_20261115_110551_approche_mur.txt`.
+
+| Capteur de distance (mm) | gauche | avant gauche | centre gauche | centre droit | avant droit | droit |
+|---|---|---|---|---|---|---|
+| repos | 20 | 16 | 34 | 12 | 48 | 4 |
+| 394 | 24 | 20 | 45 | 10 | 56 | 8 |
+| 287 | 28 | 22 | 55 | 12 | 56 | 7 |
+| 211 | 35 | 30 | 75 | 14 | 63 | 11 |
+| 157 | 48 | 44 | 119 | 20 | 63 | 11 |
+| 132 | 66 | 68 | 196 | 33 | 68 | 15 |
+| 104 | 100 | 145 | 394 | 79 | 95 | 18 |
+| 91 | 119 | 205 | 500 | 114 | 119 | 20 |
+
+- Le capteur optique centre gauche domine, comme au contact de C11 (§ 58). Le droit ne bouge presque pas.
+- **Cette paroi n'est pas un mur nu.** Le 10 novembre le capteur de distance lisait 143 mm quand le pare-chocs touchait une paroi (§ 22) ; ici il lit 84 mm sans contact. Ce qu'il voit, en haut, dépasse donc d'au moins 6 cm ce qu'il y a à hauteur de pare-chocs. La distance du pare-chocs à ce qu'il a devant lui n'est pas connue : le tableau ne peut pas servir tel quel de règle de distance. À refaire devant un vrai mur.
+
+### Essai 3 : la ligne sombre du tapis
+
+Question de la session de revue : le robot surveille-t-il le vide en reculant ? Il fallait poser un capteur sur un endroit que le robot prend pour un vide, puis reculer.
+
+- 11 h 14, approche de face à 50 mm/s, brosse latérale à 40 sur 127 : à 349 mm la brosse cale dans les franges (346 mA, indicateur de surintensité à 1), le robot dévie de 8° ; aucune lecture sous 667.
+- 11 h 17, reculs vers le tapis par pas de 10 mm : les roues arrivent arrêtées contre le bord et patinent ; le robot pivote de 30°, l'estime compte 653 mm quand le capteur de distance en mesure 544.
+- 11 h 20, comme le matin : recul de 300 mm d'un trait, puis recul arrêté quand un capteur de devant arrive sur les franges, puis pas de 10 mm sur le tapis : cap tenu à 1°, rien sous 771.
+- 11 h 23, 748 mm le long du bord est, sur le tapis, à 50 mm/s : rien sous 707 ; le robot sort par le bas du tapis.
+- 11 h 25, approche de face à 50 mm/s **sans brosse** : cap tenu à 2,6° près. Le capteur de vide gauche passe sur une ligne sombre : 571, 417, 271, 230, 233, 340, 762 en 15 mm de chemin. Le mode Safe ne tombe pas.
+- 11 h 26 à 11 h 28, capteur gauche ramené dessus par des pivots d'une fraction de degré : 178 au plus bas au repos. Ces pivots se sont faits capteur entre 178 et 250 : le mode Safe a tenu.
+
+**Ce qu'on peut dire** : le seuil du robot est entre 93 (chute de 9 h 59 : 287, 93, 37) et 154 à 178 (pas de chute aujourd'hui, en avance comme en pivot). La ligne sombre n'est pas continue : sombre sur 1 à 2 cm de long seulement, les trois autres capteurs, qui coupaient le bord 5 à 14 cm plus au nord, ne sont pas descendus sous 681. L'endroit très sombre du matin (36 à 81, capteur droit) n'a pas été retrouvé. **La question du recul reste où le § 56 l'avait laissée** : à 9 h 04 une avance est coupée par le robot en 0,25 s (capteur à 59), puis un recul droit de 300 mm repasse sur le même endroit (capteur à 100 pendant deux lectures) et le mode tient. C'est aussi ce que dit la documentation du robot.
+
+### Le tapis : ce qui est mesuré de plus
+
+- **Bord nord** : à 61 cm du mur nord (capteurs de devant de retour sur le parquet à 611 mm du mur, lu au capteur de distance), sans franges. **Bord sud** : sans franges, vers v = 146 ; le robot en sort en marche avant à 50 mm/s sans dévier (0,2°). **Bord est** : franges, couture vers u = 260. Bord ouest : pas atteint, un objet est posé à 43 cm à l'ouest de la station du tapis.
+- **Monter dessus** : d'un trait, à reculons, 60 mm/s (trois fois aujourd'hui, cap tenu à 1°). Pas par petits pas. De face, la brosse à 40 cale dans les franges ; brosse arrêtée, l'approche lente passe.
+- **Sur le poil l'estime compte 5 % de trop** (1 304 mm comptés pour 1 237 au capteur de distance, cap nord). Courant des roues : 200 à 250 mA sur le tapis, 120 à 180 sur le parquet.
+
+### La pièce à gauche
+
+Trois stations : au sud du tapis (262,0 ; 162,0), note 0,83 ; sur le tapis, note 0,89 ; au nord du tapis (219,9 ; 49,5), note 0,66. Vu au capteur de distance : le mur sud à v ≈ 183,5 ; un lit dont la face est est à u ≈ 234 et la face nord à v ≈ 132,5 ; un meuble dans le coin nord-ouest (face est à u ≈ 193) ; un objet rond à l'ouest du tapis (bord est vers u = 201 à 208). Les zones grises du plan ne disent pas ce qui est au sol : le robot a roulé dans plusieurs d'entre elles.
+
+**Trois contacts**, tous légers (60 à 80 mm/s), tous sur des choses que ni le capteur de distance ni les capteurs optiques n'ont vues, ajoutés à `plan_lidar/obstacles.json` (19 entrées) : 11 h 34, pare-chocs droit, devant le lit ; 11 h 46 et 11 h 47, pare-chocs gauche, dans le passage entre les deux pièces. Ces deux-là sont de ma faute : mon repère avait dérivé (ci-dessous) et le robot longeait le bord sud du meuble de C14-C16, 30 cm plus au nord que je ne le croyais. Il fallait se recaler avant la porte.
+
+### La position : ce que la séance apprend
+
+- **Le filtre a eu raison une fois contre l'estime, et tort une fois, à dix minutes d'écart.** Sur le tapis il corrige de 17 cm (note 0,89) : je refuse la correction (règle des 12 cm de la note O), et le mur nord lu au capteur de distance lui donne raison à 1,4 pixel près. Au nord du tapis il corrige de 16 cm (note 0,66) : je refuse, et là le mur nord et le meuble de l'ouest donnent raison à l'estime. Ce qui les départageait : la note, et un mur lu droit devant.
+- **Dans la pièce de la base, le filtre tire vers le nord à chaque tour** (+154, +102, +87 mm aux tours de 10 h 26, 10 h 41 et 10 h 55), et l'estime de la session de revue place le robot 46 cm plus au sud que lui. Au retour, les deux contacts du passage tombent sur le bord du meuble du plan si l'on prend la position du filtre. Supposé : soit le plan n'est pas juste d'une pièce à l'autre, soit une station de la pièce à gauche est fausse. Non tranché.
+- **Retour recalé sur les faisceaux.** À 11 h 49, une traversée de l'axe à 60 mm/s : vert sur 227 mm, recouvrement sur 39 mm. Par les largeurs, la ligne est entre B et C ; par la frontière, mon repère avait dérivé de 10 cm d'est en ouest et de 17 cm du nord au sud depuis le matin (47 minutes, quatre stations, deux traversées du tapis). Parti de la position lue sur les faisceaux, le robot est revenu au point de l'axe du matin : mêmes codes aux récepteurs (droit : 164 au lieu de 172), 513 mm au capteur de distance au lieu de 546. **Même endroit à 3 cm près.** Le tour sur place qui a suivi donne (404,9 ; 96,0) ; celui de 10 h 55, au même endroit, (404,9 ; 95,5).
+
+### Mes erreurs
+
+- Deux contacts dans le passage faute de m'être recalé avant.
+- Une correction du filtre refusée à tort sur le tapis.
+- Un pivot lancé du mauvais côté à 11 h 19 (le capteur s'est éloigné des franges), et un programme de recoupes qui avançait de 5 cm à chaque passe : seules deux recoupes sur six ont croisé la ligne.
+- À 11 h 41 mon programme de surveillance s'est arrêté sur une requête sans réponse : le robot a fini son avance de 1,3 m sous la seule garde du cerveau (pare-chocs, capteur de distance, mode Safe). Rien n'est arrivé, mais l'arrêt que j'avais prévu au bord du tapis n'était plus là. Un programme qui surveille un mouvement doit survivre à une requête perdue.
+
+**Non fait** : la conclusion de l'essai 3 ; l'essai 4 devant un vrai mur ; l'essai 6 (numéros cachés, robot en charge sur sa base) ; le parcours long (« mappons loin »), que la session de revue devait m'envoyer.
+
+**État à la fin** (11 h 53) : séance fermée ; robot dans la pièce de la base, sur l'axe, face à elle, pas dessus ; 1 426 mAh ; cerveau en v14 ; seuil du capteur de distance à 30 cm.

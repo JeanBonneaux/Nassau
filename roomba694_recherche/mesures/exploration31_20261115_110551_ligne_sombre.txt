@@ -1,0 +1,138 @@
+11:15:28 pas  0 :    +0 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2635, 1622, 840, 2570]
+11:15:29 pas  1 :    +8 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [877, 1637, 1149, 2560]
+11:15:30 pas  2 :   +16 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [813, 1597, 1376, 2560]
+11:15:30 pas  3 :   +23 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2424, 2277, 1206, 2560]
+11:15:31 ARRÊT : le cap s'est écarté de -7.9°
+11:15:31 fin : +32 mm, cap -7.9°
+11:17:08 départ : mode 3 capteurs de vide [2669, 2667, 2637, 2640]
+11:17:14 recul de 298 mm (total 298) : « distance atteinte » ; mode 3 ; capteurs de vide [2664, 2660, 2616, 2616] ; au plus bas 2572 ; temps passé sous 150 : 0.0 s
+11:17:14 fin : 298 mm reculés, 0.0 s au-dessus du sombre, mode 3, capteurs [2664, 2660, 2616, 2616]
+11:17:15 pas  0 :    +0 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2661, 2656, 2612, 2612]
+11:17:16 pas  1 :    +8 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2656, 2652, 2616, 2616]
+11:17:16 pas  2 :   +17 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2664, 2656, 2620, 2612]
+11:17:17 pas  3 :   +26 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2677, 2648, 2621, 2617]
+11:17:18 pas  4 :   +35 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2661, 2648, 2620, 2613]
+11:17:19 pas  5 :   +42 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2672, 2651, 2616, 2616]
+11:17:20 pas  6 :   +51 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2669, 2650, 2603, 2603]
+11:17:20 pas  7 :   +58 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2672, 2652, 2615, 2600]
+11:17:21 pas  8 :   +67 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2660, 2647, 2616, 2612]
+11:17:22 pas  9 :   +76 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2648, 2634, 2617, 2614]
+11:17:23 pas 10 :   +84 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2618, 2626, 2621, 2633]
+11:17:24 pas 11 :   +93 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2601, 2627, 2628, 2647]
+11:17:25 pas 12 :  +103 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2598, 2623, 2624, 2647]
+11:17:25 pas 13 :  +111 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2602, 2611, 2616, 2635]
+11:17:26 pas 14 :  +118 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2627, 2625, 2620, 2637]
+11:17:27 pas 15 :  +125 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2617, 2640, 2620, 2632]
+11:17:28 pas 16 :  +133 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2625, 2661, 2626, 2634]
+11:17:29 pas 17 :  +141 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2633, 2661, 2613, 2623]
+11:17:29 ARRÊT : le cap s'est écarté de +6.7°
+11:17:29 fin : +152 mm, cap +6.7°
+11:17:52 départ : mode 3 capteurs de vide [2535, 2654, 2615, 2602]
+11:17:53 ARRÊT : le cap s'écarte de +8.1°
+11:17:54 recul de 44 mm (total 44) : «  » ; mode 3 ; capteurs de vide [2504, 2648, 2620, 2616] ; au plus bas 2507 ; temps passé sous 150 : 0.0 s
+11:17:54 fin : 44 mm reculés, 0.0 s au-dessus du sombre, mode 3, capteurs [2504, 2648, 2620, 2616]
+11:17:54 pas  0 :    +0 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2488, 2643, 2625, 2615]
+11:17:55 pas  1 :    +9 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2516, 2634, 2626, 2606]
+11:17:56 pas  2 :   +16 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2515, 2652, 2651, 2621]
+11:17:57 pas  3 :   +24 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1181, 2629, 2629, 2614]
+11:17:57 ARRÊT : le cap s'est écarté de +7.9°
+11:17:57 fin : +32 mm, cap +7.9°
+11:19:11 pivot  0 :  +0.0° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1044, 2625, 2619, 2605]
+11:19:12 pivot  1 :  +1.0° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1645, 2640, 2628, 2601]
+11:19:12 pivot  2 :  +1.9° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1904, 2634, 2620, 2599]
+11:19:13 pivot  3 :  +3.1° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1970, 2638, 2595, 2582]
+11:19:14 pivot  4 :  +4.1° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2445, 2652, 2617, 2603]
+11:19:15 pivot  5 :  +5.5° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2471, 2604, 2629, 2597]
+11:19:15 pivot  6 :  +6.7° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2451, 2566, 2633, 2583]
+11:19:16 pivot  7 :  +8.0° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2414, 2550, 2625, 2577]
+11:19:17 pivot  8 :  +9.3° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2385, 2448, 2637, 2602]
+11:19:18 pivot  9 : +10.3° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2422, 2500, 2632, 2596]
+11:19:19 pivot 10 : +11.7° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2448, 2532, 2620, 2600]
+11:19:19 pivot 11 : +12.7° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2455, 2466, 2613, 2585]
+11:19:20 pivot 12 : +13.7° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2380, 2452, 2630, 2600]
+11:19:21 pivot 13 : +14.8° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2032, 2463, 2621, 2595]
+11:19:22 pivot 14 : +16.2° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2422, 2509, 2612, 2584]
+11:19:22 pivot 15 : +17.1° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2317, 2560, 2595, 2583]
+11:19:22 pas trouvé en 15 pivots
+11:19:22 fin : +17.1°
+11:20:50 départ : mode 3 capteurs de vide [2631, 2651, 2596, 2590]
+11:20:56 recul de 299 mm (total 299) : « distance atteinte » ; mode 3 ; capteurs de vide [2528, 2630, 2633, 2629] ; au plus bas 2515 ; temps passé sous 150 : 0.0 s
+11:20:56 fin : 299 mm reculés, 0.0 s au-dessus du sombre, mode 3, capteurs [2528, 2630, 2633, 2629]
+11:20:56 départ : mode 3 capteurs de vide [2519, 2620, 2620, 2620]
+11:21:00 recul de 187 mm, cap +0.5° : « None » ; arrêt demandé d'ici : un capteur de devant lit 1970 ; mode 3 ; capteurs de vide [1883, 1670, 1036, 2328]
+11:21:11 pas  0 :    +0 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1885, 1665, 1032, 2337]
+11:21:12 pas  1 :    +8 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2455, 1490, 1454, 2424]
+11:21:13 pas  2 :   +16 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2174, 1484, 1033, 1198]
+11:21:14 pas  3 :   +23 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2424, 1791, 1136, 1475]
+11:21:14 pas  4 :   +32 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2128, 2432, 1568, 1808]
+11:21:15 pas  5 :   +40 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1846, 2456, 2451, 2423]
+11:21:16 pas  6 :   +48 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2116, 2108, 2463, 1332]
+11:21:17 pas  7 :   +56 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2035, 2201, 1205, 1796]
+11:21:18 pas  8 :   +64 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1535, 2022, 1417, 1496]
+11:21:19 pas  9 :   +73 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2311, 2082, 1242, 1413]
+11:21:19 pas 10 :   +81 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2293, 2450, 1332, 1577]
+11:21:20 pas 11 :   +90 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2439, 2310, 1825, 1632]
+11:21:21 pas 12 :   +97 mm faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1302, 2457, 1505, 1451]
+11:21:21 pas trouvé en 12 pas
+11:21:21 fin : +97 mm, cap +1.0°
+11:22:50 départ : mode 3 capteurs de vide [1310, 2460, 1515, 1463]
+11:22:52 fin : 60 mm, +0.2°, « None » ; mode 3 ; capteurs de vide [1999, 2167, 1286, 1692] ; au plus bas pendant le geste (lus d'ici) [1298, 1567, 1162, 949]
+11:22:52 départ : mode 3 capteurs de vide [2002, 2171, 1289, 1694]
+11:22:57 fin : 9 mm, -89.9°, « None » ; mode 3 ; capteurs de vide [1236, 1171, 965, 1793] ; au plus bas pendant le geste (lus d'ici) [1042, 1011, 848, 821]
+11:23:10 départ : mode 3 capteurs de vide [1241, 1176, 969, 1800]
+11:23:24 fin : 748 mm, -0.2°, « None » ; mode 3 ; capteurs de vide [2653, 2671, 2611, 2622] ; au plus bas pendant le geste (lus d'ici) [1078, 1086, 707, 750]
+11:25:28 départ : mode 3 capteurs de vide [2642, 2664, 2567, 2572]
+11:25:36 fin : 417 mm, -1.4°, « None » ; mode 3 ; capteurs de vide [1091, 2180, 1372, 1166] ; au plus bas pendant le geste (lus d'ici) [230, 986, 693, 904]
+11:26:02 départ : mode 3 capteurs de vide [1095, 2186, 1377, 1176]
+11:26:03 fin : 27 mm, -0.4°, « None » ; mode 3 ; capteurs de vide [471, 2460, 905, 927] ; au plus bas pendant le geste (lus d'ici) [547, 1916, 815, 919]
+11:26:17 pivot  0 :  +0.0° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [458, 2457, 901, 926]
+11:26:18 pivot  1 :  +0.1° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [412, 2463, 855, 933]
+11:26:18 pivot  2 :  +1.2° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [876, 2469, 819, 1149]
+11:26:19 pivot  3 :  +1.4° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1873, 2473, 866, 1286]
+11:26:20 pivot  4 :  +1.6° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2417, 2466, 923, 1350]
+11:26:20 pivot  5 :  +1.8° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2460, 2464, 989, 1392]
+11:26:20 pas trouvé en 5 pivots
+11:26:20 fin : +1.8°
+11:26:35 pivot  0 :  +0.0° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2459, 2464, 994, 1397]
+11:26:36 pivot  1 :  -0.3° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2460, 2468, 1025, 1347]
+11:26:37 pivot  2 :  -0.8° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [2196, 2460, 984, 1159]
+11:26:37 pivot  3 :  -1.1° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [1297, 2453, 1000, 984]
+11:26:38 pivot  4 :  -1.3° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [461, 2468, 1075, 941]
+11:26:39 pivot  5 :  -1.6° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [247, 2474, 1111, 941]
+11:26:39 TROUVÉ : un capteur lit 247 au repos
+11:26:39 fin : -1.6°
+11:26:52 pivot  0 :  +0.0° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [249, 2476, 1115, 945]
+11:26:53 pivot  1 :  -0.2° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [187, 2473, 1178, 946]
+11:26:54 pivot  2 :  -0.4° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [178, 2475, 1218, 948]
+11:26:55 pivot  3 :  -0.8° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [368, 2461, 1411, 959]
+11:26:55 pas trouvé en 3 pivots
+11:26:55 fin : -0.8°
+11:27:44 pivot  0 :  +0.0° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [366, 2462, 1416, 958]
+11:27:44 pivot  1 :  +0.2° faits ; mode 3 ; capteurs de vide (gauche, avant gauche, avant droit, droit) [198, 2472, 1335, 962]
+11:27:44 TROUVÉ : un capteur lit 198 au repos
+11:27:44 fin : +0.2°
+11:29:06 départ : mode 3 capteurs de vide [197, 2471, 1336, 960] cap du cerveau 3235.9
+11:29:12 écart  +4.0° : avance de 147 mm, « None » ; au plus bas pendant l'avance (gauche, avant gauche, avant droit, droit) [425, 1194, 682, 380] ; au repos [736, 2388, 1842, 2010] ; mode 3
+11:29:19 écart  +8.0° : avance de 147 mm, « None » ; au plus bas pendant l'avance (gauche, avant gauche, avant droit, droit) [816, 1067, 854, 946] ; au repos [1902, 2090, 1870, 2323] ; mode 3
+11:29:25 écart +12.0° : avance de 147 mm, « None » ; au plus bas pendant l'avance (gauche, avant gauche, avant droit, droit) [771, 1544, 794, 949] ; au repos [2246, 2489, 1480, 2390] ; mode 3
+11:29:33 écart  -4.0° : avance de 149 mm, « None » ; au plus bas pendant l'avance (gauche, avant gauche, avant droit, droit) [1121, 1263, 981, 877] ; au repos [2361, 2452, 2278, 929] ; mode 3
+11:29:40 écart  -8.0° : avance de 150 mm, « None » ; au plus bas pendant l'avance (gauche, avant gauche, avant droit, droit) [1144, 1410, 868, 1100] ; au repos [2428, 1906, 1555, 1460] ; mode 3
+11:29:46 écart -12.0° : avance de 148 mm, « None » ; au plus bas pendant l'avance (gauche, avant gauche, avant droit, droit) [1309, 1166, 814, 1066] ; au repos [1517, 1128, 808, 2223] ; mode 3
+11:29:46 fin
+11:31:38 départ : mode 3 capteurs de vide [1528, 1135, 812, 2237]
+11:31:44 recul de 297 mm (total 297) : « distance atteinte » ; mode 3 ; capteurs de vide [1200, 2464, 2464, 2520] ; au plus bas 818 ; temps passé sous 150 : 0.0 s
+11:31:47 recul de 150 mm (total 447) : « distance atteinte » ; mode 3 ; capteurs de vide [2668, 2529, 2483, 2616] ; au plus bas 732 ; temps passé sous 150 : 0.0 s
+11:31:48 fin : 447 mm reculés, 0.0 s au-dessus du sombre, mode 3, capteurs [2668, 2529, 2483, 2616]
+11:38:02 départ : mode 3 capteurs de vide [2655, 2604, 2631, 2611]
+11:38:08 recul de 298 mm (total 298) : « distance atteinte » ; mode 3 ; capteurs de vide [2640, 2656, 2620, 2596] ; au plus bas 2559 ; temps passé sous 150 : 0.0 s
+11:38:14 recul de 299 mm (total 597) : « distance atteinte » ; mode 3 ; capteurs de vide [2467, 2588, 2567, 889] ; au plus bas 885 ; temps passé sous 150 : 0.0 s
+11:38:20 recul de 299 mm (total 896) : « distance atteinte » ; mode 3 ; capteurs de vide [1459, 2452, 2211, 1805] ; au plus bas 433 ; temps passé sous 150 : 0.0 s
+11:38:24 recul de 202 mm (total 1098) : « distance atteinte » ; mode 3 ; capteurs de vide [1531, 1588, 1158, 1247] ; au plus bas 1038 ; temps passé sous 150 : 0.0 s
+11:38:25 fin : 1098 mm reculés, 0.0 s au-dessus du sombre, mode 3, capteurs [1531, 1588, 1158, 1247]
+11:41:22 départ : mode 3 capteurs de vide [2439, 1091, 1682, 761] devant 1663 mm
+(11 h 41 min 27 : mon programme de surveillance s'est arrêté ici sur une requête restée sans réponse pendant 5 s ; l'avance de 1 300 mm a été menée à son terme par le cerveau seul, « distance atteinte », journal à 20 Hz continu ; la trace d'erreur de Python, qui contenait des chemins du PC, a été retirée de ce fichier)
+11:45:40 départ : mode 3 capteurs de vide [1048, 2500, 800, 827]
+11:45:45 recul de 299 mm (total 299) : « distance atteinte » ; mode 3 ; capteurs de vide [2456, 1041, 2071, 1313] ; au plus bas 727 ; temps passé sous 150 : 0.0 s
+11:45:51 recul de 299 mm (total 598) : « distance atteinte » ; mode 3 ; capteurs de vide [2554, 2454, 1344, 1010] ; au plus bas 736 ; temps passé sous 150 : 0.0 s
+11:45:57 recul de 299 mm (total 897) : « distance atteinte » ; mode 3 ; capteurs de vide [2648, 2671, 2613, 2601] ; au plus bas 779 ; temps passé sous 150 : 0.0 s
+11:45:58 fin : 897 mm reculés, 0.0 s au-dessus du sombre, mode 3, capteurs [2648, 2671, 2613, 2601]

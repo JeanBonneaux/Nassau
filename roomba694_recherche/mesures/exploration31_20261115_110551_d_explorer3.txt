@@ -1,0 +1,7 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (220, 50), cap 92°
+[  0.3 min]     filtre : position corrigée de (-128, -104) mm et -0.6° ; note 0.66, étalement 268 mm et 8.5°, gyroscope × 1.0045
+[  0.3 min] station 0 : 9 paliers, 4 lignes de murs, axes de la pièce 80.0°
+[  0.3 min] cibles reçues (série 4) : [(220, 50)]
+[  0.3 min]   vers la cible (220, 50) du plan : 1 étapes
+[  0.3 min]   cible (220, 50) atteinte
+[  0.3 min] fin : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1450 mAh

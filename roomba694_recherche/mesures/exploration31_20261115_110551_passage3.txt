@@ -1,0 +1,4 @@
+re=150 : recul de 157 mm ; robot en (470.8, 94.4), cap 359.9°, pare-chocs 00
+re=150 : recul de 161 mm ; robot en (462.2, 94.4), cap 359.5°, pare-chocs 00
+fin : mode 3, roues en marche False, pare-chocs 00, devant 404 mm
+POSE=462.2,94.4,359.5

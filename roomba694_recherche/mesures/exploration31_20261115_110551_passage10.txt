@@ -1,0 +1,7 @@
+av=706,80 : 706 mm au cap 0.5° (reste de cap +0.0°), 80 mm/s demandés
+   avance de 712.0 mm pour 706 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 56, sol 2523 ; robot en (280.3, 150.7), cap 0.9°, devant 543 mm
+va=280,100.5,80 : 947 mm au cap 90.3° (reste de cap +0.1°), 80 mm/s demandés
+   avance de 950.2 mm pour 947 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 52, sol 2552 ; robot en (279.8, 100.3), cap 90.8°, devant 1390 mm
+cap 180.0° demandé : cap 180.1°, devant 1484 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1492 mm
+POSE=279.8,100.3,180.1
