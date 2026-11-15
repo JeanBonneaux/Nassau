@@ -20,7 +20,7 @@ Chacun répond à une question. Un tour sur place avant le premier et après le 
 
 | N° | Essai | La question | Ce qu'on en ferait | État |
 |---|---|---|---|---|
-| 1 | Trois traversées de l'axe de la base, à 0,7 m, 1,1 m et 1,5 m d'elle, à 60 mm/s ; puis un tour sur place sur l'axe | Où exactement le faisceau vert passe-t-il au rouge ? Les deux récepteurs de devant donnent-ils un cap ? | un repère absolu, au centimètre, près de la base ; un contrôle de « devant la base » | commandé à 10 h 35 |
+| 1 | Trois traversées de l'axe de la base, à 0,7 m, 1,1 m et 1,5 m d'elle, à 60 mm/s ; puis un tour sur place sur l'axe | Où exactement le faisceau vert passe-t-il au rouge ? Les deux récepteurs de devant donnent-ils un cap ? | un repère absolu, au centimètre, près de la base ; un contrôle de « devant la base » | **fait** (§ 5.2) : axe lu à 1 cm près, cap à 2° près |
 | 2 | Lecture des numéros cachés, robot en mode passif sur l'axe, base vue | L'octet parasite 177 vient-il quand la base est vue ? | savoir quand les lectures sont brouillées | commandé |
 | 3 | Avance à 30 mm/s jusqu'à la ligne sombre du tapis, puis recul droit capteur posé dessus | Le robot surveille-t-il le vide en reculant ? | franchir un bord sombre à reculons, sans rien changer d'autre | commandé |
 | 4 | Approche lente d'un mur nu, de 45 cm à 3 cm, à 40 mm/s | Que lisent les six capteurs optiques du pare-chocs selon la distance ? | une distance de près, et un arrêt avant le contact | commandé |
@@ -80,6 +80,25 @@ Détail dans la note L. La liste des quatorze sondages y est au § 1.
 - **Pour `exploration26`**, la référence met les tours de D12 vers x = 5 500 mm : entre le filtre (5 414) et les repères (5 664). Mon « décalée de 25 cm vers l'est » de la note N § 3.3 était trop fort de moitié ; le saut, lui, est bien réel.
 - **Ce qu'on en tire.** Aucune règle simple ne fait nettement mieux que l'existant contre cette référence. Il manque un repère absolu sûr, pour corriger et pour juger. D'où l'essai 1 (les faisceaux de la base).
 
-### 5.2 Les essais
+### 5.2 Essai 1, les faisceaux de la base (10 h 47 à 10 h 56) : fait, et c'est un vrai repère
+
+**Mesuré** (séance `exploration30` : six traversées à 60 mm/s et un tour sur place, menés par la session de navigation ; `rv_faisceaux_base.py`, résultats dans `results_rv_faisceaux_base_exploration30_20261115_104014.txt`). Les positions sont celles de l'estime, accrochée au tour de départ de la séance.
+
+- **Le récepteur du dessus est 144 mm en avant du centre du robot.** Sans cette correction, la même frontière paraît à 289 mm d'écart selon le sens de marche ; avec elle, l'aller et le retour coïncident.
+- **L'axe de la base se lit au centimètre, et il se répète.** Trois lignes, chacune traversée dans les deux sens :
+
+  | Ligne | Distance à la base (d'après le plan) | Axe à l'aller | Axe au retour | Vert seul | Les deux | Rouge seul |
+  |---|---|---|---|---|---|---|
+  | B | 0,87 m | u = 408,9 | u = 409,0 | 18 cm | 5,5 cm | 27 cm |
+  | C | 1,25 m | 404,7 | 405,2 | 24 cm | 1 à 2 cm | 42 cm |
+  | D | 1,66 m | 400,9 | 401,2 | 31 cm | aucun | 55 cm |
+
+  Un pixel vaut 19 mm : l'aller et le retour s'accordent à 2 à 10 mm. La base est vue sur 22 à 34 % des lectures pendant une traversée.
+- **L'axe est une ligne droite** (3 mm de reste sur les trois lignes), **mais inclinée de 10,6°** dans le repère de la séance : elle part vers l'ouest de 7,5 cm tous les 40 cm. Prolongée jusqu'à la base, elle arrive 24 cm à l'est de la position que le plan donne à la base. Deux lectures possibles, non tranchées : la base est posée de biais ou a bougé, ou bien le cap de la séance est faux d'une dizaine de degrés. À demander à l'utilisateur : la base est-elle droite contre le mur ?
+- **Les deux récepteurs de devant donnent la direction de la base.** Pendant le tour sur place fait sur l'axe (robot à 5 mm de la ligne), ils ne la voient qu'entre les caps 60° et 92° ; leur cap moyen, 79,5°, est celui de l'axe mesuré (79,4°). En tournant, ils reçoivent le rouge, puis les deux faisceaux, puis le vert : le moment où les deux sont reçus marque la direction à 2° près environ.
+- **Le récepteur du dessus ne voit rien quand le robot tourne le dos à la base** : il est masqué vers l'arrière par ce qui est monté sur le robot (remarque de la session de navigation, confirmée).
+- **Ce qu'on en tire.** Près de la base, on a maintenant un repère absolu qui ne dépend ni du plan ni des repères : une traversée de 50 cm donne la position de côté à 1 cm près, et un tour sur place donne le cap à 2° près. Il reste à savoir où la base est vraiment sur le plan, et si elle est droite.
+
+### 5.3 Les essais suivants
 
 À remplir essai par essai.
