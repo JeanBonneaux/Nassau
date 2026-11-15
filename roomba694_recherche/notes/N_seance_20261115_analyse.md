@@ -171,7 +171,9 @@ Sur un mètre, l'estime ne peut pas se tromper de 20 cm : le § 2.4 la donne à 
 
 ## 6. Ce qui n'a pas pu être mesuré
 
-- **La courbe des capteurs optiques du pare-chocs** (sondage 4) : le robot ne s'est jamais approché à moins de 74 cm d'un obstacle devant lui. Il faudra une avance lente jusqu'à 5 cm d'un mur.
+- **La courbe des capteurs optiques du pare-chocs** (sondage 4) : pendant `exploration26` le robot ne s'est jamais approché à moins de 74 cm d'un obstacle devant lui. Il faudra une avance lente jusqu'à 5 cm d'un mur.
+  - **Une première mesure est venue plus tard, par un contact** (mesuré, `exploration29`, 10 h 21 min 51, avance à 80 mm/s). Le capteur de distance n'a jamais vu l'obstacle (1 166 à 1 036 mm jusqu'au choc). Le capteur optique centre gauche l'a vu monter pendant deux secondes : 47 au repos, 52 à 15 cm du choc, 72 à 10 cm, 99 à 8 cm, 176 à 6 cm, 249 à 4 cm, 333 à 2,5 cm, 428 au choc. Les cinq autres n'ont pas bougé : l'obstacle était étroit.
+  - **Ce qu'on pourrait en faire** (non décidé, un seul cas) : arrêter les roues quand un capteur optique dépasse trois fois son repos. Ici l'arrêt serait venu 6 à 7 cm avant le contact.
 - **Le courant des brosses pendant un « rentre à la base »** : il n'y en a pas eu.
 - **Le second essai des pivots**, devant un mur nu.
 
