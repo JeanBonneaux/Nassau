@@ -1,0 +1,5 @@
+cap 107.5° demandé : cap 108.0°, devant 0 mm
+av=1300,60 : 1300 mm au cap 108.0° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 1303.5 mm pour 1300 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 51, sol 2443 ; robot en (282.7, 160.8), cap 109.4°, devant 0 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 0 mm
+POSE=282.7,160.8,109.4

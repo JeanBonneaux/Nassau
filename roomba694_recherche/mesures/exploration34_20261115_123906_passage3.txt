@@ -1,0 +1,9 @@
+arrêt 1 à -0.00 m : 644 mm à gauche, rien à droite, passage de 990 mm ; robot 149 mm à droite du milieu
+   devant : écho à 1500 mm vers -5°, large de 41° (direction incertaine)
+   devant : écho à 539 mm vers -40°, large de 25° (placé)
+   devant : trouée de +5° à +72° (milieu +38°), bords à 1502 et 691 mm
+   avance de 372 mm au cap 110.0°
+   rotation refusée ou interrompue : sorti du mode Safe (mode lu 2)
+centre=90,700,350,60 : rotation refusée ou interrompue pendant les regards ; 1 arrêts en 24 s ; robot en (606.4, 310.3), cap 143.0° à l'estime
+fin : mode 2, roues en marche False, pare-chocs 00, devant 739 mm
+POSE=606.4,310.3,143.0

@@ -1,0 +1,4 @@
+av=250,50 : 250 mm au cap 359.8° (reste de cap +0.0°), 50 mm/s demandés
+   avance de 253.6 mm pour 250 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 32, sol 2444 ; robot en (811.6, 85.0), cap 0.2°, devant 896 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 891 mm
+POSE=811.6,85.0,0.2

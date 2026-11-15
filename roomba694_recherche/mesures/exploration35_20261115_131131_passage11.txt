@@ -1,0 +1,11 @@
+re=120 : recul de 126 mm ; robot en (661.8, 177.6), cap 212.0°, pare-chocs 00
+eventail=212 : paroi à gauche à 1319 mm, à droite à 902 mm (du centre du robot) ; 137 lectures pendant le demi-tour
+   écho à 1288 mm vers +56° de l'axe (cap 268°), large de 38°, 28 lectures : direction incertaine
+   écho à 541 mm vers +26° de l'axe (cap 238°), large de 7°, 6 lectures : direction incertaine
+   écho à 214 mm vers +19° de l'axe (cap 231°), large de 4°, 4 lectures : placé
+   écho à 559 mm vers -16° de l'axe (cap 196°), large de 61°, 44 lectures : direction incertaine
+   écho à 600 mm vers -52° de l'axe (cap 160°), large de 3°, 3 lectures : direction incertaine
+   écho à 444 mm vers -63° de l'axe (cap 149°), large de 16°, 12 lectures : direction incertaine
+   pas de trouée nette devant (aucune suite de lectures lointaines bordée des deux côtés)
+fin : mode 3, roues en marche False, pare-chocs 00, devant 505 mm
+POSE=661.7,177.7,212.1

@@ -1,0 +1,5 @@
+cap 0.0° demandé : cap 0.4°, devant 1366 mm
+re=150 : recul de 163 mm ; robot en (746.4, 67.1), cap 0.6°, pare-chocs 00
+re=130 : recul de 137 mm ; robot en (739.1, 67.2), cap 0.5°, pare-chocs 00
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1727 mm
+POSE=739.1,67.2,0.5

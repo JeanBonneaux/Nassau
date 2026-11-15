@@ -1,0 +1,8 @@
+va=699,147,60 : 516 mm au cap 51.9° (reste de cap -0.1°), 60 mm/s demandés
+   avance de 522.0 mm pour 516 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 46, sol 2548 ; robot en (699.0, 146.6), cap 52.7°, devant 2322 mm
+va=711,113,60 : 674 mm au cap 70.9° (reste de cap -0.6°), 60 mm/s demandés
+   avance de 676.5 mm pour 674 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 41, sol 1172 ; robot en (710.6, 112.7), cap 70.1°, devant 1447 mm
+va=719,83,60 : 582 mm au cap 74.2° (reste de cap -0.0°), 60 mm/s demandés
+   avance de 585.2 mm pour 582 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 36, sol 776 ; robot en (719.5, 83.1), cap 74.1°, devant 1045 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1045 mm
+POSE=719.5,83.1,74.1

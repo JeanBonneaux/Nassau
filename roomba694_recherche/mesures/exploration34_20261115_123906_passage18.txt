@@ -1,0 +1,31 @@
+arrêt 1 à 0.00 m : 464 mm à gauche, 173 mm à droite, passage de 637 mm ; robot 146 mm à droite du milieu
+   devant : écho à 556 mm vers +52°, large de 43° (direction incertaine)
+   devant : écho à 860 mm vers +25°, large de 6° (direction incertaine)
+   devant : écho à 1158 mm vers +16°, large de 6° (direction incertaine)
+   devant : écho à 1080 mm vers +7°, large de 6° (direction incertaine)
+   devant : écho à 935 mm vers +1°, large de 3° (direction incertaine)
+   devant : écho à 744 mm vers -18°, large de 32° (placé)
+   devant : écho à 1044 mm vers -43°, large de 14° (direction incertaine)
+   écho large à 744 mm vers -18° : si c'est une paroi, elle coupe le chemin à 948 mm
+   quelque chose à 556 mm dans la direction prise
+   avance de 236 mm au cap 20.0°
+arrêt 2 à 0.22 m : 380 mm à gauche, 287 mm à droite, passage de 589 mm ; robot 8 mm à droite du milieu
+   devant : écho à 369 mm vers +55°, large de 17° (placé)
+   devant : écho à 914 mm vers +19°, large de 34° (direction incertaine)
+   devant : écho à 829 mm vers -18°, large de 36° (direction incertaine)
+   devant : écho à 393 mm vers -46°, large de 16° (direction incertaine)
+   les deux parois ne disent pas le même cap (-0.3° et +7.5°) : la largeur change
+   dans l'axe du passage qui est à 212 mm : franchissement
+   quelque chose à 914 mm dans la direction prise
+   quelque chose à 829 mm dans la direction prise
+   avance de 509 mm au cap 0.8°
+arrêt 3 à 0.74 m : 223 mm à gauche, 281 mm à droite, passage de 504 mm ; robot 29 mm à gauche du milieu
+   devant : écho à 490 mm vers +39°, large de 43° (direction incertaine)
+   devant : écho à 389 mm vers -42°, large de 22° (placé)
+   devant : écho à 970 mm vers -58°, large de 6° (direction incertaine)
+   devant : trouée de -31° à +17° (milieu -7°), bords à 389 et 495 mm
+   les deux parois ne disent pas le même cap (+16.7° et -1.7°) : la largeur change
+   obstacle sur le chemin à 329 mm, 208 mm à droite de la ligne
+centre=0,900,250,50 : obstacle devant : les deux parois ne disent pas le même cap (+16.7° et -1.7°) : la largeur change; obstacle sur le chemin à 329 mm, 208 mm à droite de la ligne ; 3 arrêts en 61 s ; robot en (850.7, 80.0), cap 359.6° à l'estime
+fin : mode 3, roues en marche False, pare-chocs 00, devant 2364 mm
+POSE=850.7,80.0,359.6

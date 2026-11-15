@@ -1,0 +1,7 @@
+av=350,50 : 350 mm au cap 0.6° (reste de cap +0.0°), 50 mm/s demandés
+   avance de 353.1 mm pour 350 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 44, sol 2448 ; robot en (917.7, 79.3), cap 1.0°, devant 1312 mm
+   regard au cap   90.1° : médiane   443 mm (de 442 à 447), soit 470 mm du centre du robot
+   regard au cap  270.6° : médiane   233 mm (de 233 à 237), soit 260 mm du centre du robot
+cap 0.0° demandé : cap 0.7°, devant 1314 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1319 mm
+POSE=917.7,79.3,0.7

@@ -1,0 +1,16 @@
+13:01:07 départ : mode 3 vide [2631, 2640, 2612, 2501] pare-chocs [0, 0] roues levées [0, 0]
+13:01:07       0 mm ; roues    0    0 mA ; vide [2631, 2639, 2611, 2500] ; mode 3
+13:01:07      62 mm ; roues  142  205 mA ; vide [2647, 2677, 2624, 2516] ; mode 3
+13:01:08     143 mm ; roues   68  212 mA ; vide [2657, 2664, 2615, 2507] ; mode 3
+13:01:09     227 mm ; roues  133  207 mA ; vide [2593, 2666, 2615, 2495] ; mode 3
+13:01:10     298 mm ; roues  186  161 mA ; vide [2586, 2673, 2617, 2476] ; mode 3
+13:01:10 fin : 298 mm d'après le cerveau (303 au journal), cap +0.6°, « distance atteinte »
+13:01:10       mode 3 ; vide [2588, 2662, 2600, 2470] ; pare-chocs [0, 0] ; roues levées [0, 0] ; courant le plus fort vu : 301 mA
+13:01:11 départ : mode 3 vide [2588, 2662, 2600, 2470] pare-chocs [0, 0] roues levées [0, 0]
+13:01:11       0 mm ; roues  283  204 mA ; vide [2588, 2662, 2600, 2470] ; mode 3
+13:01:11      55 mm ; roues  180  191 mA ; vide [2579, 2662, 2583, 2480] ; mode 3
+13:01:12     126 mm ; roues  193  339 mA ; vide [2575, 2657, 2579, 2476] ; mode 3
+13:01:13     197 mm ; roues  303  247 mA ; vide [2581, 2662, 2582, 2482] ; mode 3
+13:01:14     257 mm ; roues  244  337 mA ; vide [2576, 2658, 2578, 2476] ; mode 3
+13:01:15 fin : 299 mm d'après le cerveau (304 au journal), cap +2.9°, « distance atteinte »
+13:01:15       mode 3 ; vide [2576, 2660, 2580, 2480] ; pare-chocs [0, 0] ; roues levées [0, 0] ; courant le plus fort vu : 437 mA

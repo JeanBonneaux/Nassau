@@ -1,0 +1,3 @@
+re=100 : recul de 110 mm ; robot en (997.5, 74.6), cap 44.1°, pare-chocs 00
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1083 mm
+POSE=997.5,74.6,44.1

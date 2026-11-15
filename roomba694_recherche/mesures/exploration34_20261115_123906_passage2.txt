@@ -1,0 +1,6 @@
+re=150 : recul de 157 mm ; robot en (614.2, 363.7), cap 270.3°, pare-chocs 00
+cap 90.0° demandé : cap 90.8°, devant 0 mm
+va=614.3,329,60 : 654 mm au cap 90.8° (reste de cap -1.0°), 60 mm/s demandés
+   avance de 656.2 mm pour 654 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 39, sol 2573 ; robot en (613.4, 328.9), cap 91.1°, devant 1474 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1483 mm
+POSE=613.4,328.9,91.1

@@ -1,0 +1,7 @@
+av=200,50 : 200 mm au cap 179.7° (reste de cap +0.0°), 50 mm/s demandés
+   avance de 206.2 mm pour 200 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 28, sol 2456 ; robot en (898.8, 84.4), cap 179.9°, devant 1389 mm
+   regard au cap   89.1° : médiane   245 mm (de 245 à 245), soit 272 mm du centre du robot
+   regard au cap  269.4° : médiane   200 mm (de 200 à 200), soit 227 mm du centre du robot
+cap 180.0° demandé : cap 179.3°, devant 1387 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1387 mm
+POSE=898.8,84.4,179.3

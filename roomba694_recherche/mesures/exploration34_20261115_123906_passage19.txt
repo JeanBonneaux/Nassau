@@ -1,0 +1,8 @@
+arrêt 1 à 0.00 m : 221 mm à gauche, 275 mm à droite, passage de 496 mm ; robot 27 mm à gauche du milieu
+   devant : écho à 478 mm vers +41°, large de 48° (direction incertaine)
+   devant : écho à 331 mm vers -52°, large de 45° (direction incertaine)
+   devant : trouée de -28° à +15° (milieu -6°), bords à 413 et 515 mm
+   quelque chose à 331 mm dans la direction prise
+centre=0,800,200,50 : obstacle devant : quelque chose à 331 mm dans la direction prise ; 1 arrêts en 16 s ; robot en (850.7, 79.9), cap 0.4° à l'estime
+fin : mode 3, roues en marche False, pare-chocs 00, devant 2370 mm
+POSE=850.7,79.9,0.4

@@ -1,0 +1,3 @@
+   regard au cap  160.6° : médiane  1015 mm (de 1011 à 1024), soit 1042 mm du centre du robot
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1019 mm
+POSE=799.7,85.7,160.6

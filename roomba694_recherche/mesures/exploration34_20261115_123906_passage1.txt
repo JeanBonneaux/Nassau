@@ -1,0 +1,5 @@
+cap 270.0° demandé : cap 269.8°, devant 1148 mm
+av=900,60 : 900 mm au cap 269.8° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 817.6 mm pour 900 demandés, raison « pare-chocs touché », alarme pare-chocs gauche, capteurs optiques jusqu'à 80, sol 2574 ; robot en (614.3, 372.0), cap 270.4°, devant 338 mm
+fin : mode 3, roues en marche False, pare-chocs 10, devant 338 mm
+POSE=614.3,372.0,270.4
