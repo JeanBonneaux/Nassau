@@ -1,0 +1,20 @@
+arrêt 1 à 0.00 m : 550 mm à gauche, 389 mm à droite, passage de 939 mm ; robot 80 mm à droite du milieu
+   devant : écho à 394 mm vers +53°, large de 43° (direction incertaine)
+   devant : écho à 670 mm vers +15°, large de 30° (direction incertaine)
+   devant : écho à 1300 mm vers -9°, large de 15° (direction incertaine)
+   devant : écho à 936 mm vers -23°, large de 9° (direction incertaine)
+   devant : écho à 581 mm vers -41°, large de 24° (direction incertaine)
+   quelque chose à 394 mm dans la direction prise
+   avance de 74 mm au cap 15.0°
+arrêt 2 à 0.07 m : 561 mm à gauche, 981 mm à droite ; robot 92 mm à droite du milieu
+   devant : écho à 336 mm vers +57°, large de 33° (direction incertaine)
+   devant : écho à 601 mm vers +20°, large de 33° (direction incertaine)
+   devant : écho à 909 mm vers +0°, large de 3° (direction incertaine)
+   devant : écho à 1240 mm vers -6°, large de 6° (direction incertaine)
+   devant : écho à 864 mm vers -29°, large de 34° (direction incertaine)
+   devant : écho à 560 mm vers -49°, large de 3° (direction incertaine)
+   quelque chose à 336 mm dans la direction prise
+centre=0,1500,300,80 : obstacle devant : quelque chose à 336 mm dans la direction prise ; 2 arrêts en 32 s ; robot en (816.1, 81.9), cap 0.1° à l'estime
+ordre non exécuté : voir=90/270/0
+fin : mode 3, roues en marche False, pare-chocs 00, devant 610 mm
+POSE=816.1,81.9,0.1

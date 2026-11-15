@@ -1,0 +1,6 @@
+   rotation refusée ou alarme : pare-chocs gauche
+ordre non exécuté : va=832.2,85.7,100
+ordre non exécuté : va=812.2,82.9,100
+ordre non exécuté : va=800,86,100
+fin : mode 3, roues en marche False, pare-chocs 10, devant 374 mm
+POSE=865.3,92.7,181.1

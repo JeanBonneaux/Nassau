@@ -1,0 +1,17 @@
+14:48:09 départ : mode 3 vide [2686, 2647, 2604, 2564] pare-chocs [0, 0] roues levées [0, 0]
+14:48:09       0 mm comptés ; devant 1664 mm (au départ 1660) ; roues    0    0 mA ; vide [2688, 2648, 2604, 2567] ; mode 3
+14:48:09      63 mm comptés ; devant 1618 mm (au départ 1660) ; roues  190  139 mA ; vide [2664, 2654, 2614, 2603] ; mode 3
+14:48:10     143 mm comptés ; devant 1553 mm (au départ 1660) ; roues  193  179 mA ; vide [2665, 2636, 2626, 2599] ; mode 3
+14:48:11     229 mm comptés ; devant 1192 mm (au départ 1660) ; roues  159  166 mA ; vide [2672, 2673, 2633, 2614] ; mode 3
+14:48:11     307 mm comptés ; devant 1380 mm (au départ 1660) ; roues   85  250 mA ; vide [2680, 2673, 2617, 2591] ; mode 3
+14:48:12     393 mm comptés ; devant 1312 mm (au départ 1660) ; roues  160  215 mA ; vide [2653, 2577, 2553, 2593] ; mode 3
+14:48:12     479 mm comptés ; devant 1228 mm (au départ 1660) ; roues   86  148 mA ; vide [2736, 2465, 2555, 1887] ; mode 3
+14:48:13     555 mm comptés ; devant 1177 mm (au départ 1660) ; roues  392  120 mA ; vide [2528, 2467, 2509, 2614] ; mode 3
+14:48:13     616 mm comptés ; devant 1143 mm (au départ 1660) ; roues  422  372 mA ; vide [2462, 1679, 2450, 2836] ; mode 3
+14:48:14     698 mm comptés ; devant 1080 mm (au départ 1660) ; roues  163  475 mA ; vide [2521, 2504, 2511, 2891] ; mode 3
+14:48:15     765 mm comptés ; devant  783 mm (au départ 1660) ; roues   68  428 mA ; vide [2535, 2518, 2525, 2503] ; mode 3
+14:48:15     821 mm comptés ; devant  483 mm (au départ 1660) ; roues   80  413 mA ; vide [2516, 2512, 2508, 2677] ; mode 3
+14:48:16     861 mm comptés ; devant 1472 mm (au départ 1660) ; roues   46  465 mA ; vide [2532, 2532, 2496, 2456] ; mode 3
+14:48:17 fin : 878 mm d'après le cerveau (865 au journal), cap -37.3°, « distance atteinte »
+14:48:17       devant 465 mm (au départ 1660) : le capteur de distance s'est rapproché de 1195 mm pour 865 comptés ; plus grand écart vu 673 mm
+14:48:17       mode 3 ; vide [2532, 2536, 2499, 2456] ; pare-chocs [0, 0] ; roues levées [0, 0] ; courant le plus fort vu : 690 mA

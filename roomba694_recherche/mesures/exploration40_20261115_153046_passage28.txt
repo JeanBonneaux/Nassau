@@ -1,0 +1,5 @@
+av=120,60 : 120 mm au cap 89.2° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 123.8 mm pour 120 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 26, sol 2564 ; robot en (404.4, 101.0), cap 89.0°, devant 566 mm
+   regard au cap   90.4° : médiane   562 mm (de 562 à 567), soit 589 mm du centre du robot
+fin : mode 3, roues en marche False, pare-chocs 00, devant 567 mm
+POSE=404.4,101.0,90.4

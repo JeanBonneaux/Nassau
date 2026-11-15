@@ -1,0 +1,10 @@
+14:51:34 départ : mode 3 vide [2478, 2484, 2506, 2499] pare-chocs [0, 0] roues levées [0, 0]
+14:51:34       0 mm comptés ; devant  948 mm (au départ 1211) ; roues  212  177 mA ; vide [2477, 2482, 2505, 2498] ; mode 3
+14:51:35      63 mm comptés ; devant 1172 mm (au départ 1211) ; roues  135  207 mA ; vide [2485, 2488, 2511, 2624] ; mode 3
+14:51:35     130 mm comptés ; devant  712 mm (au départ 1211) ; roues   28  516 mA ; vide [2535, 2521, 2524, 2528] ; mode 3
+14:51:36     196 mm comptés ; devant  804 mm (au départ 1211) ; roues  157  562 mA ; vide [2536, 2520, 2499, 2661] ; mode 3
+14:51:37     262 mm comptés ; devant  534 mm (au départ 1211) ; roues   54  497 mA ; vide [2522, 2508, 2498, 2549] ; mode 3
+14:51:37     316 mm comptés ; devant  483 mm (au départ 1211) ; roues   58  376 mA ; vide [2516, 2520, 2510, 1628] ; mode 3
+14:51:38 fin : 351 mm d'après le cerveau (346 au journal), cap -43.9°, « distance atteinte »
+14:51:38       devant 439 mm (au départ 1211) : le capteur de distance s'est rapproché de 772 mm pour 346 comptés ; plus grand écart vu 24 mm
+14:51:38       mode 3 ; vide [2516, 2516, 2522, 1829] ; pare-chocs [0, 0] ; roues levées [0, 0] ; courant le plus fort vu : 811 mA

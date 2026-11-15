@@ -1,0 +1,1 @@
+va=520,213,150 : 1715 mm au cap 181.7° (reste de cap +0.9°), 150 mm/s demandés

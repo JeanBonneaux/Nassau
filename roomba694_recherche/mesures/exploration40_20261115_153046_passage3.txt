@@ -1,0 +1,7 @@
+re=60 : recul de 64 mm ; robot en (925.4, 94.4), cap 182.4°, pare-chocs 00
+cap 180.0° demandé : cap 180.0°, devant 704 mm
+   regard au cap   90.1° : médiane   339 mm (de 334 à 339), soit 366 mm du centre du robot
+   regard au cap  270.5° : médiane   117 mm (de 117 à 117), soit 144 mm du centre du robot
+   regard au cap  179.4° : médiane   674 mm (de 663 à 730), soit 701 mm du centre du robot
+fin : mode 3, roues en marche False, pare-chocs 00, devant 675 mm
+POSE=925.4,94.4,179.4

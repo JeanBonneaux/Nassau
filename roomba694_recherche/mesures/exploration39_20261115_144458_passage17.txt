@@ -1,0 +1,4 @@
+cap 0.0° demandé : cap 359.3°, devant 366 mm
+   regard au cap  359.3° : médiane   345 mm (de 336 à 366), soit 372 mm du centre du robot
+fin : mode 3, roues en marche False, pare-chocs 00, devant 349 mm
+POSE=980.1,87.9,359.3

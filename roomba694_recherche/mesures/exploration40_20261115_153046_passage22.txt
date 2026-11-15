@@ -1,0 +1,8 @@
+re=50 : recul de 50 mm ; robot en (464.0, 178.8), cap 73.9°, pare-chocs 00
+   regard au cap  359.5° : médiane   232 mm (de 232 à 232), soit 259 mm du centre du robot
+   regard au cap  179.8° : médiane   347 mm (de 347 à 347), soit 374 mm du centre du robot
+   regard au cap  134.7° : médiane   676 mm (de 672 à 676), soit 703 mm du centre du robot
+   regard au cap   44.2° : médiane     0 mm (de 0 à 0), soit 27 mm du centre du robot
+   regard au cap   90.4° : médiane  1547 mm (de 1538 à 1555), soit 1574 mm du centre du robot
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1551 mm
+POSE=464.0,178.8,90.4

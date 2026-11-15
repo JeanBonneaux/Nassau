@@ -1,0 +1,6 @@
+re=50 : recul de 52 mm ; robot en (463.3, 180.9), cap 90.6°, pare-chocs 00
+va=466.5,170,50 : 214 mm au cap 73.7° (reste de cap +0.0°), 50 mm/s demandés
+   avance de 90.8 mm pour 214 demandés, raison « pare-chocs touché », alarme pare-chocs gauche, capteurs optiques jusqu'à 25, sol 2579 ; robot en (464.7, 176.2), cap 74.0°, devant 1483 mm
+ordre non exécuté : va=466.5,158,50
+fin : mode 3, roues en marche False, pare-chocs 10, devant 1483 mm
+POSE=464.7,176.2,74.0

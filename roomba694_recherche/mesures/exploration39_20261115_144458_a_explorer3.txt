@@ -1,0 +1,5 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (790, 84), cap 269°
+[  0.3 min]     filtre : position corrigée de (+46, +159) mm et +1.1° ; note 0.93, étalement 498 mm et 10.0°, gyroscope × 1.0045
+[  0.3 min]   porte possible : 882 mm de large vers (14399, 7337), direction 77°
+[  0.3 min] station 0 : 7 paliers, 2 lignes de murs, axes de la pièce 77.0°
+[  0.3 min] fin : batterie basse | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 991 mAh

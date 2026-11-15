@@ -1,0 +1,7 @@
+re=100 : recul de 105 mm ; robot en (787.8, 85.0), cap 294.4°, pare-chocs 00
+re=100 : recul de 107 mm ; robot en (785.5, 79.8), cap 293.7°, pare-chocs 00
+re=40 : recul de 41 mm ; robot en (784.6, 77.8), cap 293.5°, pare-chocs 00
+cap 330.0° demandé : cap 330.2°, devant 981 mm
+   regard au cap  330.2° : médiane   985 mm (de 980 à 993), soit 1012 mm du centre du robot
+fin : mode 3, roues en marche False, pare-chocs 00, devant 993 mm
+POSE=784.6,77.8,330.2

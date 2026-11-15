@@ -1,0 +1,4 @@
+cap 51.0° demandé : cap 50.3°, devant 470 mm
+   regard au cap   50.3° : médiane   475 mm (de 470 à 475), soit 502 mm du centre du robot
+fin : mode 3, roues en marche False, pare-chocs 00, devant 470 mm
+POSE=1059.7,77.7,50.3

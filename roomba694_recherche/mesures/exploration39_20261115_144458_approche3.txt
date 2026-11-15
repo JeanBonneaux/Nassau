@@ -1,0 +1,11 @@
+15:25:56 départ : {'ok': True, 'mode': 3, 'pare': [0, 0], 'leve': [0, 0], 'opt': [20, 13, 40, 10, 38, 8], 'devant': 466, 'radar': 1, 'seuil': 30, 'sec': True}
+15:25:58 mur à 472 mm du capteur (dix lectures : 466 à 475), soit pare-chocs à 330 mm
+15:25:58 seuil d'arrêt abaissé à 15 cm ; arrêt automatique True
+15:25:58        1 mm faits ; capteur de distance 466 mm ; optiques [21, 13, 39, 9, 38, 8] ; pare-chocs [0, 0]
+15:25:59       38 mm faits ; capteur de distance 438 mm ; optiques [23, 16, 32, 12, 40, 9] ; pare-chocs [0, 0]
+15:26:00       74 mm faits ; capteur de distance 405 mm ; optiques [23, 16, 33, 12, 43, 10] ; pare-chocs [0, 0]
+15:26:01      156 mm faits ; capteur de distance 307 mm ; optiques [17, 16, 37, 12, 51, 16] ; pare-chocs [0, 0]
+15:26:02      188 mm faits ; capteur de distance 305 mm ; optiques [19, 16, 40, 15, 54, 27] ; pare-chocs [0, 0]
+15:26:03 approche : 190 mm, cap +0.1°, « distance atteinte »
+15:26:03 au bout : capteur de distance 296 mm (pare-chocs à 153 mm du mur) ; optiques [18, 16, 40, 14, 55, 27] ; pare-chocs [0, 0] ; mode 3
+15:26:03 seuil d'arrêt remis à 30 cm ; arrêt automatique True
