@@ -10,6 +10,8 @@ Session de revue, 2026-11-14 au soir. Demandes de l'utilisateur, dans l'ordre :
 
 Chaque affirmation dit d'où elle vient : **mesuré** (sur les enregistrements ou sur le PC), **lu** (documentation ou témoignage, avec le modèle concerné), **supposé**. Rien n'a roulé pour cette note et aucun ordre n'a été envoyé au robot.
 
+Cette phrase vaut pour ce qui a été écrit le 14 au soir. Les parties datées du 15 reposent sur des lectures faites sur le robot : les touches de réveil et d'écoute du veilleur, et des demandes de capteurs en lecture seule. Je n'ai envoyé aucun ordre de roues : c'est la session de navigation qui pilote.
+
 Les parties « lu » des § 3 et 4 viennent de deux recherches déléguées. J'ai relu moi-même, dans le manuel de service officiel de la série 500, la façon d'entrer dans le mode d'essai, l'avertissement sur le blocage et le tableau des limites. Le reste, je ne l'ai pas rouvert page par page ; les messages du forum robotreviews.com n'ont pu être lus qu'en extraits.
 
 ## En bref
@@ -22,8 +24,9 @@ Les parties « lu » des § 3 et 4 viennent de deux recherches déléguées. J'a
 6. **La sonde** demandée est prête : une route du firmware fermée par une clé, et un outil du PC à trois genres de recherche (numéros de capteurs en lecture seule, écritures documentées, ordres inconnus).
 7. **Ordres inconnus** : mon avis était de ne pas les balayer à l'aveugle (gain faible, risque petit mais sans retour). **L'utilisateur a tranché le 14 au soir : « Capteurs seuls pour le moment ».**
 8. **Le 15 à 8 h 36 la version 13 est installée**, par le veilleur, dès que l'utilisateur a rebranché le cerveau. Elle garde bien le texte du robot en entier (douze lignes au réveil, dont cinq jamais vues : § 2.5), et ses rotations sont justes à 1,3° près.
-9. **La lecture des 256 numéros de capteurs a trouvé des réponses non documentées** : trois groupes (108, 109, 110) et les numéros 128 à 178 (§ 4.8). Vrais capteurs ou restes de mémoire : à trancher en les relisant dans d'autres états.
+9. **La lecture des 256 numéros de capteurs a trouvé des réponses non documentées** : trois groupes (108, 109, 110) et les numéros 128 à 178 (§ 4.8). **Relus le 15 à 9 h 02, ce sont de vraies variables du robot** (§ 4.10) : les numéros 134, 135 et 136 sont son horloge (jour, heure, minute), juste à la minute ; cinq autres ont changé, sens pas encore trouvé. Aucun capteur de distance ou de position nouveau pour l'instant.
 10. **Pour le lendemain** (§ 7) : un veilleur attend le cerveau et fera seul l'installation, l'écoute et la lecture des numéros de capteurs ; un outil d'analyse en direct suivra le pilotage de la session de navigation.
+11. **Le mode Safe et les tapis sombres** (§ 4.9, deux chutes mesurées le 15) : pour ce robot un tapis vert foncé est un vide. Il ne le surveille que s'il roule : à l'arrêt le mode Safe tient sur le poil sombre, il tombe un à deux dixièmes de seconde après un ordre d'avance ou pendant une rotation. La documentation dit qu'un recul droit n'est pas surveillé ; le seul recul observé a passé, sans le prouver.
 
 ## 1. Les sondages proposés, et où ils en sont
 
@@ -31,18 +34,18 @@ Les parties « lu » des § 3 et 4 viennent de deux recherches déléguées. J'a
 |---|---|---|---|
 | 1 | Réveil et sommeil du robot | savoir le réveiller et le rendormir sans y toucher | proposé |
 | 2 | Sortir de la base sans les mains | ne plus avoir à tirer le robot à la main | proposé |
-| 3 | Ce qui fait retomber le mode Safe | seuils des capteurs de vide, tapis sombres | première mesure le 15, sur un tapis vert foncé (§ 4.9) |
+| 3 | Ce qui fait retomber le mode Safe | seuils des capteurs de vide, tapis sombres | deux chutes mesurées le 15 sur un tapis vert foncé (§ 4.9) : surveillé seulement quand le robot roule, signal sous 100 environ pendant 0,1 à 0,2 s |
 | 4 | Les six capteurs optiques du pare-chocs | une distance de près, sans contact | proposé |
 | 5 | La roulette avant | savoir pourquoi son signal est mort | proposé |
 | 6 | Réponse du robot à un ordre de roues, arcs, départ et arrêt | rouler plus vite et sans s'arrêter à chaque pivot | proposé |
 | 7 | L'accostage par le robot lui-même | réussir « rentre à la base » plus d'une fois sur deux | proposé |
 | 8 | Le courant quand le robot force | arrêter une avance avant de patiner | proposé ; l'échelle est maintenant connue (§ 3.3) |
 | 9 | Dépouiller les deux retours à la base déjà enregistrés | comme le 7, sans le robot | proposé ; le courant est déjà regardé (§ 5) |
-| 10 | Lire en entier ce que le robot écrit | pourquoi il redémarre ou se tait | **choisi** ; préparé, pas encore mené sur le robot (§ 2) |
+| 10 | Lire en entier ce que le robot écrit | pourquoi il redémarre ou se tait | **choisi** ; mené depuis le 15 au matin : la version 13 garde le texte en entier (§ 2.5) |
 | 11 | Le Wi-Fi propre au robot | un second moyen de dire « arrête » | proposé |
 | 12 | Nos propres balises infrarouges | un repère sûr à chaque porte | proposé |
 | 13 | Le mode d'essai d'usine | les limites d'usine des moteurs | creusé sur le papier (§ 3) ; je déconseille de le lancer pour l'instant |
-| 14 | Les capteurs sans numéro officiel, les autres ordres | peut-être un capteur de plus ; pour les ordres, sans doute rien | **décidé : capteurs seuls pour le moment** ; lecture prévue dès que le cerveau répond (§ 7) |
+| 14 | Les capteurs sans numéro officiel, les autres ordres | peut-être un capteur de plus ; pour les ordres, sans doute rien | **décidé : capteurs seuls pour le moment** ; deux lectures le 15 (§ 4.8 et § 4.10) : de vraies variables, dont l'horloge du robot ; à relire dans d'autres états |
 
 ## 2. Ce que le robot écrit de lui-même (sondage 10)
 
@@ -129,6 +132,7 @@ Deux ajouts ; la conduite et les sécurités existantes ne changent pas.
   | `battery-current-zero 252` | **nouveau** : le zéro de sa mesure du courant |
 
 - **Un réveil sans texte.** À 8 h 38, après la nuit, deux impulsions de réveil puis l'ouverture de la liaison : le robot répond, mais n'écrit rien. À 8 h 44, après 1 min 24 s de sommeil, il écrit ses douze lignes. **Supposé** : à 8 h 38 il ne dormait déjà plus (l'utilisateur venait de le manipuler), et le texte n'accompagne qu'un vrai réveil.
+- **Un second réveil sans texte, le 15 à 9 h 02, qui précise le premier.** Le robot s'était endormi à 8 h 58 min 46, cinq minutes juste après être retombé en mode passif (liaison restée ouverte). Réveillé par une impulsion à 9 h 02 min 05, il répond aux demandes de capteurs une seconde plus tard, **avant** tout ordre d'ouverture de la liaison, et n'écrit rien. **Supposé, sur deux réveils** : il y a deux sommeils. Après une fermeture de la liaison (touche x), le robot repart de zéro au réveil et écrit ses douze lignes. Après cinq minutes en mode passif liaison ouverte, il s'assoupit seulement : la liaison reste ouverte, il ne redémarre pas, il n'écrit rien.
 - **Il se rendort vite hors de sa base.** Liaison fermée à 8 h 42 min 00 ; d'après son propre texte il s'est endormi vers 8 h 43 min 22, soit 82 secondes plus tard.
 - **Pas de ligne de charge** pendant ces huit minutes : le robot n'était pas en charge (état de charge 0, 127 mA tirés, « sur sa base : non »). Les lignes « bat: » ne viennent que robot sur sa base alimentée.
 - **Les mouvements de la version 13** (menés par la session de navigation à 8 h 47) : rotations de 88,7°, 179,3° et 89,1° pour 90°, 180° et 90° demandés.
@@ -248,31 +252,89 @@ L'application range dans le robot des préférences de nettoyage (deux passages,
 | Numéros | Ce que le robot répond |
 |---|---|
 | Les 63 documentés | 59 répondent comme la documentation le dit. Quatre n'ont rien répondu à leur unique demande (20, 35, 37, 106) ; le 35 avait répondu juste avant, donc ce sont des réponses manquées, pas des paquets absents (à redemander). |
-| 59 à 127, hors groupes | deux octets à zéro, toujours |
+| 59 à 127, hors groupes | deux octets à zéro ; sauf le 62, qui valait 1 aux trois demandes (remarqué à la relecture, § 4.10) |
 | **108, 109, 110** | **cinq, trois et sept octets, les mêmes aux trois demandes** : des groupes non documentés. Le 109 rend les valeurs des numéros 134 à 136, le 110 celles des numéros 137 à 143. |
 | **128 à 178** | **un ou deux octets chacun, les mêmes aux trois demandes** : par exemple 132 → 58, 135 → 8, 136 → 38, 138 → 110, 177 → 140 |
 | 179 à 255 | rien |
 
 - **Ce que cela peut être** (supposé, deux lectures possibles). Soit de vrais paquets ajoutés pour les robots à Wi-Fi et jamais publiés. Soit le programme du robot qui, pour un numéro hors de sa table, lit ce qui se trouve après elle en mémoire : des valeurs fixes sans signification.
-- **Comment trancher** : les redemander dans d'autres états (robot qui roule, pare-chocs enfoncé, bouton tenu, sur sa base). Une valeur qui change avec l'état est un capteur. Cela passe par la sonde, qui suspend trois secondes la lecture périodique : jamais pendant un pilotage.
-- **Un octet parasite, 177 (B1 en hexadécimal).** Une quarantaine de fois en 45 secondes, un octet isolé est arrivé entre deux réponses, à intervalles assez réguliers. Un autre propriétaire en parle sur un 690. **Supposé** : le robot l'émet de lui-même environ une fois par seconde quand la liaison est ouverte en mode passif. S'il tombe au milieu d'une réponse, il la fausse : ce serait une cause des lectures « brouillées » après un réveil. À mesurer avec les heures, que cette première lecture n'a pas gardées.
+- **Comment trancher** : les redemander dans d'autres états (robot qui roule, pare-chocs enfoncé, bouton tenu, sur sa base). Une valeur qui change avec l'état est un capteur. Cela passe par la sonde, qui suspend trois secondes la lecture périodique : jamais pendant un pilotage. **Tranché en partie le 15 à 9 h 02 : ce sont de vraies variables (§ 4.10).**
+- **Un octet parasite, 177 (B1 en hexadécimal).** Une quarantaine de fois en 45 secondes, un octet isolé est arrivé entre deux réponses, à intervalles assez réguliers. Un autre propriétaire en parle sur un 690. **Supposé** : le robot l'émet de lui-même environ une fois par seconde quand la liaison est ouverte en mode passif. S'il tombe au milieu d'une réponse, il la fausse : ce serait une cause des lectures « brouillées » après un réveil. À mesurer avec les heures, que cette première lecture n'a pas gardées. **Suite au § 4.10 : à 9 h 02, en mode Safe, il n'est pas venu une seule fois.**
 
-### 4.9 Le 15 à 8 h 53 : ce qui fait tomber le mode Safe (première mesure du sondage 3)
+### 4.9 Le 15 à 8 h 53 et à 9 h 04 : ce qui fait tomber le mode Safe (sondage 3)
 
 **Mesuré sur le robot**, sans l'avoir cherché (séance `exploration26`, vu en direct par `rv_direct.py`). Pendant une rotation de 25° vers la droite, le robot quitte le mode Safe et coupe ses roues de lui-même.
 
 | Heure | Capteur de vide droit | Mode |
 |---|---|---|
 | 8 h 53 min 45,75 | 1 215 | Safe |
+| 45,79 | 887 | Safe |
 | 45,85 | 418 | Safe |
+| 45,90 | 153 | Safe |
 | 45,95 | 81 | Safe |
+| 45,99 | 48 | Safe |
 | 46,05 | 36 | **passif** |
 
 - Une seconde plus tôt, les capteurs gauche et avant gauche étaient descendus de 2 460 et 2 170 à 1 061, puis remontés.
 - **Trois secondes plus tôt, en avance à 110 mm/s, le même capteur droit était déjà descendu à 153 sans que le mode tombe** (8 h 53 min 42,9 à 43,2 : 1 351, 416, 259, 153, 191, 348, 974 ; avant droit 727, avant gauche 881 au même moment). Le robot a donc franchi une bande sombre étroite en gardant le mode Safe.
 - **La cause, d'après la photo envoyée par l'utilisateur** : le robot est au bord d'un tapis vert foncé à franges blanches. Les franges et le bord donnent 1 060 à 1 700 ; le poil vert foncé, 36 à 81. Le parquet donne 2 100 à 2 600. Le tapis de C27, le 14, donnait 700 à 1 700 et se laissait franchir.
-- **Ce qu'on en tire.** Pour ce robot, un tapis assez sombre est un vide. Le mode Safe a tenu à 153 pendant l'avance, puis à 418 et à 81 pendant la rotation, et n'est tombé qu'à 36 : son seuil est sans doute entre 36 et 81, ou il lui faut plusieurs lectures basses de suite (supposé : une seule chute). Le sondage 3 prévoyait une feuille sombre glissée sous les capteurs ; ce tapis fait le même office.
-- **Ce qu'on pourrait en faire** (non décidé). Arrêter les roues depuis le cerveau dès qu'un capteur de vide passe sous 1 000 environ : le premier creux est arrivé 0,8 s avant la chute. Le mode Safe serait gardé, et le bord du tapis deviendrait un repère.
+- **Ce qu'on en tirait après cette première chute.** Pour ce robot, un tapis assez sombre est un vide. Le mode Safe a tenu à 153 pendant l'avance, puis à 153, 81 et 48 pendant la rotation, et n'est tombé qu'à la lecture suivante : soit un seuil très bas, soit plusieurs lectures basses de suite. La deuxième chute tranche pour le délai. Le sondage 3 prévoyait une feuille sombre glissée sous les capteurs ; ce tapis fait le même office.
+
+**La deuxième chute, à 9 h 04 min 11** (mesuré, même séance). La session de navigation avait remis le mode Safe à 9 h 02 min 33, robot à l'arrêt, capteur droit au-dessus du poil sombre.
+
+| Heure | Ce qui se passe | Capteur de vide droit | Mode |
+|---|---|---|---|
+| 9 h 02 min 33 à 9 h 04 min 10 | à l'arrêt | 63 à 72 | Safe, pendant 97 s |
+| 9 h 04 min 10,80 | ordre d'avance de 150 mm à 60 mm/s (mouvement 43) | 70 | Safe |
+| 10,88 à 10,98 | les roues tournent, trois lectures | 64, 60, 59 | Safe |
+| 11,04 | 5 mm parcourus | 72 | **passif** |
+| 9 h 04 min 45,0 à 50,3 | mode Safe remis, recul droit de 300 mm à 60 mm/s (mouvement 44), parti d'un endroit plus clair | 656, 467, 277, 161, 107, 100, 174, 254 | Safe tout du long |
+
+**Ce que les deux chutes disent ensemble.**
+
+- **Le robot ne surveille ses capteurs de vide que s'il roule** (mesuré) : 97 secondes à l'arrêt sur le poil sombre sans rien, puis la chute 0,19 à 0,25 s après l'ordre d'avance.
+- **Il lui faut un à deux dixièmes de seconde de signal bas** (mesuré deux fois). À 8 h 53 le mode tient encore une lecture à 81 et une à 48. À 9 h 04 il tient trois lectures à 64, 60 et 59, roues en marche. Le seuil lui-même est donc au-dessus de 72 ; il est sous 153 si ce délai est le même partout (supposé). On ne peut pas dire mieux avec deux chutes.
+- **Lu** (spécification de la série 600, page 7, déjà citée dans `roomba_builtin_sensors.md`) : le vide est surveillé en marche avant, et en marche arrière seulement si le robot tourne serré. La rotation sur place n'y est pas citée. **Mesuré : elle fait tomber le mode** (8 h 53).
+- **Le recul droit** : le seul observé a passé, avec 107 puis 100 pendant deux lectures. Cela ne prouve pas que le recul n'est pas surveillé : le signal n'est resté bas qu'un dixième de seconde, et il n'est pas descendu sous 100.
+- **Le bord de ce tapis est net** : le signal passe de 656 à 100 en un quart de seconde à 60 mm/s, soit 15 mm.
+- **Pour le pilotage** (dit à la session de navigation dans la foulée) : quand un capteur de vide est sous 150 environ, ni avance ni rotation ; un recul droit d'abord.
+- **Ce qui manque à l'enregistrement** : les quatre indicateurs « vide » que le robot calcule lui-même (numéros 9 à 12). Le cerveau les reçoit déjà, vingt fois par seconde, dans le groupe 100, mais ne les met ni dans son état ni dans le journal des capteurs. Avec eux on lirait le seuil du robot directement, au premier passage sur un tapis. À ajouter dans une prochaine version du firmware.
+- **Ce qu'on pourrait en faire** (non décidé ; question posée à l'utilisateur le 15 au matin, pas encore de réponse). Arrêter les roues depuis le cerveau avant que le robot ne quitte le mode Safe, de deux façons possibles :
+  1. dès qu'un capteur de vide passe sous 1 000 environ. Les franges (1 060 à 1 700) passent ; le tapis de C27 (700 à 1 700) arrêterait le robot, il faudrait donc pouvoir dire « ce tapis-ci se franchit » ;
+  2. sur le capteur qui plonge : le cerveau lit toutes les 47 ms et le robot attend 0,1 à 0,2 s, ce qui laisse une à trois lectures d'avance. C'est juste ; à essayer avant d'y compter.
+
+  Dans les deux cas le mode Safe serait gardé et le bord du tapis deviendrait un repère. Il reste à vérifier qu'un ordre d'arrêt suffit à faire cesser la surveillance ; la mesure à l'arrêt le laisse penser.
+
+### 4.10 Le 15 à 9 h 02 : les numéros cachés relus, et ce qui a changé
+
+**Mesuré sur le robot**, de 9 h 02 min 44 à 9 h 03 min 12 : les numéros 59 à 178, puis les numéros documentés 7 à 58, trois demandes chacun, 516 demandes. Robot en mode Safe, à l'arrêt, au bord du tapis, loin de sa base (`mesures/sonde_20261115_090302_capteurs.json` et `sonde_20261115_090311_capteurs.json`). Lecture seule. L'outil garde maintenant l'heure de chaque demande et sait comparer deux lectures (`rv_sonde_robot.py capteurs --essais 3 --comparer FICHIER`).
+
+**Une faute de ma part.** J'ai lancé cette lecture sans attendre le mot écrit de la session de navigation : j'avais vu dans sa console un réveil du robot et j'ai cru qu'il m'était destiné. Elle reprenait en fait la séance. La sonde suspend la lecture périodique du cerveau ; pendant cette demi-minute le cerveau a jugé que le robot ne répondait pas et a refusé le mouvement 42 de la session de navigation (9 h 02 min 50). Rien n'a bougé à cause de moi. Règle désormais : aucune sonde sans le mot écrit de la session qui pilote.
+
+Ce qui a changé entre la lecture de 8 h 38 (mode passif, devant la base) et celle de 9 h 02 (mode Safe, au bord du tapis) :
+
+| Numéro | À 8 h 38 | À 9 h 02 | Lecture |
+|---|---|---|---|
+| **134, 135, 136** (groupe 109) | 0, 8, 38 | 0, 9, 2 | **l'horloge du robot** : jour (0 = dimanche, et le 15 novembre 2026 est un dimanche), heure, minute. Juste à la minute les deux fois. |
+| 131 | 1 | 2 | **supposé** : le mode, dans la numérotation de la documentation (1 passif, 2 Safe), alors que le numéro officiel 35 rend 2 et 3 sur ce robot |
+| 128 | 1 | 13 | inconnu |
+| 132 | 58 | 210 | inconnu |
+| 62 (deux octets) | 1 | 0 | inconnu |
+| 145 | 177 | 0 | lié à l'octet parasite : voir plus bas |
+| 108 (groupe de cinq octets) | 58, 0, 1, 0, 0 | 210, 0, 13, 0, 0 | son premier octet suit le numéro 132, son troisième le numéro 128 |
+
+- **N'ont pas changé, et ne sont pas nuls** : 130 (176), 137 (9), 138 (110), 139 (103), 140 à 143 (9), 168 (1), 170 (2), 173 (3), 177 (140). Le groupe 110 rend toujours les numéros 137 à 143. Tout le reste de 59 à 178 est à zéro.
+- **Ce qu'on peut dire** : ce sont de vraies variables du robot, pas des restes de mémoire figés, puisque l'horloge avance. Mais rien, dans ce qui a changé, ne ressemble à un capteur de distance ou de position : une horloge, sans doute le mode, et trois valeurs sans sens connu. Les numéros 138 et 139 (110 et 103) sont les lettres « n » et « g » : peut-être un bout de texte en mémoire (supposé).
+- **Pour aller plus loin** : les relire robot en mouvement, pare-chocs enfoncé, un bouton tenu, sur sa base. Hors pilotage, et avec le mot écrit de la session de navigation.
+- **Les numéros documentés répondent tous** : 156 demandes pour les numéros 7 à 58, toutes de la bonne longueur. Les quatre muets du matin (20, 35, 37, 106) étaient des réponses manquées.
+
+**L'octet parasite 177 n'est pas venu une seule fois** en 516 demandes et 28 secondes. À 8 h 38 il s'était glissé dans 34 demandes sur 642, à un rythme régulier. Et le numéro 145 valait 177 aux trois demandes du matin, 0 maintenant : ce numéro semble contenir l'octet que le robot émet. Le robot l'émet donc dans un état où il était à 8 h 38 et plus à 9 h 02. Trois choses différaient : le mode (passif, puis Safe), la base (son signal 168 était reçu à 8 h 38, rien à 9 h 02), et le numéro 62 (1, puis 0). Laquelle compte : non tranché. Une lecture en mode passif loin de la base le dirait.
+
+- **Supposé, si c'est le mode** : les lectures « brouillées » après un réveil viendraient de cet octet, émis tant que le robot est en mode passif, et le pilotage en mode Safe en serait à l'abri.
+
+**Un défaut de ma sonde, vu à cette occasion.** À 9 h 03 min 09 le cerveau a annoncé « Le robot envoie du texte » et rangé la ligne `d6d6d6G7G7G7`. Le robot n'a rien écrit : ce sont les réponses à mes demandes des deux compteurs de roues (en hexadécimal 64 36 puis 47 37, soit les caractères « d6 » et « G7 », demandés trois fois), que la sonde fait passer par le détecteur de texte. Douze caractères lisibles de suite suffisent à le tromper. À corriger dans une prochaine version : les réponses lues par la sonde ne doivent pas passer par ce détecteur.
+
+**Autre fait de ce réveil : la charge lue saute.** Le numéro 25 (charge de la batterie) descendait de 2,4 mAh par minute. Une seconde après le réveil de 9 h 02 il passe de 2 017 à 1 902 mAh, soit 115 mAh retirés d'un coup, à tension égale (16,03 V). Au réveil de 8 h 45 il n'avait bougé que de 4 mAh. **Supposé** : le robot avait passé la nuit hors de sa base, son compte était resté trop haut, et il l'a recalé. `rv_direct.py` ne compte plus un tel saut comme une dépense.
 
 ## 5. Deux mesures faites en préparant la liste
 
@@ -281,7 +343,9 @@ L'application range dans le robot des préférences de nettoyage (deux passages,
 
 ## 6. Ce que je n'ai pas pu vérifier
 
-- Tout ce qui touche au robot lui-même : la version 13 n'est pas installée, aucune écoute ni aucune sonde n'a eu lieu.
+- Le 14 au soir, tout ce qui touchait au robot lui-même : la version 13 n'était pas installée, aucune écoute ni aucune sonde n'avait eu lieu. Depuis le 15 au matin c'est fait (§ 2.5, § 4.8 à § 4.10).
+- Le sens des numéros cachés 62, 128, 130, 132, 137 à 143, 168, 170, 173 et 177, et l'état dans lequel le robot émet l'octet parasite 177 (§ 4.10).
+- Le seuil exact des capteurs de vide en mode Safe, et si un recul droit est vraiment hors surveillance (§ 4.9).
 - La compilation du firmware sans le fichier `secrets.h` (donc sans la route de la sonde) : l'essai s'est enlisé plus de vingt minutes et a été arrêté. Avec le fichier, elle passe.
 - Le 14 à 20 h 40, 20 h 50, 20 h 52 et 21 h 08, le cerveau ne répondait pas sur le réseau (dernière lecture réussie connue : 18 h 46, par la session de navigation). Cause non cherchée : sa batterie portable est la première chose à regarder.
 - Les témoignages du forum robotreviews.com (essai d'usine sur un 655 et un 690, ordres non documentés) : lus en extraits de moteur de recherche, le site refusant les lectures automatiques.
