@@ -1,0 +1,14 @@
+cap 270.0° demandé : cap 270.4°, devant 1118 mm
+av=400,60 : 400 mm au cap 270.4° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 404.2 mm pour 400 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 46, sol 2567 ; robot en (384.3, 120.5), cap 270.6°, devant 733 mm
+cap 180.0° demandé : cap 179.6°, devant 0 mm
+av=300,60 : 300 mm au cap 179.6° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 303.1 mm pour 300 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 53, sol 2579 ; robot en (368.2, 120.4), cap 179.6°, devant 0 mm
+cap 0.0° demandé : cap 359.2°, devant 1615 mm
+av=1350,60 : 1350 mm au cap 359.2° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 1353.1 mm pour 1350 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 53, sol 2559 ; robot en (439.9, 121.4), cap 359.7°, devant 425 mm
+cap 180.0° demandé : cap 180.2°, devant 2075 mm
+av=1350,60 : 1350 mm au cap 180.2° (reste de cap +0.0°), 60 mm/s demandés
+   avance de 1351.9 mm pour 1350 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 53, sol 2564 ; robot en (368.3, 122.4), cap 181.6°, devant 0 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 0 mm
+POSE=368.3,122.4,181.6

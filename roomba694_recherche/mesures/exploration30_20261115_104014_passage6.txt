@@ -1,0 +1,13 @@
+# Cinq arrêts de 5 s au point de l'axe (centre du robot à 100 mm à l'est et 406 mm au sud de P0), lancés par une boucle
+# du shell : passage.py cap=CAP, puis 5 s immobile, puis décompte des lignes du journal. Recopié de l'écran.
+cap 180.0° demandé : cap 179.1°, devant 2375 mm
+   immobile de 10:58:01 à 10:58:06 : 87 lignes ; dessus {'0': 87} ; gauche {'0': 87} ; droite {'0': 87}
+cap 270.0° demandé : cap 270.5°, devant 1144 mm
+   immobile de 10:58:11 à 10:58:16 : 98 lignes ; dessus {'0': 98} ; gauche {'0': 98} ; droite {'0': 98}
+cap 90.0° demandé : cap 90.6°, devant 546 mm
+   immobile de 10:58:24 à 10:58:29 : 95 lignes ; dessus {'0': 43, '164': 52} ; gauche {'0': 43, '164': 52} ; droite {'0': 43, '172': 52}
+cap 135.0° demandé : cap 135.5°, devant 1089 mm
+   immobile de 10:58:34 à 10:58:39 : 90 lignes ; dessus {'0': 90} ; gauche {'0': 90} ; droite {'0': 90}
+cap 0.0° demandé : cap 360.0°, devant 1050 mm
+   immobile de 10:58:47 à 10:58:52 : 87 lignes ; dessus {'168': 56, '0': 31} ; gauche {'0': 87} ; droite {'0': 87}
+POSE=405.0,100.0,360.0
