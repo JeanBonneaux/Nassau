@@ -13,7 +13,8 @@ Cette note est le plan de travail. Elle est tenue à jour : chaque essai y reço
 3. **Ce que la matinée a appris** (note N) : les roues et les tours sur place sont bons à 1 à 3 cm ; c'est le calcul de la position qui saute de 16 à 31 cm. La campagne commence donc par ce qui donne un repère sûr, et par ce qui empêche un saut.
 4. **Ce qui reste interdit sans un mot de l'utilisateur** : le mode Full ; le mode d'essai d'usine ; les brosses autres que la brosse latérale ; l'ordre « rentre à la base » (son accord à chaque fois).
 5. **Les ordres inconnus du robot sont permis depuis le 15 à 10 h 50** : à ma question « est-ce que j'essaie aussi des ordres inconnus ? », posée après lui avoir redit le risque, l'utilisateur a répondu « Oui, essaie ». Marche à suivre et garde-fous dans la note L § 4.7 ; c'est l'essai 7.
-6. **La trouvaille du 15 à 11 h 30 : le capteur de distance n'est pas où les outils de carte le comptent** (§ 5.6). Ils le placent 27 mm en avant du centre du robot ; l'approche du mur de l'essai 4 montre qu'il est à plus de 86 mm, et la photo du robot le montre vers 125 mm. Si la règle le confirme, chaque écho est placé 9 cm trop près du robot depuis le 10. C'est la première erreur systématique trouvée dans la mesure elle-même, et non dans le calcul. À midi une seconde est apparue, liée à la première : l'échelle du plan (53 pixels par mètre) avait été réglée le 10 avec le capteur mal placé, et vaudrait plutôt 51 (§ 5.10). Les deux se compenseraient dans une pièce. Mais un rejeu fait à 12 h 25 montre qu'elles n'expliquent pas le décalage de 25 à 50 cm entre la pièce de la base et sa voisine : celui-là vient surtout de la position que le filtre donne devant la base (§ 5.9).
+6. **La trouvaille du 15 à 11 h 30 : le capteur de distance n'est pas où les outils de carte le comptent** (§ 5.6). Ils le placent 27 mm en avant du centre du robot ; l'approche du mur de l'essai 4 montre qu'il est à plus de 86 mm, et la photo du robot le montre vers 125 mm. Si la règle le confirme, chaque écho est placé 9 cm trop près du robot depuis le 10. C'est la première erreur systématique trouvée dans la mesure elle-même, et non dans le calcul. À midi une seconde est apparue, liée à la première : l'échelle du plan (53 pixels par mètre) avait été réglée le 10 avec le capteur mal placé, et vaudrait plutôt 51 (§ 5.10). Les deux se compenseraient dans une pièce. Mais un rejeu fait à 12 h 25 montre qu'elles n'expliquent pas le décalage de 25 à 50 cm entre la pièce de la base et sa voisine.
+7. **L'explication de ces décalages, trouvée par la session de navigation à 12 h 26 et confirmée par le gyroscope : le cap retenu était faux de 10 à 22° depuis 9 h 55** (§ 5.11). Il avait été repris au filtre après des patinages. Le gyroscope, lui, a tenu 1° en deux heures et demie. L'axe de la base « incliné de 10,6° » n'était que cela.
 
 ## 1. Les essais courts, dans l'ordre
 
@@ -112,7 +113,7 @@ Détail dans la note L. La liste des quatorze sondages y est au § 1.
 
   Un pixel vaut 19 mm : l'aller et le retour s'accordent à 2 à 10 mm. La base est vue sur 22 à 34 % des lectures pendant une traversée.
 - **L'axe est une ligne droite** (3 mm de reste sur les trois lignes), **mais inclinée de 10,6°** dans le repère de la séance : elle part vers l'ouest de 7,5 cm tous les 40 cm. Prolongée jusqu'à la base, elle arrive 24 cm à l'est de la position que le plan donne à la base.
-- **D'où viennent ces 10,6° : non tranché.** L'utilisateur répond « Base collée au mur » (avec une photo, qui n'est dans aucun fichier), et sur la carte quadrillée le mur derrière la base est horizontal. Un axe d'équerre avec ce mur pointerait plein bas. Il reste donc deux lectures : le cap retenu pendant la séance est trop petit d'une dizaine de degrés ; ou l'axe des faisceaux n'est pas d'équerre avec le mur (la base fait 13 cm de large : un côté décollé de 2,4 cm suffit ; ou ses émetteurs ne sont pas dans son axe). J'avais d'abord écrit à la session de navigation que c'était l'angle du mur sur le plan : c'était faux, et je l'ai corrigé. **Ce qui tranchera** : la montée sur la base par l'axe, proposée par la session de navigation ; robot posé sur ses contacts, son cap est celui de la base.
+- **D'où viennent ces 10,6° : non tranché.** L'utilisateur répond « Base collée au mur » (avec une photo, qui n'est dans aucun fichier), et sur la carte quadrillée le mur derrière la base est horizontal. Un axe d'équerre avec ce mur pointerait plein bas. Il reste donc deux lectures : le cap retenu pendant la séance est trop petit d'une dizaine de degrés ; ou l'axe des faisceaux n'est pas d'équerre avec le mur (la base fait 13 cm de large : un côté décollé de 2,4 cm suffit ; ou ses émetteurs ne sont pas dans son axe). J'avais d'abord écrit à la session de navigation que c'était l'angle du mur sur le plan : c'était faux, et je l'ai corrigé. **Ce qui tranchera** : la montée sur la base par l'axe, proposée par la session de navigation ; robot posé sur ses contacts, son cap est celui de la base. **Tranché à 12 h 40 (§ 5.11) : c'est la première lecture.** Le cap retenu était trop petit de 10,9° au tour de 10 h 41, d'après le gyroscope enchaîné et les murs du couloir ; l'axe de la base est d'équerre au mur.
 - **La distance à la base n'est pas sûre non plus.** La largeur des faisceaux (505, 675 et 890 mm sur les trois lignes) met la base 1,05 à 1,2 m au nord de la première ligne ; le plan et le filtre disaient 0,87 m.
 - **Les deux récepteurs de devant donnent la direction de la base.** Pendant le tour sur place fait sur l'axe (robot à 5 mm de la ligne), ils ne la voient qu'entre les caps 60° et 92° ; leur cap moyen, 79,5°, est celui de l'axe mesuré (79,4°). En tournant, ils reçoivent le rouge, puis les deux faisceaux, puis le vert : le moment où les deux sont reçus marque la direction à 2° près environ.
 - **Le récepteur du dessus ne voit rien quand le robot tourne le dos à la base** : il est masqué vers l'arrière par ce qui est monté sur le robot (remarque de la session de navigation, confirmée).
@@ -240,6 +241,8 @@ La session de navigation a cherché la ligne sombre à plusieurs bords du tapis,
 
 **Ce qui est demandé.** Une mesure au mètre par l'utilisateur, robot laissé où il est depuis 12 h 03 : du devant de la base au bord du robot le plus proche. Elle dira laquelle des quatre est la bonne.
 
+**Complément de 12 h 45.** L'essentiel de ces désaccords vient du cap faux de 10° du § 5.11 : les deux estimes revenues de la pièce du tapis roulaient 10° de travers. Ce que le robot lit au nord depuis le point P est identifié sur la photo de l'utilisateur : un pied de meuble à 0,68 m ± 0,07 du centre du robot (531 mm lus), un gros pot au nord-est, un objet debout au nord-ouest. Le capteur de distance ne voit donc pas la base depuis P, et le filtre n'y a aucune vraie paroi au nord. La mesure au mètre reste utile pour la distance elle-même.
+
 ### 5.10 La place du capteur de distance et l'échelle du plan : deux erreurs possibles qui se compenseraient, mais pas l'explication des sauts entre pièces
 
 À midi la session de navigation a retrouvé d'où vient l'échelle du plan, et j'ai d'abord écrit ici que « tout se rangeait ». **Le rejeu fait à 12 h 25 dit que non** (plus bas) : je laisse les faits, je corrige la conclusion. Rien n'est changé dans les outils.
@@ -269,9 +272,42 @@ La session de navigation a cherché la ligne sombre à plusieurs bords du tapis,
 **Ce qu'on peut dire à la place.**
 
 - **La taille d'une pièce ne sépare pas les deux réglages.** En D12 le robot lit 1 494 mm au nord et 1 522 mm au sud, entre deux traits sombres du plan distants de 162 pixels. Cela donne un capteur à 20 mm du centre avec 53 pixels par mètre, à 80 mm avec 51, à 125 mm avec 49,6. Toute une famille de couples convient : seule une mesure extérieure choisit (la règle sur le robot ; ou la largeur du couloir au mètre, demandée par la session de navigation, qui ne dépend pas du plan).
-- **Le décalage entre pièces vient surtout de la position que le filtre donne devant la base** (§ 5.9). La station de D12 tient sur deux vrais murs ; l'estime ramenée de là met le point P 38 cm plus au sud que le filtre, la photo et la largeur des faisceaux 15 à 30 cm dans le même sens. Devant la base, ce que le robot lit au nord n'est pas ce que le filtre croit reconnaître sur le plan.
+- **Le décalage entre pièces vient surtout de la position que le filtre donne devant la base** (§ 5.9) — écrit à 12 h 30, et dépassé un quart d'heure plus tard : c'était d'abord un cap faux de 10° (§ 5.11). Ce qui suit reste mesuré, mais dans un repère tourné. La station de D12 tient sur deux vrais murs ; l'estime ramenée de là met le point P 38 cm plus au sud que le filtre, la photo et la largeur des faisceaux 15 à 30 cm dans le même sens. Devant la base, ce que le robot lit au nord n'est pas ce que le filtre croit reconnaître sur le plan.
 - **Les deux erreurs restent possibles**, chacune avec ses indices : pour le capteur, la photo et l'essai 4 ; pour l'échelle, les 51 du trajet seul et les 3,4 % des 210 trajets (5,9 % du nord au sud, 2,2 % d'est en ouest : le plan n'aurait pas la même échelle dans les deux sens).
 
 **Ce qui n'est pas établi.** Ni la place du capteur, ni l'échelle. Le contact du 10 à 143 mm lus reste à comprendre. Je n'ai pas pu trancher par le plan seul (§ 5.6, point 4 ; `rv_dx_coherence.py`).
 
 **Ce qu'il faudra faire, à décider avec la session de navigation et l'utilisateur.** Attendre les mesures à la règle et au mètre. Ne changer aucun des deux réglages seul. Avant tout changement, rejouer les séances enregistrées avec `rv_rejeu_reglages.py` : c'est ce rejeu qui a évité ici de changer deux réglages pour rien. Et chercher ce que le robot voit au nord du point P.
+
+### 5.11 L'explication des décalages entre pièces : un cap faux de 10° depuis 9 h 55 (trouvé par la session de navigation, confirmé et daté par le gyroscope)
+
+**La trouvaille est celle de la session de navigation**, à 12 h 26, au milieu du couloir : en se centrant entre les deux murs elle mesure son cap à +6,6°, +7,3° et +7,4° de celui qu'elle tenait, en plus de 3,4° déjà repris au filtre. Son cap était donc trop petit de 10,8°. Elle m'a demandé de le vérifier sur les enregistrements.
+
+**Mesuré** (`rv_cap_chaine.py 20261115 --depart 09:51:56`, résultats dans `results_rv_cap_chaine_20261115.txt`). Le gyroscope seul, facteur 1,0040, enchaîné de tour en tour à travers les séances 28 à 33 (le cerveau n'a pas redémarré depuis l'installation de 9 h 44), comparé au cap retenu à chaque tour :
+
+| Tour | Cap retenu moins gyroscope, depuis le tour de 9:51:56 | Ce que disent les parois de ce tour |
+|---|---|---|
+| 9:51:56 (départ) | 0 | d'équerre (palier de 66° vu à 360°) |
+| 9:55:40 | **−22,6°** | quatre parois larges décalées de +8, +17, +20, +26° |
+| 10:00:57 | +73,0° (l'erreur de 97° déjà connue) | |
+| 10:13:10, tour de contrôle | −17,5° | |
+| 10:41:27, départ de l'essai 1 | −10,9° | mur du sud vu à 260° |
+| 11:52:07, point P | −12,1° | mur de l'est vu à 352° |
+| 12:17:23, départ de la boucle | **−10,8°** | mur du sud à 260°, mur de l'est à 353° |
+| 12:26:36, après le recalage sur les murs du couloir | **+1,0°** | d'équerre (90° et 271°) |
+
+- L'erreur naît au tour de **9 h 55 min 40**, juste après les patinages au bord du tapis : le cap y est repris au filtre, qui laisse 8° de flou. Le tour de contrôle de 10 h 13 ne la corrige qu'en partie. Ensuite le filtre remonte de 6,8° en deux heures, par corrections de 0 à 3°.
+- Avant 9 h 55 les parois sont d'équerre à 2° près (8:53:01, 9:06 à 9:12, 9:27:27).
+- Les deux bouts de la chaîne sont d'équerre aux murs (9:51:56 et 12:26:36) et la chaîne se referme à 1° après 9 100° de rotation nette : **le facteur du gyroscope vaut 1,0041 à 0,0002 près**. C'est sa mesure la plus fine à ce jour, et elle clôt le § 5.8.
+
+**Ce que cela explique.**
+
+- **Les décalages entre pièces** (§ 5.9, § 5.10) : en roulant 2 m vers l'ouest « au cap 180° » le robot allait en réalité au cap 190° et arrivait 35 cm plus au sud. C'est ce que le filtre corrigeait à chaque entrée dans la pièce du tapis (quatre fois vers le sud le matin, 254 puis 98 mm à 12 h 18), et dans l'autre sens à chaque retour devant la base (+154, +102, +87 mm), avec les deux contacts de 11 h 46 et 11 h 47. Mon rejeu de 12 h 25, où la correction ne dépendait ni de la place du capteur ni de l'échelle, le disait sans que je le lise : c'était une rotation.
+- **L'axe de la base « incliné de 10,6° »** (§ 5.2) : il est d'équerre au mur ; c'est le repère de la séance qui était tourné. La question posée à l'utilisateur sur sa base est close.
+- **Les positions notées entre 9 h 55 et 12 h 26** (essais 1 à 5, cartes du tapis) sont dans un repère tourné de 10 à 22° autour du point où le robot se trouvait. Les distances et les largeurs mesurées restent justes ; les positions sur le plan non.
+
+**Ce qui reste à part**, non tranché : la place du capteur de distance (§ 5.6) et l'échelle du plan (§ 5.10). Ni l'une ni l'autre n'était la cause des sauts de position d'aujourd'hui.
+
+**La règle que j'en tire, proposée à la session de navigation.** Le gyroscope est le témoin du cap : il a tenu 1° en deux heures et demie. Le filtre ne devrait pas pouvoir déplacer le cap de plus de 1° plus un millième de la rotation nette faite depuis le dernier tour où les parois étaient d'équerre, sauf si les parois du tour le confirment. Le tour de 9 h 55 min 40 aurait été refusé. `rv_cap_chaine.py` signale ces tours : il y en a quatre le 13 (de 5 à 15°) et un le 14, à regarder.
+
+**Ce que je n'ai pas vu.** Mon outil de suivi comparait le cap du gyroscope et celui des roues, pas le cap retenu et le gyroscope enchaîné : il n'a rien dit à 9 h 55. C'est à ajouter.
