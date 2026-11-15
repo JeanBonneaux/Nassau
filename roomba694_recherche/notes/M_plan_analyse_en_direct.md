@@ -94,6 +94,13 @@ Aucun n'est nécessaire à la cartographie. Chacun est à la décision de l'util
 
 S'il accepte un « rentre à la base » : l'enregistrer avec la touche `e` (`--e 1`), pour lire le courant des brosses.
 
+**Décision de l'utilisateur, le 15 à 8 h 35 : « Les cinq ».** Ordre proposé à la navigation, qui reste libre de l'adapter à sa route :
+
+1. au tout début, robot sorti de sa base : les dix secondes d'arrêt complet (elles peuvent faire partie de sa minute immobile) ;
+2. juste après ses premières rotations : l'essai des pivots, robot face à un mur nu à 1 m ;
+3. pendant la cartographie : dans chaque pièce une avance de 50 cm ou plus face à un mur ; à une station au choix, deux tours sur place de suite ; sur un tronçon dégagé, un aller et retour de 2 m ;
+4. à la toute fin, avant de fermer la liaison : dix secondes d'arrêt complet.
+
 ## 5. Le repère : ce que donnent les cartographies du 14
 
 **Mesuré** en faisant relire ces trois séances à l'outil.
