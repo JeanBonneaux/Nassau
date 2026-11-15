@@ -42,6 +42,15 @@ Chacun répond à une question. Un tour sur place avant le premier et après le 
 5. **Les anciens repères ne servent plus tels quels** près de la base et de D12 : ils y ont fait sauter la position trois fois. Un fichier de repères refait avec l'estime comme contrainte est en préparation (§ 3).
 6. **L'outil d'analyse en direct signale** les sauts de position, les avances déviées, les roues qui forcent et les chutes du mode Safe ; `rv_ou_est_le_robot.py` redonne la position par l'estime à tout moment.
 
+**Le parcours commandé le 15 à 11 h 40 : une grande boucle qui se mesure elle-même.** Après la fin de la pièce du tapis (demande de l'utilisateur du matin) :
+
+1. départ d'un point P devant la base (case C16, sur la ligne de l'essai 1) : une traversée de l'axe de la base, puis un tour sur place ;
+2. aller le plus loin possible de la base, dans une zone jamais vue, par un chemin déjà roulé jusqu'à sa porte (12 m d'aller ou plus ; le choix de la zone est laissé à la session de navigation, selon les portes ouvertes) ; stations tous les 2 m au plus ;
+3. là-bas : cartographie par stations, deux doubles tours, une avance face à un mur ;
+4. retour par le même chemin jusqu'à P, à 20 cm près et au même cap : une traversée de l'axe, un tour sur place.
+
+Les deux tours faits en P se comparent directement (3 à 8 mm le matin) et donnent le vrai écart entre le départ et l'arrivée ; la traversée de l'axe le recoupe. On saura donc, sans le plan et sans dépendre de la place du capteur de distance, de combien dérivent l'estime seule, le filtre et les repères sur une vraie longue distance.
+
 ## 3. Le logiciel : qui fait quoi
 
 Pour ne pas écrire à deux dans les mêmes fichiers.
@@ -168,6 +177,8 @@ Mené par la session de navigation : mur à 782 mm du capteur de distance, mise 
 3. **Le contact du 10 est pourtant net** : `rv_capteur_avance.py` le retrouve dans l'enregistrement, 138 lectures, 0,98 mm lu par mm roulé, 142 mm au contact. Mais ce jour-là les capteurs optiques ne lisaient que 152 au centre gauche pendant le contact, contre 496 aujourd'hui à quelques centimètres du mur sans le toucher ; les deux capteurs de gauche lisaient le double d'aujourd'hui à distance égale ; et le journal du 10 note déjà que cette « paroi » n'était pas plane. Le pare-chocs a donc touché, le 10, autre chose que ce que le capteur de distance voyait : un objet bas ou mou placé 9 à 10 cm devant. L'autre explication, un capteur déplacé depuis le 10, n'est pas exclue.
 4. **Le recoupement par le plan ne tranche pas** (`rv_dx_par_les_tours.py`, 147 tours, 592 murs vus de face) : les traits du plan ont 2 à 14 cm d'épaisseur et un halo gris, et le résultat change de −17 à +8 cm d'une séance à l'autre. Je n'en tire aucun chiffre.
 
+**L'autre lecture, celle de la session de navigation** (son message de 11 h 13) : la place du capteur serait la bonne, et c'est le mur de l'essai 4 qui ne serait pas nu, quelque chose dépassant en hauteur d'au moins 6 cm (meuble à plinthe en retrait, rebord). Elle a déjà vu dans la pièce de la base un bord en hauteur que le capteur attrape de loin et sous lequel il passe de près. Cette lecture explique les 84 mm sans contact ; elle n'explique pas la photo. La mesure à la règle départage les deux.
+
 **Ce que cela change, si la règle confirme 45 à 50 mm.**
 
 - Chaque écho est placé **9 à 10 cm trop près du robot**, dans toutes les directions, depuis le 10.
@@ -184,6 +195,16 @@ Mené par la session de navigation : mur à 782 mm du capteur de distance, mise 
 
 La session de navigation a cherché la ligne sombre à plusieurs bords du tapis, par pas de 8 mm, par pivots de 1°, par avances sous sept caps et par reculs de 30 et 45 cm (journal dans `exploration31_20261115_110551_ligne_sombre.txt`).
 
-**Mesuré.** Le plus bas trouvé : 178 au repos (capteur de vide gauche, 11 h 26 min 54), 230 en roulant. Jamais sous 150. Le mode Safe n'est pas tombé une seule fois de la séance, y compris en repartant d'un capteur posé sur 178 à 250.
+**Mesuré** (compte rendu de la session de navigation, 11 h 32, recoupé avec son journal).
 
-**Ce que cela dit.** La question du recul reste ouverte : il aurait fallu un capteur sous 100, et la ligne qui a fait tomber le mode Safe trois fois ce matin (36 à 59 lus) n'a pas été retrouvée. Ce qu'on apprend quand même : une lecture de 180 à 250 ne fait pas tomber le mode Safe, ni à l'arrêt ni en roulant ; le seuil est donc plus bas, ce qui va avec les « moins de 100 » de la note L § 4.9.
+- Le plus bas trouvé : 178 au repos (capteur de vide gauche, 11 h 26 min 54) ; en roulant, 271, 230, 233 pendant 0,15 s (11 h 25), et une lecture à 154 en quittant le point de repos. Le mode Safe n'est pas tombé une seule fois, ni en avance ni en pivot.
+- La ligne sombre n'est pas continue : là où elle a été trouvée elle n'est sombre que sur 1 à 2 cm de long ; les trois autres capteurs, qui coupent le bord 5 à 14 cm plus loin, ne descendent pas sous 681. Rien sous 707 le long du bord est sur 75 cm.
+- Les lectures de 36 à 81 de ce matin (capteur droit, 8 h 53 et 9 h 04, case D10) n'ont pas été retrouvées.
+
+**Ce que cela dit.** La question du recul reste ouverte. La meilleure réponse est toujours celle de 9 h 04 : après une avance coupée par le robot (capteur droit à 59), un recul droit de 300 mm à 60 mm/s a passé, le capteur repassant à 100 pendant deux lectures. Ce qu'on apprend aujourd'hui : **le seuil du robot est entre 93 et 154** (chute de 9 h 59 après 287, 93, 37 ; pas de chute à 154).
+
+**Autres faits utiles relevés par la session de navigation pendant l'essai.**
+
+- Le bord du tapis ne se monte pas par petits pas : roues arrêtées contre le bord, elles patinent, le robot pivote de 30° et l'estime compte 11 cm de trop. Il se monte d'un trait, à 60 mm/s.
+- La brosse latérale à 40 cale dans les franges (346 mA, indicateur de surintensité levé) et fait dévier de 8° ; brosse à l'arrêt, la même approche de face tient son cap à 2,6°. Le conseil « brosse en marche » de la note N § 5 ne vaut donc pas pour une approche lente de face dans les franges.
+- Le bas du tapis n'a pas de franges : il se franchit en marche avant sans rien, cap tenu à 0,2°.
