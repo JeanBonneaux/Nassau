@@ -1898,3 +1898,71 @@ Aucune touche envoyée, console du port 23 non ouverte, rien n'a roulé.
 **État à la fin** (18 h 45) : robot endormi sur sa base ; cerveau allumé, en v12 d'après la session de revue ; l'objet devant la base et la batterie portable non fixée restent à régler (§ 53).
 
 **Complément, 18 h 46 min 36 : la version lue par moi.** La session de revue m'a écrit que la voie était libre jusqu'à son essai des pivots, pas encore lancé. Une seule lecture de `/api/state`, rien d'autre envoyé : « v12 Nov 14 2026 17:58:04 » ; dernier redémarrage « redémarrage logiciel (mise à jour) » ; carte en marche depuis 690 s, donc depuis 18 h 35 min 06 ; roues à l'arrêt ; robot sans réponse (il dort sur sa base) ; gyroscope présent, pas de calibration en cours, cap 0,0°, vitesse 0,0 °/s, zéro à −0,127 °/s, 68 669 retouches du zéro à l'arrêt en 690 s (le gyroscope est lu 100 fois par seconde) ; position, tours et mouvements à zéro ; arrêt automatique du capteur de distance actif, seuil 30 cm ; tampon de la console vide, aucune ligne perdue ; aucun appareil sur le point d'accès de la carte. **La version en service est bien la v12.** Restent non vérifiés par moi : les réponses 404 et 400 relevées par la session de revue, et tout mouvement.
+
+## 55. Veille d'une séance sous firmware v13 : ce que la session de revue a préparé pour le lendemain, et mes outils mis en état (2026-11-14, 22 h 50 à 23 h 30, sans le robot)
+
+**La demande.** Je ne l'ai pas reçue moi-même : la session de revue me l'a rapportée le 14 vers 22 h 50, et elle figure dans sa note `notes/L_retro_ingenierie_robot.md`. Les mots de l'utilisateur, d'après elle : « Capteurs seuls pour le moment / Prépare tout pour que demain j'ai juste à brancher / L'autre session pilotera et tu analysera en live pour le reverse engenNERING et la précision possible d'amélioration d'utilisation optimale des capteurs ». « L'autre session », c'est celle-ci : je piloterai, elle analysera en direct.
+
+**Rien n'a roulé et aucun ordre n'est parti vers le robot.** Une seule demande de `/api/state`, à 22 h 58, restée sans réponse.
+
+**État à 22 h 50.**
+
+- Le cerveau ne répond plus sur le réseau depuis 20 h 40 au moins, d'après la session de revue ; ma dernière lecture réussie est celle de 18 h 46 (§ 54). Cause non cherchée : sa batterie portable est la première chose à regarder.
+- La carte porte donc toujours la v12. La v13 est écrite et compilée par la session de revue (commits a85394e, 76c5596, 36a2122), pas installée.
+- Le robot est sur sa base depuis 16 h 43 (§ 53), à ma connaissance.
+
+**Ce que la session de revue a mis en place** (ses outils, dans `data_analysis/` ; je n'y ai pas touché).
+
+| Quoi | Ce que c'est |
+|---|---|
+| `rv_matin.py`, « le veilleur » | lancé détaché le 14 à 22 h 45 pour vingt heures au plus (processus vu vivant à 22 h 52). Dès que le cerveau répond : il installe la v13 par `/update` (accord de l'utilisateur rapporté par elle : « oui » ; seulement sur un cerveau allumé depuis moins de dix minutes, et si rien ne roule), écoute le robot huit minutes avec les touches `w`, `w`, `s`, `b`, puis `x` (aucun ordre de roues), et lit par la sonde les 256 numéros de capteurs, en lecture seule. Il tient à jour `mesures/matin_dernier.txt` ; pour l'arrêter : créer `mesures/matin_STOP` |
+| `rv_direct.py`, l'analyse en direct | lit l'enregistrement d'`enregistreur.py` à mesure qu'il s'écrit (le `_capteurs.csv` le plus récent et sa console) et, avec la v13, `/api/texte`. N'envoie rien au robot, n'ouvre pas la console |
+| `rv_essai_pivots.py` | l'essai des pivots annoncé au § 54 n'a pas eu lieu ; elle me le confie si l'utilisateur veut le faire (rotations seules, lui à côté du robot) |
+
+**Ce qui est convenu entre les deux sessions.**
+
+1. Avant de parler au cerveau ou de faire rouler : lire la première ligne de `mesures/matin_dernier.txt`. « en cours » : attendre (dix minutes au plus après le branchement). « fini, bon » ou « fini, avec un échec » : la voie est libre. Fichier absent, ou « en attente » alors que le cerveau répond : le veilleur n'a pas tourné, le lui écrire.
+2. Lui écrire quand je lance `enregistreur.py` (c'est ce message qui la réveille) et quand je l'arrête.
+3. Elle ne m'enverra en direct que les alertes fortes : roues qui forcent, pivot où roues et gyroscope diffèrent de plus de 6°, texte inhabituel du robot, trou de lecture de plus d'une seconde en mouvement, mode Safe tombé en mouvement.
+4. Ce qui l'aide, sans changer ma route : le capteur de distance fixe devant pendant les avances (c'est déjà le cas), de temps en temps une avance de 50 cm ou plus face à un mur, un seuil franchi signalé, et, si l'utilisateur accepte un « rentre à la base », un enregistrement avec `--e 1` pour lire le courant des brosses.
+
+**La v13 relue dans le dépôt** (différence entre les commits 232dee5 et 36a2122 : `roomba694_wifi.ino`, `web.ino` et `secrets.example.h` sont les seuls fichiers du firmware changés ; `mouv.ino` et `radar.ino` ne le sont pas). Ce qui touche au pilotage :
+
+| Changement | Conséquence pour mes outils |
+|---|---|
+| Lignes « texte du robot » de la console : une par ligne écrite par le robot, entière, précédée de l'heure de la carte ; avant, les 160 premiers caractères seulement | aucun de mes outils ne lit ces lignes ; l'enregistreur les range : voir le masquage ci-dessous |
+| `/api/state` : champs `texte`, `bat` et `sonde` en plus ; `ver` commence par « v13 » | mes outils lisent les champs par leur nom et comparent la version à 10 : rien à changer |
+| Routes nouvelles `/api/texte` et `/api/sonde` (celle-ci sous clé, compilée seulement avec le `secrets.h` de ce PC) | je ne m'en sers pas |
+| Pendant une sonde, puis 3 s (60 s si la liaison est restée douteuse) : lecture périodique des capteurs, impulsion anti-veille et essai à 19200 bauds suspendus ; la sonde est refusée quand le robot bouge ; après ses actions autres que « lire », l'état du robot est tenu pour inconnu jusqu'à une lecture complète réussie | le veilleur ne fait que « lire », et avant mon départ ; `etat_cerveau.py` s'oppose au départ si `sonde.suspend` ou `sonde.douteux` est vrai |
+| Ordres de roues, tour sur place, mouvements, arrêt automatique du capteur de distance | absents de la différence ; la lecture périodique n'y gagne que la ligne qui la suspend pendant une sonde |
+
+J'ai lu la différence, pas les fichiers entiers, et je n'ai pas relu ligne à ligne le corps de la route de la sonde.
+
+**Mes outils.**
+
+- `outils/enregistreur.py` : avec la v13 la console donne en entier ce que le robot écrit à son réveil, et l'enregistreur l'aurait rangé tel quel dans `_console.txt`, un fichier qui part sur GitHub. Il masque maintenant, dans les lignes « texte du robot », les identifiants de l'appareil (suites de groupes hexadécimaux comme après « bootloader id: », la règle de `rv_ecoute_robot.py` ; longues suites hexadécimales d'un seul tenant ; adresses matérielles), et, dans toute ligne, le nom du réseau de la maison, qu'il apprend par `/api/state` avant d'ouvrir la console et ne garde qu'en mémoire. Rien d'autre ne change : mêmes fichiers, mêmes colonnes, mêmes touches.
+- `outils/etat_cerveau.py` (nouveau, lecture seule) : à lancer avant de piloter. Il lit la première ligne du veilleur ; si elle dit « en cours », il n'interroge pas le cerveau et dit d'attendre. Sinon, une seule lecture de `/api/state` : l'état affiché sans le nom du réseau, puis ce qui s'oppose au pilotage (quelque chose roule, sonde en cours ou liaison douteuse, gyroscope absent ou en calibrage) et ce qu'il faut savoir (robot endormi, robot sur sa base, firmware d'avant la v12). Code de sortie : 0, 1, ou 2 quand le cerveau ne répond pas.
+
+**Vérifié sur le PC, sans le robot.**
+
+- L'enregistreur, lancé tel quel face à un faux cerveau « v13 » ouvert sur le PC (console et `/api/state`), en deux passages, avec et sans lecture périodique de l'état : 26 contrôles bons sur 26. Le nom du réseau est absent des trois fichiers, les trois sortes d'identifiants sont masquées, le reste du texte du robot est entier, une ligne ordinaire du cerveau faite de groupes de chiffres reste intacte, le journal des capteurs est complet, les champs nouveaux de l'état sont gardés, aucune touche n'est envoyée.
+- `etat_cerveau.py` face au même genre de faux cerveau : 10 cas bons sur 10 (veilleur fini ; en cours ; « en cours » depuis deux heures ; en attente alors que le cerveau répond ; fichier absent ; liaison douteuse ; mouvement en cours ; roues en marche ; gyroscope en calibrage ; cerveau éteint), sans une seule demande au cerveau quand le veilleur travaille. Puis une fois pour de bon à 22 h 58 : veilleur « en attente », cerveau sans réponse, code 2.
+
+**Non vérifié.**
+
+- Tout ce qui touche à la carte et au robot : la v13 n'est pas installée, le veilleur n'a encore rien eu à faire, et aucun mouvement n'a été fait ni avec la v12 ni avec la v13.
+- Le masquage n'a vu que de faux textes : je ne connais pas la fin du texte de réveil du robot, que la v12 coupait. **Relire les lignes « texte du robot » du premier enregistrement fait sous v13 avant de le pousser.**
+- Le suivi par `rv_direct.py` d'un enregistrement en train de s'écrire (la note L le dit non vérifié).
+
+**Ce que l'utilisateur aura à faire : un peu plus que brancher.** Brancher le cerveau, robot sur sa base. Puis, une dizaine de minutes plus tard, quand le veilleur a fini : tirer le robot de sa base à la main, de 70 cm, le nez vers la base (posé sur sa base alimentée il ignore les ordres de roues, § 32), et enlever l'objet qui se tient devant la base (§ 53).
+
+**Programme de pilotage proposé, à lui faire confirmer.**
+
+1. `etat_cerveau.py`, puis l'enregistreur (`--nom exploration26 --duree 3000 --csv`) et le message à la session de revue.
+2. Réveil (`w`, `s`, attendre 3 s, `f`), capteur de distance fixe devant, une minute immobile : première vérification de la v13 robot réveillé (20 lignes par seconde, aucun trou, cap stable).
+3. Premiers mouvements faits avec la v12 et la v13, rotations seules : `essai_mouv.py … rot=90 rot=-180 rot=90`, gyroscope contre roues.
+4. L'essai des pivots de la session de revue (`rv_essai_pivots.py --go`, dix séries, trois minutes, rotations seules), s'il est d'accord : c'est lui qui dira si les petits pivots du centrage déplacent le robot (les 24 cm du couloir, note J § 2.3). Ce programme ferme la séance lui-même (`s`, `x`).
+5. La boucle connue de 7,5 m devant la base (D16, E15, D12, E11, G12, C17, D16 ; § 42 à 44), avec les repères : des avances face à des murs et des pivots pour l'analyse en direct.
+6. Fin : `5`, `s`, `x`. L'accostage par le robot (touche `h`, enregistrement avec `--e 1`) seulement s'il le demande et si le devant de la base est dégagé.
+
+**État à la fin** (23 h 30) : cerveau muet, veilleur en attente, robot sur sa base à ma connaissance ; rien d'installé, rien d'envoyé.

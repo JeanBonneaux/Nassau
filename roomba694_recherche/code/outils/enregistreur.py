@@ -93,10 +93,41 @@ RE = {
 
 # Le nom du réseau Wi-Fi de la maison ne doit pas se retrouver dans les fichiers (ils partent sur GitHub).
 RE_RESEAU = re.compile(r"([Rr]éseau de la maison « )[^»]*( »)")
+# Depuis le firmware v13 la console affiche en entier ce que le robot écrit de lui-même (lignes « texte du robot ») ;
+# jusqu'à la v12 elle n'en donnait que les 160 premiers caractères. Dans ces lignes, les identifiants de l'appareil
+# sont masqués : suites de groupes hexadécimaux (ce qui suit « bootloader id: », même règle que rv_ecoute_robot.py),
+# longues suites hexadécimales d'un seul tenant, adresses matérielles. Et le nom du réseau de la maison, appris par
+# /api/state et gardé en mémoire seulement, est masqué dans toute ligne où il apparaîtrait.
+# Ces règles ne voient que ce qui leur ressemble : relire les lignes « texte du robot » avant de pousser un enregistrement.
+RE_ID = (re.compile(r"\b[0-9A-Fa-f]{4}(?: [0-9A-Fa-f]{3,4}){2,}\b"),
+         re.compile(r"\b[0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5}\b"),
+         re.compile(r"\b[0-9A-Fa-f]{12,}\b"))
+reseau_maison = ""      # jamais écrit dans un fichier ni affiché
+
+
+def retenir_reseau(etat):
+    """Garde en mémoire le nom du réseau de la maison lu dans /api/state, et le retire de ce qui sera écrit."""
+    global reseau_maison
+    sta = etat.get("sta") if isinstance(etat, dict) else None
+    if isinstance(sta, dict) and "saved" in sta:
+        if isinstance(sta["saved"], str) and len(sta["saved"]) >= 2:
+            reseau_maison = sta["saved"]
+        sta["saved"] = "…"
+    return etat
+
+
+def masquer(texte):
+    if reseau_maison:
+        texte = texte.replace(reseau_maison, "…")
+    texte = RE_RESEAU.sub(r"\1…\2", texte)
+    if "texte du robot" in texte:
+        for r in RE_ID:
+            texte = r.sub("[identifiant masqué]", texte)
+    return texte
 
 
 def ecrire_console(t, texte):
-    texte = RE_RESEAU.sub(r"\1…\2", texte)
+    texte = masquer(texte)
     with verrou:
         f_console.write(f"{t:.3f}\t{heure(t)}\t{texte}\n")
         f_console.flush()
@@ -190,9 +221,7 @@ def lire_etat():
         while not fini.is_set():
             t = time.time()
             try:
-                s = get_json("/api/state")
-                if isinstance(s.get("sta"), dict) and "saved" in s["sta"]:
-                    s["sta"]["saved"] = "…"      # nom du réseau de la maison : jamais dans les fichiers
+                s = retenir_reseau(get_json("/api/state"))      # nom du réseau de la maison : jamais dans les fichiers
                 f.write(json.dumps({"pc_s": round(t, 3), "pc_fin_s": round(time.time(), 3), "etat": s},
                                    ensure_ascii=False, separators=(",", ":")) + "\n")
                 compte["etat"] += 1
@@ -225,6 +254,10 @@ def attendre(secondes):
     return True
 
 
+try:
+    retenir_reseau(get_json("/api/state"))      # avant la première ligne de la console : de quoi masquer le nom du réseau
+except Exception:
+    pass
 sock = socket.create_connection((a.adresse, 23), timeout=5)
 sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 sock.settimeout(0.5)
