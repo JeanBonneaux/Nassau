@@ -39,6 +39,14 @@ class Pilote:
         self.cols = None
         self.reste = ""
         self.lignes = []           # une ligne du journal = un dictionnaire de nombres
+        # Firmware v14 : la brosse latérale seule, à puissance réduite, pendant chaque mouvement demandé au cerveau
+        # (/api/mouv?…&brosse=N). À l'arrêt elle se glisse sous le bord d'un tapis et retient le robot (2026-11-15,
+        # journal_wifi.md § 57). Réglage par la variable d'environnement ROOMBA_BROSSE (0 à 60 ; absente ou 0 : brosse
+        # arrêtée), pour que tous les outils qui passent par ce pilote en profitent sans changer leurs options.
+        try:
+            self.brosse = max(0, min(60, int(os.environ.get("ROOMBA_BROSSE", "0") or 0)))
+        except ValueError:
+            self.brosse = 0
 
     # ------------------------------------------------------------ liaison
     def get(self, chemin, timeout=3.0):
@@ -156,6 +164,8 @@ class Pilote:
         i0 = len(self.lignes) - 1
         l0 = self.lignes[i0]
         t0 = time.time()
+        if self.brosse:
+            requete += "&brosse=%d" % self.brosse       # firmware v14 ; un firmware plus ancien ignore cet argument
         m = json.loads(self.get("/api/mouv?" + requete))
         if m.get("etat") != 1:
             return {"refus": str(m.get("raison") or m.get("texte") or "mouvement refusé par le cerveau")}

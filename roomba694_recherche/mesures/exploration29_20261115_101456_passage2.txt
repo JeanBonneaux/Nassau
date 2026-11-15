@@ -1,0 +1,3 @@
+cap 0.0° demandé : cap 359.5°, devant 3706 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 3706 mm
+POSE=289.9,99.8,359.5

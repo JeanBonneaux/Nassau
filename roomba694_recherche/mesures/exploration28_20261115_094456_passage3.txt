@@ -1,0 +1,6 @@
+cap 90.0° demandé : cap 89.8°, devant 3695 mm
+av=500,80 : 500 mm au cap 89.8° (reste de cap +0.0°), 80 mm/s demandés
+   avance de 506.9 mm pour 500 demandés, raison « distance atteinte », alarme None, capteurs optiques jusqu'à 45, sol 2508 ; robot en (264.1, 122.1), cap 89.9°, devant 3211 mm
+cap 180.0° demandé : cap 180.3°, devant 1610 mm
+fin : mode 3, roues en marche False, pare-chocs 00, devant 1610 mm
+POSE=264.1,122.1,180.3

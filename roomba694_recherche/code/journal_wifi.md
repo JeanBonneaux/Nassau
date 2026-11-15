@@ -2090,3 +2090,68 @@ J'ai lu la différence, pas les fichiers entiers, et je n'ai pas relu ligne à l
 **Non vérifié.** La v14 sur la carte ; l'explication par la brosse (vue par l'utilisateur, pas par moi) ; la position du robot en ce moment (les roues ont patiné, aucun tour sur place depuis) ; l'étendue du tapis.
 
 **État à 9 h 42** : robot sur le parquet, face au tapis, à 25 cm des franges environ, vers E11 (position non mesurée), séance fermée, 1 828 mAh ; cerveau en v13 ; v14 prête ; accord de l'utilisateur attendu.
+
+## 58. Firmware v14 installé ; le tapis se prend à reculons ; la position perdue un quart d'heure par ma faute, puis retrouvée (2026-11-15, 9 h 43 à 10 h 27)
+
+**Les demandes de l'utilisateur.** « Oui, installe » (9 h 43, pour la v14). Puis, vers 9 h 50, le robot à moitié sur le tapis : « continue de mapper cette salle au complet et de receuillir toute info necessaire a l<autre session ». Je lui avais demandé s'il m'autorisait, pour ce tapis, à reprendre seul le mode Safe et à reculer quand le robot coupe ses roues ; j'ai pris sa réponse pour un oui, et le lui ai écrit.
+
+**Enregistrements** : `exploration28_20261115_094456` (9 h 44 min 56 à 10 h 14 min 33) et `exploration29_20261115_101456` (10 h 14 min 56 à 10 h 26 min 44), tous deux avec la touche `e` chaque seconde (courants des moteurs dans `_e.csv`).
+
+### 58.1 La v14 sur la carte
+
+- Envoi à 9 h 44 min 25 par `/update` (9,9 s) ; « v14 Nov 15 2026 09:38:48 » lue à 9 h 44 min 46, dernier redémarrage par la mise à jour, `brosse` : lat 0, max 60.
+- Robot immobile : `/api/brosse?lat=25` refusé robot endormi (« le robot ne répond pas »), puis refusé en mode passif (« le robot n'est pas en mode Safe »). En mode Safe : impulsion à 25 sur 127 pendant 3 s : brosse latérale 48, 40, 62 mA (touche `e`), arrêt seul à l'échéance ; impulsion à 40 coupée par la touche `5` après 2,2 s : 63 et 66 mA. La brosse principale reste à −10 mA du début à la fin (un décalage : ce courant est là dès la prise du mode Safe), les roues à 0.
+- Relue après coup par la session de revue : rien de bloquant. Deux chemins à fermer dans une prochaine version, tous deux pendant une impulsion robot immobile : une mise à jour qui commence, et un tour sur place lancé pendant l'impulsion (la brosse va alors à son échéance, 5 s au plus). Ses suggestions : arrêter une avance dès 8° d'écart de cap ; couper la brosse quand son courant reste haut ; mettre ce courant dans le journal à 20 lignes par seconde.
+
+### 58.2 Le bord du tapis en marche avant, brosse en marche : une réussite, un échec
+
+| | 9 h 46 min 50, brosse à 40 | 9 h 57 min 12, brosse à 40 |
+|---|---|---|
+| Demandé | 900 mm à 150 mm/s | 950 mm à 150 mm/s |
+| Résultat | 694 mm tout droit, cap à 1° près, arrêt par le capteur de distance à 29 cm d'un meuble | 239 mm droit, puis pivot de 93° à droite ; « distance atteinte » à 947 mm comptés |
+| Roues | 694 mm chacune | gauche 786 mm, droite 1 119 mm |
+| Brosse latérale | 56 à 72 mA sur le parquet, 142 puis 120 mA en montant | 45 à 89 mA, puis 323 à 358 mA pendant tout le pivot : bloquée dans les franges |
+| Capteurs de vide avant au bord | 920 et 705 à la même lecture : bord pris d'équerre | l'avant gauche seul d'abord (355), le capteur droit resté sur le parquet : bord pris de biais |
+
+Lecture de la session de revue, que je partage : la brosse ne suffit pas, il faut aussi arriver d'équerre sur le bord. À 60, le maximum de la v14, je n'ai pas eu l'occasion d'aborder des franges.
+
+### 58.3 Deux erreurs de ma part
+
+**Un recul à l'aveugle dans la mauvaise direction.** Mon nouvel outil `peigne.py` (une avance droite sur le tapis, puis le retour en marche arrière de la distance comptée) n'avait pas prévu le pivot : après les 93°, il a reculé « tout droit » de 947 mm, donc vers le bas du plan, sans rien voir derrière lui (9 h 57 min 21 à 35). Aucun contact détecté, mais le robot s'est retrouvé près du mur du fond. Corrigé le jour même : `peigne.py` arrête un mouvement dès que le cap s'écarte de 12° et ne lance plus aucun retour après un pivot.
+
+**Un cap faux de 97° pendant un quart d'heure.** À 9 h 59 min 47 un tour sur place a été interrompu par une zone sombre (capteur de vide avant gauche à 287, 93 puis 37 ; le mode tombe 75 ms après, d'après la session de revue). J'ai lu dans le journal que le tour en était à 110° ; il en était à 373°. Tout ce que j'ai fait ensuite, jusqu'à 10 h 12, est parti d'un cap faux de 97° : deux tours sur place aux notes médiocres (0,64 et 0,70, passes « d » et « e » d'`exploration28`, **positions fausses**), une « dent » de 748 mm qui était en réalité une remontée de l'allée vers le nord, une avance de 799 mm en biais. Ce qui m'a alerté : le capteur de distance voyait 3 695 mm de libre là où la pièce n'en fait que 2. J'ai arrêté le robot, envoyé la carte à l'utilisateur pour qu'il me dise sa case, et demandé à la session de revue de refaire le chemin ; c'est un de ses messages (« à 373° du tour ») qui m'a fait voir l'erreur. Refait avec le bon cap, le chemin colle avec quatre lectures du capteur de distance (2 563 mm vers le mur du haut depuis le bas de l'allée, 3 695 mm vers le mur est de la pièce de la base, etc.). Tour de contrôle à 10 h 13 (passe « f ») : filtre corrigé de 56 mm et 5°, note 0,74, pixel (299,5 ; 131,5), case E12.
+
+Ce que j'en retiens pour la méthode :
+
+- après un patinage, la position comptée ne vaut plus rien : un tour sur place tout de suite, et un second si la note est sous 0,5 (le tour de 9 h 51, note 0,30, plaçait le robot 64 cm à côté ; celui de 9 h 55, note 0,97, l'a remis) ;
+- le filtre lancé avec un mauvais départ ne dit pas qu'il se trompe : il rend une note moyenne ;
+- `Plan.localiser` promené sur tout le plan et tous les caps, avec deux tours liés par le chemin compté entre eux, trouve une dizaine de solutions de 0,92 à 1,00 dans quatre pièces : les parois seules ne situent pas le robot sans un départ à peu près juste ;
+- après un tour sur place le cap n'est plus celui d'avant : prendre la ligne `DEPART=` de `relance.py` (oublié une fois ce matin).
+
+### 58.4 Le tapis se prend à reculons
+
+| Heure | Quoi | Résultat |
+|---|---|---|
+| 10 h 15 min 54 | depuis le parquet, pixel (290 ; 100), robot tourné vers l'est : trois reculs de 300 mm à 60 mm/s, sans brosse | 893 mm, cap tenu, mode Safe tenu, aucun patinage ; capteurs de vide au plus bas 832 |
+| 10 h 16 min 45 | deux reculs de plus | 596 mm ; au plus bas 755 ; robot au milieu du tapis |
+| 10 h 17 min 33 | dix secondes d'arrêt, puis un tour sur place complet sur le tapis | aucune chute du mode Safe ; filtre 0,79 ; pixel (209 ; 101), case D8 |
+| 10 h 18 min 16 | avance de 402 mm vers le mur du haut, sur le poil ; retour par deux reculs | capteur de distance 677 mm à l'arrivée ; sol au plus bas 754 |
+| 10 h 18 min 55 | sortie en marche avant, 1 503 mm plein est à 100 mm/s, brosse à 40 | cap tenu, aucune alarme ; robot sur le parquet |
+| 10 h 19 min 58 | seconde ligne, v ≈ 122 : 1 492 mm à reculons | au plus bas 803 |
+| 10 h 20 min 38 | tour sur place en (208 ; 126), case E8 | filtre 0,71 ; puis sortie en avant de 1 505 mm |
+| 10 h 23 min 33 | recul de 598 mm le long de v ≈ 156, où j'attendais une bordure sombre | du parquet seulement (2 561 au plus bas) |
+
+- **En marche arrière le robot monte sur le tapis sans patiner** : la brosse latérale, à l'avant, suit au lieu de pousser sous le bord. Une fois dessus il avance, tourne sur place et ressort en marche avant.
+- Le poil renvoie 755 à 2 246 sur les deux lignes relevées : presque tout le tapis est acceptable pour les capteurs de vide. Les zones très sombres (36 à 81 le matin, 37 à 287 à 9 h 59) sont petites et près des bords.
+- **Ce que cela remplace** : le § 56 concluait « en mode Safe le robot ne peut pas rouler sur ce tapis ». C'est faux dit ainsi : il ne peut ni avancer ni pivoter tant qu'un capteur de vide est au-dessus d'une de ces petites zones très sombres, et il s'en dégage en reculant. La zone interdite que j'avais tracée dans `plan_lidar/obstacles.json` en est retirée (copie gardée). La question du mode Full ou des capteurs masqués (§ 56) n'est plus urgente : elle ne se pose que pour ces petites zones.
+- La mesure que la session de revue demandait en premier, un recul droit avec les capteurs au-dessus du sombre pendant une seconde, **n'est pas faite** : je n'ai pas trouvé de zone sombre sous les capteurs pendant un recul.
+
+### 58.5 Le reste
+
+- **Contact** à 10 h 21 min 51,6, pare-chocs, à 80 mm/s, en remontant l'allée de parquet : un objet mince en C11, pixel (287 ; 78), ajouté aux obstacles. Le capteur de distance lisait 1 042 mm ; le capteur optique centre gauche est monté de 48 à 485 en deux secondes. `passage.py` laisse ce capteur monter jusqu'à 3 000 avant d'arrêter : trop permissif hors des passages étroits.
+- **Outils.** `outils/pilote.py` : la variable d'environnement `ROOMBA_BROSSE` (0 à 60) ajoute `&brosse=N` à chaque mouvement demandé au cerveau, pour tous les outils qui passent par le pilote. `outils/peigne.py` (nouveau) : une avance droite depuis le parquet et son retour, avec l'arrêt sur écart de cap. Les passes d'`explorer3.py` de cette section sont faites sans `--reperes` (§ 57).
+- **Retour** : par l'allée, puis 2 004 mm plein est le long de la ligne D, sans contact. Devant la base, un tour sur place (filtre corrigé de 167 mm, note 0,89) reçoit des codes infrarouges sur 42 lectures seulement (164 surtout, 172, les trois récepteurs à 164 neuf fois) ; à l'arrêt final, tourné vers la base d'après mon cap, les récepteurs lisent 0. La position ou le cap y sont encore faux de quelque chose : je ne dis pas que le robot est dans l'axe.
+
+**Non fait.** Le reste de la pièce : le haut du tapis au-delà de C8, son bas, la bande entre le lit et le mur de gauche. Le recul sur une zone sombre. L'essai des pivots face à un mur nu. Les repères à refaire avec les stations du jour.
+
+**État à la fin** (10 h 29) : séance fermée à 10 h 26 min 43 (`5`, `s`, `x`) ; robot dans la pièce de la base, à 1 m environ devant elle, pas dessus, 1 707 mAh ; cerveau en v14.

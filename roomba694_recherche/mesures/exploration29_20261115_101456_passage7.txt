@@ -1,0 +1,5 @@
+va=288,82,80 : 823 mm au cap 89.9° (reste de cap -0.3°), 80 mm/s demandés
+   avance de 716.7 mm pour 823 demandés, raison « pare-chocs touché », alarme pare-chocs  droit, capteurs optiques jusqu'à 485, sol 2495 ; robot en (287.4, 87.6), cap 91.1°, devant 92 mm
+ordre non exécuté : cap=180
+fin : mode 3, roues en marche False, pare-chocs 01, devant 92 mm
+POSE=287.4,87.6,91.1
