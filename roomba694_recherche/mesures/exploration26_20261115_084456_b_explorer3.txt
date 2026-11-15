@@ -1,0 +1,24 @@
+[  0.0 min] localisation : filtre à 20000 hypothèses autour du pixel (274, 106), cap 170°
+[  0.3 min]     filtre : position corrigée de (+4, -30) mm et -0.3° ; note 0.86, étalement 143 mm et 5.9°, gyroscope × 1.0045
+[  0.3 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  0.3 min] station 0 : 9 paliers, 3 lignes de murs, axes de la pièce 89.5°
+[  0.3 min] cibles reçues (série 1) : [(280, 126), (280, 150), (284, 97), (307, 98)]
+[  0.3 min]   vers la cible (280, 126) du plan : 1 étapes
+[  0.7 min]     filtre : position corrigée de (+8, -37) mm et +1.5° ; note 0.82, étalement 156 mm et 5.6°, gyroscope × 1.0046
+[  0.7 min]     repères : calé sur 4 tours déjà faits ici ; (+8, -37) mm par rapport au filtre
+[  0.7 min]     repères : cap corrigé de +4.1° (16 parois vues -4.1° à côté de leur direction connue)
+[  0.7 min] station 1 (vers une cible) en (5298, 5742) : 7 paliers
+[  0.7 min]   cible (280, 126) atteinte
+[  0.7 min]   vers la cible (280, 150) du plan : 1 étapes
+[  1.1 min]     filtre : position corrigée de (-7, +24) mm et -0.4° ; note 0.80, étalement 165 mm et 6.8°, gyroscope × 1.0045
+[  1.1 min]     repères : aucun tour déjà fait assez près d'ici (ou pas d'accord entre eux)
+[  1.1 min] station 2 (vers une cible) en (5273, 5387) : 6 paliers
+[  1.1 min]   cible (280, 150) atteinte
+[  1.1 min]   vers la cible (284, 97) du plan : 2 étapes
+[  1.7 min]     filtre : position corrigée de (+60, -52) mm et -3.1° ; note 0.77, étalement 222 mm et 7.3°, gyroscope × 1.0042
+[  1.7 min]     repères : calé sur 5 tours déjà faits ici ; (+250, +29) mm par rapport au filtre
+[  1.7 min] station 3 (vers une cible) en (5664, 6332) : 6 paliers
+[  1.7 min]   cible (284, 97) atteinte
+[  1.7 min]   vers la cible (307, 98) du plan : 1 étapes
+[  1.7 min]   cible (307, 98) atteinte
+[  1.7 min] fin : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 4 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 8 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 1.9 m | batterie 1888 mAh
