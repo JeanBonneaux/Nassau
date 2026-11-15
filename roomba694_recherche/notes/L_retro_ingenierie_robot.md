@@ -269,8 +269,9 @@ L'application range dans le robot des préférences de nettoyage (deux passages,
 | 46,05 | 36 | **passif** |
 
 - Une seconde plus tôt, les capteurs gauche et avant gauche étaient descendus de 2 460 et 2 170 à 1 061, puis remontés.
+- **Trois secondes plus tôt, en avance à 110 mm/s, le même capteur droit était déjà descendu à 153 sans que le mode tombe** (8 h 53 min 42,9 à 43,2 : 1 351, 416, 259, 153, 191, 348, 974 ; avant droit 727, avant gauche 881 au même moment). Le robot a donc franchi une bande sombre étroite en gardant le mode Safe.
 - **La cause, d'après la photo envoyée par l'utilisateur** : le robot est au bord d'un tapis vert foncé à franges blanches. Les franges et le bord donnent 1 060 à 1 700 ; le poil vert foncé, 36 à 81. Le parquet donne 2 100 à 2 600. Le tapis de C27, le 14, donnait 700 à 1 700 et se laissait franchir.
-- **Ce qu'on en tire.** Pour ce robot, un tapis assez sombre est un vide. Le mode Safe a tenu à 418 et à 81 et n'est tombé qu'à la lecture suivante : son seuil est sous 400, peut-être sous 100, avec un dixième de seconde de délai (supposé : une seule chute). Le sondage 3 prévoyait une feuille sombre glissée sous les capteurs ; ce tapis fait le même office.
+- **Ce qu'on en tire.** Pour ce robot, un tapis assez sombre est un vide. Le mode Safe a tenu à 153 pendant l'avance, puis à 418 et à 81 pendant la rotation, et n'est tombé qu'à 36 : son seuil est sans doute entre 36 et 81, ou il lui faut plusieurs lectures basses de suite (supposé : une seule chute). Le sondage 3 prévoyait une feuille sombre glissée sous les capteurs ; ce tapis fait le même office.
 - **Ce qu'on pourrait en faire** (non décidé). Arrêter les roues depuis le cerveau dès qu'un capteur de vide passe sous 1 000 environ : le premier creux est arrivé 0,8 s avant la chute. Le mode Safe serait gardé, et le bord du tapis deviendrait un repère.
 
 ## 5. Deux mesures faites en préparant la liste
