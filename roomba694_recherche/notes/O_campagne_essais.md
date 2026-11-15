@@ -30,7 +30,7 @@ Chacun répond à une question. Un tour sur place avant le premier et après le 
 
 À proposer à la session de navigation après les essais courts. Elles viennent toutes de mesures de la note N.
 
-1. **L'estime garde la main sur les trajets courts.** Une correction du filtre ou des repères de plus de 12 cm, quand le robot a roulé moins de 2 m depuis le tour précédent, n'est pas appliquée ; elle est signalée, et un second tour est fait sur place.
+1. **Quand l'estime et la correction se contredisent de plus de 12 cm sur moins de 2 m, un second tour est fait sur place.** La correction n'est pas refusée d'office : cette règle-là, rejouée sur les séances enregistrées, dégrade la position (§ 5.1).
 2. **Le cap vient du gyroscope**, multiplié par 1,0045, et non d'un cap recompté après chaque geste. La perte de position de 10 h 10 venait d'un cap faux de 94°.
 3. **Une avance qui dévie s'arrête** (roues et gyroscope en désaccord de 8°), et un tour sur place suit avant de repartir.
 4. **Un tour sur place tous les 2 m au plus**, loin des bords de tapis (plus de 20 cm).
@@ -43,8 +43,8 @@ Pour ne pas écrire à deux dans les mêmes fichiers.
 
 | Chantier | Qui | État |
 |---|---|---|
-| Repères refaits avec l'estime comme contrainte (fichier à essayer avec `--reperes`) | session de revue, dans `data_analysis/` | en cours |
-| Refus des corrections de plus de 12 cm sur trajet court, dans l'explorateur | session de navigation, sur ma proposition | proposé |
+| Repères refaits avec l'estime comme contrainte (fichier à essayer avec `--reperes`) | session de revue, dans `data_analysis/` | **fait, et abandonné** : pas mieux que les anciens sur trois séances tenues à l'écart (§ 5.1) |
+| Refus des corrections de plus de 12 cm sur trajet court, dans l'explorateur | session de navigation, sur ma proposition | **proposition retirée** : rejouée sur 15 séances, elle dégrade (§ 5.1) |
 | Cap du gyroscope donné au filtre | session de navigation | proposé |
 | Firmware, version 15 : arrêt d'une avance sur écart de cap, coupure de la brosse latérale sur son courant, deux arrêts manquants de la brosse | session de navigation ; je relis avant installation | notée par elle |
 | Firmware : les quatre indicateurs « vide » du robot dans l'état et le journal ; un arrêt sur capteur optique du pare-chocs | à décider avec l'utilisateur | idée |
@@ -67,5 +67,17 @@ Détail dans la note L. La liste des quatorze sondages y est au § 1.
 | Ordres inconnus, mode d'essai d'usine | rien d'essayé ; déconseillés (note L § 3.5 et § 4.7) | la décision de l'utilisateur |
 
 ## 5. Résultats
+
+### 5.1 Le logiciel de position : deux idées essayées sur les séances enregistrées, et retirées (10 h 40)
+
+**Mesuré sur le PC**, sans le robot (`rv_reperes_estime.py`, `rv_regles_fusion.py`, résultats dans les fichiers `results_` du même nom).
+
+- **La référence.** La position des 207 tours sur place des séances 6 à 29 a été recalculée d'un seul coup, avec trois sortes de contraintes : l'estime d'un tour au suivant (poids fort), les tours voisins comparés par leurs parois (fort dans une même séance, moyen entre deux séances), les positions retenues à l'époque (faible). C'est la meilleure estimation disponible, pas une vérité : elle est sans doute incertaine d'une dizaine de centimètres.
+- **D'un jour à l'autre, comparer deux tours par leurs parois se trompe souvent de 10 à 20 cm.** Dans une même séance, la comparaison est bonne à moins d'un centimètre. Une porte ou un objet a bougé entre-temps. C'est la vraie limite des repères, et refaire leurs positions n'y change rien : sur trois séances tenues à l'écart, les repères refaits donnent 2 sauts au lieu de 3 (`exploration26`), 1 au lieu de 2 (`exploration27`), 6 contre 6 (`exploration19`).
+- **Le « garde-fou » que j'avais proposé dégrade.** Rejoué sur 15 séances et 192 tours, distance à la référence (médiane, puis 9 tours sur 10) : positions retenues à l'époque, 97 et 222 mm ; garde-fou, 142 et 318 mm ; estime tirée de 30 % vers la correction, 93 et 241 mm ; estime seule, 189 et 446 mm ; lissage sur huit tours, 82 et 216 mm. Le garde-fou échoue quand le premier tour d'une séance est mal placé : il refuse ensuite les bonnes corrections.
+- **Pour `exploration26`**, la référence met les tours de D12 vers x = 5 500 mm : entre le filtre (5 414) et les repères (5 664). Mon « décalée de 25 cm vers l'est » de la note N § 3.3 était trop fort de moitié ; le saut, lui, est bien réel.
+- **Ce qu'on en tire.** Aucune règle simple ne fait nettement mieux que l'existant contre cette référence. Il manque un repère absolu sûr, pour corriger et pour juger. D'où l'essai 1 (les faisceaux de la base).
+
+### 5.2 Les essais
 
 À remplir essai par essai.
