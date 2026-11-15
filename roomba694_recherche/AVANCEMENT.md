@@ -1,6 +1,6 @@
 # Roomba 694 : où en est le projet
 
-*État au 15 novembre 2026, 11 h 53. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (59 sections) ; ce résumé n'en garde que l'essentiel.*
+*État au 15 novembre 2026, 12 h 06. Le détail de chaque essai est dans [`code/journal_wifi.md`](code/journal_wifi.md) (59 sections) ; ce résumé n'en garde que l'essentiel.*
 
 ## En bref
 
@@ -13,7 +13,8 @@
 - **Le 15 au matin, première séance en version 13** (elle garde en entier ce que le robot écrit de lui-même) : installée seule au branchement, vérifiée au repos puis en mouvement. Trois résultats. Les séries de petits pivots du centrage font reculer le robot d'environ 5 mm chacune, sans que les roues le comptent : une part de l'erreur du couloir. En ligne droite le calcul tient : 3 cm d'écart après un aller et retour de 4 m. Et **le tapis vert foncé de la pièce à gauche arrête le robot**, pour deux raisons : ses capteurs de vide prennent le poil sombre pour un vide, et sa brosse latérale, à l'arrêt, se glisse sous le bord (tu l'as vu). Une mauvaise nouvelle aussi : **trois fois ce matin les repères ont déplacé la position de 16 à 24 cm, à tort** d'après la session de revue.
 - **Le tapis se prend à reculons** (10 h 15) : en marche arrière le robot monte dessus sans patiner, il y tourne sur place et en ressort en avant. Deux lignes du tapis sont relevées, avec un repère chacune (cases D8 et E8). Presque tout le tapis est acceptable pour ses capteurs ; seules de petites zones très sombres, près des bords, l'arrêtent.
 - **Le 15, de 10 h 40 à 11 h 52, une série d'essais** que tu as demandée à l'autre session, qui les a choisis ; j'ai piloté. **Les faisceaux infrarouges de la base donnent une position au centimètre** : le robot lit du vert, puis les deux, puis du rouge en traversant devant elle, et les bords retombent à 1 cm près à l'aller et au retour. Au retour d'une tournée de 47 minutes, mon calcul de position avait dérivé de 10 et 17 cm ; recalé sur les faisceaux, le robot est revenu au même endroit que le matin à 3 cm près. Les petits pivots font reculer le robot de 1 mm chacun, et non 5. Le tapis : son bord nord est à 61 cm du mur, ses bords nord et sud n'ont pas de franges ; le robot y monte d'un trait à reculons, pas par petits pas. L'endroit du tapis que le robot prend pour un vide n'a pas été retrouvé (le plus sombre trouvé lit 178, et il ne s'y arrête pas). Trois contacts légers, sur des choses basses que ses capteurs ne voient pas ; deux par ma faute, dans le passage entre les deux pièces.
-- En ce moment : robot **dans la pièce de la base, devant elle, sur son axe, pas dessus** (batterie à 69 %), séance fermée à 11 h 52. Cerveau allumé, **version 14**. Il faut le poser sur sa base pour qu'il charge.
+- **Une trouvaille de l'autre session, à confirmer par une mesure à la règle** : le capteur de distance serait 10 cm plus en avant sur le robot que ce que les programmes comptent (12 cm du centre au lieu de 2,7). Chaque mur paraîtrait alors 10 cm trop près, ce qui expliquerait une bonne part des 10 à 50 cm d'écart de position d'une pièce à l'autre. Rien n'est changé dans les programmes tant que la mesure n'est pas faite.
+- En ce moment : robot **dans la pièce de la base, devant elle, sur son axe, pas dessus** (batterie à 68 %), séance refermée à 12 h 03. Cerveau allumé, **version 14**. Il faut le poser sur sa base pour qu'il charge. Pas encore partie : la grande boucle vers une pièce jamais vue.
 
 ## Le but, pour mémoire
 
