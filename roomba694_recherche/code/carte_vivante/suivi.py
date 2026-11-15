@@ -61,7 +61,11 @@ CHAMPS_OPTIQUES = ("lb_g", "lb_avg", "lb_cg", "lb_cd", "lb_avd", "lb_d")
 CHAMPS_VIDE = ("vide_g", "vide_avg", "vide_avd", "vide_d")
 # une ligne du journal, une fois lue : un n-uplet (ROUE_ : 1 = roue gauche levée, 2 = droite, 3 = les deux ;
 # IR_ : codes reçus par les récepteurs du dessus, avant gauche, avant droit ; EG_, ED_ : compteurs des roues)
-T_, X_, Y_, C_, US_, PG_, PD_, MODE_, MS_, LB_, ROUE_, MV_, MA_, VIDE_, IR_, EG_, ED_ = range(17)
+T_, X_, Y_, C_, US_, PG_, PD_, MODE_, MS_, LB_, ROUE_, MV_, MA_, VIDE_, IR_, EG_, ED_, PLUS_ = range(18)
+# PLUS_ : ce que la feuille « Capteurs » de la page montre en plus et que le suivi de la position n'utilise pas ; dans
+# l'ordre de CHAMPS_PLUS, None pour une colonne que le firmware de l'enregistrement n'écrivait pas encore
+CHAMPS_PLUS = CHAMPS_VIDE + ("cur_g", "cur_d", "cap_deg", "rot_dps")
+N_SORTIE = 300                  # lignes de la console du cerveau données d'un coup à une page qui vient de s'ouvrir
 # ancres issues d'une mesure : tour sur place posé sur le plan, robot posé sur sa base
 SOURCES_MESUREES = ("filtre", "plan", "base")
 
@@ -113,7 +117,8 @@ class LecteurCsv:
             return (g("pc_s"), g("x_mm"), g("y_mm"), g("cap_pos"), g("us_mm", -1.0), int(g("pc_g")), int(g("pc_d")), int(g("mode")),
                     g("ms"), tuple(int(g(c)) for c in CHAMPS_OPTIQUES), (1 if g("roue_g") else 0) | (2 if g("roue_d") else 0), g("mv"), g("ma"),
                     min(g(c, 9999.0) for c in CHAMPS_VIDE), (int(g("ir_dessus")), int(g("ir_g")), int(g("ir_d"))),
-                    int(g("enc_g")) if codeurs else None, int(g("enc_d")) if codeurs else None)
+                    int(g("enc_g")) if codeurs else None, int(g("enc_d")) if codeurs else None,
+                    tuple((float(f[ix[c]]) if c in ix else None) for c in CHAMPS_PLUS))
         except ValueError:
             return None
 
@@ -153,6 +158,8 @@ class Suivi:
         self.pose_base = None                    # (X, Y, C) du robot posé sur sa base, mm et degrés du plan ; None : base inconnue
         self.evts = {}                           # clé -> événement du journal donné par les sources
         self.etat = {}                           # dernier /api/state lu par l'enregistreur (tour en cours, batterie, base)
+        self.e = None                            # dernière réponse à la touche e (boutons, mur, saleté, roulette, brosses), une par seconde
+        self.sortie, self.n_sortie = [], 0       # lignes de la console du cerveau [heure, genre, texte] ; combien sont déjà parues (rejeu)
 
     # ------------------------------------------------------------ petits outils
     def px(self, X, Y):
@@ -692,12 +699,7 @@ class Suivi:
             d["q"], d["qmax"] = self.etat["q"], self.etat.get("qmax")
         if frais and self.etat.get("base") is not None:
             d["base"], d["chg"] = bool(self.etat["base"]), self.etat.get("chg")
-        ir = [0, 0, 0]                                            # un code n'arrive qu'une ligne sur deux : on regarde une seconde
-        j = i
-        while j >= 0 and r[T_] - self.Tt[j] <= 1.0:
-            for q in range(3):
-                ir[q] = ir[q] or self.R[j][IR_][q]
-            j -= 1
+        ir = self._ir_recent(i)
         if any(ir):
             d["ir"] = ir
         ep = self.patine[-1] if self.patine else None
@@ -723,6 +725,57 @@ class Suivi:
                     "deg": round(self.Rc[i] - self.Rc[min(i, i0)]), "note": info.get("note"), "nom": info.get("nom"),
                     "rep": (info.get("rep") or {}).get("n")}
         return d
+
+    def _ir_recent(self, i):
+        """codes infrarouges reçus de la base (dessus, gauche, droite) dans la seconde qui précède la ligne i : un code
+        n'arrive qu'une ligne sur deux"""
+        ir, t, j = [0, 0, 0], self.Tt[i], i
+        while j >= 0 and t - self.Tt[j] <= 1.0:
+            for q in range(3):
+                ir[q] = ir[q] or self.R[j][IR_][q]
+            j -= 1
+        return ir
+
+    # ------------------------------------------------------------ toutes les mesures du moment, et ce que dit le robot
+    def capteurs(self, maintenant):
+        """Pour la feuille « Capteurs » de la page : la dernière ligne du journal du cerveau (20 par seconde), la dernière
+        réponse à la touche e (boutons, mur, saleté, roulette avant, brosses : une par seconde) et le dernier état lu par
+        l'enregistreur (batterie, gyroscope, capteur de distance, réflexes : deux par seconde). Chaque source garde son
+        âge : une mesure qui n'arrive plus se voit. None tant que le journal n'a aucune ligne."""
+        if not self.R:
+            return None
+        i = len(self.R) - 1
+        r = self.R[i]
+        p = r[PLUS_] if len(r) > PLUS_ else (None,) * len(CHAMPS_PLUS)
+        d = {"t": round(r[T_], 2), "h": heure_de(r[T_]), "age": round(maintenant - r[T_], 1), "us": int(r[US_]), "pc": [r[PG_], r[PD_]],
+             "roue": [r[ROUE_] & 1, (r[ROUE_] >> 1) & 1], "lb": list(r[LB_]), "mode": r[MODE_], "mv": int(r[MV_]), "ma": int(r[MA_]),
+             "ir": self._ir_recent(i)}
+        if p[0] is not None:
+            d["vide"] = [int(x) for x in p[:4]]
+        if r[EG_] is not None:
+            d["enc"] = [r[EG_], r[ED_]]
+        if p[4] is not None:
+            d["cur"] = [int(p[4]), int(p[5])]
+        if p[6] is not None:
+            d["gyro"] = [round(p[6], 1), round(p[7], 1)]
+        # cadence des lectures sur les deux dernières secondes, et plus long trou de la dernière minute (journal § 48)
+        j = bisect.bisect_left(self.Tt, r[T_] - 2.0)
+        d["hz"] = round((i - j) / max(0.2, r[T_] - self.Tt[j]), 1) if i > j else 0.0
+        k = bisect.bisect_left(self.Tt, r[T_] - 60.0)
+        d["trou"] = round(max((self.Tt[q + 1] - self.Tt[q] for q in range(k, i)), default=0.0), 2)
+        if self.e is not None and self.e["t"] <= maintenant + 1.0:
+            d["e"] = dict(self.e, age=round(maintenant - self.e["t"], 1))
+        plus = self.etat.get("plus")
+        if plus:
+            d["c"] = dict(plus, age=round(maintenant - self.etat.get("t", 0.0), 1))
+        return d
+
+    def sortie_depuis(self, n):
+        """les lignes de la console du cerveau parues depuis la n-ième (les N_SORTIE dernières au plus) : [numéro, heure
+        du PC en secondes, heure en clair, genre, texte], et leur nombre total"""
+        total = self.n_sortie
+        debut = max(0, int(n), total - N_SORTIE)
+        return {"n": total, "l": [[q, round(s[0], 2), heure_de(s[0]), s[1], s[2]] for q, s in enumerate(self.sortie[debut:total], debut)]}
 
     def depuis(self, v):
         return {c: d for c, (ver, d) in self.obj.items() if ver > v}

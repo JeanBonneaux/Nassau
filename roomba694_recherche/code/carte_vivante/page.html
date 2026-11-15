@@ -108,7 +108,11 @@
   @media (min-width: 760px) {
     .feuille { left: auto; right: 12px; bottom: 12px; width: 430px; max-height: 72dvh; border: 1px solid var(--encre); border-top-width: 2px; border-radius: 4px; }
   }
-  #mesures { margin: 0; padding: 0 12px 10px; font-size: 13.5px; line-height: 1.35; color: var(--encre-douce); border-bottom: 1px solid var(--filet); }
+  #mesures { margin: 0 12px 8px; font-size: 13.5px; line-height: 1.35; color: var(--encre-douce); cursor: pointer;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  #mesures.tout { display: block; }
+  #mesures:empty { display: none; }
+  #voirDits { border-top: 1px solid var(--filet); }
   #journal { list-style: none; margin: 0; padding: 0; }
   #journal li { display: grid; grid-template-columns: 4.4ch 16px minmax(0, 1fr); column-gap: 8px; align-items: start; padding: 9px 12px;
     border-bottom: 1px solid var(--filet); font-size: 14.5px; line-height: 1.3; }
@@ -126,6 +130,25 @@
   .bascule::after { content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 50%; background: var(--encre); transition: transform .15s; }
   .bascule:checked { background: var(--encre); }
   .bascule:checked::after { background: var(--papier); transform: translateX(16px); }
+  /* la feuille des capteurs : le robot vu de dessus, puis chaque mesure sur sa ligne */
+  #capteurs { padding: 0 12px 16px; }
+  #capHeure, #schemaMots { margin: 0 0 6px; font-size: 13.5px; line-height: 1.35; color: var(--encre-douce); }
+  #schema { display: block; width: 100%; max-width: 300px; margin: 0 auto; }
+  #schema text { font-family: var(--police); font-stretch: 87.5%; fill: var(--encre); font-variant-numeric: tabular-nums; }
+  #capteurs h3 { margin: 14px 0 2px; font-size: 14.5px; font-weight: 600; }
+  #capteurs dl { margin: 0; }
+  #capteurs dl div { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: 12px; align-items: baseline; min-height: 34px; padding: 6px 0;
+    border-bottom: 1px solid var(--filet); font-size: 14px; line-height: 1.3; }
+  #capteurs dt small { display: block; font-size: 12.5px; color: var(--encre-douce); }
+  #capteurs dd { margin: 0; text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+  #capteurs .alerte { color: var(--magenta); fill: var(--magenta); }
+  /* dans le journal : l'interrupteur qui y ajoute tout ce que dit le robot, et ces lignes-là, plus discrètes */
+  #voirDits { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--filet);
+    font-size: 14px; line-height: 1.3; cursor: pointer; }
+  #journal.detail li { grid-template-columns: 6.7ch 16px minmax(0, 1fr); }
+  #journal li.dit { padding-top: 6px; padding-bottom: 6px; font-size: 13.5px; color: var(--encre-douce); }
+  #journal li.dit.robot span { color: var(--encre); font-style: italic; }
+  #journal li.dit.alerte span { color: var(--magenta); }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -146,6 +169,7 @@
   <div id="fiche"><h2 id="ficheTitre"></h2><p id="ficheTexte"></p><button id="fermeFiche" aria-label="Fermer la fiche">×</button></div>
   <div id="outils">
     <button id="bLegende" aria-pressed="false" aria-controls="feuilleLegende" title="Légende et calques" aria-label="Légende et calques"><svg viewBox="0 0 24 24"><path d="M12 4 3 9l9 5 9-5-9-5Z"/><path d="m3 14 9 5 9-5"/></svg></button>
+    <button id="bCapteurs" aria-pressed="false" aria-controls="feuilleCapteurs" title="Capteurs du robot" aria-label="Capteurs du robot"><svg viewBox="0 0 24 24"><path d="M4.6 17.5a8.5 8.5 0 1 1 14.8 0"/><path d="M12 14.5 16 8"/><circle cx="12" cy="14.5" r="1.1"/></svg></button>
     <button id="bSuivre" aria-pressed="true" title="Suivre le robot" aria-label="Suivre le robot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
     <button id="bTout" title="Voir tout l'appartement" aria-label="Voir tout l'appartement"><svg viewBox="0 0 24 24"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/></svg></button>
     <button id="bPlus" title="Agrandir" aria-label="Agrandir"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -167,7 +191,78 @@
 
 <section class="feuille" id="feuilleJournal" role="dialog" aria-label="Journal de bord">
   <div class="entete"><h2>Journal de bord</h2><button data-ferme>Fermer</button></div>
-  <div class="corps"><p id="mesures"></p><ol id="journal"></ol></div>
+  <div class="corps">
+    <p id="mesures"></p>
+    <label id="voirDits" for="c-dits"><span>Montrer aussi tout ce que dit le robot</span><input class="bascule" type="checkbox" role="switch" id="c-dits"></label>
+    <ol id="journal"></ol>
+  </div>
+</section>
+
+<section class="feuille" id="feuilleCapteurs" role="dialog" aria-label="Capteurs du robot">
+  <div class="entete"><h2>Capteurs</h2><button data-ferme>Fermer</button></div>
+  <div class="corps" id="capteurs">
+    <p id="capHeure">Pas de mesures pour l'instant.</p>
+    <svg id="schema" viewBox="0 0 320 224" role="img" aria-label="Le robot vu de dessus, avec ce que lit chaque capteur à sa place">
+      <path id="sCone" d="M160 46 148 23a14 14 0 0 1 24 0Z" fill="rgba(23,33,46,.12)"/>
+      <text id="sDist" x="160" y="13" text-anchor="middle" font-size="13" font-weight="600"></text>
+      <circle cx="160" cy="132" r="84" fill="#fff" stroke="#17212e" stroke-width="1.5"/>
+      <path id="sPcG" d="M160 48A84 84 0 0 0 77.3 117.4" fill="none" stroke="rgba(23,33,46,.22)" stroke-width="6"/>
+      <path id="sPcD" d="M160 48A84 84 0 0 1 242.7 117.4" fill="none" stroke="rgba(23,33,46,.22)" stroke-width="6"/>
+      <g id="sOptiques" stroke-width="4" stroke-linecap="round"></g>
+      <g id="sVides" stroke="#17212e" stroke-width="1.3"></g>
+      <rect id="sRoueG" x="86" y="112" width="11" height="46" rx="3" fill="#17212e"/>
+      <rect id="sRoueD" x="223" y="112" width="11" height="46" rx="3" fill="#17212e"/>
+      <text id="sCurG" x="103" y="139" font-size="11.5"></text>
+      <text id="sCurD" x="217" y="139" font-size="11.5" text-anchor="end"></text>
+      <circle id="sIr0" cx="160" cy="112" r="5" fill="none" stroke="#17212e" stroke-width="1.3"/>
+      <circle id="sIr1" cx="151" cy="58" r="3" fill="none" stroke="#17212e"/>
+      <circle id="sIr2" cx="169" cy="58" r="3" fill="none" stroke="#17212e"/>
+      <path id="sMur" d="M242 110l10 -2.7" stroke="rgba(23,33,46,.3)" stroke-width="2.6" stroke-linecap="round"/>
+    </svg>
+    <p id="schemaMots">Le robot vu de dessus, l'avant en haut. Traits&nbsp;: capteurs optiques, plus longs quand quelque chose est près. Carrés&nbsp;: capteurs de vide. Ronds&nbsp;: infrarouge de la base.</p>
+    <h3>Devant lui</h3>
+    <dl>
+      <div><dt>Capteur de distance</dt><dd id="cDistance">—</dd></div>
+      <div><dt>Pare-chocs</dt><dd id="cPare">—</dd></div>
+      <div><dt>Capteurs optiques<small>de gauche à droite ; frôlé à partir de 200</small></dt><dd id="cOptiques">—</dd></div>
+      <div><dt>Capteur de mur, à droite</dt><dd id="cMur">—</dd></div>
+    </dl>
+    <h3>Sous lui</h3>
+    <dl>
+      <div><dt>Capteurs de vide<small>de gauche à droite ; sous 500, la navigation n'avance pas</small></dt><dd id="cVide">—</dd></div>
+      <div><dt>Roues</dt><dd id="cRoues">—</dd></div>
+      <div><dt>Roulette avant<small>muette sur ce robot</small></dt><dd id="cRoulette">—</dd></div>
+      <div><dt>Capteur de saleté</dt><dd id="cSalete">—</dd></div>
+    </dl>
+    <h3>Ses moteurs</h3>
+    <dl>
+      <div><dt>Vitesse</dt><dd id="cVitesse">—</dd></div>
+      <div><dt>Courant des roues<small>gauche et droite</small></dt><dd id="cCourants">—</dd></div>
+      <div><dt>Compteurs des roues<small>gauche et droite</small></dt><dd id="cCompteurs">—</dd></div>
+      <div><dt>Courant des brosses<small>principale et latérale</small></dt><dd id="cBrosses">—</dd></div>
+      <div><dt>Surintensité d'un moteur</dt><dd id="cSurint">—</dd></div>
+    </dl>
+    <h3>Sa batterie</h3>
+    <dl>
+      <div><dt>Charge</dt><dd id="cCharge">—</dd></div>
+      <div><dt>Tension</dt><dd id="cTension">—</dd></div>
+      <div><dt>Courant</dt><dd id="cCourant">—</dd></div>
+      <div><dt>Température</dt><dd id="cTemp">—</dd></div>
+      <div><dt>En charge</dt><dd id="cEnCharge">—</dd></div>
+      <div><dt>Infrarouge reçu de la base</dt><dd id="cIr">—</dd></div>
+    </dl>
+    <h3>Le cerveau</h3>
+    <dl>
+      <div><dt>Mode du robot<small>Safe : il s'arrête seul au bord d'un vide</small></dt><dd id="cMode">—</dd></div>
+      <div><dt>Gyroscope<small>cap compté depuis le démarrage du cerveau</small></dt><dd id="cGyro">—</dd></div>
+      <div><dt>Lectures des capteurs</dt><dd id="cLectures">—</dd></div>
+      <div><dt>Arrêts réflexes<small>depuis le démarrage du cerveau</small></dt><dd id="cReflexes">—</dd></div>
+      <div><dt>Chemin compté<small>depuis le démarrage du cerveau</small></dt><dd id="cChemin">—</dd></div>
+      <div><dt>Réveils du robot vus</dt><dd id="cRedem">—</dd></div>
+      <div><dt>Boutons du robot</dt><dd id="cBoutons">—</dd></div>
+      <div><dt>Programme du cerveau</dt><dd id="cFirmware">—</dd></div>
+    </dl>
+  </div>
 </section>
 
 <section class="feuille" id="feuilleLegende" role="dialog" aria-label="Légende de la carte">
@@ -403,7 +498,7 @@ for (const c of CALQUES) {
 }
 
 // ------------------------------------------------------------ les deux feuilles : journal de bord, légende
-const FEUILLES = { journal: [$('feuilleJournal'), $('loch')], legende: [$('feuilleLegende'), $('bLegende')] };
+const FEUILLES = { journal: [$('feuilleJournal'), $('loch')], legende: [$('feuilleLegende'), $('bLegende')], capteurs: [$('feuilleCapteurs'), $('bCapteurs')] };
 let ouverte = null;
 function fermer(rendre = true) {
   if (!ouverte) return;
@@ -423,9 +518,12 @@ function ouvrir(nom) {
   b.setAttribute(b.hasAttribute('aria-pressed') ? 'aria-pressed' : 'aria-expanded', 'true');
   fermerFiche();
   f.querySelector('[data-ferme]').focus({ preventScroll: true });
+  if (nom === 'capteurs') majCapteurs();                // les mesures arrivent au sondage suivant, un quart de seconde plus tard
+  if (nom === 'journal' && journalSale) majJournal();
 }
 $('loch').onclick = () => ouvrir('journal');
 $('bLegende').onclick = () => ouvrir('legende');
+$('bCapteurs').onclick = () => ouvrir('capteurs');
 for (const b of document.querySelectorAll('[data-ferme]')) b.onclick = () => fermer();
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { fermer(); fermerFiche(); } });
 
@@ -1082,24 +1180,57 @@ function majTexte() {
   }
   $('srcTexte').innerHTML = t;
   $('marque').innerHTML = SIGNES[genre];
-  const m = [];
-  if (r.q != null && r.qmax) m.push('Batterie ' + Math.round(100 * r.q / r.qmax) + ' %, ' + nb(r.mv / 1000, 1) + ' V.');
-  m.push('Mode ' + ({ 1: 'passif', 2: 'passif', 3: 'Safe', 4: 'Full' }[r.mode] || r.mode) + '.');
-  m.push('Capteur de distance : ' + (r.us > 0 ? longueur(r.us) + ' devant.' : r.us === 0 ? 'rien à portée.' : 'éteint.'));
-  if (r.ir) m.push('Signal de la base : ' + signalDit(r.ir) + '.');
-  const sn = O.get('seance'); if (sn && sn.nom) m.push('Enregistrement ' + sn.nom + '.');
-  $('mesures').textContent = m.join(' ');
 }
+// ce que dit le robot : les lignes de la console du cerveau, [numéro, heure, « HH:MM:SS », genre, texte], reçues au fil
+// des sondages ; un interrupteur du journal les y mêle aux événements, à leur heure
+let dits = [], nDits = 0, journalSale = false;
+let voirDits = new URLSearchParams(location.search).get('dit') === '1';
+try { voirDits = voirDits || localStorage.getItem('dits') === '1'; } catch (err) { /* stockage refusé : interrupteur éteint */ }
+$('c-dits').checked = voirDits;
+$('c-dits').onchange = () => {
+  voirDits = $('c-dits').checked; majJournal();
+  try { localStorage.setItem('dits', voirDits ? '1' : '0'); } catch (err) { /* le choix vaut pour cette fois */ }
+};
+const SIGNES_DITS = {
+  robot: '<circle cx="7" cy="8" r="4.4" fill="#17212e"/><path d="M7 8h7.5" stroke="#17212e" stroke-width="1.5"/>',
+  mouv: '<path d="M6 4.2 10 8l-4 3.8" fill="none" stroke="rgba(23,33,46,.55)" stroke-width="1.7"/>',
+  alerte: SIGNES.alerte };
+const signeDit = g => '<svg class="signe" viewBox="0 0 16 16" aria-hidden="true">' + (SIGNES_DITS[g] || SIGNES.info) + '</svg>';
+const propre = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function majJournal() {
+  journalSale = false;
   const J = O.get('journal') || [];
-  $('journal').innerHTML = J.length ? J.slice().reverse().map((e, i) => '<li' + (e.u != null ? ' class="ici" tabindex="0" title="Montrer sur la carte"' : '') + ' data-i="' + (J.length - 1 - i) + '"><time>' + e.h.slice(0, 5) + '</time>'
-    + signeJournal(e) + '<span>' + e.x.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) + '</span></li>').join('')
+  const lignes = J.map((e, i) => ({ t: e.t, e, i }));
+  if (voirDits) for (const l of dits) lignes.push({ t: l[1], l });
+  lignes.sort((a, b) => b.t - a.t || (a.e ? -1 : 1));       // le plus récent en haut ; à la même heure, l'événement avant la ligne du robot
+  $('journal').classList.toggle('detail', voirDits);
+  $('journal').innerHTML = lignes.length ? lignes.map(q => q.e
+    ? '<li' + (q.e.u != null ? ' class="ici" tabindex="0" title="Montrer sur la carte"' : '') + ' data-i="' + q.i + '"><time>' + (voirDits ? q.e.h : q.e.h.slice(0, 5)) + '</time>'
+      + signeJournal(q.e) + '<span>' + propre(q.e.x) + '</span></li>'
+    : '<li class="dit ' + q.l[3] + '"><time>' + q.l[2] + '</time>' + signeDit(q.l[3]) + '<span>' + propre(q.l[4]) + '</span></li>').join('')
     : '<li class="vide">Rien encore dans cet essai.</li>';
-  const d = J[J.length - 1];
+  majLoch();
+  const sn = O.get('seance');
+  $('mesures').textContent = sn && sn.nom ? 'Enregistrement ' + sn.nom + '.' + (sn.note ? ' But de l\'essai : ' + sn.note : '') : '';
+}
+function majLoch() {                                   // sous la carte : la dernière ligne du journal, ou celle du robot si l'interrupteur les montre
+  const J = O.get('journal') || [], d = J[J.length - 1], l = voirDits ? dits[dits.length - 1] : null;
+  if (l && (!d || l[1] >= d.t)) {
+    $('dernierHeure').textContent = l[2]; $('dernierSigne').innerHTML = signeDit(l[3]); $('dernier').textContent = l[4];
+    return;
+  }
   $('dernierHeure').textContent = d ? d.h.slice(0, 5) : '';
   $('dernierSigne').innerHTML = d ? signeJournal(d) : '';
   $('dernier').textContent = d ? d.x : 'Journal de bord : rien encore dans cet essai';
 }
+$('mesures').onclick = () => $('mesures').classList.toggle('tout');      // le but de l'essai, coupé à trois lignes : un toucher le déplie
+// Une ligne du robot vient d'arriver : le journal est refait s'il est ouvert et lu depuis le haut ; sinon à son ouverture,
+// ou quand on y remonte (les lignes ne bougent pas sous les yeux de quelqu'un qui lit plus bas).
+const corpsJournal = $('feuilleJournal').querySelector('.corps');
+function ditArrive() {
+  if (voirDits && ouverte === 'journal' && corpsJournal.scrollTop < 40) majJournal(); else { journalSale = true; majLoch(); }
+}
+corpsJournal.addEventListener('scroll', () => { if (journalSale && ouverte === 'journal' && corpsJournal.scrollTop < 40) majJournal(); }, { passive: true });
 function montrer(ev) {                                  // une ligne du journal : la carte va à l'endroit dont elle parle
   const li = ev.target.closest('li'); if (!li || li.dataset.i == null) return;
   const e = (O.get('journal') || [])[+li.dataset.i];
@@ -1107,6 +1238,90 @@ function montrer(ev) {                                  // une ligne du journal 
 }
 $('journal').onclick = montrer;
 $('journal').onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); montrer(ev); } };
+
+// ------------------------------------------------------------ la feuille des capteurs
+// Toutes les mesures du moment, demandées au serveur seulement quand la feuille est ouverte. Le schéma montre le robot
+// vu de dessus : chaque capteur y est à sa place et change de teinte comme sur la carte (ocre : quelque chose est
+// proche ; magenta : touché, levé, ou sol sombre). Dessous, chaque mesure en clair, avec son unité.
+let capteurs = null;
+const SVG = 'http://www.w3.org/2000/svg';
+const ANGLES_OPTIQUES = [62, 36, 12, -12, -36, -62], ANGLES_VIDE = [58, 18, -18, -58];      // degrés depuis l'avant, positifs à gauche
+const barres = ANGLES_OPTIQUES.map(() => $('sOptiques').appendChild(document.createElementNS(SVG, 'line')));
+const carres = ANGLES_VIDE.map(a => {
+  const q = $('sVides').appendChild(document.createElementNS(SVG, 'rect')), t = a * Math.PI / 180;
+  q.setAttribute('x', (160 - 66 * Math.sin(t) - 6).toFixed(1)); q.setAttribute('y', (132 - 66 * Math.cos(t) - 6).toFixed(1));
+  q.setAttribute('width', 12); q.setAttribute('height', 12); q.setAttribute('fill', K.papier);
+  return q;
+});
+function dire(id, texte, alerte) {                    // écrit une mesure si elle a changé ; en magenta si elle demande attention
+  const el = $(id);
+  if (el.textContent !== texte) el.textContent = texte;
+  el.classList.toggle('alerte', !!alerte);
+}
+const suite = L => L.join(' ');                   // des nombres côte à côte
+const MODES = { 1: 'Off', 2: 'passif', 3: 'Safe', 4: 'Full' };      // sur ce robot, le numéro lu est décalé de un
+const CHARGES = ['non', 'reconditionnement', 'charge à pleine puissance', 'charge d\'entretien', 'en attente', 'défaut de charge'];
+function majCapteurs() {
+  const c = capteurs;
+  if (panne) return dire('capHeure', 'Le PC qui tient la carte ne répond pas : les mesures sont figées.', true);
+  if (!c) return dire('capHeure', 'Pas de mesures pour l\'instant.');
+  const e = c.e || {}, b = c.c || {}, r = robot || {}, rejeu = horloge && horloge.mode === 'rejeu';
+  dire('capHeure', rejeu ? 'Mesures de ' + c.h + ', en rejeu.'
+    : c.age > 120 ? 'Dernières mesures : ' + quand(c.t) + '. Le robot ne donne plus de nouvelles depuis ' + duree(c.age) + '.'
+    : 'Mesures de ' + c.h + (c.age > 3 ? ', il y a ' + duree(c.age) + '.' : ', en direct.'));
+  // le schéma
+  const tourne = (b.radar && b.radar.a) || 0;
+  $('sCone').setAttribute('transform', 'rotate(' + (-tourne) + ' 160 46)');
+  $('sCone').style.display = c.us < 0 ? 'none' : '';
+  dire('sDist', c.us > 0 ? longueur(c.us) + ' devant' : c.us === 0 ? 'rien à portée' : 'capteur de distance éteint');
+  c.lb.forEach((v, k) => {
+    const t = ANGLES_OPTIQUES[k] * Math.PI / 180, s = Math.sin(t), co = Math.cos(t), L = 4 + 18 * Math.sqrt(Math.min(v, 1200) / 1200), l = barres[k];
+    l.setAttribute('x1', (160 - 92 * s).toFixed(1)); l.setAttribute('y1', (132 - 92 * co).toFixed(1));
+    l.setAttribute('x2', (160 - (92 + L) * s).toFixed(1)); l.setAttribute('y2', (132 - (92 + L) * co).toFixed(1));
+    l.setAttribute('stroke', v >= 200 ? K.magenta : v >= 80 ? K.ocre : K.encre);
+  });
+  carres.forEach((q, k) => q.setAttribute('fill', c.vide && c.vide[k] < 500 ? K.magenta : K.papier));
+  $('sPcG').setAttribute('stroke', c.pc[0] ? K.magenta : ENCRE(.22)); $('sPcD').setAttribute('stroke', c.pc[1] ? K.magenta : ENCRE(.22));
+  $('sRoueG').setAttribute('fill', c.roue[0] ? K.magenta : K.encre); $('sRoueD').setAttribute('fill', c.roue[1] ? K.magenta : K.encre);
+  dire('sCurG', c.cur ? c.cur[0] + ' mA' : ''); dire('sCurD', c.cur ? c.cur[1] + ' mA' : '');
+  c.ir.forEach((code, k) => { const g = genreSignal(code); $('sIr' + k).setAttribute('fill', g >= 0 ? COUL_SIGNAL[g] : 'none'); });
+  $('sMur').setAttribute('stroke', e.mur ? K.magenta : ENCRE(.3));
+  // devant lui
+  dire('cDistance', c.us > 0 ? longueur(c.us) + (tourne ? ', capteur tourné de ' + Math.abs(tourne) + '° vers la ' + (tourne > 0 ? 'gauche' : 'droite') : '')
+    : c.us === 0 ? 'rien à portée' : 'éteint');
+  dire('cPare', c.pc[0] && c.pc[1] ? 'enfoncé des deux côtés' : c.pc[0] ? 'enfoncé à gauche' : c.pc[1] ? 'enfoncé à droite' : 'libre', c.pc[0] || c.pc[1]);
+  dire('cOptiques', suite(c.lb), c.lb.some(v => v >= 200));
+  dire('cMur', e.mur == null ? '—' : (e.mur ? 'mur vu' : 'rien') + ', signal ' + e.mur_signal + (e.mur_virtuel ? ', mur virtuel vu' : ''));
+  // sous lui
+  dire('cVide', c.vide ? suite(c.vide) : '—', c.vide && c.vide.some(v => v < 500));
+  dire('cRoues', c.roue[0] && c.roue[1] ? 'les deux levées' : c.roue[0] ? 'gauche levée' : c.roue[1] ? 'droite levée' : 'au sol', c.roue[0] || c.roue[1]);
+  dire('cRoulette', e.roulette == null ? '—' : 'valeur ' + e.roulette);
+  dire('cSalete', e.salete == null ? '—' : e.salete ? 'saleté vue (' + e.salete + ')' : 'rien');
+  // ses moteurs
+  dire('cVitesse', (r.vit != null ? nb(Math.abs(r.vit) / 10) + ' cm/s' + (r.vit < -15 ? ' en arrière' : '') + ', rotation ' + nb(Math.abs(r.rot)) + ' °/s' : '—')
+    + (b.speed != null ? ' ; réglée à ' + nb(b.speed / 10) + ' cm/s' : ''));
+  dire('cCourants', c.cur ? c.cur[0] + ' et ' + c.cur[1] + ' mA' : '—');
+  dire('cCompteurs', c.enc ? c.enc[0] + ' et ' + c.enc[1] : '—');
+  dire('cBrosses', e.cur_brosse == null ? '—' : e.cur_brosse + ' et ' + e.cur_lat + ' mA' + (b.brosse && b.brosse.lat ? ' ; la latérale tourne' : ''));
+  dire('cSurint', e.surint == null ? '—' : e.surint ? 'oui (code ' + e.surint + ')' : 'aucune', e.surint);
+  // sa batterie
+  dire('cCharge', b.q != null && b.qmax ? Math.round(100 * b.q / b.qmax) + ' % (' + b.q + ' mAh sur ' + b.qmax + ')' : '—');
+  dire('cTension', nb(c.mv / 1000, 1) + ' V');
+  dire('cCourant', c.ma < -5 ? -c.ma + ' mA consommés' : c.ma > 5 ? c.ma + ' mA reçus : elle se charge' : 'presque nul');
+  dire('cTemp', b.t != null ? b.t + ' °C' : '—');
+  dire('cEnCharge', b.chg == null ? '—' : (CHARGES[b.chg] || 'état ' + b.chg) + (e.base ? ', posé sur sa base' : ''), b.chg === 5);
+  const recus = ['dessus', 'gauche', 'droite'].map((nom, k) => c.ir[k] ? nom + ' : ' + (genreSignal(c.ir[k]) >= 0 ? MOT_SIGNAL[genreSignal(c.ir[k])] : 'code ' + c.ir[k]) : '').filter(Boolean);
+  dire('cIr', recus.length ? recus.join(' ; ') : 'rien');
+  // le cerveau
+  dire('cMode', MODES[c.mode] || 'numéro ' + c.mode);
+  dire('cGyro', c.gyro ? 'cap ' + nb(((c.gyro[0] % 360) + 360) % 360, 1) + '°, rotation ' + nb(c.gyro[1], 1) + ' °/s' : '—');
+  dire('cLectures', nb(c.hz) + ' par seconde ; plus long trou de la dernière minute : ' + nb(c.trou, 1) + ' s', c.trou >= 1);
+  dire('cReflexes', b.reflexe ? b.reflexe.arrets + (b.reflexe.arrets > 1 ? ' arrêts' : ' arrêt') + (b.reflexe.arrets && b.reflexe.cause ? ' ; le dernier : ' + b.reflexe.cause : '') : '—');
+  dire('cChemin', b.pose && b.pose.dist != null ? nb(b.pose.dist / 1000, 1) + ' m' : '—');
+  dire('cRedem', b.redem != null ? String(b.redem) : '—');
+  dire('cBoutons', e.btn_clean == null ? '—' : [e.btn_clean && 'CLEAN', e.btn_spot && 'SPOT', e.btn_dock && 'DOCK'].filter(Boolean).join(', ') || 'aucun appuyé');
+  dire('cFirmware', b.ver || '—');
+}
 
 // ------------------------------------------------------------ le rejeu
 async function ordreRejeu(q) { try { await fetch('api/rejeu?' + q, { cache: 'no-store' }); } catch (err) { /* le prochain sondage le dira */ } }
@@ -1149,13 +1364,25 @@ function annoncer(k, val, neuf) {                     // ce qui vient d'arriver 
 async function sonder() {
   let delai = 250, d = null;
   try {
-    const rep = await fetch('api/suite?e=' + E + '&v=' + V, { cache: 'no-store' });
+    // s : les lignes de la console du cerveau déjà reçues ; c=1 : toutes les mesures, seulement feuille « Capteurs » ouverte
+    const rep = await fetch('api/suite?e=' + E + '&v=' + V + '&s=' + nDits + (ouverte === 'capteurs' ? '&c=1' : ''), { cache: 'no-store' });
     if (!rep.ok) throw new Error(rep.status);
     d = await rep.json();
     panne = false;
   } catch (err) { panne = true; delai = 1500; }
   if (d) {
-    if (d.e !== E) { O.clear(); E = d.e; premiere = true; aff.ok = false; anim = null; vue.pret = vue.attente = false; solSale = memoireSale = true; }
+    if (d.e !== E) {
+      O.clear(); E = d.e; premiere = true; aff.ok = false; anim = null; vue.pret = vue.attente = false; solSale = memoireSale = true;
+      dits = []; nDits = 0; capteurs = null; journalSale = true;
+    }
+    if (d.sortie) {                                           // ce que le robot a dit depuis le dernier sondage
+      let neuves = 0;
+      if (d.sortie.n < nDits) { dits = []; nDits = 0; }
+      for (const l of d.sortie.l || []) if (l[0] >= nDits) { dits.push(l); nDits = l[0] + 1; neuves++; }
+      if (dits.length > 450) dits = dits.slice(-300);
+      if (neuves && !premiere) sansCasser(ditArrive); else if (neuves) journalSale = true;
+    }
+    if ('capteurs' in d) capteurs = d.capteurs;
     let journal = false;
     for (const [k, val] of Object.entries(d.obj || {})) {
       if (k.startsWith('t/')) solSale = true;                 // le trajet a changé : le sol parcouru aussi
@@ -1165,7 +1392,7 @@ async function sonder() {
       if (k === 'decor') { decor = val; borner(); solSale = memoireSale = true; }
       else if (k === 'anciens') solSale = memoireSale = true;
       else if (k === 'reperes') memoireSale = true;
-      else if (k === 'journal') journal = true;
+      else if (k === 'journal' || k === 'seance') journal = true;
       else if (!premiere) sansCasser(() => annoncer(k, val, neuf));
     }
     for (const k of [...O.keys()]) if (k.startsWith('t/') && +k.slice(2) >= d.nt) { O.delete(k); solSale = true; }
@@ -1175,6 +1402,7 @@ async function sonder() {
     sale = true;
   }
   sansCasser(majTexte);
+  if (ouverte === 'capteurs') sansCasser(majCapteurs);
   if (d) {
     sansCasser(majRejeu);
     // si le navigateur ne donne plus d'images (onglet en arrière-plan, écran en veille partielle), la carte est

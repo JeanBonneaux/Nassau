@@ -11,8 +11,12 @@
 #   NOM*balise*.txt             la sortie de balise_base.py : où passe l'axe de la base par rapport au robot ;
 #   NOM_tour_xxx.json           un tour sur place fait à la main par la navigation, avec la position qu'elle tenait alors ;
 #   NOM_etat.jsonl              /api/state relu par l'enregistreur : version du firmware, tour sur place en cours, charge
-#                               de la batterie, robot posé ou non sur sa base.
-# Le champ « sta » de /api/state (nom du réseau Wi-Fi de la maison) n'est jamais lu ici.
+#                               de la batterie, robot posé ou non sur sa base ; et, pour la feuille « Capteurs » de la page,
+#                               température, gyroscope, capteur de distance, réflexes, brosses (fonction plus_etat) ;
+#   NOM_e.csv                   les réponses à la touche e : boutons, mur, saleté, roulette avant, courants des brosses ;
+#   NOM_console.txt             ce que le cerveau écrit sur sa console, dont le texte que le robot envoie de lui-même.
+# Les champs « sta » et « ap » de /api/state (réseaux Wi-Fi) ne sont jamais lus ici, et les lignes de la console
+# repassent par les règles de masquage de l'enregistreur (nom du réseau de la maison, identifiants de l'appareil).
 # À côté du plan (plan_lidar/, hors dépôt), ce que la navigation a appris de l'appartement (classe Connaissances) :
 #   obstacles.json              les obstacles trouvés par le robot et absents du plan (explorer3.py --plan-ferme) ;
 #   reperes_tours.json          les repères : tours sur place déjà faits, sur lesquels un nouveau tour se recale ;
@@ -420,6 +424,138 @@ def version_firmware(texte):
         return None
 
 
+def _garde(d, cles):
+    """les seules clés voulues d'un dictionnaire de l'état, quand elles y sont"""
+    return {c: d[c] for c in cles if isinstance(d, dict) and c in d}
+
+
+def plus_etat(e, r):
+    """Ce que la feuille « Capteurs » de la page montre de l'état du cerveau, champ par champ : rien n'est recopié en
+    bloc. Les parties « sta » et « ap » (réseaux Wi-Fi) et le nom de la carte ne sont pas lus."""
+    d = _garde(e, ("ver", "lecture", "speed", "driving", "rst"))
+    d.update(_garde(r, ("ok", "v", "i", "t", "q", "qmax", "chg", "mode", "wall", "btn", "cur")))
+    d["robot_age"] = r.get("age")                                 # millisecondes depuis la dernière réponse du robot au cerveau
+    d["redem"] = e.get("robot_redem")
+    for nom, cles in (("imu", ("ok", "cal", "yaw", "rate", "biais")), ("pose", ("dist", "leves", "sauts", "gyro")),
+                      ("radar", ("mode", "mm", "a", "mm_age", "present", "seuil", "securite")), ("tour", ("etat", "n")),
+                      ("mouv", ("etat", "n", "fait_mm", "fait_deg")), ("brosse", ("lat", "max", "marches")),
+                      ("reflexe", ("arrets", "refus", "verrou", "cause")), ("console", ("perdus",)), ("texte", ("lignes",))):
+        g = _garde(e.get(nom), cles)
+        if g:
+            d[nom] = g
+    return d
+
+
+E_NOMBRES = ("btn_clean", "btn_spot", "btn_dock", "mur", "mur_signal", "mur_virtuel", "salete", "roulette", "base", "cur_g", "cur_d",
+             "cur_brosse", "cur_lat", "surint")
+RE_RESEAU = re.compile(r"([Rr]éseau de la maison « )[^»]*( »)")
+RE_SSID = re.compile(r"(?i)(ssid\W{0,3})\S+")
+RE_ID = (re.compile(r"\b[0-9A-Fa-f]{4}(?: [0-9A-Fa-f]{3,4}){2,}\b"), re.compile(r"\b[0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5}\b"),
+         re.compile(r"\b[0-9A-Fa-f]{12,}\b"))
+MOUVEMENTS = ("Mouvement", "Tour sur place", "Avance", "Recule", "Tourne", "Roues arrêtées", "Vitesse réglée", "Brosse")
+ALERTES = ("Réflexe", "Radar : obstacle", "Pas de réponse du robot", "## liaison", "## la carte a fermé", "Le robot envoie du texte",
+           "Redémarrage de la carte", "Erreur")
+
+
+def ligne_console(texte):
+    """Une ligne de NOM_console.txt -> (genre, texte à montrer), ou None pour une ligne à ne pas montrer.
+    Genres : « robot » (le texte que le robot écrit de lui-même), « alerte », « mouv » (ordres de mouvement et leur
+    résultat), « ordre » (touche envoyée par un outil), « info ». Les relevés demandés chaque seconde par
+    l'enregistreur (touche e) ne sont pas montrés. L'enregistreur masque déjà le nom du réseau de la maison et les
+    identifiants de l'appareil ; les mêmes règles sont repassées ici, par précaution."""
+    x = RE_SSID.sub(r"\1…", RE_RESEAU.sub(r"\1…\2", texte.rstrip()))
+    s = x.strip()
+    if not s:
+        return None
+    if s.startswith(">>"):
+        touche = s[2:].strip()
+        return None if touche == "e" else ("ordre", "touche envoyée : " + touche)
+    if s.startswith("texte du robot"):
+        for r in RE_ID:
+            s = r.sub("[identifiant masqué]", s)
+        return "robot", s.split(":", 1)[1].strip() if ":" in s else s
+    if s.startswith(ALERTES) or " refusé" in s:                   # « Mouvement 12 refusé : … », « Tour sur place refusé : … »
+        return "alerte", s
+    # « 5 ou espace pour arrêter. » : un rappel pour qui pilote au clavier, sans intérêt sur la carte
+    return ("mouv" if s.startswith(MOUVEMENTS) else "info"), s.replace(" 5 ou espace pour arrêter.", "")
+
+
+class Fil:
+    """un fichier texte qui grandit, relu par morceaux : les lignes entières arrivées depuis la dernière lecture"""
+
+    def __init__(self, chemin):
+        self.chemin, self.pos, self.reste = chemin, 0, ""
+
+    def lignes(self):
+        try:
+            with open(self.chemin, "rb") as f:
+                f.seek(self.pos)
+                bloc = f.read()
+                self.pos = f.tell()
+        except OSError:
+            return []
+        morceaux = (self.reste + bloc.decode("utf-8", "replace")).split("\n")
+        self.reste = morceaux.pop()                               # dernière ligne peut-être incomplète
+        return morceaux
+
+
+class LecteurE:
+    """NOM_e.csv : les réponses à la touche e (boutons, mur, saleté, roulette avant, courants des brosses), une par seconde"""
+
+    def __init__(self, prefixe):
+        self.fil, self.cols = Fil(prefixe + "_e.csv"), None
+
+    def lire(self):
+        rangs = []
+        for texte in self.fil.lignes():
+            f = texte.strip().split(",")
+            if self.cols is None:
+                if "pc_s" in f:
+                    self.cols = f
+                continue
+            if len(f) != len(self.cols):
+                continue
+            try:
+                v = dict(zip(self.cols, f))
+                d = {"t": float(v["pc_s"])}
+                for c in E_NOMBRES:
+                    if v.get(c, "") != "":
+                        d[c] = int(float(v[c]))
+                rangs.append(d)
+            except (ValueError, KeyError):
+                continue
+        return rangs
+
+
+class LecteurConsole:
+    """NOM_console.txt : ce que le cerveau écrit sur sa console, dont le texte que le robot envoie de lui-même. Chaque
+    ligne gardée devient [heure, genre, texte]. La note de l'enregistrement (son but, écrit en tête par l'outil qui
+    l'a lancé) est gardée à part."""
+
+    def __init__(self, prefixe):
+        self.fil, self.note, self._entetes = Fil(prefixe + "_console.txt"), None, 0
+
+    def lire(self):
+        lignes = []
+        for texte in self.fil.lignes():
+            if texte.startswith("#"):
+                self._entetes += 1                                # 1 : nom et adresse, puis la note s'il y en a une, puis les colonnes
+                if self._entetes == 2 and not texte.startswith("# colonnes"):
+                    self.note = texte[1:].strip() or None
+                continue
+            f = texte.split("\t", 2)
+            if len(f) != 3:
+                continue
+            try:
+                t = float(f[0])
+            except ValueError:
+                continue
+            g = ligne_console(f[2])
+            if g is not None:
+                lignes.append([t, g[0], g[1]])
+        return lignes
+
+
 def lire_etats(chemin, pos=0):
     """NOM_etat.jsonl à partir de l'octet pos : une liste de dictionnaires (heure, tour en cours, charge, version du
     firmware, robot sur sa base ou non), et la nouvelle position dans le fichier. « base » vaut None quand le robot
@@ -442,7 +578,7 @@ def lire_etats(chemin, pos=0):
             frais = bool(r.get("ok")) and (r.get("age") or 0) < 3000
             etats.append({"t": j["pc_s"], "tour": (e.get("tour") or {}).get("etat"), "q": r.get("q"), "qmax": r.get("qmax"),
                           "ver": version_firmware(e.get("ver")), "base": (bool(r["base"]) if frais and "base" in r else None),
-                          "chg": r.get("chg") if frais else None})
+                          "chg": r.get("chg") if frais else None, "plus": plus_etat(e, r)})
         except (ValueError, KeyError, AttributeError, TypeError):
             continue
     return etats, pos + fin + 1
@@ -543,6 +679,9 @@ class Direct:
         self._base = Base(self.suivi.pose_base)
         self._base_attente = []                                   # ancres « base » à poser dès que le journal a une ligne
         self._departs = []                                        # départs de la base, de même
+        self._lect_e = LecteurE(prefixe) if prefixe else None
+        self._lect_console = LecteurConsole(prefixe) if prefixe else None
+        self._note = None
         self.suivi.fixer("seance", {"mode": "direct", "nom": os.path.basename(prefixe) if prefixe else None})
 
     def horloge(self, maintenant):
@@ -622,6 +761,17 @@ class Direct:
             for t, cle, cause in self._departs:
                 self.suivi.deplacer(t, cle, cause)
             self._base_attente, self._departs = [], []
+        # pour la feuille « Capteurs » et le journal : les réponses à la touche e, et ce que le cerveau écrit sur sa console
+        rangs = self._lect_e.lire()
+        if rangs:
+            self.suivi.e = rangs[-1]
+        parues = self._lect_console.lire()
+        if parues:
+            self.suivi.sortie.extend(parues)
+            self.suivi.n_sortie = len(self.suivi.sortie)
+        if self._lect_console.note != self._note:
+            self._note = self._lect_console.note
+            self.suivi.fixer("seance", {"mode": "direct", "nom": os.path.basename(self.prefixe), "note": self._note})
         if maintenant - self._t_fichiers >= 0.4:
             self._t_fichiers = maintenant
             if self.seance.lire(self.suivi.R, self.suivi.Tt):
@@ -684,6 +834,11 @@ class Rejeu:
         self.ancres = sorted(F["ancres"] + ancres_base, key=lambda a: a["t"])
         self.T0, self.T1 = self.Tl[0], self.Tl[-1]
         self.vitesse, self.pause = vitesse, pause
+        self.e_rangs = LecteurE(prefixe).lire()                   # réponses à la touche e, et lignes de la console du cerveau
+        self._Tr = [d["t"] for d in self.e_rangs]
+        lecteur = LecteurConsole(prefixe)
+        self.console, self.note = lecteur.lire(), lecteur.note
+        self._Tc = [s[0] for s in self.console]
         self.epoque = 0
         self._zero()
         if debut is not None:
@@ -693,7 +848,8 @@ class Rejeu:
         self.epoque += 1
         self.suivi = self.fabrique()
         self.suivi.fixer_firmware(self.firmware)
-        self.suivi.fixer("seance", {"mode": "rejeu", "nom": os.path.basename(self.prefixe)})
+        self.suivi.fixer("seance", {"mode": "rejeu", "nom": os.path.basename(self.prefixe), "note": self.note})
+        self.suivi.sortie = self.console                          # la même liste : seul le nombre de lignes parues avance
         self.iL = self.iA = self.iE = self.iD = 0
         self.T, self._mur = self.T0, None
         self._evts = {}
@@ -746,6 +902,9 @@ class Rejeu:
         k = bisect.bisect_right(self._Te, T) - 1
         if k >= 0:
             su.etat = self.etats[k]
+        k = bisect.bisect_right(self._Tr, T) - 1
+        su.e = self.e_rangs[k] if k >= 0 else None
+        su.n_sortie = bisect.bisect_right(self._Tc, T)
 
 
 MOIS = ("janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc.")

@@ -173,15 +173,22 @@ def memoire():
         time.sleep(1.0)
 
 
-def reponse_suite(e_client, v_client):
+def reponse_suite(e_client, v_client, capteurs=False, s_client=None):
+    """Ce qui a changé depuis la version v_client ; avec capteurs, toutes les mesures du moment (la page ne les demande
+    que feuille « Capteurs » ouverte) ; avec s_client, les lignes de la console du cerveau parues depuis la s_client-ième."""
     with verrou:
         su = SOURCE.suivi
         maintenant = SOURCE.horloge(time.time())
         h = {"mode": SOURCE.mode, "t": round(maintenant, 2), "h": suivi_mod.heure_de(maintenant)}
         if SOURCE.mode == "rejeu":
             h.update({"vitesse": SOURCE.vitesse, "pause": SOURCE.pause, "t0": SOURCE.T0, "t1": SOURCE.T1})
+        meme = e_client == SOURCE.epoque
         d = {"e": SOURCE.epoque, "v": su.V, "nt": su.n_troncons, "robot": su.robot(maintenant), "horloge": h,
-             "obj": su.depuis(v_client if e_client == SOURCE.epoque else 0)}
+             "obj": su.depuis(v_client if meme else 0)}
+        if capteurs:
+            d["capteurs"] = su.capteurs(maintenant)
+        if s_client is not None:
+            d["sortie"] = su.sortie_depuis(s_client if meme else 0)
         return json.dumps(d, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
 
@@ -262,7 +269,9 @@ class Page(BaseHTTPRequestHandler):
                 time.sleep(max(0.0, min(20.0, float(q.get("s", ["3"])[0]))))
                 return self.envoyer(200, "image/gif", PIXEL)
             if u.path == "/api/suite":
-                return self.envoyer(200, "application/json; charset=utf-8", reponse_suite(int(q.get("e", ["-1"])[0]), int(q.get("v", ["0"])[0])))
+                return self.envoyer(200, "application/json; charset=utf-8",
+                                    reponse_suite(int(q.get("e", ["-1"])[0]), int(q.get("v", ["0"])[0]), q.get("c", ["0"])[0] == "1",
+                                                  int(q["s"][0]) if "s" in q else None))
             if u.path == "/api/rejeu" and SOURCE.mode == "rejeu":
                 with verrou:
                     if "vitesse" in q:

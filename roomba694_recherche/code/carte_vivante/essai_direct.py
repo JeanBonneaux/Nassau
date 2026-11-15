@@ -96,8 +96,10 @@ def preparer(nom, tmp):
                     os.replace(dst + suf, f"{dst}_{lettre}{suf}")
         if lettre:
             A.append((max(t_fin_passage, t_fin_txt) + 20.0, ranger))
-    # fichiers écrits d'un coup : essais de tours, destinations, tours faits à la main, mesures par les faisceaux de la base
-    autres = [src + suf for suf in ("_essai_tours.json", "_CIBLES.json")] + glob.glob(glob.escape(src) + "_tour_*.json") + glob.glob(glob.escape(src) + "_*balise*.txt")
+    # fichiers écrits d'un coup : essais de tours, destinations, tours faits à la main, mesures par les faisceaux de la base,
+    # et, depuis le 2026-11-15, les sorties de passage.py que la navigation garde dans des fichiers (lignes POSE=)
+    autres = ([src + suf for suf in ("_essai_tours.json", "_CIBLES.json")] + glob.glob(glob.escape(src) + "_tour_*.json")
+              + glob.glob(glob.escape(src) + "_*balise*.txt") + glob.glob(glob.escape(src) + "_*passage*.txt"))
     for chemin in autres:
         if os.path.exists(chemin):
             def copier(t, suf=chemin[len(src):], chemin=chemin):
