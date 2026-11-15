@@ -21,7 +21,7 @@ Chacun répond à une question. Un tour sur place avant le premier et après le 
 | N° | Essai | La question | Ce qu'on en ferait | État |
 |---|---|---|---|---|
 | 1 | Trois traversées de l'axe de la base, à 0,7 m, 1,1 m et 1,5 m d'elle, à 60 mm/s ; puis un tour sur place sur l'axe | Où exactement le faisceau vert passe-t-il au rouge ? Les deux récepteurs de devant donnent-ils un cap ? | un repère absolu, au centimètre, près de la base ; un contrôle de « devant la base » | **fait** (§ 5.2) : axe lu à 1 cm près, cap à 2° près |
-| 2 | Lecture des numéros cachés, robot en mode passif sur l'axe, base vue | L'octet parasite 177 vient-il quand la base est vue ? | savoir quand les lectures sont brouillées | commandé |
+| 2 | Lecture des numéros cachés, robot en mode passif sur l'axe, base vue | L'octet parasite 177 vient-il quand la base est vue ? | savoir quand les lectures sont brouillées | **fait** (§ 5.3) : non, il ne vient pas |
 | 3 | Avance à 30 mm/s jusqu'à la ligne sombre du tapis, puis recul droit capteur posé dessus | Le robot surveille-t-il le vide en reculant ? | franchir un bord sombre à reculons, sans rien changer d'autre | commandé |
 | 4 | Approche lente d'un mur nu, de 45 cm à 3 cm, à 40 mm/s | Que lisent les six capteurs optiques du pare-chocs selon la distance ? | une distance de près, et un arrêt avant le contact | commandé |
 | 5 | Essai des pivots devant un mur nu | Les séries de pivots reculent-elles vraiment le robot de 3 à 5 mm ? | corriger l'estime dans les couloirs (note J § 2.3) | commandé |
@@ -94,11 +94,21 @@ Détail dans la note L. La liste des quatorze sondages y est au § 1.
   | D | 1,66 m | 400,9 | 401,2 | 31 cm | aucun | 55 cm |
 
   Un pixel vaut 19 mm : l'aller et le retour s'accordent à 2 à 10 mm. La base est vue sur 22 à 34 % des lectures pendant une traversée.
-- **L'axe est une ligne droite** (3 mm de reste sur les trois lignes), **mais inclinée de 10,6°** dans le repère de la séance : elle part vers l'ouest de 7,5 cm tous les 40 cm. Prolongée jusqu'à la base, elle arrive 24 cm à l'est de la position que le plan donne à la base. Deux lectures possibles, non tranchées : la base est posée de biais ou a bougé, ou bien le cap de la séance est faux d'une dizaine de degrés. À demander à l'utilisateur : la base est-elle droite contre le mur ?
+- **L'axe est une ligne droite** (3 mm de reste sur les trois lignes), **mais inclinée de 10,6°** dans le repère de la séance : elle part vers l'ouest de 7,5 cm tous les 40 cm. Prolongée jusqu'à la base, elle arrive 24 cm à l'est de la position que le plan donne à la base.
+- **D'où viennent ces 10,6° : non tranché.** L'utilisateur répond « Base collée au mur » (avec une photo, qui n'est dans aucun fichier), et sur la carte quadrillée le mur derrière la base est horizontal. Un axe d'équerre avec ce mur pointerait plein bas. Il reste donc deux lectures : le cap retenu pendant la séance est trop petit d'une dizaine de degrés ; ou l'axe des faisceaux n'est pas d'équerre avec le mur (la base fait 13 cm de large : un côté décollé de 2,4 cm suffit ; ou ses émetteurs ne sont pas dans son axe). J'avais d'abord écrit à la session de navigation que c'était l'angle du mur sur le plan : c'était faux, et je l'ai corrigé. **Ce qui tranchera** : la montée sur la base par l'axe, proposée par la session de navigation ; robot posé sur ses contacts, son cap est celui de la base.
+- **La distance à la base n'est pas sûre non plus.** La largeur des faisceaux (505, 675 et 890 mm sur les trois lignes) met la base 1,05 à 1,2 m au nord de la première ligne ; le plan et le filtre disaient 0,87 m.
 - **Les deux récepteurs de devant donnent la direction de la base.** Pendant le tour sur place fait sur l'axe (robot à 5 mm de la ligne), ils ne la voient qu'entre les caps 60° et 92° ; leur cap moyen, 79,5°, est celui de l'axe mesuré (79,4°). En tournant, ils reçoivent le rouge, puis les deux faisceaux, puis le vert : le moment où les deux sont reçus marque la direction à 2° près environ.
 - **Le récepteur du dessus ne voit rien quand le robot tourne le dos à la base** : il est masqué vers l'arrière par ce qui est monté sur le robot (remarque de la session de navigation, confirmée).
 - **Ce qu'on en tire.** Près de la base, on a maintenant un repère absolu qui ne dépend ni du plan ni des repères : une traversée de 50 cm donne la position de côté à 1 cm près, et un tour sur place donne le cap à 2° près. Il reste à savoir où la base est vraiment sur le plan, et si elle est droite.
 
-### 5.3 Les essais suivants
+### 5.3 Essai 2, les numéros cachés robot en mode passif devant sa base (11 h 00) : fait, rien d'utile de plus
+
+**Mesuré** (576 demandes de 11 h 00 min 43 à 11 h 01 min 20 ; détail dans la note L § 4.10).
+
+- **L'octet parasite 177 n'est pas venu**, base vue et mode passif : il ne tient ni à l'un ni à l'autre. Il n'a été vu qu'une fois, dans la minute qui suivait le réveil du matin.
+- **Le numéro 131 vaut 21**, alors qu'il valait 1 aux deux autres lectures en mode passif : ce n'est pas le mode tout court, contrairement à ce que j'avais écrit. Le numéro 62 vaut 0 base vue : ce n'est pas un « base en vue ».
+- **Aucun capteur utile** dans ces numéros après quatre lectures : une horloge, deux valeurs qui suivent le mode, deux valeurs qui changent sans qu'on sache pourquoi.
+
+### 5.4 Les essais suivants
 
 À remplir essai par essai.

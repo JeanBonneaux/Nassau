@@ -1,0 +1,139 @@
+# heure <tab> importance (1 à 3) <tab> événement — suivi en direct
+10:40:17.316	2	je suis la séance exploration30_20261115_104014
+10:40:35.776	3	le robot écrit : key-wakeup-any
+10:40:35.776	3	le robot écrit : slept for 8 minutes 52 seconds
+10:40:35.776	3	le robot écrit : 2020-05-13-1928-L   
+10:40:35.776	3	le robot écrit : r3-robot/branches/aero-support:7587
+10:40:35.776	3	le robot écrit :  CLEAN
+10:40:35.776	3	le robot écrit : wifi-version: 3.5.62
+10:40:35.776	3	le robot écrit : bootloader id: [identifiant masqué] 
+10:40:35.776	3	le robot écrit : assembly: ningbo-wifi-v2
+10:40:35.776	3	le robot écrit : revision: 8
+10:40:35.776	3	le robot écrit : flash version: 13
+10:40:35.776	3	le robot écrit : flash info crc passed: 1
+10:40:35.776	3	le robot écrit : battery-current-zero 252
+10:40:35.836	3	console : Le robot envoie du texte : il vient de démarrer ou de se réveiller (fois numéro 3). Pour reprendre la main : s, puis f.
+10:40:35.836	3	console :   texte du robot : 3359129 key-wakeup-any
+10:40:35.837	3	console :   texte du robot : 3359129 slept for 8 minutes 52 seconds
+10:40:35.838	3	console :   texte du robot : 3359130 2020-05-13-1928-L   
+10:40:35.851	3	console :   texte du robot : 3359130 r3-robot/branches/aero-support:7587
+10:40:35.853	3	console :   texte du robot : 3359131  CLEAN
+10:40:35.853	3	console :   texte du robot : 3359132 wifi-version: 3.5.62
+10:40:35.855	3	console :   texte du robot : 3359132 bootloader id: [identifiant masqué] 
+10:40:35.867	3	console :   texte du robot : 3359133 assembly: ningbo-wifi-v2
+10:40:35.869	3	console :   texte du robot : 3359134 revision: 8
+10:40:35.870	3	console :   texte du robot : 3359134 flash version: 13
+10:40:35.873	3	console :   texte du robot : 3359134 flash info crc passed: 1
+10:40:35.883	3	console :   texte du robot : 3359135 battery-current-zero 252
+10:40:39.480	1	infrarouge de la base : dessus 128, avant gauche 0, avant droit 0, cap 269°
+10:40:39.579	1	infrarouge de la base : dessus 32, avant gauche 0, avant droit 0, cap 269°
+10:40:46.065	1	infrarouge de la base : dessus 160, avant gauche 0, avant droit 0, cap 269°
+10:40:49.369	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 269°
+10:40:57.750	1	mode lu 2 -> 3
+10:40:57.750	1	compteurs de roues qui avancent alors que le robot est immobile : gauche +2 pas, droite +1 pas en 1 lecture(s)
+10:41:07.827	1	infrarouge de la base : dessus 32, avant gauche 0, avant droit 0, cap 269°
+10:41:21.665	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 142°
+10:41:21.914	1	infrarouge de la base : dessus 172, avant gauche 0, avant droit 0, cap 149°
+10:41:25.197	1	infrarouge de la base : dessus 0, avant gauche 164, avant droit 0, cap 241°
+10:41:25.242	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 164, cap 242°
+10:41:25.836	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 164, cap 259°
+10:41:28.219	2	station 0 : 8 paliers ; le filtre a corrigé la position de 106 mm et +0.6° ; note 0.89, étalement 355 mm ; aucun repère ici
+10:41:28.763	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.0 m | batterie 1611 mAh
+10:41:30.431	1	tour de la station 0 : terminé, 380° en 13.7 s, 123 mesures ; la même paroi relue à la fin est à +7 mm (3 directions)
+10:45:17.347	2	bilan : chemin compté 0.0 m en 4.7 min ; temps : arrêt 95 %, tour 5 % ; lectures : une toutes les 47 ms (95 % sous 63 ms) ; 0 avances, 0 pivots, 1 tours sur place
+10:45:17.347	2	bilan, suite : alertes : roues qui forcent 0, avances déviées 0, pivots en désaccord 0, contacts 0, roues levées 0, trous de lecture 0 (le plus long 0 ms), retards du Wi-Fi 0 (le plus long 0.0 s), mode Safe tombé en roulant 0 (changements de mode en tout : 1), compteurs à l'arrêt 1 ; courant au repos -143 mA ; batterie : 1613 -> 1602 mAh en 5 min, soit 2.4 mAh par minute dépensés (à ce rythme, 675 min au plus avant qu'elle soit vide)
+10:45:17.347	2	bilan, cartographie : 1 stations, 1 portes possibles ; corrections du filtre : médiane 106 mm, la plus forte 106 mm ; note médiane 0.89, la plus basse 0.89 ; fermeture des tours : +7 mm en moyenne, 7 mm au pire (1 tours vérifiables)
+10:47:41.676	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 176°
+10:47:44.942	1	infrarouge de la base : dessus 172, avant gauche 0, avant droit 0, cap 176°
+10:47:46.025	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+10:47:48.281	1	la distance devant ne baisse pas (1168 mm) alors que les roues comptent 86 mm en 1,5 s
+10:48:07.439	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 356°
+10:48:12.236	1	infrarouge de la base : dessus 172, avant gauche 0, avant droit 0, cap 356°
+10:48:13.387	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 357°
+10:48:13.765	1	la distance devant ne baisse pas (1440 mm) alors que les roues comptent 87 mm en 1,5 s
+10:48:19.145	1	la distance devant ne baisse pas (1214 mm) alors que les roues comptent 86 mm en 1,5 s
+10:49:14.538	1	les lignes arrivent au PC avec 1.0 s de retard (Wi-Fi) ; aucune lecture ne manque
+10:49:32.107	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 135°
+10:49:38.831	1	infrarouge de la base : dessus 172, avant gauche 0, avant droit 0, cap 177°
+10:49:39.388	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 178°
+10:49:51.878	1	la distance devant ne baisse pas (560 mm) alors que les roues comptent 88 mm en 1,5 s
+10:49:53.273	1	avance de 1030 mm à 57 mm/s vers une cible à 1436 mm : le capteur de distance voit 0.957 mm par mm compté (écart 11 mm) : cible de biais, ou roues qui comptent trop
+10:50:02.692	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 355°
+10:50:10.383	1	infrarouge de la base : dessus 172, avant gauche 0, avant droit 0, cap 356°
+10:50:10.623	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 356°
+10:50:17.351	2	bilan : chemin compté 4.8 m en 9.7 min ; temps : arrêt 79 %, avance 15 %, pivot 4 %, tour 2 % ; lectures : une toutes les 47 ms (95 % sous 64 ms) ; 5 avances, 6 pivots, 1 tours sur place ; cibles devant : 1 avances, roues et capteur de distance diffèrent de 44 mm en médiane, 44 mm au pire ; cap : gyroscope / roues = 1.0111 sur 7 pivots
+10:50:17.351	2	bilan, suite : alertes : roues qui forcent 0, avances déviées 0, pivots en désaccord 0, contacts 0, roues levées 0, trous de lecture 0 (le plus long 0 ms), retards du Wi-Fi 1 (le plus long 1.0 s), mode Safe tombé en roulant 0 (changements de mode en tout : 1), compteurs à l'arrêt 1 ; courant au repos -147 mA ; batterie : 1613 -> 1588 mAh en 10 min, soit 2.6 mAh par minute dépensés (à ce rythme, 611 min au plus avant qu'elle soit vide)
+10:50:17.351	2	bilan, cartographie : 1 stations, 1 portes possibles ; corrections du filtre : médiane 106 mm, la plus forte 106 mm ; note médiane 0.89, la plus basse 0.89 ; fermeture des tours : +7 mm en moyenne, 7 mm au pire (1 tours vérifiables)
+10:51:44.167	1	avance de 383 mm à 57 mm/s vers une cible à 1130 mm : le capteur de distance voit 1.032 mm par mm compté (écart 8 mm)
+10:52:03.589	1	infrarouge de la base : dessus 160, avant gauche 0, avant droit 0, cap 175°
+10:52:03.729	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 175°
+10:52:07.015	1	infrarouge de la base : dessus 36, avant gauche 0, avant droit 0, cap 175°
+10:52:09.385	1	la distance devant ne baisse pas (1226 mm) alors que les roues comptent 86 mm en 1,5 s
+10:52:09.791	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 175°
+10:52:13.382	1	la distance devant ne baisse pas (1037 mm) alors que les roues comptent 85 mm en 1,5 s
+10:52:33.450	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 358°
+10:52:43.400	1	infrarouge de la base : dessus 160, avant gauche 0, avant droit 0, cap 358°
+10:52:43.931	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 358°
+10:54:57.897	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 209°
+10:54:57.945	1	infrarouge de la base : dessus 160, avant gauche 0, avant droit 0, cap 209°
+10:55:04.994	1	infrarouge de la base : dessus 172, avant gauche 0, avant droit 0, cap 209°
+10:55:05.704	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 209°
+10:55:17.364	2	bilan : chemin compté 9.3 m en 14.7 min ; temps : arrêt 75 %, avance 18 %, pivot 5 %, tour 2 % ; lectures : une toutes les 47 ms (95 % sous 64 ms) ; 11 avances, 11 pivots, 1 tours sur place ; murs de face : 1 avances, 0.4 m, le capteur de distance voit 1.0322 mm par mm compté ; cibles devant : 2 avances, roues et capteur de distance diffèrent de 28 mm en médiane, 44 mm au pire ; cap : gyroscope / roues = 1.0103 sur 12 pivots
+10:55:17.364	2	bilan, suite : alertes : roues qui forcent 0, avances déviées 0, pivots en désaccord 0, contacts 0, roues levées 0, trous de lecture 0 (le plus long 0 ms), retards du Wi-Fi 1 (le plus long 1.0 s), mode Safe tombé en roulant 0 (changements de mode en tout : 1), compteurs à l'arrêt 1 ; courant au repos -143 mA ; batterie : 1613 -> 1575 mAh en 15 min, soit 2.6 mAh par minute dépensés (à ce rythme, 607 min au plus avant qu'elle soit vide)
+10:55:17.364	2	bilan, cartographie : 1 stations, 1 portes possibles ; corrections du filtre : médiane 106 mm, la plus forte 106 mm ; note médiane 0.89, la plus basse 0.89 ; fermeture des tours : +7 mm en moyenne, 7 mm au pire (1 tours vérifiables)
+10:55:17.364	1	capteurs optiques du pare-chocs selon la distance lue devant (médianes) : 300 à 450 mm : centre gauche 44, centre droit 9, avant gauche 20, avant droit 52 (42 lectures)
+10:55:22.976	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 168, cap 244°
+10:55:23.068	1	infrarouge de la base : dessus 168, avant gauche 168, avant droit 168, cap 246°
+10:55:23.224	1	infrarouge de la base : dessus 168, avant gauche 172, avant droit 168, cap 251°
+10:55:23.443	1	infrarouge de la base : dessus 172, avant gauche 172, avant droit 168, cap 257°
+10:55:23.606	1	infrarouge de la base : dessus 172, avant gauche 172, avant droit 172, cap 261°
+10:55:23.696	1	infrarouge de la base : dessus 172, avant gauche 160, avant droit 172, cap 264°
+10:55:23.904	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 172, cap 269°
+10:55:23.989	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 164, cap 272°
+10:55:24.083	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 275°
+10:55:32.359	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 144°
+10:55:36.673	2	station 0 : 8 paliers ; le filtre a corrigé la position de 87 mm et -0.1° après 9.3 m (9 mm par mètre) ; note 0.90, étalement 360 mm ; aucun repère ici
+10:55:37.198	2	l'explorateur a fini : destinations faites | mode 3 | roues arrêtées | pare-chocs [0, 0] | 1 stations, 0 recalages, 0 corrections de cap (échelle du gyroscope 1.0045), 0 sauts, 0 trajets arrêtés, 0 obstacles touchés ou vus devant | 0.1 m | batterie 1574 mAh
+10:55:40.311	1	tour de la station 0 : terminé, 382° en 13.8 s, 125 mesures ; pas de paroi nette pour vérifier la fermeture
+10:55:40.311	1	station 0 (10:55:36) : position retenue à 87 mm de l'estime depuis le tour précédent, après 9.3 m
+10:55:52.370	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 234°
+10:56:12.371	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+10:56:32.619	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+10:56:52.690	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+10:57:12.769	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+10:57:32.905	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+10:57:53.097	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+10:58:19.886	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 146°
+10:58:22.143	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 168, cap 242°
+10:58:22.255	1	infrarouge de la base : dessus 168, avant gauche 168, avant droit 168, cap 246°
+10:58:22.459	1	infrarouge de la base : dessus 168, avant gauche 172, avant droit 168, cap 252°
+10:58:22.616	1	infrarouge de la base : dessus 172, avant gauche 172, avant droit 168, cap 256°
+10:58:22.657	1	infrarouge de la base : dessus 172, avant gauche 172, avant droit 172, cap 257°
+10:58:22.907	1	infrarouge de la base : dessus 172, avant gauche 160, avant droit 172, cap 261°
+10:58:23.267	1	infrarouge de la base : dessus 0, avant gauche 164, avant droit 172, cap 265°
+10:58:23.430	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 172, cap 267°
+10:58:31.642	1	infrarouge de la base : dessus 164, avant gauche 164, avant droit 164, cap 271°
+10:58:31.801	1	infrarouge de la base : dessus 164, avant gauche 0, avant droit 0, cap 277°
+10:58:42.620	1	infrarouge de la base : dessus 168, avant gauche 168, avant droit 168, cap 245°
+10:58:42.704	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 168, cap 241°
+10:58:42.804	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 237°
+10:59:02.892	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+10:59:22.915	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+10:59:42.985	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+11:00:03.068	1	infrarouge de la base : dessus 168, avant gauche 0, avant droit 0, cap 176°
+11:01:17.795	3	le robot écrit : {
+11:01:17.795	3	le robot écrit : p
+11:01:17.795	3	le robot écrit : q
+11:01:17.795	3	le robot écrit : c
+11:01:17.795	3	le robot écrit : b
+11:01:17.795	3	le robot écrit : p
+11:01:17.795	3	le robot écrit : )
+11:01:17.795	3	le robot écrit : (
+11:01:17.795	3	le robot écrit :  
+11:01:17.795	3	le robot écrit : 4
+11:01:17.795	3	le robot écrit : E
+11:01:20.870	3	le robot écrit : 5
+11:00:03.740	2	BILAN FINAL : chemin compté 9.3 m en 19.4 min ; temps : arrêt 78 %, avance 14 %, pivot 5 %, tour 2 % ; lectures : une toutes les 47 ms (95 % sous 64 ms) ; 11 avances, 17 pivots, 2 tours sur place ; murs de face : 1 avances, 0.4 m, le capteur de distance voit 1.0322 mm par mm compté ; cibles devant : 2 avances, roues et capteur de distance diffèrent de 28 mm en médiane, 44 mm au pire ; cap : gyroscope / roues = 1.0096 sur 19 pivots
+11:00:03.740	2	BILAN FINAL, suite : alertes : roues qui forcent 0, avances déviées 0, pivots en désaccord 0, contacts 0, roues levées 0, trous de lecture 0 (le plus long 0 ms), retards du Wi-Fi 1 (le plus long 1.0 s), mode Safe tombé en roulant 0 (changements de mode en tout : 1), compteurs à l'arrêt 1 ; courant au repos -143 mA ; batterie : 1613 -> 1563 mAh en 19 min, soit 2.6 mAh par minute dépensés (à ce rythme, 607 min au plus avant qu'elle soit vide)
+11:00:03.740	2	BILAN FINAL, cartographie : 2 stations, 1 portes possibles ; position retenue contre estime, d'un tour au suivant : médiane 87 mm, la plus forte 87 mm, 0 sauts de 120 mm ou plus sur moins de 2.5 m ; corrections du filtre : médiane 97 mm, la plus forte 106 mm ; note médiane 0.90, la plus basse 0.89 ; dérive entre deux stations : 9 mm par mètre en médiane ; fermeture des tours : +7 mm en moyenne, 7 mm au pire (1 tours vérifiables)
+11:00:03.740	2	capteurs optiques du pare-chocs selon la distance lue devant (médianes) : 300 à 450 mm : centre gauche 44, centre droit 9, avant gauche 20, avant droit 52 (42 lectures)
