@@ -2510,7 +2510,7 @@ L'utilisateur, à 15 h 29 : « On rentre rapidement » ; à 15 h 33 : « J'ai di
 | 15 h 44 à 15 h 46 | porte H18 vers le nord, à 5-8 cm/s | deux contacts légers du pare-chocs gauche contre le côté ouest ; dans l'encadrement, 232 mm lus à l'est et 347 à l'ouest ; passage refait 7 cm plus à l'est, sans contact |
 | 15 h 47 | jusqu'au point P à 120 mm/s | arrivée « au point P » d'après mon estime |
 
-Dix contacts légers du pare-chocs sur toute la séance, dont sept au retour ; aucune chute du mode Safe, aucune roue levée.
+Dix contacts légers du pare-chocs sur toute la séance, dont six au retour ; aucune chute du mode Safe, aucune roue levée.
 
 Mesuré en passant : l'encadrement de la porte H18 fait 579 mm lus plus deux fois la distance du capteur au centre (587 à 605 à l'aller).
 
