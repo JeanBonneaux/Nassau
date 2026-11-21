@@ -1,5 +1,16 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 17 — 2026-11-21 : deux ajouts pour rouler sans s'arrêter le long d'un mur, la priorité fixée par l'utilisateur le
+    jour même (« ça devrait être notre focus principal de pouvoir l'accélérer ») ; il a demandé d'y associer les capteurs
+    optiques (« n'oublions pas d'inclure les capteurs optiques dans le plan du code pour bien longer »). Tout est dans
+    mouv.ino, et rien ne change tant qu'on ne demande pas ces ajouts : une avance lancée comme avant se déroule comme avant.
+    (1) Retouche d'une avance en cours : /api/mouv?retouche=1 avec cap= (cap à tenir, relatif au départ de l'avance),
+        jusqua= (nouvelle distance totale, jamais plus de 2 m au-delà du chemin fait) et v= (vitesse maximale). Le PC
+        peut ainsi corriger la route et prolonger l'avance sans arrêt ; s'il se tait, l'avance va à son terme et s'arrête.
+        Jusqu'à la v16 une avance s'arrêtait au bout de 2 m au plus et toute correction demandait un arrêt.
+    (2) Ralentissement sur les capteurs optiques de devant : &opt=SEUIL ajouté à une avance plafonne la vitesse à 60 mm/s
+        tant que l'un des quatre capteurs optiques de devant lit SEUIL ou plus. Le pare-chocs reste ce qui arrête.
+    /api/state gagne, dans « mouv » : but, cap_vise, v, ret (retouches), opt (plus forte lecture optique).
   Version 16 — 2026-11-21 : un seul ajout, demandé par l'utilisateur : orienter lui-même le capteur de distance depuis la
     page de pilotage (« Donne-moi plutôt le contrôle sur le servo dans l'interface à l'adresse IP du robot où je peux
     piloter et je vais tester moi-même »). La page gagne un bloc « Orienter le capteur » : un curseur de 90° à gauche à
@@ -260,7 +271,7 @@ int  radarFrontMm();  void radarStateJson(String& j);
 // Tour sur place (rotation du robot avec mesure des distances) : défini dans tour.ino (quatrième fichier du sketch)
 void tourStart();  void tourTick();  bool tourActive();  void tourEnd(bool ok, const char* raison);  void handleTour();
 void jsonStr(String& j, const char* s);   // défini plus bas ; mouv.ino s'en sert avant
-void mouvStart(bool rotation, float but, int v, float capRel, int brosse);  void mouvTick();  bool mouvActive();  void mouvEnd(bool ok, const char* raison);  void handleMouv();  void mouvStateJson(String& j);  float poseDist();   // v10 : mouv.ino
+void mouvStart(bool rotation, float but, int v, float capRel, int brosse, int opt);  void mouvTick();  bool mouvActive();  void mouvEnd(bool ok, const char* raison);  void handleMouv();  void mouvStateJson(String& j);  float poseDist();   // v10 : mouv.ino
 void brosseLaterale(int puissance);  void brosseStateJson(String& j);   // v14 : brosse latérale seule (fichier principal et mouv.ino)
 // Position du robot (x, y, cap) : définie dans position.ino (deuxième fichier du sketch)
 void poseUpdate();  void poseReset(bool annonce);  void posePrint();  void poseStateJson(String& j);  void handlePose();
@@ -1269,7 +1280,7 @@ void printInfo() {
              st.ok ? "joignable" : "sans réponse", (unsigned long)(millis() - st.lastOkMs),
              useSplitGroups ? "lecture par les groupes 6 et 101" : "lecture par le groupe 100",
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
-  out.printf("Firmware roomba694_wifi v16, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
+  out.printf("Firmware roomba694_wifi v17, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
              __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
   out.printf("Depuis le démarrage de la carte : robot vu redémarrer %lu fois ; retrouvé à 19200 bauds et ramené à 115200 : %lu fois.\n",
              (unsigned long)robotBoots, (unsigned long)baudRescues);
@@ -1282,7 +1293,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v16 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v17 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"

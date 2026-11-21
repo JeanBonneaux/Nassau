@@ -27,10 +27,31 @@
 //       (plafonnée à BROSSE_LAT_MAX), du premier ordre de roues à la fin du mouvement, quelle que soit cette fin.
 //       /api/brosse?lat=N[&ms=T] : la même brosse pendant T ms (5 s au plus, 2 s par défaut), robot immobile, pour régler
 //       la puissance ; /api/brosse?lat=0 l'arrête ; /api/brosse seul : son état. Voir brosseLaterale() dans le fichier principal.
+// v17 (2026-11-21) : deux ajouts pour rouler sans s'arrêter le long d'un mur. Tous deux ne font rien tant qu'on ne les
+//       demande pas : une avance lancée comme avant se déroule exactement comme avant.
+//       (1) RETOUCHE D'UNE AVANCE EN COURS : /api/mouv?retouche=1[&cap=DEG][&jusqua=MM][&v=MM_S]
+//           cap    : nouveau cap à tenir, relatif au cap du DÉPART de cette avance (borné à ±45° comme au départ) ;
+//           jusqua : nouvelle distance totale, comptée depuis le départ de l'avance ; jamais plus de 2 m au-delà du
+//                    chemin déjà fait (si le PC se tait, le robot s'arrête donc au plus 2 m plus loin, comme aujourd'hui ;
+//                    c'est au PC de ne prolonger que de quelques dizaines de centimètres à la fois), jamais moins que
+//                    ce chemin (jusqua = chemin fait : arrêt), 30 m au plus en tout ;
+//           v      : nouvelle vitesse maximale (50 à 150 mm/s).
+//           Les trois valeurs sont absolues, pas des écarts : une requête rejouée par le Wi-Fi ne change rien.
+//           Refusée (rien n'est touché) s'il n'y a pas d'avance en cours ; jamais pour un recul ni une rotation.
+//       (2) RALENTISSEMENT SUR LES CAPTEURS OPTIQUES DE DEVANT : &opt=SEUIL ajouté à une avance. Tant que l'un des
+//           quatre capteurs optiques de devant du pare-chocs (avant gauche, centre gauche, centre droit, avant droit)
+//           lit SEUIL ou plus, et 0,6 s après, la vitesse est plafonnée à 60 mm/s. Le robot ne s'arrête pas pour autant :
+//           c'est le pare-chocs qui arrête. Utile quand le capteur de distance regarde de côté : plus rien d'autre ne
+//           surveille l'avant. Le 2026-11-15, 7 contacts sur 17 étaient annoncés par une lecture de 100 ou plus, une
+//           seconde avant (notes/P_capteurs_en_direct.md § 2) ; au repos ces capteurs lisent 0 à 50.
 // Les fonctions du fichier principal utilisées ici : driveDirect, wheelsAllowed n'est pas appelée (les mêmes
 // vérifications sont faites ici avec leur raison), bumperPressedNow, radarForwardBlocked, radarObstacleAhead, jsonStr.
 
 constexpr uint32_t MOUV_CMD_MS     = 50;        // un ordre de roues toutes les 50 ms (les capteurs du robot sont lus à ce rythme)
+constexpr float    MOUV_CHAINE_MAX = 30000.0f;  // v17 : mm, longueur totale d'une avance prolongée par des retouches
+constexpr int16_t  MOUV_V_OPTIQUE  = 60;        // v17 : mm/s, vitesse plafonnée quand un capteur optique de devant voit quelque chose
+constexpr uint32_t MOUV_OPT_TENUE_MS = 600;     // v17 : le plafond tient ce temps après la dernière lecture au-dessus du seuil
+constexpr int      MOUV_OPT_MIN    = 40;        // v17 : seuil le plus bas accepté (au repos ces capteurs lisent jusqu'à 50)
 constexpr float    MOUV_AV_MAX     = 2000.0f;   // mm
 constexpr float    MOUV_RECUL_MAX  = 300.0f;    // mm
 constexpr float    MOUV_ROT_MAX    = 360.0f;    // degrés
@@ -55,6 +76,11 @@ struct MouvState {
   uint32_t t0 = 0, tFin = 0, dernierOrdreMs = 0, bougeDepuisMs = 0, limiteMs = 0;
   uint32_t numero = 0;                     // compteur de mouvements demandés depuis le démarrage de la carte
   int8_t   brosse = 0;                     // v14 : puissance de la brosse latérale demandée pour ce mouvement (0 : arrêtée)
+  uint32_t retouches = 0;                  // v17 : retouches acceptées pendant cette avance
+  int16_t  optSeuil = 0;                   // v17 : seuil des capteurs optiques de devant pour cette avance (0 : pas de ralentissement)
+  uint16_t optMax = 0;                     // v17 : plus forte lecture de ces capteurs pendant l'avance
+  uint32_t optDernierMs = 0;               // v17 : date de la dernière lecture au-dessus du seuil (0 : aucune)
+  uint32_t optRalentis = 0;                // v17 : nombre d'ordres de roues donnés à vitesse plafonnée
   char     raison[96] = "";
 } mouv;
 
@@ -75,10 +101,14 @@ void mouvEnd(bool ok, const char* raison) {
                                 (unsigned long)mouv.numero, mouv.faitDeg, mouv.but, raison);
   else               out.printf("Mouvement %lu : %.0f mm pour %.0f mm demandés, cap %+.1f°, %s. Roues arrêtées.\n",
                                 (unsigned long)mouv.numero, mouv.faitMm, mouv.but, mouv.faitDeg, raison);
+  // v17 : une ligne de plus, seulement si l'avance a été retouchée ou surveillée par les capteurs optiques
+  if (!mouv.rotation && (mouv.retouches || mouv.optSeuil))
+    out.printf("Mouvement %lu : %lu retouche(s) ; capteurs optiques de devant : seuil %d, plus forte lecture %u, %lu ordre(s) de roues ralenti(s).\n",
+               (unsigned long)mouv.numero, (unsigned long)mouv.retouches, (int)mouv.optSeuil, (unsigned)mouv.optMax, (unsigned long)mouv.optRalentis);
 }
 
 // /api/mouv?av=… ou ?rot=… : vérifie que tout est prêt, puis lance le mouvement (le premier ordre part dans mouvTick).
-void mouvStart(bool rotation, float but, int v, float capRel, int brosse) {
+void mouvStart(bool rotation, float but, int v, float capRel, int brosse, int opt) {
   uint32_t now = millis();
   bool recul = !rotation && but < 0;
   if (mouvActive()) {                      // rien n'est touché : le mouvement en cours continue
@@ -101,6 +131,11 @@ void mouvStart(bool rotation, float but, int v, float capRel, int brosse) {
   mouv.faitMm = mouv.faitDeg = 0;
   mouv.t0 = mouv.tFin = now;
   mouv.brosse = 0;
+  mouv.retouches = 0;                      // v17
+  mouv.optSeuil = 0;
+  mouv.optMax = 0;
+  mouv.optDernierMs = 0;
+  mouv.optRalentis = 0;
   if (refus) {
     mouv.but = but;
     mouv.etat = MOUV_INTERROMPU;
@@ -129,7 +164,11 @@ void mouvStart(bool rotation, float but, int v, float capRel, int brosse) {
   mouv.raison[0] = 0;
   mouv.brosse = (int8_t)constrain(brosse, 0, BROSSE_LAT_MAX);
   if (brosseLat) brosseLaterale(0);        // une impulsion en cours s'arrête ici : pendant un mouvement, la brosse ne dépend que de lui
+  // v17 : ralentissement sur les capteurs optiques de devant, pour une avance seulement et seulement si on le demande
+  mouv.optSeuil = (!rotation && !recul && opt > 0) ? (int16_t)constrain(opt, MOUV_OPT_MIN, 4095) : 0;
   mouv.etat = MOUV_EN_COURS;
+  if (mouv.optSeuil) out.printf("Mouvement %lu : vitesse plafonnée à %d mm/s tant qu'un capteur optique de devant lit %d ou plus.\n",
+                                (unsigned long)mouv.numero, (int)MOUV_V_OPTIQUE, (int)mouv.optSeuil);
   if (mouv.brosse) out.printf("Mouvement %lu : brosse latérale seule à %d sur 127 pendant ce mouvement.\n", (unsigned long)mouv.numero, (int)mouv.brosse);
   if (rotation) out.printf("Mouvement %lu : rotation de %+.1f°, roues à %d mm/s au plus. 5 ou espace pour arrêter.\n",
                            (unsigned long)mouv.numero, mouv.but, (int)mouv.vMax);
@@ -177,6 +216,15 @@ void mouvTick() {
     else if (now - mouv.bougeDepuisMs > 1500) { mouvEnd(false, "le robot n'avance pas (roues bloquées ?)"); return; }
     float v = fminf((float)mouv.vMax, 40.0f + ecoule * 400.0f);            // départ progressif : 400 mm/s²
     v = fminf(v, 45.0f + reste * 1.3f);                                     // ralentit dans les huit derniers centimètres
+    if (mouv.optSeuil > 0 && !recul) {                                      // v17 : capteurs optiques de devant (avG, cG, cD, avD)
+      uint16_t m = max(max(st.light[1], st.light[2]), max(st.light[3], st.light[4]));
+      if (m > mouv.optMax) mouv.optMax = m;
+      if (m >= (uint16_t)mouv.optSeuil) mouv.optDernierMs = now ? now : 1;
+      if (mouv.optDernierMs && now - mouv.optDernierMs < MOUV_OPT_TENUE_MS && v > (float)MOUV_V_OPTIQUE) {
+        v = (float)MOUV_V_OPTIQUE;                                          // quelque chose devant : on continue, mais doucement
+        mouv.optRalentis++;
+      }
+    }
     float err = mouv.capCible - imu.yawDeg;                                 // positif : il faut tourner à gauche
     float d = constrain(MOUV_KP * err, -0.5f * v, 0.5f * v);               // les deux roues gardent le même sens
     float sens = recul ? -1.0f : 1.0f;
@@ -186,11 +234,32 @@ void mouvTick() {
   mouv.parti = true;
 }
 
+// v17 : retouche d'une avance en cours (voir l'en-tête). Renvoie nullptr si elle est prise, sinon la raison du refus ;
+// en cas de refus rien n'est touché. Appelée depuis la boucle principale (handleMouv), comme mouvTick : pas de concurrence.
+const char* mouvRetouche(bool aCap, float capRel, bool aBut, float jusqua, bool aV, int v) {
+  if (!mouvActive() || mouv.rotation || mouv.but <= 0) return "aucune avance en cours";
+  uint32_t now = millis();
+  if (aCap) mouv.capCible = mouv.cap0 + constrain(capRel, -MOUV_CAP_MAX, MOUV_CAP_MAX);
+  if (aV)   mouv.vMax = (int16_t)constrain(v, (int)MOUV_V_MIN, (int)SPEED_MM_S);
+  if (aBut) {
+    float fait = poseDist() - mouv.dist0;
+    if (fait < 0) fait = 0;
+    float b = constrain(jusqua, fait, fminf(fait + MOUV_AV_MAX, MOUV_CHAINE_MAX));   // jamais plus de 2 m au-delà du chemin fait
+    if (b < 1.0f) b = 1.0f;                                                            // le but reste positif : c'est une avance
+    mouv.but = b;
+    mouv.limiteMs = (now - mouv.t0) + (uint32_t)((b - fait) / 40.0f * 1000.0f) + 4000;
+  }
+  mouv.retouches++;
+  return nullptr;
+}
+
 // Résumé pour /api/state
 void mouvStateJson(String& j) {
-  char b[96];
-  snprintf(b, sizeof(b), "\"mouv\":{\"etat\":%u,\"n\":%lu,\"fait_mm\":%.0f,\"fait_deg\":%.1f},",
-           (unsigned)mouv.etat, (unsigned long)mouv.numero, mouv.faitMm, mouv.faitDeg);
+  char b[192];
+  snprintf(b, sizeof(b), "\"mouv\":{\"etat\":%u,\"n\":%lu,\"fait_mm\":%.0f,\"fait_deg\":%.1f,"
+                         "\"but\":%.0f,\"cap_vise\":%.1f,\"v\":%d,\"ret\":%lu,\"opt\":%u},",   // v17 : but, cap visé, vitesse, retouches, plus forte lecture optique
+           (unsigned)mouv.etat, (unsigned long)mouv.numero, mouv.faitMm, mouv.faitDeg,
+           mouv.but, mouv.capCible - mouv.cap0, (int)mouv.vMax, (unsigned long)mouv.retouches, (unsigned)mouv.optMax);
   j += b;
 }
 
@@ -198,19 +267,32 @@ void mouvStateJson(String& j) {
 void mouvJson(String& j) {
   static const char* const NOMS[] = { "repos", "en cours", "terminé", "interrompu" };
   uint32_t duree = (mouv.etat == MOUV_EN_COURS) ? millis() - mouv.t0 : mouv.tFin - mouv.t0;
-  char b[300];
+  char b[400];
   snprintf(b, sizeof(b), "{\"etat\":%u,\"texte\":\"%s\",\"n\":%lu,\"genre\":\"%s\",\"but\":%.1f,\"fait_mm\":%.0f,\"fait_deg\":%.1f,"
-           "\"cap_vise\":%.1f,\"v\":%d,\"duree_ms\":%lu,\"brosse\":%d,\"raison\":",
+           "\"cap_vise\":%.1f,\"v\":%d,\"duree_ms\":%lu,\"brosse\":%d,"
+           "\"retouches\":%lu,\"opt_seuil\":%d,\"opt_max\":%u,\"opt_ralentis\":%lu,\"raison\":",   // v17
            (unsigned)mouv.etat, NOMS[mouv.etat <= MOUV_INTERROMPU ? mouv.etat : 0], (unsigned long)mouv.numero,
            mouv.rotation ? "rot" : "av", mouv.but, mouv.faitMm, mouv.faitDeg, mouv.capCible - mouv.cap0, (int)mouv.vMax, (unsigned long)duree,
-           (int)mouv.brosse);
+           (int)mouv.brosse,
+           (unsigned long)mouv.retouches, (int)mouv.optSeuil, (unsigned)mouv.optMax, (unsigned long)mouv.optRalentis);
   j += b;
   jsonStr(j, mouv.raison);
   j += "}";
 }
 
 void handleMouv() {
+  const char* retoucheRefus = nullptr;     // v17
   if (http.hasArg("stop")) mouvEnd(false, "arrêt demandé");
+  else if (http.hasArg("retouche")) {      // v17 : retouche de l'avance en cours ; ne lance jamais un mouvement
+    bool aCap = http.hasArg("cap"), aBut = http.hasArg("jusqua"), aV = http.hasArg("v");
+    float capRel = aCap ? http.arg("cap").toFloat() : 0.0f;
+    float jusqua = aBut ? http.arg("jusqua").toFloat() : 0.0f;
+    if (!isfinite(capRel) || !isfinite(jusqua)) {
+      http.send(400, "text/plain; charset=utf-8", "valeur refusée : cap et jusqua doivent être des nombres finis");
+      return;
+    }
+    retoucheRefus = mouvRetouche(aCap, capRel, aBut, jusqua, aV, aV ? (int)http.arg("v").toInt() : 0);
+  }
   else if (http.hasArg("rot") || http.hasArg("av")) {
     bool rotation = http.hasArg("rot");
     float but = http.arg(rotation ? "rot" : "av").toFloat();
@@ -225,11 +307,18 @@ void handleMouv() {
       return;
     }
     int brosse = http.hasArg("brosse") ? (int)http.arg("brosse").toInt() : 0;   // v14 : brosse latérale seule pendant ce mouvement
-    mouvStart(rotation, but, v, capRel, brosse);
+    int opt = http.hasArg("opt") ? (int)http.arg("opt").toInt() : 0;            // v17 : ralentissement sur les capteurs optiques de devant
+    mouvStart(rotation, but, v, capRel, brosse, opt);
   }
   String j;
-  j.reserve(380);
+  j.reserve(520);
   mouvJson(j);
+  if (http.hasArg("retouche")) {           // v17 : la réponse dit si la retouche a été prise
+    j.remove(j.length() - 1);              // l'accolade fermante de mouvJson
+    j += ",\"retouche\":";
+    jsonStr(j, retoucheRefus ? retoucheRefus : "prise");
+    j += "}";
+  }
   http.send(200, "application/json", j);
 }
 

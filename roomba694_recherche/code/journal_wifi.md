@@ -2945,3 +2945,49 @@ Compteurs du capteur depuis le démarrage du cerveau à 15 h 19 : 17 836 mesures
 **Fermeture** (15 h 55) : capteur au repos, puis `5`, `s`, `x` ; le robot peut dormir. Je l'ai fermé de moi-même parce que la suite (écrire le firmware v17) ne demande pas le robot.
 
 **État à la fin** (15 h 56) : robot fermé, 1 572 mAh (76 %), pas sur sa base, à un endroit que je ne connais pas ; cerveau allumé, en v16 ; capteur de distance au repos, devant ; limite du servo à 90°, vitesse 10°/s.
+
+## 69. Firmware v17 écrit et compilé, pas installé : corriger une avance en cours, ralentir sur les capteurs optiques ; le programme qui longe un mur ; la simulation refaite avec le bruit réel (2026-11-21, 15 h 57 à 16 h 20)
+
+La suite demandée par l'utilisateur (« Ok côté droit puis la suite »), et sa demande d'y associer les capteurs optiques (« n'oublions pas d'inclure les capteurs optiques dans le plan du code pour bien longer », note P § 9.5). Rien n'a été envoyé au robot pendant cette section : il dort depuis 15 h 55.
+
+### 69.1 Ce que la v17 ajoute au cerveau
+
+Tout est dans `mouv.ino`. Deux ajouts, qui ne font rien tant qu'on ne les demande pas : une avance lancée comme avant se déroule comme avant.
+
+1. **La retouche d'une avance en cours** : `/api/mouv?retouche=1` avec `cap=` (le cap à tenir, relatif au cap du départ de l'avance, borné à ±45°), `jusqua=` (la nouvelle distance totale ; jamais plus de 2 m au-delà du chemin déjà fait, jamais moins que lui, 30 m au plus en tout) et `v=` (la vitesse maximale). Les trois valeurs sont absolues : une requête rejouée par le Wi-Fi ne change rien. Si le PC se tait, l'avance va à son terme et s'arrête, comme aujourd'hui. Jusqu'à la v16, une avance s'arrêtait au bout de 2 m au plus et toute correction de route demandait un arrêt.
+2. **Le ralentissement sur les capteurs optiques de devant** : `&opt=SEUIL` ajouté à une avance plafonne la vitesse à 60 mm/s tant que l'un des quatre capteurs optiques de devant lit SEUIL ou plus, et 0,6 s après. Le robot ne s'arrête pas pour autant : c'est le pare-chocs qui arrête. Le seuil vient de la note P § 2 : au repos ces capteurs lisent 0 à 50, et 7 contacts sur 17 du 15 novembre étaient annoncés par une lecture de 100 ou plus.
+
+`/api/state` gagne, dans « mouv » : `but`, `cap_vise`, `v`, `ret` (retouches prises), `opt` (plus forte lecture optique). La console garde ses lignes d'avant et en ajoute une à la fin d'une avance retouchée ou surveillée.
+
+Vérifié : la compilation (1 158 522 octets, 88 % ; « v17 Nov 21 2026 16:01:12 » ; binaire gardé, `build/roomba694_v17.bin`, sha256 `12cf4449…`) et une relecture du code. **Rien n'est vérifié sur le robot** : ni la retouche, ni le ralentissement.
+
+### 69.2 Le programme qui longe un mur (`code/outils/longe_mur.py`)
+
+Capteur de distance tourné d'un côté, le programme lance une avance courte puis, à chaque lecture de l'état (une dizaine par seconde), donne la lecture de côté au suivi de l'audit (`suivi_lateral.py`, un seul côté, écart imposé), et retouche l'avance cinq fois par seconde au plus : cap, vitesse, et but repoussé de 50 cm au-delà du chemin fait. Si le PC ou le Wi-Fi s'arrête, le robot s'arrête donc au plus 50 cm plus loin.
+
+- **Devant** : la place est vérifiée avant de tourner le capteur ; ensuite ce sont les capteurs optiques de devant qui ralentissent (`opt=100`) et le pare-chocs qui arrête.
+- **Le flanc** : si le capteur optique du flanc, du côté du mur, lit 100 ou plus, le cap visé est écarté du mur de 4°. Ce garde-fou est sur le PC et non dans le cerveau, contrairement à ce que j'avais écrit au § 9.5 de la note P : le robot se rapproche d'un mur qu'il longe à quelques millimètres par seconde, dix lectures par seconde y suffisent.
+- **Une ouverture** : quand le mur recule d'un coup de plus de 25 cm (porte, fin du mur), le programme ne le suit pas ; il tient l'axe du mur jusqu'à le retrouver. Avec un seul côté, suivre le fond d'une ouverture ferait tourner le robot dedans.
+
+**Une faute rattrapée par la simulation** : ma première règle de l'ouverture comparait la lecture à la consigne et non à la lecture d'avant. Un robot parti à plus de 25 cm de sa consigne croyait le mur ouvert et ne s'en rapprochait jamais (38 départs sur 45 sans contact au lieu de 43). Corrigée : c'est un recul soudain qui fait une ouverture.
+
+Rien de ce programme n'a roulé.
+
+### 69.3 La simulation refaite avec le bruit réel
+
+`essai_longe_mur.py` prend maintenant le bruit d'une lecture, la fenêtre de la pente, la médiane et la règle de l'ouverture. Même couloir simulé (95 cm, puis 84, 73 et 68 ; une ouverture de 80 cm à droite), 45 départs par réglage, boucle sur le PC.
+
+| Bruit d'une lecture | Fenêtre, médiane | Mur de gauche : sans contact | Mur de droite : sans contact | Axe du mur retrouvé (gauche) |
+|---|---|---|---|---|
+| 4 mm (simulation du matin, 75 départs) | 300 mm, 3 | 75 sur 75 | 75 sur 75 | 0,2 à 0,4° |
+| 20 mm (mesuré le 21) | 300 mm, 3 | 43 sur 45 | 38 à 39 sur 45 | 1,3 à 3,7° |
+| 20 mm | 600 mm, 5 | 43 sur 45 | 35 à 37 sur 45 | 0,6 à 0,8° |
+| 20 mm, avec la règle de l'ouverture corrigée | 600 mm, 5 | 43 sur 45 | 35 à 37 sur 45 | 0,6 à 0,8° |
+
+Durée des 3,9 m : 27 à 37 s dans tous les cas.
+
+**Ce que cela dit.** Avec le bruit réel, le suivi tient encore le plus souvent, mais il n'a plus de marge dans un couloir où il reste 17 cm de chaque côté : deux départs sur 45 touchent à gauche, toujours au même endroit, là où le mur avance de 11 cm. Le capteur regarde de côté : une avancée du mur devant le robot, il ne la voit qu'une fois dessus. C'est le rôle des capteurs optiques de devant. À droite, l'ouverture coûte davantage. Une fenêtre plus longue donne un axe trois fois plus juste, sans changer le nombre de contacts. Retenu pour le programme réel : fenêtre de 600 mm, médiane sur 5 lectures ; et un premier essai dans un endroit dégagé, à 100 mm/s, pas dans la partie étroite du couloir.
+
+**Limites.** Une simulation, plus indulgente que l'appartement sur les parois et sur le capteur. Le firmware v17 et `longe_mur.py` n'ont pas roulé.
+
+**État à la fin** (16 h 20) : robot fermé depuis 15 h 55, pas sur sa base, 76 % à la dernière lecture ; cerveau allumé, en **v16** ; la v17 est sur le PC, pas installée. En attente du go de l'utilisateur pour l'installer et l'essayer.
