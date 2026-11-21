@@ -1,0 +1,5 @@
+Position donnée à la carte vivante le 2026-11-21 à 18 h 47, robot immobile.
+D où elle vient : l utilisateur a écrit « Vers k15 j15 » (18 h 40) ; le tour sur place de 18 h 36 posé sur le plan autour de
+cette case avec le cap tenu par le gyroscope (journal_wifi.md § 75) : pixel (390 ; 222), cap 208° au début du tour, 228,6° après.
+Incertitude : une vingtaine de centimètres. La position donnée à 17 h 02 et à 17 h 45 était un mètre trop à l est.
+POSE=390.0,222.0,228.6

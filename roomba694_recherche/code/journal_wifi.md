@@ -3361,3 +3361,56 @@ Deux conséquences : « 150 mm/s » fait en vrai 142 mm/s, et « 100 » fait 114
 **Proposé pour la suite** : (1) le même suivi à 128 mm/s demandés (142 en vrai), où le cap doit répondre ; (2) dans le firmware (une v18, rien n'est écrit) : une tenue de cap qui connaît les paliers, en faisant alterner une roue entre deux paliers pour obtenir la rotation voulue, et qui retire à la roue rapide ce qu'elle ne peut pas ajouter à l'autre.
 
 **État à la fin** (17 h 55) : robot à l'arrêt en mode Safe en J17, dans le couloir, tourné vers la gauche du plan, à 31 cm du mur du bas au capteur et 2,2 m de libre devant ; 63 % de batterie, pas sur sa base ; cerveau en v17 ; capteur de distance en marche, devant. Enregistreur arrêté de lui-même à 17 h 52. La séance n'est pas fermée.
+
+## 75. Le robot retrouvé tourné à la main : aucun trajet lancé ; un tour sur place seul ne le situe pas ; ma position de 17 h 02 était fausse d'un mètre ; le capteur de distance décroche de nouveau à gauche (2026-11-21, 18 h 13 à 18 h 52)
+
+À 18 h 13 l'utilisateur écrit « Go » pour deux trajets de plus dans le couloir, annoncés un par un. Enregistrements `couloir_ouest_20261121_181553`, `resitue_20261121_183557`, `couloir_est_20261121_184708`. Firmware v17. **Les roues n'ont servi qu'à un tour sur place et à un pivot ; aucun trajet n'est parti.**
+
+### 75.1 Trois gardes ajoutées au programme qui longe (pas encore éprouvées en roulant)
+
+Dans `longe_mur.py` : `--cap-garde 3.5 --cap-garde-s 1.5` (arrêt si le cap du robot reste à plus de 3,5° du cap demandé pendant 1,5 s : le défaut du § 74 aurait arrêté le trajet), la garde du capteur optique du flanc opposé au mur (passage étroit), et `--attend-mur` (partir d'une ouverture : tout droit, et seule une lecture à moins de la consigne plus 15 cm fait commencer le mur).
+
+### 75.2 L'état relu avant de partir : le robot avait été tourné à la main
+
+À 18 h 15, avant tout ordre : cap du gyroscope +27,7° pour −1,4° à 17 h 56, alors que les roues n'ont compté que 34 mm et −2,2° ; devant, 1,09 m au lieu de 2,2 m. Le robot a donc été tourné d'environ 29° vers la gauche sans que ses roues roulent. Regards lents à l'arrêt (18 h 16) : 1 092 mm devant, 1 207 à 30° à gauche, 991 à 60°, 1 054 à 90° ; 2 217 à 30° à droite, 1 015 à 60°, 1 001 à 90°. Le mur lu à 314 mm à 17 h 45 n'est plus là où le capteur le cherche, et le capteur de vide de gauche lit 888 au lieu de 2 640 (un sol plus sombre sous lui). **Trajet non lancé.**
+
+### 75.3 Un tour sur place, et ce qu'il ne dit pas
+
+À ma question, l'utilisateur choisit « Fais un tour sur place » (18 h 35). Tour à 18 h 36 : 380,2°, 126 mesures, 15,2 s, sans avancer. Outil nouveau `code/outils/situer_tour.py` (pose un tour sur tout le plan, ou autour d'un endroit, ou autour d'un cap connu ; il liste les endroits possibles, il ne choisit pas) :
+
+| Recherche | Résultat |
+|---|---|
+| tout le plan, tous les caps | dix endroits à la note 1,00 (N18, N25, N17, E43, E6, F6, D6…) |
+| tout le plan, cap tenu par le gyroscope (208° ± 25°) | huit endroits à la note 1,00 (G6, E6, C31, C43, N26…) |
+| à moins de 2,5 m du dernier endroit connu | six endroits à la note 1,00, tous dans la pièce du bas |
+
+**Un tour seul ne situe pas le robot** : sept paliers seulement, et la note plafonne. Deuxième question à l'utilisateur ; sa réponse (18 h 40) : « Vers k15 j15 ». Autour de cette case, avec le cap du gyroscope : pixel (361 ; 226) en J14, note 0,98, ou (390 ; 228) en J15, note 0,93. Position donnée à la carte : (390 ; 222), à une vingtaine de centimètres près au mieux.
+
+### 75.4 Ce que cela apprend sur ma position de 17 h 02
+
+Le trajet de 17 h 45 a fait 1,4 m vers l'ouest et le robot est maintenant vers J15. Il était donc vers J18 à 17 h 02, et non en J20 : **la position que j'avais donnée à la carte, « à 10 cm près », était fausse d'un mètre**, deux cases trop à l'est. L'utilisateur avait choisi « J20, dans le couloir » dans une liste que je lui proposais ; ma recherche fine n'a fait que polir cette hypothèse autour d'elle-même. Les § 73 et 74 parlent donc à tort de J20 et de J17 : lire J18 et J15. Le trajet de 16 h 23 partait lui aussi de J15, où l'utilisateur avait posé le robot. Réserve : je suppose que le robot n'a été que tourné, pas glissé ; rien ne le prouve.
+
+### 75.5 Le pivot, le balayage, et le capteur muet à gauche
+
+Pivot de +131,0° au gyroscope pour 131 demandés (18 h 47), sur place. Balayage lent ensuite :
+
+| Angle du capteur | Lecture |
+|---|---|
+| de 30° à droite à devant | 1 103 à 1 114 mm |
+| 10° à gauche | 1 865 mm |
+| 20° et 30° à gauche | 1 016 et 962 mm |
+| 60° et 90° à gauche | **capteur muet** (3 s puis 5,5 s, « Echo jamais haut ») |
+| devant, au retour | 1 139 mm trois fois, rien huit fois |
+| 60° à droite | 2 109 mm |
+| 90° à droite | rien à portée (le capteur répond) |
+
+Le tour dessiné vu de dessus (image gardée hors dépôt) montre quelque chose à 22 cm du centre du robot d'un côté, un mur à 70 cm de l'autre, d'autres parois à 1,1 ou 1,2 m : ce n'est pas la place d'un robot rangé le long d'un mur de couloir. **Je n'ai pas lancé le trajet** et j'ai demandé à l'utilisateur de reposer le robot à l'entrée du couloir, en J15, le mur du bas à sa droite, comme à 16 h 22.
+
+### 75.6 Ce que cela dit
+
+- Relire l'état avant le premier geste a évité un départ de travers à 14 cm par seconde.
+- **Une case choisie dans ma liste n'est pas une mesure**, et une recherche fine autour d'elle n'en fait pas une. Pour annoncer une précision il faut un témoin indépendant : les faisceaux de la base, ou deux tours reliés par le chemin compté.
+- **Le fil du capteur de distance lâche de nouveau du côté gauche** (deux fois en un balayage), une heure après avoir été remis. Le côté droit lit. Tant que ce fil n'est pas tenu pour de bon, seul le côté droit est sûr.
+- Pas vérifié : le réglage « 128 », les trois gardes en mouvement, la position du robot à mieux qu'un demi-mètre.
+
+**État à la fin** (18 h 52) : robot à l'arrêt en mode Safe vers J15 d'après l'utilisateur, tourné à peu près vers la droite du plan, 1,1 m lu devant ; 56 % de batterie, pas sur sa base ; cerveau en v17 ; capteur de distance devant. La séance n'est pas fermée. **Attendu de l'utilisateur** : le robot reposé à l'entrée du couloir, mur du bas à sa droite.

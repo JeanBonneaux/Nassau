@@ -65,6 +65,9 @@ p.add_argument("--suivi", choices=["mur", "lateral"], default="mur", help="mur :
 p.add_argument("--saut", type=float, default=30.0, help="suivi « mur » : mm d'écart à la droite du mur au-delà desquels une lecture est une autre paroi")
 p.add_argument("--adopte", type=float, default=400.0, help="suivi « mur » : mm sur lesquels une autre paroi doit tenir en ligne droite avant de devenir le mur")
 p.add_argument("--avance-capteur", type=float, default=130.0, help="suivi « mur » : mm du centre du robot à l'axe du servo, vers l'avant (estimé, pas mesuré à la règle)")
+p.add_argument("--attend-mur", action="store_true", help="le robot part d'une ouverture, le mur ne commence que plus loin : tout droit au cap du départ, et seule une lecture à moins de --ecart + 150 mm est prise pour le début du mur ; --ecart est alors obligatoire")
+p.add_argument("--cap-garde", type=float, default=3.5, help="degrés : arrêt si le cap du robot reste à plus que cela du cap demandé pendant --cap-garde-s secondes (0 : pas de garde)")
+p.add_argument("--cap-garde-s", type=float, default=1.5)
 p.add_argument("--devant-vu", type=int, default=0, help="mm : place libre devant mesurée à part (regard_devant.py), à prendre à la place de la lecture à 0° quand celle-ci accroche une arête sur le côté (couloir qui se resserre, journal § 73). À ne donner qu'après avoir regardé : c'est elle qui autorise le départ")
 a = p.parse_args()
 ZONE = 30
@@ -173,6 +176,8 @@ try:
         refus = "pare-chocs enfoncé ou roue levée"
     elif not (50 <= a.vitesse <= 150) or not (200 <= a.distance <= 10000) or not (200 <= a.horizon <= 1500):
         refus = "vitesse de 50 à 150 mm/s, distance de 200 à 10 000 mm, horizon de 200 à 1 500 mm"
+    elif a.attend_mur and (a.ecart <= 0 or a.suivi != "mur"):
+        refus = "--attend-mur demande --ecart (la distance à tenir une fois le mur trouvé) et le suivi « mur »"
     if refus:
         print("%s  RIEN N'EST ENVOYÉ : %s." % (heure(), refus))
         sys.exit(1)
@@ -206,20 +211,30 @@ try:
     aller(ANGLE, "rotation")
     A0 = lectures("cote_arret_avant", 1.5, ANGLE)
     vus = [x for x in A0 if 0 < x <= PORTEE_MUR]
-    if len(vus) < 4 or len(vus) * 2 < len(A0):
-        raise Arret("pas de mur à moins de %d mm de ce côté (%d lectures utiles sur %d)" % (PORTEE_MUR, len(vus), len(A0)))
-    d0 = statistics.median(vus)
-    if d0 > a.mur_max or max(vus) - min(vus) > 120:
-        raise Arret("ce que le capteur lit de ce côté ne ressemble pas au mur attendu : %d mm (de %d à %d), pour %d mm au plus et 120 mm de dispersion" % (
-            d0, min(vus), max(vus), a.mur_max))
-    ecart = a.ecart or d0
-    print("%s  mur lu à %d mm (de %d à %d) ; écart à tenir : %d mm ; vitesse %d mm/s ; optique devant %s, flanc %s." % (
-        heure(), d0, min(vus), max(vus), ecart, a.vitesse, a.opt or "sans", a.flanc or "sans"))
+    attend = False
+    if a.attend_mur:
+        # Le mur ne commence que plus loin (le robot part d'une ouverture) : tout droit au cap du départ, et seule une
+        # lecture proche de la consigne sera prise pour le mur. Ce qui est lu d'ici n'engage à rien.
+        d0, ecart, attend = None, a.ecart, True
+        print("%s  le mur est attendu plus loin (--attend-mur) : d'ici le capteur lit %s ; écart à tenir : %d mm ; vitesse %d mm/s ; optique devant %s, flanc %s." % (
+            heure(), ("%d mm (de %d à %d)" % (statistics.median(vus), min(vus), max(vus))) if vus else "rien à portée", ecart,
+            a.vitesse, a.opt or "sans", a.flanc or "sans"))
+    else:
+        if len(vus) < 4 or len(vus) * 2 < len(A0):
+            raise Arret("pas de mur à moins de %d mm de ce côté (%d lectures utiles sur %d)" % (PORTEE_MUR, len(vus), len(A0)))
+        d0 = statistics.median(vus)
+        if d0 > a.mur_max or max(vus) - min(vus) > 120:
+            raise Arret("ce que le capteur lit de ce côté ne ressemble pas au mur attendu : %d mm (de %d à %d), pour %d mm au plus et 120 mm de dispersion" % (
+                d0, min(vus), max(vus), a.mur_max))
+        ecart = a.ecart or d0
+        print("%s  mur lu à %d mm (de %d à %d) ; écart à tenir : %d mm ; vitesse %d mm/s ; optique devant %s, flanc %s." % (
+            heure(), d0, min(vus), max(vus), ecart, a.vitesse, a.opt or "sans", a.flanc or "sans"))
     if a.suivi == "mur":
         suivi = SuiviMur(a.cote, ecart, gain=a.gain, cap_max=a.cap_max, fenetre=a.fenetre, pente_min=a.pente_min, saut=a.saut,
                          ouverture=a.ouverture, adopte=a.adopte, avance_capteur=a.avance_capteur, portee=PORTEE_MUR,
                          v_max=a.vitesse, v_serre=min(80, a.vitesse), rayon=150.0, mediane=a.mediane)
-        suivi.amorce(d0)
+        if d0 is not None:
+            suivi.amorce(d0)
     else:
         suivi = SuiviLateral(axe=0.0, gain=a.gain, cap_max=a.cap_max, fenetre=a.fenetre, portee=PORTEE_MUR, v_max=a.vitesse,
                              v_serre=min(80, a.vitesse), rayon=150.0, mediane=a.mediane, pente_min=a.pente_min)
@@ -236,7 +251,8 @@ try:
     prec, v_est = None, 0.0
     cap_vise, v_vise = 0.0, float(a.vitesse)
     t_ret, n_ret, n_flanc, perdu_mm, s_prec = 0.0, 0, 0, 0.0, 0.0
-    ref, ouvert, n_ouvert = float(d0), False, 0      # règle de l'ouverture
+    n_flanc_autre, t_cap_bon, pire_cap, s_mur = 0, t0, 0.0, None
+    ref, ouvert, n_ouvert = float(d0 if d0 is not None else ecart), False, 0      # règle de l'ouverture
     limite = a.distance / 40.0 + 15.0
     fin = None
     while True:
@@ -256,6 +272,16 @@ try:
             break
         if not rb.get("ok") or rb.get("age", 0) > 800:
             raise Arret("le robot ne répond plus au cerveau")
+        # Garde du cap : le robot doit suivre le cap que le cerveau vise. Le 2026-11-21, à « 150 » demandés, il est resté
+        # neuf secondes à 5° de ce cap parce que ses deux roues étaient sur le même palier de vitesse (journal § 74).
+        ec_cap = (mv.get("fait_deg") or 0.0) - (mv.get("cap_vise") or 0.0)
+        pire_cap = max(pire_cap, abs(ec_cap))
+        if a.cap_garde and abs(ec_cap) > a.cap_garde:
+            if now - t_cap_bon > a.cap_garde_s:
+                raise Arret("le robot ne suit pas le cap demandé : %+.1f° d'écart depuis %.1f s (cap %+.1f°, demandé %+.1f°)" % (
+                    ec_cap, now - t_cap_bon, mv.get("fait_deg") or 0.0, mv.get("cap_vise") or 0.0))
+        else:
+            t_cap_bon = now
         lecture = None
         if ra.get("a") == ANGLE and ra.get("mm_age", 9999) < 400:
             tm = round((e["ms"] - ra["mm_age"]) / 20.0)
@@ -263,6 +289,11 @@ try:
                 # Le suivi par droite fait lui-même la part du mur, d'une avancée, d'un renfoncement et d'une ouverture.
                 vus_m.add(tm)
                 lecture = ra["mm"] if 0 < ra["mm"] <= PORTEE_MUR else None
+                if attend:                   # le mur n'a pas commencé : seule une lecture proche de la consigne le fait commencer
+                    if lecture is not None and lecture <= ecart + 150.0:
+                        attend, s_mur = False, s
+                    else:
+                        lecture = None
                 s_m = s - v_est * ra["mm_age"] / 1000.0
                 cap_vise, v_vise = suivi.pas(s_m, mv["fait_deg"], lecture)
                 R.append((s_m, ra["mm"], mv["fait_deg"], cap_vise))
@@ -297,6 +328,9 @@ try:
         if a.flanc and rb.get("light") and rb["light"][I_FLANC] >= a.flanc:      # le flanc serre le mur : on s'en écarte de 4°
             garde = -4.0 if a.cote == "g" else 4.0
             n_flanc += 1
+        if a.flanc and rb.get("light") and rb["light"][5 - I_FLANC] >= a.flanc:  # l'autre flanc serre la paroi d'en face (passage étroit) : on revient de 4° vers le mur
+            garde += 4.0 if a.cote == "g" else -4.0
+            n_flanc_autre += 1
         if now - t_ret >= 0.2:
             t_ret = now
             c = max(-40.0, min(40.0, cap_vise + garde))
@@ -317,8 +351,10 @@ try:
         heure(), mj.get("texte"), mj.get("fait_mm"), a.distance, mj.get("duree_ms", 0) / 1000.0,
         (mj.get("fait_mm") or 0) / max(0.1, mj.get("duree_ms", 1) / 1000.0), fin or mj.get("raison") or "aucune",
         mj.get("fait_deg", 0.0), e["robot"]["bump"]))
-    print("              retouches prises : %d (le cerveau en compte %s) ; optique devant : plus forte lecture %s, %s ordre(s) ralenti(s) ; garde du flanc : %d fois" % (
-        n_ret, mj.get("retouches"), mj.get("opt_max"), mj.get("opt_ralentis"), n_flanc))
+    print("              retouches prises : %d (le cerveau en compte %s) ; optique devant : plus forte lecture %s, %s ordre(s) ralenti(s) ; garde du flanc : %d fois côté mur, %d fois côté opposé" % (
+        n_ret, mj.get("retouches"), mj.get("opt_max"), mj.get("opt_ralentis"), n_flanc, n_flanc_autre))
+    print("              plus grand écart entre le cap du robot et le cap demandé : %.1f°%s" % (
+        pire_cap, (" ; mur attendu, trouvé après %d mm" % s_mur) if s_mur is not None else (" ; mur attendu, JAMAIS trouvé" if a.attend_mur else "")))
     V = [(s_, mm) for s_, mm, _, _ in R if 0 < mm <= PORTEE_MUR]
     if V:
         ec = [mm - ecart for _, mm in V]
