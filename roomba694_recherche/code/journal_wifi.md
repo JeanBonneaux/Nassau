@@ -3178,3 +3178,94 @@ Les lectures du § 71 redonnées au suivi par droite (`rejeu_longe.py ../../mesu
 - Le ralentissement optique et la garde du flanc ne sont toujours pas éprouvés.
 
 **État à la fin** (16 h 48) : robot à l'arrêt en mode Safe au même endroit qu'au § 71, 71 % de batterie à 16 h 46, pas sur sa base ; cerveau en v17 ; capteur de distance en marche, devant. La séance n'est pas fermée. En attente du go de l'utilisateur pour le retour le long du même mur.
+
+## 73. La carte vivante remise à jour : le robot situé en J20 sans bouger, puis confirmé par l'utilisateur ; demi-tour dans le couloir ; le retour n'est pas parti : le capteur de distance décroche quand il regarde à gauche (2026-11-21, 16 h 50 à 17 h 12)
+
+À 16 h 50 la session qui m'a passé la main relaie un ajout de l'utilisateur à ma mission : « et qui va egalement remettre la carte live avec appartement que jai fait ». Enregistrement `longe_retour_20261121_170121`. Firmware v17.
+
+### 73.1 La carte vivante tournait, mais sans le robot
+
+- Le serveur lancé le 15 novembre à 14 h 13 tourne toujours (processus 26536, `serveur.py --ouvert`). Il écoute bien sur l'adresse Wi-Fi du PC et sur le PC lui-même (lu dans la liste des ports ouverts), contrairement à ce qui m'avait été transmis. Son code est le dernier poussé (commit f2e7d10) : rien à relancer.
+- La page s'affiche (navigateur intégré, aucune erreur dans la console) : le plan de l'utilisateur avec son grain crayon, la grille, la base, les obstacles, les notes. À la première ouverture le plan était minuscule ; rechargée, la page l'affiche en entier (sans doute le panneau du navigateur qui venait de s'ouvrir ; pas vu sur un autre appareil).
+- **Ce qui manquait : la position du robot.** La page disait « Position inconnue. En attente d'une première position sur le plan ». Aucun des enregistrements du 21 n'avait de calage : pas de tour jugé par le filtre, pas de base, pas de ligne `POSE=`. Le cerveau a redémarré une dizaine de fois dans la journée et l'utilisateur a conduit lui-même le robot entre les essais.
+
+### 73.2 Situer le robot sans le faire bouger
+
+Depuis son dernier redémarrage (16 h 13, installation de la v17) le cerveau compte sa position d'un seul tenant, trajets à la main compris. Dans ce repère j'avais : le tour sur place de 16 h 14 min 55 (10 paliers), 141 et 142 parois lues de côté pendant les trajets de 16 h 15 et de 16 h 23, 14 échos lus devant, et le chemin roulé (8,9 m). J'ai cherché sur tout le plan (16 633 positions, 120 caps) la pose du tour qui met ces témoins d'accord : la note du filtre de la navigation pour le tour, la part des parois qui tombent sur un trait du plan, les rayons qui ne traversent aucun mur, le chemin qui reste dans le sol libre.
+
+| Où serait le robot | Total | Tour | Mur de 16 h 23 | Chemin libre entre les deux trajets (5,4 m roulés) |
+|---|---|---|---|---|
+| P23 | 2,73 | 0,96 | 0,88 | aucun : écarté |
+| N19 | 2,72 | 0,86 | 1,00 | 11,7 m : écarté |
+| K9 | 2,65 | 0,85 | 0,99 | 9,3 m : écarté |
+| C15, à 70 cm de la base | 2,62 | 0,84 | 0,99 | 6,3 m ; écarté aussi parce que le robot n'a reçu aucun signal de sa base de la journée (255 relevés) |
+| C12 | 2,62 | 0,87 | 0,99 | 4,6 m |
+| **J20** | 2,62 | 0,85 | 0,97 | 5,6 m |
+| C6 | 2,59 | 0,81 | 0,97 | 4,8 m |
+| D4 | 2,47 | 0,82 | 0,98 | 5,1 m |
+
+**Le calcul ne tranche pas** : quatre endroits restent possibles à 0,15 près. Un mur droit de 1,4 m se pose partout où il y a un mur, et un seul tour ne suffit pas. Je n'ai donc rien annoncé et j'ai demandé la case à l'utilisateur, avec ces endroits comme choix.
+
+Les scripts de cette recherche ne sont pas dans le dépôt (noms d'enregistrements écrits en dur) ; ils sont gardés dans le dossier de notes des sessions. À ranger en outil si la méthode ressert.
+
+### 73.3 La réponse de l'utilisateur, et la carte
+
+À 16 h 58 : « J20, dans le couloir », et pour le retour le long du mur : « go,donnne adresse carte aussi ».
+
+- Adresses données : `http://127.0.0.1:8694` sur le PC, `http://192.168.18.6:8694` sur un appareil du Wi-Fi de la maison.
+- Recherche fine autour de J20 (pas de 1 pixel et de 0,5°) : le tour de 16 h 14 était au pixel (336 ; 102), cap 184,5° ; **le robot est au pixel (518,7 ; 213,9), cap 350,6°, case J20**. Les poses presque aussi bonnes déplacent ce point de 10 cm au plus.
+- Un enregistreur lancé à 17 h 01 min 21 et un fichier `longe_retour_20261121_170121_passage1.txt` portant la ligne `POSE=518.7,213.9,350.6` : à 17 h 01 min 41 la carte affiche « Position donnée (à l'estime) : J20, tourné vers la droite » et suit le robot en direct.
+
+Le mur longé à 16 h 23 est donc le mur du bas du couloir, et le robot l'a quitté à l'embouchure du couloir, côté est.
+
+### 73.4 Le demi-tour, et un écho à 83 cm
+
+`essai_mouv.py … rot=-164 --v 80` (17 h 02) : −164,1° au gyroscope pour −164 demandés, en 4,65 s, sans avancer (0 mm aux roues). Le robot regarde vers la gauche du plan, parallèle au mur à 0,3° près.
+
+Le capteur de distance lit alors 825 à 834 mm devant, et de temps en temps 2 256 ou 2 281 mm, là où le robot venait de rouler. Balayage lent à l'arrêt (`code/outils/regard_devant.py`, outil nouveau, aucune commande de roues) :
+
+| Angle du capteur | Lecture |
+|---|---|
+| 30° à droite | 768 mm |
+| 20° à droite | 797 mm |
+| 10° à droite | 806 mm |
+| devant | 2 245 mm, et 825 mm une fois sur trois |
+| 10° à gauche | rien à portée |
+| 20° à gauche | 2 605 mm |
+| 30° à gauche | rien, 2 599 mm une fois |
+
+L'écho de 80 cm vient de la droite : une arête ou un angle sur le côté nord, pas un obstacle dans la voie. Devant, la voie est libre sur 2,2 m au moins.
+
+### 73.5 Le retour n'est pas parti : le capteur de distance décroche à gauche
+
+`longe_mur.py --cote g --distance 1400 --vitesse 150 --ecart 315 --opt 100 --flanc 100 --mur-max 800 --devant-vu 2245` (17 h 05 min 53). L'option `--devant-vu` est nouvelle : elle donne la place libre mesurée à part quand la lecture à 0° accroche une arête de côté.
+
+Le capteur a tourné lentement vers la gauche. Arrivé à 90° (17 h 06 min 04), il a cessé de répondre une seconde plus tard (« Echo jamais haut ») : **arrêt du programme avant le départ, aucune roue n'a tourné.** Il a répondu de nouveau en revenant vers le centre.
+
+Deux regards à l'arrêt pour comprendre (`regard_devant.py`) :
+
+| Angle | Ce qu'a fait le capteur |
+|---|---|
+| 45° à droite | 774 mm, 13 lectures |
+| 75° à droite | 790 mm, 14 lectures |
+| 90° à droite | 825 mm (de 804 à 1 021), 14 lectures |
+| retour vers le centre | muet trois fois en quatre secondes, puis muet 88 secondes capteur devant (17 h 07 min 53 à 17 h 09 min 21) |
+| 45° à gauche | muet |
+| 60° à gauche | 511 mm, 24 lectures |
+| 75° à gauche | muet |
+| 85° à gauche | 488 mm deux fois, puis muet |
+| retour devant | répond de nouveau (17 h 09 min 34) |
+
+**Un des quatre fils du capteur de distance fait un faux contact**, selon la position de la tête : le capteur répond à certains angles et se tait à d'autres, y compris devant. C'est le fil déjà signalé fragile au § 68. Longer un mur demande une lecture de côté continue : impossible tant que ce fil n'est pas remis.
+
+À droite du robot, rien à moins de 77 cm : il n'y a pas là de mur parallèle à 45 cm. Le robot est à l'embouchure du couloir, plus large que le couloir lui-même.
+
+### 73.6 Ce que cela dit, mes erreurs, ce qui n'est pas vérifié
+
+- **La carte vivante est en service avec le robot dessus** ; sa position vient de la parole de l'utilisateur, affinée par le calcul, pas d'un calage mesuré (pas de tour sur place aujourd'hui à cet endroit).
+- **Le nouveau suivi de mur n'a toujours pas roulé.**
+- Mon erreur : j'ai demandé un go pour un trajet mur à gauche sans avoir vérifié à l'arrêt que le capteur lisait encore de ce côté, alors que le fil était signalé fragile et que le montage avait été retouché deux fois depuis le dernier essai à gauche (15 h 22). **Avant de proposer un trajet capteur tourné d'un côté : un regard lent de ce côté, à l'arrêt.**
+- Mon erreur : j'ai raisonné sur la forme du couloir d'après le couloir simulé de l'audit (un mur à 44 cm à droite) avant de regarder ; le capteur a montré autre chose.
+- Pas vérifié : la carte sur l'appareil de l'utilisateur ; la position à mieux que 10 cm ; l'option `--devant-vu` en mouvement ; quel fil lâche.
+
+**État à la fin** (17 h 12) : robot à l'arrêt en mode Safe en J20, tourné vers la gauche du plan, 68 % de batterie, pas sur sa base ; cerveau en v17 ; capteur de distance devant, il répond par moments. Enregistreur arrêté proprement à 17 h 10. La séance n'est pas fermée. **Attendu de l'utilisateur** : remettre les fils du capteur de distance (cerveau débranché, sans changer un fil de place), puis je vérifie les deux côtés à l'arrêt avant tout trajet.

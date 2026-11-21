@@ -65,6 +65,7 @@ p.add_argument("--suivi", choices=["mur", "lateral"], default="mur", help="mur :
 p.add_argument("--saut", type=float, default=30.0, help="suivi « mur » : mm d'écart à la droite du mur au-delà desquels une lecture est une autre paroi")
 p.add_argument("--adopte", type=float, default=400.0, help="suivi « mur » : mm sur lesquels une autre paroi doit tenir en ligne droite avant de devenir le mur")
 p.add_argument("--avance-capteur", type=float, default=130.0, help="suivi « mur » : mm du centre du robot à l'axe du servo, vers l'avant (estimé, pas mesuré à la règle)")
+p.add_argument("--devant-vu", type=int, default=0, help="mm : place libre devant mesurée à part (regard_devant.py), à prendre à la place de la lecture à 0° quand celle-ci accroche une arête sur le côté (couloir qui se resserre, journal § 73). À ne donner qu'après avoir regardé : c'est elle qui autorise le départ")
 a = p.parse_args()
 ZONE = 30
 ANGLE = 90 if a.cote == "g" else -90
@@ -188,6 +189,10 @@ try:
         sys.exit(1)
     vus = [x for x in D if x > 0]
     libre = min(vus) if len(vus) * 2 >= len(D) else 4000
+    if a.devant_vu:
+        print("%s  devant, à 0° : %s ; place retenue : %d mm, mesurée à part (--devant-vu)." % (
+            heure(), ("%d à %d mm" % (min(vus), max(vus))) if vus else "rien à portée", a.devant_vu))
+        libre = a.devant_vu
     if libre - a.distance < a.marge:
         print("%s  PAS ASSEZ DE PLACE DEVANT : %d mm lus, il en faut %d (trajet de %d + marge de %d). Rien ne bouge." % (
             heure(), libre, a.distance + a.marge, a.distance, a.marge))

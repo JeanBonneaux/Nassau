@@ -1,0 +1,5 @@
+Position donnée à la carte vivante le 2026-11-21 à 17 h 02, robot immobile depuis 16 h 23 min 56.
+D'où elle vient : l'utilisateur a dit « J20, dans le couloir » (16 h 58) ; affinée par le calcul (journal_wifi.md § 73) :
+le tour sur place de 16 h 14 min 55, les parois lues de côté à 16 h 15 et 16 h 23, les échos lus devant et le chemin compté
+par le cerveau depuis son redémarrage de 16 h 13, posés ensemble sur le plan. Incertitude : une dizaine de centimètres.
+POSE=518.7,213.9,350.6
