@@ -62,6 +62,7 @@ def balayer(prefixe):
         sys.exit(1)
     avant = {"butee": e["radar"].get("butee", 30), "lent": e["radar"].get("lent", 5)}
     ms0 = e["ms"]
+    robot_ok_avant = bool(e["robot"]["ok"])              # si le robot dormait déjà, sa liaison n'est pas surveillée
     journal = open(prefixe + "_balayage.jsonl", "a", encoding="utf-8")
     code = 0
     try:
@@ -78,14 +79,19 @@ def balayer(prefixe):
                     if time.time() > limite:
                         raise Arret("le cerveau ne répond plus")
                     continue
-                ra = e["radar"]
+                ra, rb = e["radar"], e["robot"]
                 journal.write(json.dumps(dict(t=time.time(), ms=e["ms"], servo=ra["servo"], cible=ra["cible"], a=ra["a"], mm=ra["mm"],
-                                              mm_age=ra["mm_age"], absent=ra["absent"], cap=e["pose"]["cap"]), ensure_ascii=False) + "\n")
+                                              mm_age=ra["mm_age"], absent=ra["absent"], cap=e["pose"]["cap"],
+                                              robot_ok=rb["ok"], robot_age=rb["age"]), ensure_ascii=False) + "\n")
                 if e["ms"] + 2000 < ms0:
                     raise Arret("la carte a redémarré")
                 ms0 = e["ms"]
                 if ra["absent"]:
-                    raise Arret("le capteur de distance ne réagit plus")
+                    raise Arret("le capteur de distance ne réagit plus (capteur à %d° commandés)" % ra["servo"])
+                # Vu le 2026-11-21 : le robot a cessé de répondre au cerveau pendant que le capteur allait à fond à droite.
+                # On s'arrête au premier signe (plus de lecture du robot depuis 600 ms) et on note l'angle.
+                if robot_ok_avant and (not rb["ok"] or rb["age"] > 600):
+                    raise Arret("le ROBOT ne répond plus au cerveau depuis %d ms (capteur à %d° commandés)" % (rb["age"], ra["servo"]))
                 if ra["servo"] == cible and ra["cible"] == cible:
                     break
                 if time.time() > limite:

@@ -2906,3 +2906,42 @@ Sur les 51 cm de l'avancée (40 lectures) : écart-type de 21 mm, et la droite a
 **Non fait** : comprendre le côté droit ; comprendre pourquoi le robot s'est tu ; la mesure à la règle de la place du capteur ; longer un mur en corrigeant la route.
 
 **État à la fin** (15 h 25) : robot à l'arrêt en mode Safe, 80 cm plus loin que son pivot, 1 648 mAh (80 %), pas sur sa base, à un endroit que je ne connais pas ; cerveau en v16, rallumé à 15 h 19 ; capteur de distance en marche, devant ; limite du servo remise à 90° et vitesse à 10°/s, comme l'utilisateur les avait réglées. La séance n'est pas fermée.
+
+## 68. Le côté droit du capteur, revérifié : il lit maintenant le mur de droite, et le robot ne se tait plus (2026-11-21, 15 h 52 à 15 h 56)
+
+L'utilisateur, à 15 h 26 : « Le côté droit devrait aussi marche maintenant ». À sa question (un côté ou deux ?) j'ai répondu qu'un seul suffit pour longer un mur, mais que le côté droit vaut d'être vérifié tout de suite, parce que le robot s'était tu quand le capteur y allait (§ 67.1). Il a ajouté que la brosse latérale est à droite : pour nettoyer au pied d'un mur, c'est ce côté qu'il faudra (note P § 9.5). Puis, à 15 h 52 : « Ok côté droit puis la suite ». Je ne sais pas ce qu'il a changé au montage.
+
+Enregistrement `essai_cote_droit_20261121_155302`. L'outil `angle_vrai_servo.py` surveille maintenant la liaison avec le robot et s'arrête au premier signe (plus de lecture du robot depuis 600 ms).
+
+| Heure | Geste | Résultat |
+|---|---|---|
+| 15 h 53 min 08 à 24 | tour sur place | 380,1°, 122 mesures |
+| 15 h 53 min 32 à 50 | capteur de 0 à +90° commandés, 5°/s | une lecture par degré |
+| 15 h 53 min 50 à 54 min 26 | de +90 à −90° | une lecture par degré |
+| 15 h 54 min 26 à 44 | retour devant | sans incident |
+
+**Le balayage est allé au bout des deux côtés** : 181 angles lus, le robot a répondu tout du long (lecture la plus vieille : 370 ms), le capteur n'a jamais été « absent ».
+
+| Angle commandé | −90° | −75° | −60° | −45° | −30° | −15° | 0° | +15° | +30° | +45° | +60° | +75° | +90° |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| capteur tourné par le servo (mm) | 872 | 1 062 | 1 331 | 1 350 | 1 902 | 1 878 | rien | rien | 2 424 | 2 011 | 2 026 | 936 | 911 |
+| tour sur place, même direction (mm) | 719 | 936 | 1 053 | 1 767 | 1 467 | 1 346 | rien | rien | 1 882 | 1 965 | 848 | 801 | 799 |
+
+**À droite, le capteur lit maintenant quelque chose qui change avec l'angle** (à 15 h 15 il donnait 1,60 m partout) et qui suit le tour : la distance diminue à mesure qu'il tourne, jusqu'au mur de droite. Aux deux bouts, des deux côtés, l'écart entre le capteur tourné et le tour est celui qu'on attend d'un capteur placé en avant du centre du robot : il lit plus loin de x fois (1 moins le cosinus de l'angle), x étant la distance de l'axe du servo au centre.
+
+| Angle | capteur tourné moins tour | x qui l'explique |
+|---|---|---|
+| −90° | 153 mm | 153 mm |
+| −75° | 126 mm | 170 mm |
+| +75° | 135 mm | 182 mm |
+| +90° | 112 mm | 112 mm |
+
+Soit un axe de servo **11 à 18 cm en avant du centre du robot**, ce qui recoupe le § 67.3 et l'estimation de la session de revue. Quatre points, des parois pas forcément planes : une estimation, pas une mesure à la règle.
+
+**Entre 15 et 60°, les deux profils ne se superposent pas partout** (par exemple 1,90 m lus à −15 et −30° commandés pour 1,35 à 1,47 m au tour ; l'arête de gauche vue 10° plus tard). Le capteur tourné et le capteur du tour ne regardent pas du même point, et les arêtes des objets proches se décalent de 5 à 10° de l'un à l'autre ; je ne sais pas faire la part de cela et d'un angle du servo encore inexact. **Je ne certifie donc l'angle qu'aux deux bouts** (75 et 90°, des deux côtés), ce qui est ce dont le suivi de mur a besoin. L'ajustement automatique de l'outil (un décalage et deux rapports) n'a pas de sens dans ce décor : ses chiffres sont à ignorer.
+
+Compteurs du capteur depuis le démarrage du cerveau à 15 h 19 : 17 836 mesures, **4 sans réaction**, jamais cinq de suite. Le contact d'un fil reste un peu fragile.
+
+**Fermeture** (15 h 55) : capteur au repos, puis `5`, `s`, `x` ; le robot peut dormir. Je l'ai fermé de moi-même parce que la suite (écrire le firmware v17) ne demande pas le robot.
+
+**État à la fin** (15 h 56) : robot fermé, 1 572 mAh (76 %), pas sur sa base, à un endroit que je ne connais pas ; cerveau allumé, en v16 ; capteur de distance au repos, devant ; limite du servo à 90°, vitesse 10°/s.
