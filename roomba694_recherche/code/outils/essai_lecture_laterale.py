@@ -150,8 +150,12 @@ try:
     e = lire("depart")
     rb = e["robot"]
     refus = None
-    if not str(e.get("ver", "")).startswith("v15"):
-        refus = "le firmware n'est pas la v15"
+    try:
+        version = int(str(e.get("ver", "v0")).split(" ")[0].lstrip("v"))
+    except ValueError:
+        version = 0
+    if version < 15:
+        refus = "le firmware est plus ancien que la v15 (%s)" % str(e.get("ver", "?")).split(" ")[0]
     elif not rb.get("ok") or rb.get("mode") != MODE_SAFE:
         refus = "le robot ne répond pas ou n'est pas en mode Safe (mode lu %s)" % rb.get("mode")
     elif e.get("driving") or e["tour"]["etat"] in (1, 2) or e["mouv"]["etat"] == 1:

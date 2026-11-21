@@ -228,8 +228,12 @@ def pret():
     print("Robot : répond %s, mode %s, roule %s, tour %s, mouvement %s" % (
         rb.get("ok"), rb.get("mode"), e.get("driving"), e.get("tour", {}).get("etat"), e.get("mouv", {}).get("etat")))
     refus = []
-    if not ver.startswith("v15"):
-        refus.append("le firmware n'est pas la v15 (%s) : l'essai ne peut pas se faire" % ver.split(" ")[0])
+    try:
+        numero = int(ver.split(" ")[0].lstrip("v"))
+    except ValueError:
+        numero = 0
+    if numero < 15:
+        refus.append("le firmware est plus ancien que la v15 (%s) : l'essai ne peut pas se faire" % ver.split(" ")[0])
     if "cible" not in ra:
         refus.append("le cerveau ne donne pas la direction visée (« cible ») : firmware trop ancien")
     if e.get("driving") or e.get("tour", {}).get("etat") in (1, 2) or e.get("mouv", {}).get("etat") == 1:

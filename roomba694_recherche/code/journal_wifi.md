@@ -2834,3 +2834,75 @@ Le servo n'a pas dépassé 14° pendant ces vérifications ; aucun ordre de roue
 **Non vérifié** : la page sur le téléphone de l'utilisateur ; ce qu'il verra du capteur.
 
 **État à la fin** (15 h 06) : cerveau en **v16** ; capteur de distance à l'arrêt, devant, servo relâché, butée 30°, vitesse lente 3°/s ; robot réveillé en mode Safe, immobile, au même endroit qu'au § 65, 1 697 mAh (82 %), pas sur sa base ; la séance n'est pas fermée : l'utilisateur a la main, par la page.
+
+## 67. Le capteur tourné à gauche lit le mur en roulant : une marche de 18 cm et la fin du mur vues au bon endroit ; à droite il ne lit pas ce qu'il devrait ; à fond à droite, le robot cesse de répondre (2026-11-21, 15 h 12 à 15 h 25)
+
+L'utilisateur a essayé le servo lui-même depuis la page (firmware v16, § 66), puis écrit à 15 h 12 : « Reprend, maintenant le capteur tourne comme il faut ». Je ne sais pas ce qu'il a changé au montage ; le cerveau avait été rallumé à 15 h 11. Dans la page il avait mis la limite à 90° et la vitesse à 10° par seconde, et demandé −90°, +90° puis 0°. À 15 h 12 il conduisait le robot (2,5 m depuis le démarrage) ; à l'arrêt à 15 h 12 min 56.
+
+### 67.1 Premier essai : le balayage, et le robot qui se tait (15 h 13 à 15 h 19)
+
+Enregistrement `essai_roulant_v16_20261121_151330`. Outil nouveau `code/outils/angle_vrai_servo.py` : un balayage lent du capteur, robot immobile, comparé au tour sur place fait au même endroit.
+
+| Heure | Ce qui se passe |
+|---|---|
+| 15 h 13 min 36 à 52 | tour sur place : 380,1°, 122 mesures |
+| 15 h 14 min 39 à 57 | capteur de 0 à +90° commandés, à 5°/s : une lecture par degré |
+| 15 h 14 min 57 à 15 min 33 | de +90 à −90° : une lecture par degré, sauf à −76, −81 et −82° |
+| **15 h 15 min 32,4** | **« Pas de réponse du robot »** : le robot ne répond plus au cerveau ; le capteur est alors vers −80° |
+| 15 h 15 min 34,8 | « le capteur ne réagit pas », au retour depuis −90° ; il réagit de nouveau 2,2 s plus tard |
+| 15 h 15 min 35 à 51 | l'outil s'arrête et ramène le capteur devant |
+| 15 h 16 min 52 à 15 h 17 min 56 | robot muet : écoute de 2 s, 0 octet ; lectures des groupes 100, 6 et 101, 0 octet ; essai à 19 200 bauds, réveil (`w`), ouverture de la liaison (`s`) : rien |
+| 15 h 17 | l'utilisateur coupe ma commande : « Reprend ça devrai être bon, test » |
+| 15 h 19 min 22 | le robot répond de nouveau ; à 15 h 19 min 40 le cerveau est rallumé |
+
+Je n'ai pas trouvé pourquoi le robot s'est tu : 0 octet reçu, ni réveil ni changement de débit n'y ont rien fait, et il est revenu sans que j'envoie rien de plus. Cela s'est produit pendant que le capteur allait à fond à droite, comme le décrochage du capteur lui-même : de ce côté, quelque chose tire sur le câblage ou le touche. Non vérifié.
+
+**Ce que le balayage dit, comparé au tour** (distance lue dans la même direction, en mm) :
+
+| Angle commandé | −90° | −75° | −60° | −45° | −30° | −15° | 0° | +15° | +30° | +45° | +60° | +75° | +90° |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| capteur tourné par le servo | 1 602 | 1 593 | 1 591 | 1 596 | 1 609 | 1 593 | 1 162 | 1 551 | 1 842 | 1 871 | 1 840 | 1 862 | 1 565 |
+| tour sur place | 1 281 | 947 | 976 | 933 | 942 | 965 | 1 168 | 1 435 | 1 697 | 1 818 | 1 804 | 1 774 | 1 410 |
+
+- **À gauche**, les deux profils ont la même forme aux mêmes angles : 1,16 m devant, la montée vers 1,8 m entre 15 et 30°, la redescente à 90°. Le capteur regarde bien où on le lui demande. Il lit 5 à 15 cm de plus que le tour, ce qui s'explique par sa place sur le robot (§ 67.3).
+- **À droite**, le capteur lit **1,59 à 1,64 m à tous les angles de −15 à −90°** (et rien à −5 et −10°), alors que le tour voit de ce côté un mur à 0,92 à 1,03 m sur 75° de large. Il ne regarde donc pas ce mur. Je ne sais pas pourquoi : la tête ne tourne pas de ce côté comme on le lui commande, ou quelque chose posé sur le robot lui bouche la vue. Aucun réglage d'échelle ne fait coller ces lectures au tour.
+
+### 67.2 Le vrai essai en roulant (15 h 20 à 15 h 23)
+
+Sur ses mots de 15 h 20 : « Reprend le vrai test sur le robot ». Enregistrement `essai_roulant_v16b_20261121_152020`.
+
+| Heure | Geste | Résultat |
+|---|---|---|
+| 15 h 20 min 26 à 42 | tour sur place | un long mur à droite à 0,92 m (de −110 à −40°), une paroi à 1,8 m devant à gauche, quelque chose à 1,40 m à gauche |
+| 15 h 21 min 13 à 20 | pivot sur place de 165° vers la droite (`/api/mouv?rot=-165&v=60`), pour mettre le long mur à gauche | 163,9° en 6,4 s |
+| 15 h 21 min 48 | capteur devant | rien à portée : la voie est libre |
+| 15 h 21 min 49 à 15 h 22 min 02 | capteur tourné à gauche, 90° commandés, à 10°/s | à l'arrêt : **1 066 mm** (1 055 à 1 090, écart-type 11 mm) |
+| 15 h 22 min 02 à 10 | `/api/mouv?av=800&v=100` | **799 mm pour 800 demandés en 7,3 s, cap tenu à +0,2°, aucun contact** ; 110 mm/s en croisière |
+| 15 h 22 min 12 | à l'arrêt | 2 062 mm (2 051 à 2 095) |
+| 15 h 22 min 24 | capteur ramené devant | 1 893 mm devant |
+
+211 mesures du capteur, aucune sans réaction. **63 lectures de côté pendant l'avance** (8,6 par seconde, une tous les 13 mm).
+
+**Ce que le capteur a lu le long du trajet :**
+
+| Chemin roulé | Distance lue à gauche | |
+|---|---|---|
+| de 0 à 19 cm | 1,06 à 1,15 m (médiane 1 093 mm) | le mur |
+| de 20 à 71 cm | 0,88 à 0,98 m (médiane 906 mm) | **une avancée de 18 cm dans la paroi** (un meuble, un montant ?) |
+| à partir de 72 cm | 2,06 à 2,09 m, en alternance avec 1,38 m | **la fin du mur** |
+
+Sur les 51 cm de l'avancée (40 lectures) : écart-type de 21 mm, et la droite ajustée monte de 18 mm par mètre, soit un robot **parallèle à la paroi à 1,0° près (± 1,3°)**, comme le pivot l'avait visé. À l'arrêt le capteur varie de 11 à 12 mm d'une lecture à l'autre ; en roulant, de 21 à 26 mm.
+
+### 67.3 Ce que cela dit
+
+- **Le capteur tourné à gauche lit ce qui est à côté du robot pendant qu'il roule** : le relief de la paroi et sa fin apparaissent au centimètre de trajet près. C'est ce qu'il faut pour longer un mur sans s'arrêter, et pour reconnaître une porte ou un montant au passage.
+- **Le bruit en roulant est de 2 cm**, quatre fois celui que la simulation supposait (note P § 9.4). Pour tenir un écart au mur, c'est sans importance. Pour lire l'angle du robot par rapport au mur, il faut une cinquantaine de centimètres de paroi plate pour l'avoir à un degré près ; la simulation est à refaire avec ce bruit.
+- **Un seul côté sert : la gauche.** La simulation dit qu'un côté suffit, à condition de fixer la distance au mur.
+- **La place du capteur.** Au même endroit, le capteur tourné à gauche lit plus loin que le tour sur place dans la même direction : 5 cm de plus à 60°, 9 cm à 75°, 17 cm à 90°. C'est ce que donne un axe de servo placé **10 à 17 cm en avant du centre du robot**. Cela va dans le sens de la session de revue (capteur à 12 cm du centre et non 2,7), sans le trancher : la paroi n'était pas plane.
+- **Le cerveau ne peut pas encore s'en servir pour corriger sa route** : une avance ne se retouche pas en cours (firmware à écrire, note P § 9.3 point 3).
+
+**Mes erreurs de la section** : l'outil d'avance refusait le firmware v16 (il exigeait « v15 » au caractère près), un lancement pour rien, corrigé ; en relisant la console du cerveau sans passer par l'enregistreur, j'ai fait afficher dans ma session une ligne qui nomme le réseau de la maison : rien n'en est écrit ni poussé, et je filtre désormais ces lignes.
+
+**Non fait** : comprendre le côté droit ; comprendre pourquoi le robot s'est tu ; la mesure à la règle de la place du capteur ; longer un mur en corrigeant la route.
+
+**État à la fin** (15 h 25) : robot à l'arrêt en mode Safe, 80 cm plus loin que son pivot, 1 648 mAh (80 %), pas sur sa base, à un endroit que je ne connais pas ; cerveau en v16, rallumé à 15 h 19 ; capteur de distance en marche, devant ; limite du servo remise à 90° et vitesse à 10°/s, comme l'utilisateur les avait réglées. La séance n'est pas fermée.
