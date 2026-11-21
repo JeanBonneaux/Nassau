@@ -2991,3 +2991,68 @@ Durée des 3,9 m : 27 à 37 s dans tous les cas.
 **Limites.** Une simulation, plus indulgente que l'appartement sur les parois et sur le capteur. Le firmware v17 et `longe_mur.py` n'ont pas roulé.
 
 **État à la fin** (16 h 10) : robot fermé depuis 15 h 55, pas sur sa base, 76 % à la dernière lecture ; cerveau allumé, en **v16** ; la v17 est sur le PC, pas installée. En attente du go de l'utilisateur pour l'installer et l'essayer.
+
+## 70. Firmware v17 installé : le robot roule 1,5 m d'un trait en étant corrigé en route ; pas de vrai mur à longer à cet endroit ; une faiblesse du suivi corrigée (2026-11-21, 16 h 12 à 16 h 19)
+
+Sur le « Go » de l'utilisateur de 16 h 12 (installer la v17, puis l'essayer : robot immobile, une avance courte corrigée en route, un mètre et demi le long d'un mur). Enregistrement `essai_v17_20261121_161403`.
+
+### 70.1 Installation et vérification robot immobile (16 h 12 min 56 à 16 h 13 min 15)
+
+Envoi par le Wi-Fi du binaire gardé (`build/roomba694_v17.bin`), dix secondes, « Mise à jour réussie ». Après : « v17 Nov 21 2026 16:01:12 », « redémarrage logiciel (mise à jour) ».
+
+| Vérification | Résultat |
+|---|---|
+| champs nouveaux de l'état | `mouv` : but 0, cap_vise 0, v 100, ret 0, opt 0 |
+| page de pilotage | 41 186 caractères, bloc « Orienter le capteur » présent |
+| `/api/mouv?retouche=1&cap=5&jusqua=500&v=80` sans avance en cours | « aucune avance en cours », rien ne bouge |
+| `cap=nan` | refus (HTTP 400) |
+
+Puis le robot réveillé : `w`, `s`, `f` ; mode Safe, 1 556 mAh (75 %), pas sur sa base.
+
+### 70.2 L'avance corrigée en route (16 h 14 min 16 à 24), outil nouveau `essai_retouche.py`
+
+Avance lancée pour 300 mm à 100 mm/s, capteur de distance devant (rien à portée). À 126 mm, une retouche : but à 600 mm, cap −8°, vitesse 80 mm/s ; la même retouche renvoyée à 159 mm.
+
+| | Demandé | Fait |
+|---|---|---|
+| distance | 300 mm au départ, 600 mm par la retouche | **599 mm**, en 6,9 s |
+| arrêt à 300 mm | aucun | **aucun** : 65 à 103 mm/s entre 150 et 500 mm de chemin |
+| cap | −8° | −6° pendant l'avance, −7,0° à l'arrêt |
+| retouches | deux envoyées, la seconde identique | deux comptées, la seconde sans effet |
+| capteurs optiques de devant (seuil 100) | | plus forte lecture 30, aucun ralentissement |
+
+**La retouche fonctionne** : le but, le cap et la vitesse d'une avance se changent en route, sans arrêt. Le cap reste à 2° de sa consigne pendant l'avance : le cerveau le tient par une correction proportionnelle seule, et le robot tire d'un côté. Le suivi de mur le rattrapera par l'écart au mur ; à noter pour plus tard.
+
+### 70.3 Le trajet de 1,5 m (16 h 14 min 55 à 16 h 16 min 25)
+
+Tour sur place d'abord : une paroi proche à droite (0,43 m, de −110 à −80°), rien devant dans l'axe, un objet à 1,0 m devant à gauche, pas de mur continu à gauche. J'ai choisi la droite.
+
+`longe_mur.py --cote d --distance 1500 --vitesse 100 --opt 100 --flanc 100`.
+
+| Étape | Résultat |
+|---|---|
+| capteur devant | rien à portée |
+| capteur tourné à droite, à l'arrêt | **910 mm** (889 à 911), et non 0,43 m : la paroi proche du tour était un peu en arrière, le capteur tourné regarde 13 cm plus en avant et voit ce qui est derrière elle |
+| le trajet | **1 499 mm pour 1 500 en 13,8 s, soit 109 mm/s en moyenne, d'un seul trait ; aucun contact** |
+| retouches | 58 envoyées, 58 comptées par le cerveau (une toutes les 0,24 s) |
+| lectures de l'état | 164 en 13,7 s (12 par seconde) ; 122 lectures de côté, une tous les 12 mm |
+| capteurs optiques | devant : 33 au plus, aucun ralentissement ; flanc droit : 4 au plus, garde jamais déclenchée |
+| capteur ramené devant | 768 mm devant |
+
+**Ce que le capteur a lu à droite le long du trajet** : 0,89 à 0,93 m jusqu'à 18 cm ; 1,42 à 1,49 m de 25 à 59 cm ; 1,19 à 1,20 m de 66 à 79 cm ; rien à 86 cm ; 1,58 à 1,68 m de 92 cm à la fin. Ce n'est pas un mur : ce sont des choses à des profondeurs différentes. La règle de l'ouverture s'est déclenchée à 25 cm (le « mur » reculait de 50 cm d'un coup) et le robot a tenu un cap fixe jusqu'au bout, comme prévu.
+
+**Une faiblesse du suivi, vue ici et corrigée** : ce cap fixe était faux de 11°. Le suivi de l'audit lit l'axe du mur dans la pente de la distance dès qu'il a 12 cm de paroi ; avec 2 cm de bruit par lecture, la pente lue sur les 18 premiers centimètres donnait un axe à −21°, pris pour moitié. Le robot a donc roulé 1,3 m tourné de 10,5° vers la droite. `suivi_lateral.py` reçoit un paramètre de plus, `pente_min` (valeur d'origine par défaut : 120 mm) ; `longe_mur.py` exige 400 mm de paroi avant de lire un axe. En simulation, avec 20 mm de bruit : 43 départs sur 45 sans contact à gauche (inchangé), 39 à 41 sur 45 à droite (35 à 37 avant), axe retrouvé à 0,2 à 1,0° ; l'essai d'origine de l'audit donne toujours 30 sur 30 dans ses trois cas.
+
+### 70.4 Ce que cela dit
+
+- **Rouler sans s'arrêter est acquis** : 1,5 m d'un trait à 109 mm/s, sous le contrôle du PC, contre des avances de 2 m au plus séparées d'arrêts. Le cerveau a pris toutes les retouches ; le Wi-Fi a tenu 12 lectures par seconde.
+- **Longer un mur n'est pas encore démontré** : il n'y avait pas de mur continu là où était le robot. Le suivi n'a tenu un écart que sur 18 cm.
+- **Le ralentissement sur les capteurs optiques n'a pas eu à jouer** (rien au-dessus de 33) : il n'est pas éprouvé.
+- **Le côté droit a tenu en roulant** : le capteur tourné à droite n'a pas décroché, et le robot a répondu tout du long.
+- **En vitesse** : 13,8 s pour 1,5 m, mais 13 s pour tourner le capteur avant et 12 s pour le ramener après. Sur un trajet réel le capteur reste tourné d'un tronçon à l'autre.
+
+**Il me faut un vrai mur** : le robot le long d'un mur dégagé (le couloir), à 30 à 50 cm de lui, mur à sa droite ou à sa gauche, 2,5 m libres devant. Je ne sais toujours pas où il est dans l'appartement.
+
+**Mes erreurs de la section** : choisi la droite d'après le tour sans voir que la paroi proche était en arrière du robot ; le suivi lancé avec une longueur de pente trop courte pour le bruit mesuré une heure plus tôt.
+
+**État à la fin** (16 h 19) : robot à l'arrêt en mode Safe, 2,1 m plus loin qu'à 16 h 13, 0,77 m de libre devant lui, 75 % de batterie, pas sur sa base ; cerveau en **v17** ; capteur de distance en marche, devant ; limite du servo 90°, vitesse 10°/s. La séance n'est pas fermée.

@@ -36,7 +36,7 @@ import math
 
 class SuiviLateral:
     def __init__(self, axe, gain=1.0, cap_max=10.0, fenetre=300.0, portee=1300.0, v_max=130, v_serre=80, jeu_serre=90.0, rayon=170.0,
-                 elargi=40.0, n_min=4, v_depart=None, mediane=5):
+                 elargi=40.0, n_min=4, v_depart=None, mediane=5, pente_min=120.0):
         # axe     : cap du passage tel qu'on le croit (degrés, même compte que le gyroscope) ; les murs le corrigent
         # gain    : radians de correction de cap par mètre d'écart au milieu
         # cap_max : correction de cap la plus forte, degrés
@@ -51,6 +51,10 @@ class SuiviLateral:
         self.axe, self.gain, self.cap_max, self.fenetre, self.portee = float(axe), gain, cap_max, fenetre, portee
         self.v_max, self.v_serre, self.jeu_serre, self.rayon, self.elargi = v_max, v_serre, jeu_serre, rayon, elargi
         self.n_min, self.v_depart, self.mediane = n_min, v_depart, max(1, int(mediane))
+        # pente_min : longueur de chemin (mm) qu'il faut avoir roulée le long d'une paroi avant d'en lire la pente. Ajouté le
+        # 2026-11-21 (session de navigation, journal_wifi.md § 70), valeur d'origine gardée par défaut : sur le robot, avec un
+        # bruit de 20 mm par lecture, 120 mm ne suffisent pas ; la première pente lue sur 18 cm a donné un axe faux de 11°.
+        self.pente_min = float(pente_min)
         self.bg, self.bd = [], []              # dernières lectures brutes de chaque côté
         self.hg, self.hd = [], []              # (chemin, cap, distance) récents de chaque côté, sans saut
         self.y = 0.0                           # écart au milieu, mm, positif vers la gauche
@@ -60,7 +64,7 @@ class SuiviLateral:
 
     def _pente(self, h):
         """(pente de la distance le long du chemin, cap moyen) sur les points gardés, ou None s'ils ne font pas 12 cm"""
-        if len(h) < self.n_min or h[-1][0] - h[0][0] < 120.0:
+        if len(h) < self.n_min or h[-1][0] - h[0][0] < self.pente_min:
             return None
         n = len(h)
         ms = sum(p[0] for p in h) / n

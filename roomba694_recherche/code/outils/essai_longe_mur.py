@@ -37,7 +37,7 @@ from suivi_lateral import SuiviLateral
 
 
 def essai(decalage, cap_faux, graine, cote, qui, v_max, cible=None, k_vrai=1.0045, pertes=0.0, retard_plus=0.0, detail=False,
-          bruit=4.0, fenetre=300.0, mediane=3, ouverture=0.0):
+          bruit=4.0, fenetre=300.0, mediane=3, ouverture=0.0, pente_min=120.0):
     # bruit : écart-type d'une lecture du capteur (mm) ; 4 dans le simulateur d'origine, 20 mesurés en roulant le 2026-11-21
     d, dist = monde_couloir()
     x, y, c = d["depart"]
@@ -45,7 +45,7 @@ def essai(decalage, cap_faux, graine, cote, qui, v_max, cible=None, k_vrai=1.004
     monde = sim.Monde(**d)
     robot = sim.RobotSimule(monde, graine=graine, echelle_gyro=k_vrai, firmware=10)
     rng = random.Random(2000 + graine)
-    suivi = SuiviLateral(axe=0.0, mediane=mediane, fenetre=fenetre, v_max=v_max, v_serre=min(80, v_max))
+    suivi = SuiviLateral(axe=0.0, mediane=mediane, fenetre=fenetre, v_max=v_max, v_serre=min(80, v_max), pente_min=pente_min)
     if cible is not None:
         suivi.pose = (cible, cible)
     signe = 1.0 if cote == "g" else -1.0
@@ -132,6 +132,7 @@ def main():
     q.add_argument("--bruit", type=float, default=4.0, help="écart-type d'une lecture du capteur, mm (20 mesurés en roulant le 2026-11-21)")
     q.add_argument("--fenetre", type=float, default=300.0, help="longueur de chemin sur laquelle la pente du mur est lue, mm")
     q.add_argument("--mediane", type=int, default=3, help="nombre de lectures de la médiane glissante")
+    q.add_argument("--pente-min", type=float, default=120.0, help="mm de paroi longés avant de lire sa pente")
     q.add_argument("--ouverture", type=float, default=0.0, help="mm : au-delà de la consigne plus cette valeur, le mur est tenu pour perdu (0 : règle d'origine)")
     a = q.parse_args()
     departs = [(dy, dc) for dy in (-150.0, 0.0, 150.0) for dc in (-6.0, -3.0, 0.0, 3.0, 6.0)]
@@ -142,7 +143,7 @@ def main():
     for cote, nom_c in (("g", "mur de gauche"), ("d", "mur de droite")):
         for qui, nom_q in (("pc", "retouche par le PC     "), ("cerveau", "retouche par le cerveau")):
             for v_max in (100, 130, 147):
-                R = [essai(dy, dc, g, cote, qui, v_max, cible=a.cible, pertes=a.pertes, retard_plus=a.retard, bruit=a.bruit, fenetre=a.fenetre, mediane=a.mediane, ouverture=a.ouverture)
+                R = [essai(dy, dc, g, cote, qui, v_max, cible=a.cible, pertes=a.pertes, retard_plus=a.retard, bruit=a.bruit, fenetre=a.fenetre, mediane=a.mediane, ouverture=a.ouverture, pente_min=a.pente_min)
                      for dy, dc in departs for g in range(1, a.graines + 1)]
                 ok = [r for r in R if r["ok"] and not r["contacts"]]
                 txt = f"{nom_c}, {nom_q}, {v_max:3d} mm/s : {len(ok):2d} sur {len(R)} sans contact"

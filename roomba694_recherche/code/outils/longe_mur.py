@@ -56,6 +56,7 @@ p.add_argument("--lent", type=int, default=0, help="vitesse de rotation du capte
 p.add_argument("--pas", type=int, default=5)
 p.add_argument("--fenetre", type=float, default=600.0, help="longueur de chemin sur laquelle la pente du mur est lue, mm")
 p.add_argument("--mediane", type=int, default=5)
+p.add_argument("--pente-min", type=float, default=400.0, help="mm de paroi qu'il faut avoir longés avant d'en lire la pente (l'axe du mur)")
 p.add_argument("--gain", type=float, default=1.0, help="radians de correction de cap par mètre d'écart")
 p.add_argument("--cap-max", type=float, default=10.0, help="correction de cap la plus forte, degrés")
 a = p.parse_args()
@@ -201,7 +202,7 @@ try:
     print("%s  mur lu à %d mm (de %d à %d) ; écart à tenir : %d mm ; vitesse %d mm/s ; optique devant %s, flanc %s." % (
         heure(), d0, min(vus), max(vus), ecart, a.vitesse, a.opt or "sans", a.flanc or "sans"))
     suivi = SuiviLateral(axe=0.0, gain=a.gain, cap_max=a.cap_max, fenetre=a.fenetre, portee=PORTEE_MUR, v_max=a.vitesse,
-                         v_serre=min(80, a.vitesse), rayon=150.0, mediane=a.mediane)
+                         v_serre=min(80, a.vitesse), rayon=150.0, mediane=a.mediane, pente_min=a.pente_min)
     suivi.pose = (ecart, ecart)
     # 3. le départ
     r = get("/api/mouv?av=%d&v=%d%s" % (min(a.horizon, a.distance), a.vitesse, ("&opt=%d" % a.opt) if a.opt else ""))
