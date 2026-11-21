@@ -1,0 +1,5 @@
+Position donnée à la carte vivante le 2026-11-21 à 17 h 45, robot immobile depuis son demi-tour de 17 h 02.
+D'où elle vient : celle de 17 h 02 (case J20 dite par l'utilisateur, affinée par le calcul, journal_wifi.md § 73), tournée
+du demi-tour mesuré au gyroscope (-164,1°). Le cerveau a redémarré à 17 h 42 (fils du capteur de distance remis par
+l'utilisateur) ; le capteur lit les mêmes distances qu'avant (mur de gauche à 486 mm pour 488) : le robot n'a pas bougé.
+POSE=518.7,213.9,186.5

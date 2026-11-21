@@ -3269,3 +3269,95 @@ Deux regards à l'arrêt pour comprendre (`regard_devant.py`) :
 - Pas vérifié : la carte sur l'appareil de l'utilisateur ; la position à mieux que 10 cm ; l'option `--devant-vu` en mouvement ; quel fil lâche.
 
 **État à la fin** (17 h 12) : robot à l'arrêt en mode Safe en J20, tourné vers la gauche du plan, 68 % de batterie, pas sur sa base ; cerveau en v17 ; capteur de distance devant, il répond par moments. Enregistreur arrêté proprement à 17 h 10. La séance n'est pas fermée. **Attendu de l'utilisateur** : remettre les fils du capteur de distance (cerveau débranché, sans changer un fil de place), puis je vérifie les deux côtés à l'arrêt avant tout trajet.
+
+## 74. Les fils remis ; le mur du couloir longé à 142 mm/s avec le nouveau suivi, sans contact ; mais à « 150 » le robot ne corrige plus son cap : ses roues ne prennent que des vitesses par paliers (2026-11-21, 17 h 43 à 17 h 55)
+
+À 17 h 43 l'utilisateur écrit « C'est fait » : il a remis les fils du capteur de distance, cerveau débranché. Enregistrement `longe_retour2_20261121_174323`. Firmware v17.
+
+### 74.1 État au retour, et le capteur vérifié à l'arrêt
+
+Cerveau rallumé depuis 32 s (« mise sous tension »), position remise à zéro ; le robot est resté en mode Safe, 64 % de batterie ; capteur de distance à l'arrêt, que le premier regard remet en marche.
+
+`regard_devant.py --angles=0,45,60,75,90,60,0,-45,-75,-90 --pause 2`, robot immobile :
+
+| Angle | Lecture (médiane) | Lectures |
+|---|---|---|
+| devant | 829 mm, puis 2 254 mm | 16 et 17 |
+| 45° à gauche | 513 mm | 19 |
+| 60° à gauche | 510 mm, puis 528 mm au retour | 17 et 16 |
+| 75° à gauche | 500 mm | 19 |
+| 90° à gauche | 486 mm | 14 |
+| 45° à droite | 752 mm | 15 |
+| 75° à droite | 837 mm | 19 |
+| 90° à droite | 986 mm (de 787 à 1 016) | 19 |
+
+**Le capteur répond à tous les angles**, 171 lectures, un seul raté de 0,4 s à sa mise en marche (17 h 43 min 54). Le mur de gauche est lu à 486 mm pour 488 avant la retouche des fils : **le robot n'a pas bougé**. Position redonnée à la carte (`…_passage1.txt`, `POSE=518.7,213.9,186.5`) : elle l'affiche en J20.
+
+### 74.2 Le trajet (17 h 45 min 11 à 17 h 45 min 47)
+
+`longe_mur.py --cote g --distance 1400 --vitesse 150 --ecart 315 --opt 100 --flanc 100 --mur-max 800 --devant-vu 2245`, suivi par droite (`suivi_mur.py`), gain 1.
+
+| | Résultat |
+|---|---|
+| le trajet | **1 399 mm pour 1 400 en 10,5 s, d'un seul trait, aucun contact** ; 133 mm/s en moyenne, 142 mm/s en palier |
+| le mur | lu 98 fois sur 98 (une lecture tous les 14 mm) ; aucun raté du capteur pendant le trajet |
+| retouches | 45 envoyées, 45 prises |
+| capteurs optiques | devant : 15 au plus, aucun ralentissement ; flanc gauche : 9 au plus, garde jamais déclenchée |
+| le suivi | avancée de 11 cm du mur reconnue à 17 cm du départ comme « une autre paroi, plus près », écart réglé sur elle à la lecture suivante, prise pour le mur 39 cm plus loin ; axe du mur retenu entre −0,2 et +0,4° ; cap demandé : +10° au départ (la consigne était 17 cm plus près du mur que le robot), puis de +4,7 à −2,7° |
+| à l'arrêt | mur lu à 314 mm pour 315 de consigne ; devant : 2 302 mm |
+
+Le long du trajet (lecture moins consigne) :
+
+| Chemin | Écart à la consigne (médian) | Cap du robot | Cap demandé |
+|---|---|---|---|
+| de 0 à 30 cm | +76 mm (de +176 à +40) | de 0 à +4,8° | +10 puis +4° |
+| de 30 à 60 cm | +33 mm | +4,8 à +5,2° | de +2,8 à +1,5° |
+| de 60 à 90 cm | +1 mm | +5,1 à +9,0° | de +1,3 à 0° |
+| de 90 cm à 1,2 m | −26 mm | +4,0 à +5,9° | de 0 à −1,8° |
+| de 1,2 à 1,4 m | −38 mm, puis +0 à la fin | de +4,1 à −1,2° | de −1,9 à −2,7° |
+
+**Un à-coup à 73 cm du départ** (17 h 45 min 29,6) : pendant 0,41 s le cerveau n'écrit aucune ligne (une seule ligne au lieu de huit), la roue gauche ne fait que 58 pas quand la droite en fait 107, et le cap saute de +5,4 à +9,0°. Pas de pare-chocs, pas de roue levée, capteurs de vide normaux. Le cap revient à +5,7° en une demi-seconde, la roue droite étant alors descendue d'un palier. Je ne sais pas ce qui a freiné la roue gauche (quelque chose au sol ?) ni pourquoi le cerveau s'est tu au même instant ; à demander à l'utilisateur.
+
+**Le nouveau suivi a fait ce qu'il devait** : il n'a jamais demandé plus de 10°, il a pris l'avancée du mur pour ce qu'elle est, et son axe n'a pas bougé. **Mais le robot n'a pas suivi ses demandes** : hors de cet à-coup, son cap est resté entre +4 et +6° pendant neuf secondes alors que la demande descendait de +10 à −2,7°. Il a donc roulé en ligne droite, de biais de 5° vers le mur, et s'en est approché de 45 mm de trop. Les « 314 mm pour 315 » lus à l'arrêt sont une coïncidence : dans les cinq derniers centimètres le mur recule de 4 cm. Sur un trajet plus long, le robot aurait fini contre le mur, sauf ralentissement.
+
+### 74.3 La cause : les roues ne prennent que des vitesses par paliers
+
+Les compteurs des deux roues, ligne par ligne (une ligne toutes les 47 ms) :
+
+| Moment | Roue gauche | Roue droite |
+|---|---|---|
+| 17 h 45, « 150 » demandés, cap à +4,8° pour +1° demandé | 15 pas par ligne | 15 pas par ligne |
+| 16 h 23, « 100 » demandés, cap tenu | 12 pas | 12 pas |
+| 16 h 23, « 100 » demandés, le robot tourne à droite | 12 pas | 9 pas |
+
+Soit 5, 4 et 3 pas de codeur par période de 15,6 ms. **Le robot ne règle la vitesse d'une roue que par pas entiers : 56,9 – 85,4 – 113,8 – 142,3 mm/s** (2, 3, 4 et 5 pas par période). Outil nouveau `code/outils/paliers_roues.py`, sur les 565 avances enregistrées depuis le 13 novembre :
+
+| Vitesse demandée | Avances | Vitesse réelle des roues (médiane) |
+|---|---|---|
+| 50 et 60 mm/s | 180 | 56,9 mm/s |
+| 70 et 80 mm/s | 49 | 85,4 mm/s |
+| 75 mm/s | 46 | 94,2 mm/s (entre deux paliers) |
+| 100 mm/s | 109 | 113,9 mm/s |
+| 110 mm/s | 10 | 119,2 mm/s (entre deux paliers) |
+| 120 mm/s | 2 | 114,8 mm/s |
+| 125 mm/s | 1 | 137,6 mm/s (presque au palier du dessus) |
+| 135 mm/s | 155 | 142,3 mm/s |
+| 150 mm/s | 13 | 141,5 mm/s |
+
+Le cerveau tient le cap en ajoutant 4 mm/s par degré d'erreur à une roue et en les retirant à l'autre. Si aucune des deux roues ne change de palier, rien ne se passe. À « 150 », la roue rapide est plafonnée à 150 par le firmware et la roue lente reste sur le palier de 142 tant qu'on ne lui retire pas une vingtaine de mm/s : **une erreur de cap de 5 ou 6° ne produit aucune rotation**. À « 100 », par chance, la demande est juste au bord d'un palier : la moindre correction fait descendre une roue, et le cap est tenu. C'est aussi, très probablement, l'explication du cap « à 2° de sa consigne » noté au § 70.2 ; je ne l'ai pas vérifié sur cet essai-là.
+
+Deux conséquences : « 150 mm/s » fait en vrai 142 mm/s, et « 100 » fait 114. Et **la vitesse demandée doit être choisie au bord haut d'un palier** pour que le cap réponde : vers 72, 100 et 128 mm/s (les seuils exacts ne sont pas mesurés ; le palier de 142 commence entre 120 et 125 demandés).
+
+### 74.4 Ce que cela dit, mes erreurs, ce qui n'est pas vérifié
+
+- **Le fil du capteur est remis** : aucun raté en roulant, capteur tourné à gauche.
+- **Le suivi par droite est validé sur le robot pour sa logique** (avancée reconnue, axe stable, pas d'emballement), pas pour sa tenue d'écart : le robot ne lui obéissait pas.
+- **La vitesse** : 1,4 m en 10,5 s. Le 14, le couloir mené par arrêts avançait à 12 mm/s ; ici 133 mm/s sur ce tronçon. Un seul tronçon de 1,4 m, pas le couloir entier : le gain sur le couloir n'est pas encore mesuré.
+- Mon erreur : j'ai d'abord écrit à l'utilisateur que le robot « s'arrête à 1 mm de sa consigne », d'après la ligne de fin du programme, avant d'avoir dépouillé le trajet. Corrigé dans le message suivant et ici.
+- Mon erreur : le premier essai réel du nouveau suivi s'est fait à une vitesse jamais essayée avec une retouche de cap (150), deux nouveautés à la fois. Le défaut des paliers aurait été plus simple à lire à 100.
+- La position donnée à la carte a un cap faux d'environ 6° (186,5° alors que le robot roulait parallèle au mur, qui est à 180° sur le plan) : la carte dessine le robot en J17, 9 cm trop près du mur du bas. À corriger au prochain enregistrement : pixel (445 ; 219), cap 179°.
+- Pas vérifié : le réglage « 128 » sur le robot ; les seuils exacts des paliers ; le ralentissement optique et la garde du flanc, qui n'ont toujours pas eu à jouer.
+
+**Proposé pour la suite** : (1) le même suivi à 128 mm/s demandés (142 en vrai), où le cap doit répondre ; (2) dans le firmware (une v18, rien n'est écrit) : une tenue de cap qui connaît les paliers, en faisant alterner une roue entre deux paliers pour obtenir la rotation voulue, et qui retire à la roue rapide ce qu'elle ne peut pas ajouter à l'autre.
+
+**État à la fin** (17 h 55) : robot à l'arrêt en mode Safe en J17, dans le couloir, tourné vers la gauche du plan, à 31 cm du mur du bas au capteur et 2,2 m de libre devant ; 63 % de batterie, pas sur sa base ; cerveau en v17 ; capteur de distance en marche, devant. Enregistreur arrêté de lui-même à 17 h 52. La séance n'est pas fermée.
