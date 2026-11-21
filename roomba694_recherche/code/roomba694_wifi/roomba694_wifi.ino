@@ -1,5 +1,25 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 15 — 2026-11-21 : un seul changement, demandé par l'utilisateur pour lire les murs de côté en roulant : le capteur
+    de distance peut tourner jusqu'à 90° de chaque côté, très lentement (« on peut aussi essayer le capteur de distance qui
+    tourne de 90 degrés. Pas besoin de photo, fais-le. L'important, c'est que si ça tourne, ça doit tourner très doucement »).
+    Tout est dans radar.ino, sauf quatre lignes ailleurs :
+    (1) Le plafond de la butée du servo passe de 30° à 90° (RADAR_BUTEE_MAX). La butée réglée, elle, reste à 30° tant qu'on
+        ne la relève pas par /api/radar?butee=N : installer cette version ne change rien à ce que fait le servo.
+    (2) Hors de la zone éprouvée depuis le 9 novembre (±30°), le servo n'avance que d'un degré à la fois, à 5° par seconde
+        (réglage « lent », 1 à 10). Un mouvement qui part de cette zone ou y arrive est lent d'un bout à l'autre. La
+        direction visée est relue à chaque degré : un nouvel ordre est pris tout de suite. L'arrêt du capteur (mode off)
+        le ramène devant de la même façon avant de relâcher le servo. À l'intérieur de ±30° rien ne change.
+    (3) Une mesure est faite à chaque degré et rangée avec la direction réelle du capteur ; la carte des distances va de
+        -90° à +90° (37 cases au lieu de 33). /api/state et /api/radar gagnent « cible » et « lent ».
+    (4) Si la carte redémarre pendant que le capteur regarde de côté, elle le retrouve (mémoire RTC) et le ramène devant
+        lentement, au lieu de le recentrer d'un coup. Après une coupure de l'alimentation cette mémoire est perdue : le
+        servo se recentre alors d'un coup, comme avant.
+    (5) Ailleurs : un tour sur place est refusé tant que le capteur est tourné au-delà de 30° (tour.ino) ; le sens du servo
+        (« inv ») ne se change que capteur devant (web.ino) ; la touche r remet la direction visée à 0 ; la page propose les
+        butées 45, 60 et 90° (pages.h).
+    Limite connue, inchangée : capteur tourné de côté, plus rien ne surveille l'avant que le pare-chocs du robot. La
+    conduite, le tour sur place, les avances du cerveau et les autres sécurités ne changent pas.
   Version 14 — 2026-11-15 : un seul ajout, demandé par l'utilisateur : la brosse latérale seule, lentement, le temps d'un
     franchissement (« la brosse latérale ne tournant pas, elle se glisse sous le tapis et bloque le robot, peut-on la
     faire tourner juste elle très doucement quand on franchit des obstacles ? »). Vu le jour même : deux avances vers
@@ -1239,7 +1259,7 @@ void printInfo() {
              st.ok ? "joignable" : "sans réponse", (unsigned long)(millis() - st.lastOkMs),
              useSplitGroups ? "lecture par les groupes 6 et 101" : "lecture par le groupe 100",
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
-  out.printf("Firmware roomba694_wifi v14, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
+  out.printf("Firmware roomba694_wifi v15, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
              __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
   out.printf("Depuis le démarrage de la carte : robot vu redémarrer %lu fois ; retrouvé à 19200 bauds et ramené à 115200 : %lu fois.\n",
              (unsigned long)robotBoots, (unsigned long)baudRescues);
@@ -1252,7 +1272,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v14 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v15 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"

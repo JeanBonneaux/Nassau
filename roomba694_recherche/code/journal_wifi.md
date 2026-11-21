@@ -2538,3 +2538,59 @@ Les deux façons de lire l'axe (la traversée, et le tour sur place) diffèrent 
 **Non fait** : le sud de la cuisine ; l'essai 4 devant un vrai mur ; les essais 6 et 7 de la session de revue ; la mesure à la règle.
 
 **État à la fin** (15 h 53 min 17) : séance fermée (5, capteur de distance arrêté, s, x) ; robot sur l'axe de sa base, au point P devant elle, pas dessus ; 840 mAh (41 %) ; cerveau en v14 ; seuil du capteur de distance à 30 cm.
+
+## 62. L'essai du gyroscope : la carte penchée explique le facteur ; firmware v15 écrit et compilé, pas installé (le capteur de distance jusqu'à 90°, lentement) (2026-11-21, 13 h 30 à 14 h 10)
+
+Reprise après six jours sans séance. Les mots de l'utilisateur, à 13 h 32 : « Tu vas être un professionnel de programmation et de IoT. Tu as raison, il est lent. Et ça devrait être notre focus principal de pouvoir l'accélérer. Peut-être en pensant à la façon de voir les murs de côté. Donc, continue avec l'essai du gyroscope. Je vais brancher le robot et on peut aussi essayer le capteur de distance qui tourne de 90 degrés. Pas besoin de photo, fais-le. L'important, c'est que si ça tourne, ça doit tourner très doucement. » Puis à 13 h 45, pendant que je préparais : « attend avant d'envoyer l'essai du moteur avec le capteur dessus attend, mais prépare le tout, je te donnerai le go, également n'oublie pas ma requête de vitesse ».
+
+La priorité du projet change donc : **la vitesse d'abord**, par la lecture des murs de côté en roulant. La photo des fils du capteur n'est plus un préalable ; la rotation au-delà de 30° doit être très lente ; l'essai du servo attend son go.
+
+### 62.1 L'état à la reprise
+
+À 13 h 30 le cerveau ne répondait pas sur le réseau (ni par son adresse, ni par son nom ; le PC était bien sur le Wi-Fi de la maison). À 13 h 35 il répondait : firmware v14, mis sous tension une minute plus tôt. À 13 h 37 le robot roulait : l'utilisateur le conduisait lui-même depuis la page (`driving` vrai, 150 mm/s, aucun tour ni mouvement du cerveau en cours, aucun programme du PC en liaison avec lui). À 13 h 38 il était à l'arrêt, en mode Safe, 7,9 m plus loin d'après les roues, un arrêt du réflexe du pare-chocs au compteur (« pare-chocs, à gauche »). Batterie : 1 894 mAh sur 2 068 (92 %) : il avait été remis sur sa base entre le 15 et le 21.
+
+Je ne sais pas où il est dans l'appartement : pas au point P, et je ne l'ai pas cherché. L'essai du gyroscope ne dépend pas de l'endroit ; il a été fait là où l'utilisateur l'a laissé.
+
+### 62.2 L'essai 11 (13 h 41) : les trois axes du gyroscope pendant deux tours sur place
+
+Enregistrement `essai11_gyro_20261121_134049` ; outil nouveau `code/outils/essai_gyro_axes.py`. Déroulement de la note P § 8.1 : une touche `g` au repos, un tour sur place ordinaire (`/api/tour?go=1` : 380° vers la gauche, 13,7 s) avec une touche `g` toutes les 0,5 s, une touche `g` après l'arrêt, puis un second tour. Les deux tours se sont terminés normalement (« tour complet », 122 mesures du capteur de distance chacun). 56 lignes « gyroscope (°/s) » dans `_console.txt`, dont 46 pendant la rotation.
+
+| | X (°/s) | Y (°/s) | Z (°/s) | X/Z | Y/Z | axe de rotation par rapport à Z | rotation vraie / rotation comptée |
+|---|---|---|---|---|---|---|---|
+| au repos (10 lectures) | 0,04 | −0,02 | 0,05 | | | | |
+| tour 1 (23 lectures) | −2,96 | −0,85 | 28,43 | −0,104 | −0,030 | 6,2° | 1,0059 ± 0,0003 |
+| tour 2 (23 lectures) | −2,93 | −1,18 | 27,96 | −0,105 | −0,042 | 6,4° | 1,0064 ± 0,0004 |
+| les deux | −2,94 | −1,02 | 28,19 | −0,104 | −0,036 | 6,3° | **1,0061 ± 0,0002** |
+
+Écart-type d'une lecture : 0,26 °/s sur X, 0,92 sur Y, 0,99 sur Z ; Y bouge quatre fois plus que X d'une lecture à l'autre (le robot se dandine en tournant). Accéléromètre au repos : X −0,089, Y −0,021, Z 1,091 g, soit une carte penchée de 4,8° ; la même chose pendant la rotation (−0,092, −0,032, 1,088).
+
+**Ce que cela dit.** La question de l'essai était : pendant un tour sur place, les axes X et Y restent-ils à zéro (moins de 0,3 °/s) ? Non : ils lisent −10,4 % et −3,6 % de ce que lit Z. L'axe autour duquel le robot tourne est à 6,3° de l'axe Z de la carte, et le cerveau, qui ne compte que Z, compte 0,61 % de rotation en moins. **L'explication de la session de revue est confirmée** (note O § 5.15 : « la carte est penchée de 5,5° et le firmware ne compte qu'un axe »). Elle avait annoncé X vers −2,5 et Y vers −1,0 °/s pour Z à 28 ; lu : −2,9 et −1,0.
+
+Le facteur mesuré contre les murs valait 1,0035 à 1,0046 le 14 et 1,0044 à 1,0056 le 15 ; le gyroscope seul donne aujourd'hui 1,0061. Deux lectures possibles de cet écart, que cet essai ne départage pas : la carte n'est pas penchée de la même façon d'un jour à l'autre (un degré d'inclinaison change le facteur de 0,0019, et la carte tient sur une plaque posée sur le robot), ou bien le gyroscope a en plus une petite erreur d'échelle à lui. L'accéléromètre, lui, donne 4,8° et non 6,3° : il n'est pas étalonné (il lit 1,09 g au repos), ou le sol n'est pas de niveau ; pour trouver l'axe de rotation, le gyroscope pendant un tour vaut mieux que l'accéléromètre au repos.
+
+**La correction, pour une version suivante (rien n'est fait)** : compter la rotation sur l'axe mesuré, c'est-à-dire (gx·ux + gy·uy + gz·uz), où u est la direction lue pendant les tours sur place (ici −0,104 ; −0,036 ; 1, ramenée à la longueur 1) et tenue à jour à chaque tour. Une erreur de 1,5° sur cette direction ne coûte que 0,03 % : le calcul pardonne. Il n'y aurait plus de facteur à régler à la main dans six outils du PC.
+
+**Limites.** Deux tours, un seul endroit, un seul sens de rotation (la gauche). Le facteur du jour contre les murs n'a pas été mesuré (deux tours enchaînés ne le donnent qu'à ± 0,3 %).
+
+### 62.3 Le firmware v15, écrit et compilé, PAS installé
+
+Un seul changement : le capteur de distance peut tourner jusqu'à 90° de chaque côté, très lentement. Détail en tête de `roomba694_wifi.ino` et dans `radar.ino`.
+
+- Le plafond du code (`RADAR_BUTEE_MAX`) passe de 30 à 90° ; la butée réglée reste à 30° tant qu'on ne la relève pas par `/api/radar?butee=N` : installer la v15 ne change rien à ce que fait le servo.
+- À l'intérieur de ±30° (la zone qui sert depuis le 9 novembre), rien ne change. Dès qu'un mouvement part de plus loin ou va plus loin, il se fait d'un bout à l'autre **un degré à la fois, à 5° par seconde** (réglage `lent`, 1 à 10) : 18 s pour aller à 90°. La direction visée est relue à chaque degré ; l'arrêt du capteur (`mode=off`) le ramène devant de la même façon avant de relâcher le servo.
+- Une mesure est faite à chaque degré et rangée avec la direction réelle du capteur ; la carte des distances va de −90 à +90° ; `/api/state` et `/api/radar` gagnent `cible`, `butee` et `lent`.
+- Si la carte redémarre capteur tourné, elle le retrouve (mémoire RTC) et le ramène lentement ; après une coupure de l'alimentation elle le recentre d'un coup, comme avant.
+- Un tour sur place est refusé capteur tourné au-delà de 30° ; le sens du servo (`inv`) ne se change que capteur devant ; la touche `r` vise toujours devant ; la page propose les butées 45, 60 et 90°.
+- **Limite connue, inchangée** : capteur tourné de côté, plus rien ne surveille l'avant que le pare-chocs du robot.
+
+Vérifié sans le robot : compilation (1 152 506 octets, 87 % ; « v15 Nov 21 2026 13:52:12 »), et un modèle de la boucle du servo soumis à 200 000 itérations d'ordres au hasard (modes, butées, angles, tour, marche avant) : aucun saut de plus d'un degré hors de ±30°, et le balayage à ±30° saute de 10° en 10° comme avant. Le binaire de la v14 en service est gardé (`build/roomba694_v14.bin`, sha256 `fdfa13d2…`), celui de la v15 aussi (`build/roomba694_v15.bin`, sha256 `75a8b6cf…`).
+
+Non vérifié, et à voir sur le robot : que le servo atteint bien ±90° sans forcer sur sa butée mécanique (impulsions de 600 à 2 400 µs), que les fils suivent, que la carte ne redémarre pas quand le servo force.
+
+### 62.4 L'essai du servo, prêt, en attente du go de l'utilisateur
+
+Outil nouveau `code/outils/essai_servo_lent.py`, robot immobile, aucun ordre de roues : butée relevée palier par palier (45, 60, 75, 90°), capteur mené par bonds de 5° à 3° par seconde, 3 s à chaque palier, retour devant, puis l'autre côté ; arrêt et retour lent si le capteur ne répond plus, si la carte redémarre ou si le cerveau se tait 4 s ; butée remise à 30° à la fin. `--verifier` (lecture seule) dit aujourd'hui, comme attendu : « le firmware n'est pas la v15 ».
+
+Là où est le robot, les deux tours de 13 h 41 donnent ce que le capteur devrait lire une fois tourné : environ 0,92 m à droite (−90°), 2,36 m à gauche (+90°), 1,08 m à +45°, 1,72 m à −45°. L'écart entre ces valeurs et celles de l'essai dira où le capteur se trouve par rapport au centre du robot, sans règle.
+
+**État à 14 h 10** : robot à l'arrêt en mode Safe là où l'utilisateur l'a conduit, réveillé (il ne dort pas et ne charge pas tant que la séance n'est pas fermée par `s` puis `x`), 1 858 mAh ; cerveau en v14 ; capteur de distance en mode fixe, devant ; rien n'a été envoyé au servo ; aucun ordre de roues de ma part hormis les deux tours sur place.

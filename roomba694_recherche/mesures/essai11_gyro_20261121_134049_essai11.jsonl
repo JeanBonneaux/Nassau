@@ -1,0 +1,58 @@
+{"tour": 1, "acc": [-0.1, -0.02, 1.09], "imu": {"ok": true, "cal": false, "yaw": 94.0, "rate": -0.1, "acc": [-0.1, -0.02, 1.09], "biais": -0.121, "suivis": 34765}, "pose": {"x": 267, "y": 565, "cap": 92.8, "cap_roues": 155.9, "dist": 7886, "n": 267, "gen": 1, "pas": 25, "gyro": true, "leve": false, "leves": 0, "sauts": 0}, "t": 1795286473.0442216, "h": "13:41:13.044", "quoi": "repos"}
+{"tour": 1, "t": 1795286473.710757, "h": "13:41:13.710", "quoi": "ordre_tour"}
+{"tour": 1, "etat": 1, "tourne": 0, "rate": -0.0, "roule": false, "err": null, "t": 1795286474.3101928, "h": "13:41:14.310", "quoi": "pendant"}
+{"tour": 1, "etat": 1, "tourne": 0, "rate": -0.0, "roule": false, "err": null, "t": 1795286474.8880777, "h": "13:41:14.888", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 4, "rate": 27.3, "roule": true, "err": null, "t": 1795286475.5013268, "h": "13:41:15.501", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 21, "rate": 29.7, "roule": true, "err": null, "t": 1795286476.1767406, "h": "13:41:16.176", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 40, "rate": 28.4, "roule": true, "err": null, "t": 1795286476.7476451, "h": "13:41:16.747", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 56, "rate": 26.1, "roule": true, "err": null, "t": 1795286477.3448174, "h": "13:41:17.344", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 72, "rate": 26.4, "roule": true, "err": null, "t": 1795286477.9079397, "h": "13:41:17.907", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 89, "rate": 27.6, "roule": true, "err": null, "t": 1795286478.4923055, "h": "13:41:18.492", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 105, "rate": 27.2, "roule": true, "err": null, "t": 1795286479.060831, "h": "13:41:19.060", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 121, "rate": 28.0, "roule": true, "err": null, "t": 1795286479.663748, "h": "13:41:19.663", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 138, "rate": 29.0, "roule": true, "err": null, "t": 1795286480.2456217, "h": "13:41:20.245", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 156, "rate": 28.5, "roule": true, "err": null, "t": 1795286480.875803, "h": "13:41:20.875", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 172, "rate": 27.3, "roule": true, "err": null, "t": 1795286481.4741702, "h": "13:41:21.474", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 188, "rate": 27.7, "roule": true, "err": null, "t": 1795286482.1315722, "h": "13:41:22.131", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 207, "rate": 27.3, "roule": true, "err": null, "t": 1795286482.718046, "h": "13:41:22.718", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 224, "rate": 27.6, "roule": true, "err": null, "t": 1795286483.30262, "h": "13:41:23.302", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 239, "rate": 28.4, "roule": true, "err": null, "t": 1795286483.8677847, "h": "13:41:23.867", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 255, "rate": 27.3, "roule": true, "err": null, "t": 1795286484.4338052, "h": "13:41:24.433", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 272, "rate": 25.8, "roule": true, "err": null, "t": 1795286485.0164495, "h": "13:41:25.016", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 288, "rate": 28.1, "roule": true, "err": null, "t": 1795286485.585351, "h": "13:41:25.585", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 306, "rate": 27.6, "roule": true, "err": null, "t": 1795286486.2148108, "h": "13:41:26.214", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 322, "rate": 27.2, "roule": true, "err": null, "t": 1795286486.8203723, "h": "13:41:26.820", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 338, "rate": 27.6, "roule": true, "err": null, "t": 1795286487.4021237, "h": "13:41:27.402", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 355, "rate": 28.8, "roule": true, "err": null, "t": 1795286487.9806428, "h": "13:41:27.980", "quoi": "pendant"}
+{"tour": 1, "etat": 2, "tourne": 372, "rate": 27.5, "roule": true, "err": null, "t": 1795286488.5780513, "h": "13:41:28.578", "quoi": "pendant"}
+{"tour": 1, "etat": 3, "tourne": 380, "rate": 0.1, "roule": false, "err": null, "t": 1795286489.1967006, "h": "13:41:29.196", "quoi": "pendant"}
+{"tour": 1, "texte": "terminé", "tourne": 380.1, "n": 122, "raison": "tour complet", "nb_g": 26, "t": 1795286490.4702523, "h": "13:41:30.470", "quoi": "fin"}
+{"tour": 2, "acc": [-0.09, -0.02, 1.09], "imu": {"ok": true, "cal": false, "yaw": 382.7, "rate": -0.0, "acc": [-0.09, -0.02, 1.09], "biais": -0.121, "suivis": 35188}, "pose": {"x": 267, "y": 565, "cap": 475.5, "cap_roues": 533.8, "dist": 7910, "n": 267, "gen": 1, "pas": 25, "gyro": true, "leve": false, "leves": 0, "sauts": 0}, "t": 1795286493.504261, "h": "13:41:33.504", "quoi": "repos"}
+{"tour": 2, "t": 1795286494.2392445, "h": "13:41:34.239", "quoi": "ordre_tour"}
+{"tour": 2, "etat": 1, "tourne": 0, "rate": -0.0, "roule": false, "err": null, "t": 1795286494.830002, "h": "13:41:34.830", "quoi": "pendant"}
+{"tour": 2, "etat": 1, "tourne": 0, "rate": 0.0, "roule": false, "err": null, "t": 1795286495.472828, "h": "13:41:35.472", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 6, "rate": 28.0, "roule": true, "err": null, "t": 1795286496.144339, "h": "13:41:36.144", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 25, "rate": 25.7, "roule": true, "err": null, "t": 1795286496.7409062, "h": "13:41:36.740", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 41, "rate": 29.1, "roule": true, "err": null, "t": 1795286497.3242974, "h": "13:41:37.324", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 57, "rate": 28.1, "roule": true, "err": null, "t": 1795286497.9022274, "h": "13:41:37.902", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 73, "rate": 27.7, "roule": true, "err": null, "t": 1795286498.475981, "h": "13:41:38.475", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 90, "rate": 28.2, "roule": true, "err": null, "t": 1795286499.1578972, "h": "13:41:39.157", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 109, "rate": 28.1, "roule": true, "err": null, "t": 1795286499.7637236, "h": "13:41:39.763", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 126, "rate": 28.7, "roule": true, "err": null, "t": 1795286500.350254, "h": "13:41:40.350", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 142, "rate": 28.5, "roule": true, "err": null, "t": 1795286500.9208732, "h": "13:41:40.920", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 158, "rate": 27.3, "roule": true, "err": null, "t": 1795286501.5018857, "h": "13:41:41.501", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 173, "rate": 25.3, "roule": true, "err": null, "t": 1795286502.1419954, "h": "13:41:42.141", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 192, "rate": 26.2, "roule": true, "err": null, "t": 1795286502.7266128, "h": "13:41:42.726", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 208, "rate": 27.2, "roule": true, "err": null, "t": 1795286503.304144, "h": "13:41:43.304", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 226, "rate": 27.4, "roule": true, "err": null, "t": 1795286503.9278913, "h": "13:41:43.927", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 243, "rate": 28.4, "roule": true, "err": null, "t": 1795286504.5209363, "h": "13:41:44.520", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 261, "rate": 29.0, "roule": true, "err": null, "t": 1795286505.1711516, "h": "13:41:45.171", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 277, "rate": 28.2, "roule": true, "err": null, "t": 1795286505.762299, "h": "13:41:45.762", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 294, "rate": 29.4, "roule": true, "err": null, "t": 1795286506.3425965, "h": "13:41:46.342", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 310, "rate": 27.4, "roule": true, "err": null, "t": 1795286506.9159, "h": "13:41:46.915", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 326, "rate": 26.7, "roule": true, "err": null, "t": 1795286507.5022395, "h": "13:41:47.502", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 342, "rate": 24.2, "roule": true, "err": null, "t": 1795286508.0708883, "h": "13:41:48.070", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 359, "rate": 28.9, "roule": true, "err": null, "t": 1795286508.6464064, "h": "13:41:48.646", "quoi": "pendant"}
+{"tour": 2, "etat": 2, "tourne": 375, "rate": 26.4, "roule": true, "err": null, "t": 1795286509.2271168, "h": "13:41:49.227", "quoi": "pendant"}
+{"tour": 2, "etat": 3, "tourne": 380, "rate": -0.0, "roule": false, "err": null, "t": 1795286509.8363855, "h": "13:41:49.836", "quoi": "pendant"}
+{"tour": 2, "texte": "terminé", "tourne": 380.0, "n": 122, "raison": "tour complet", "nb_g": 26, "t": 1795286511.1645987, "h": "13:41:51.164", "quoi": "fin"}

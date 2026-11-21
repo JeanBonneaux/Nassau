@@ -1,0 +1,323 @@
+# essai11_gyro_20261121_134049 — carte 192.168.18.25 — début 13:40:49.449 le 2026-11-21
+# Essai 11 du gyroscope (note O, note P 8.1), demande par l'utilisateur le 2026-11-21 (« continue avec l'essai du gyroscope »). Firmware v14. L'utilisateur a branche le cerveau vers 13 h 34 et conduit lui-meme le robot depuis la page (7,9 m) ; le robot est a l'arret en mode Safe la ou il l'a laisse, pas au point P. Deux tours sur place, touche g deux fois par seconde.
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1795286449.640	13:40:49.639	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1795286449.640	13:40:49.639	Client TCP connecté : 192.168.18.6
+1795286450.515	13:40:50.515	>> j
+1795286450.546	13:40:50.545	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1795286451.023	13:40:51.023	>> e
+1795286452.036	13:40:52.035	>> e
+1795286453.050	13:40:53.049	>> e
+1795286454.061	13:40:54.061	>> e
+1795286455.073	13:40:55.073	>> e
+1795286456.038	13:40:56.037	>> e
+1795286457.050	13:40:57.049	>> e
+1795286458.064	13:40:58.064	>> e
+1795286459.027	13:40:59.026	>> e
+1795286460.042	13:41:00.041	>> e
+1795286461.055	13:41:01.054	>> e
+1795286462.068	13:41:02.068	>> e
+1795286463.031	13:41:03.031	>> e
+1795286464.047	13:41:04.046	>> e
+1795286465.059	13:41:05.059	>> e
+1795286466.071	13:41:06.070	>> e
+1795286467.032	13:41:07.031	>> e
+1795286468.045	13:41:08.044	>> e
+1795286469.059	13:41:09.058	>> e
+1795286470.071	13:41:10.070	>> e
+1795286471.035	13:41:11.034	>> e
+1795286472.048	13:41:12.048	>> e
+1795286473.060	13:41:13.059	>> e
+1795286473.174	13:41:13.173	Gyroscope MPU-6050 : WHO_AM_I 0x72, 43576 lectures, 0 erreurs
+1795286473.174	13:41:13.173	Accéléromètre (g) : X -0.10  Y -0.02  Z 1.09   | gyroscope (°/s) : X -0.0  Y 0.0  Z -0.0
+1795286473.174	13:41:13.173	Axe vertical : Z (vers le haut). Cap intégré : 94.0°   vitesse de rotation : 0.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286473.710	13:41:13.710	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1795286474.073	13:41:14.073	>> e
+1795286474.267	13:41:14.266	Gyroscope MPU-6050 : WHO_AM_I 0x72, 43640 lectures, 0 erreurs, calibration en cours
+1795286474.267	13:41:14.266	Accéléromètre (g) : X -0.10  Y -0.02  Z 1.09   | gyroscope (°/s) : X 0.1  Y 0.0  Z -0.0
+1795286474.267	13:41:14.266	Axe vertical : Z (vers le haut). Cap intégré : 94.0°   vitesse de rotation : -0.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286474.863	13:41:14.863	Gyroscope MPU-6050 : WHO_AM_I 0x72, 43650 lectures, 0 erreurs
+1795286474.863	13:41:14.863	Accéléromètre (g) : X -0.09  Y -0.02  Z 1.09   | gyroscope (°/s) : X 0.1  Y -0.0  Z 0.1
+1795286474.863	13:41:14.863	Axe vertical : Z (vers le haut). Cap intégré : 0.0°   vitesse de rotation : -0.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286475.039	13:41:15.038	>> e
+1795286475.206	13:41:15.206	Tour sur place : rotation vers la gauche, roues à 62 mm/s demandés. 5 ou espace pour arrêter.
+1795286475.453	13:41:15.453	Gyroscope MPU-6050 : WHO_AM_I 0x72, 43708 lectures, 0 erreurs
+1795286475.456	13:41:15.456	Accéléromètre (g) : X -0.10  Y -0.03  Z 1.09   | gyroscope (°/s) : X -3.1  Y -1.8  Z 28.4
+1795286475.456	13:41:15.456	Axe vertical : Z (vers le haut). Cap intégré : 3.0°   vitesse de rotation : 28.4 °/s   (z pour remettre à zéro, robot immobile)
+1795286476.054	13:41:16.054	>> e
+1795286476.060	13:41:16.059	Gyroscope MPU-6050 : WHO_AM_I 0x72, 43767 lectures, 0 erreurs
+1795286476.060	13:41:16.059	Accéléromètre (g) : X -0.05  Y -0.01  Z 1.10   | gyroscope (°/s) : X -3.1  Y -1.7  Z 30.5
+1795286476.060	13:41:16.059	Axe vertical : Z (vers le haut). Cap intégré : 19.9°   vitesse de rotation : 30.5 °/s   (z pour remettre à zéro, robot immobile)
+1795286476.726	13:41:16.725	Gyroscope MPU-6050 : WHO_AM_I 0x72, 43835 lectures, 0 erreurs
+1795286476.726	13:41:16.725	Accéléromètre (g) : X -0.09  Y -0.04  Z 1.08   | gyroscope (°/s) : X -3.0  Y -1.3  Z 26.5
+1795286476.726	13:41:16.725	Axe vertical : Z (vers le haut). Cap intégré : 39.1°   vitesse de rotation : 26.8 °/s   (z pour remettre à zéro, robot immobile)
+1795286477.069	13:41:17.069	>> e
+1795286477.303	13:41:17.302	Gyroscope MPU-6050 : WHO_AM_I 0x72, 43892 lectures, 0 erreurs
+1795286477.303	13:41:17.302	Accéléromètre (g) : X -0.06  Y -0.02  Z 1.08   | gyroscope (°/s) : X -2.5  Y -2.0  Z 26.6
+1795286477.303	13:41:17.302	Axe vertical : Z (vers le haut). Cap intégré : 55.2°   vitesse de rotation : 27.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286477.891	13:41:17.890	Gyroscope MPU-6050 : WHO_AM_I 0x72, 43949 lectures, 0 erreurs
+1795286477.891	13:41:17.890	Accéléromètre (g) : X -0.08  Y -0.03  Z 1.08   | gyroscope (°/s) : X -3.2  Y 0.0  Z 28.1
+1795286477.891	13:41:17.890	Axe vertical : Z (vers le haut). Cap intégré : 71.7°   vitesse de rotation : 26.9 °/s   (z pour remettre à zéro, robot immobile)
+1795286478.035	13:41:18.034	>> e
+1795286478.464	13:41:18.464	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44005 lectures, 0 erreurs
+1795286478.464	13:41:18.464	Accéléromètre (g) : X -0.09  Y -0.03  Z 1.08   | gyroscope (°/s) : X -2.8  Y -0.6  Z 28.7
+1795286478.464	13:41:18.464	Axe vertical : Z (vers le haut). Cap intégré : 87.7°   vitesse de rotation : 28.3 °/s   (z pour remettre à zéro, robot immobile)
+1795286478.535	13:41:18.535	Tour sur place : 90° (28 mesures).
+1795286479.035	13:41:19.034	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44063 lectures, 0 erreurs
+1795286479.035	13:41:19.034	Accéléromètre (g) : X -0.06  Y -0.03  Z 1.09   | gyroscope (°/s) : X -3.2  Y -1.2  Z 29.2
+1795286479.035	13:41:19.034	Axe vertical : Z (vers le haut). Cap intégré : 103.8°   vitesse de rotation : 28.9 °/s   (z pour remettre à zéro, robot immobile)
+1795286479.050	13:41:19.050	>> e
+1795286479.635	13:41:19.634	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44122 lectures, 0 erreurs
+1795286479.635	13:41:19.634	Accéléromètre (g) : X -0.08  Y -0.05  Z 1.08   | gyroscope (°/s) : X -2.9  Y -1.0  Z 30.0
+1795286479.635	13:41:19.634	Axe vertical : Z (vers le haut). Cap intégré : 120.5°   vitesse de rotation : 29.9 °/s   (z pour remettre à zéro, robot immobile)
+1795286480.062	13:41:20.062	>> e
+1795286480.223	13:41:20.222	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44180 lectures, 0 erreurs
+1795286480.223	13:41:20.222	Accéléromètre (g) : X -0.08  Y -0.04  Z 1.10   | gyroscope (°/s) : X -2.7  Y -1.9  Z 28.5
+1795286480.223	13:41:20.222	Axe vertical : Z (vers le haut). Cap intégré : 137.1°   vitesse de rotation : 28.1 °/s   (z pour remettre à zéro, robot immobile)
+1795286480.832	13:41:20.832	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44240 lectures, 0 erreurs
+1795286480.832	13:41:20.832	Accéléromètre (g) : X -0.13  Y -0.06  Z 1.07   | gyroscope (°/s) : X -3.2  Y 0.7  Z 28.1
+1795286480.832	13:41:20.832	Axe vertical : Z (vers le haut). Cap intégré : 154.1°   vitesse de rotation : 27.8 °/s   (z pour remettre à zéro, robot immobile)
+1795286481.026	13:41:21.025	>> e
+1795286481.424	13:41:21.424	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44298 lectures, 0 erreurs
+1795286481.424	13:41:21.424	Accéléromètre (g) : X -0.10  Y -0.04  Z 1.10   | gyroscope (°/s) : X -3.0  Y 1.0  Z 28.1
+1795286481.424	13:41:21.424	Axe vertical : Z (vers le haut). Cap intégré : ….6°   vitesse de rotation : 27.3 °/s   (z pour remettre à zéro, robot immobile)
+1795286481.752	13:41:21.752	Tour sur place : 180° (57 mesures).
+1795286482.017	13:41:22.016	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44357 lectures, 0 erreurs
+1795286482.017	13:41:22.016	Accéléromètre (g) : X -0.07  Y -0.05  Z 1.06   | gyroscope (°/s) : X -3.3  Y -0.7  Z 27.5
+1795286482.017	13:41:22.016	Axe vertical : Z (vers le haut). Cap intégré : 187.3°   vitesse de rotation : 26.6 °/s   (z pour remettre à zéro, robot immobile)
+1795286482.039	13:41:22.038	>> e
+1795286482.674	13:41:22.674	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44422 lectures, 0 erreurs
+1795286482.674	13:41:22.674	Accéléromètre (g) : X -0.11  Y -0.06  Z 1.05   | gyroscope (°/s) : X -3.4  Y -0.3  Z 27.8
+1795286482.674	13:41:22.674	Axe vertical : Z (vers le haut). Cap intégré : 205.8°   vitesse de rotation : 27.8 °/s   (z pour remettre à zéro, robot immobile)
+1795286483.053	13:41:23.053	>> e
+1795286483.276	13:41:23.276	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44481 lectures, 0 erreurs
+1795286483.276	13:41:23.276	Accéléromètre (g) : X -0.08  Y -0.04  Z 1.08   | gyroscope (°/s) : X -3.0  Y -2.1  Z 28.2
+1795286483.276	13:41:23.276	Axe vertical : Z (vers le haut). Cap intégré : 222.6°   vitesse de rotation : 28.2 °/s   (z pour remettre à zéro, robot immobile)
+1795286483.844	13:41:23.843	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44538 lectures, 0 erreurs
+1795286483.844	13:41:23.843	Accéléromètre (g) : X -0.10  Y -0.03  Z 1.09   | gyroscope (°/s) : X -2.7  Y -1.2  Z 25.3
+1795286483.844	13:41:23.843	Axe vertical : Z (vers le haut). Cap intégré : 238.7°   vitesse de rotation : 24.9 °/s   (z pour remettre à zéro, robot immobile)
+1795286484.068	13:41:24.068	>> e
+1795286484.409	13:41:24.408	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44594 lectures, 0 erreurs
+1795286484.409	13:41:24.408	Accéléromètre (g) : X -0.11  Y -0.02  Z 1.06   | gyroscope (°/s) : X -3.0  Y -0.1  Z 27.6
+1795286484.409	13:41:24.408	Axe vertical : Z (vers le haut). Cap intégré : 254.7°   vitesse de rotation : 26.4 °/s   (z pour remettre à zéro, robot immobile)
+1795286484.942	13:41:24.941	Tour sur place : 270° (86 mesures).
+1795286484.978	13:41:24.978	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44650 lectures, 0 erreurs
+1795286484.978	13:41:24.978	Accéléromètre (g) : X -0.13  Y -0.03  Z 1.09   | gyroscope (°/s) : X -2.7  Y -0.7  Z 29.0
+1795286484.978	13:41:24.978	Axe vertical : Z (vers le haut). Cap intégré : 270.7°   vitesse de rotation : 29.1 °/s   (z pour remettre à zéro, robot immobile)
+1795286485.032	13:41:25.031	>> e
+1795286485.565	13:41:25.564	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44708 lectures, 0 erreurs
+1795286485.565	13:41:25.564	Accéléromètre (g) : X -0.07  Y -0.02  Z 1.10   | gyroscope (°/s) : X -3.0  Y -2.4  Z 29.0
+1795286485.565	13:41:25.564	Axe vertical : Z (vers le haut). Cap intégré : 287.2°   vitesse de rotation : 28.1 °/s   (z pour remettre à zéro, robot immobile)
+1795286486.046	13:41:26.045	>> e
+1795286486.160	13:41:26.160	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44766 lectures, 0 erreurs
+1795286486.160	13:41:26.160	Accéléromètre (g) : X -0.13  Y -0.04  Z 1.08   | gyroscope (°/s) : X -2.6  Y -1.3  Z 29.2
+1795286486.160	13:41:26.160	Axe vertical : Z (vers le haut). Cap intégré : 303.8°   vitesse de rotation : 30.3 °/s   (z pour remettre à zéro, robot immobile)
+1795286486.777	13:41:26.777	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44826 lectures, 0 erreurs
+1795286486.777	13:41:26.777	Accéléromètre (g) : X -0.13  Y -0.02  Z 1.02   | gyroscope (°/s) : X -2.8  Y 0.7  Z 29.3
+1795286486.777	13:41:26.777	Axe vertical : Z (vers le haut). Cap intégré : 320.9°   vitesse de rotation : 29.3 °/s   (z pour remettre à zéro, robot immobile)
+1795286487.032	13:41:27.031	>> e
+1795286487.362	13:41:27.362	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44885 lectures, 0 erreurs
+1795286487.362	13:41:27.362	Accéléromètre (g) : X -0.11  Y -0.02  Z 1.06   | gyroscope (°/s) : X -2.7  Y -0.3  Z 29.6
+1795286487.362	13:41:27.362	Axe vertical : Z (vers le haut). Cap intégré : 337.6°   vitesse de rotation : 29.5 °/s   (z pour remettre à zéro, robot immobile)
+1795286487.949	13:41:27.948	Gyroscope MPU-6050 : WHO_AM_I 0x72, 44943 lectures, 0 erreurs
+1795286487.949	13:41:27.948	Accéléromètre (g) : X -0.10  Y -0.01  Z 1.08   | gyroscope (°/s) : X -3.0  Y -0.6  Z 28.3
+1795286487.949	13:41:27.948	Axe vertical : Z (vers le haut). Cap intégré : 353.9°   vitesse de rotation : 28.1 °/s   (z pour remettre à zéro, robot immobile)
+1795286488.046	13:41:28.046	>> e
+1795286488.150	13:41:28.150	Tour sur place : 360° (116 mesures).
+1795286488.556	13:41:28.555	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45002 lectures, 0 erreurs
+1795286488.556	13:41:28.555	Accéléromètre (g) : X -0.08  Y -0.01  Z 1.09   | gyroscope (°/s) : X -3.2  Y -0.8  Z 30.3
+1795286488.556	13:41:28.555	Axe vertical : Z (vers le haut). Cap intégré : 370.8°   vitesse de rotation : 29.7 °/s   (z pour remettre à zéro, robot immobile)
+1795286488.861	13:41:28.861	Tour sur place terminé : 380° en 13.7 s, 122 mesures. Roues arrêtées.
+1795286489.059	13:41:29.059	>> e
+1795286489.171	13:41:29.170	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45062 lectures, 0 erreurs
+1795286489.171	13:41:29.170	Accéléromètre (g) : X -0.08  Y -0.02  Z 1.10   | gyroscope (°/s) : X -0.1  Y -0.2  Z 0.4
+1795286489.171	13:41:29.170	Axe vertical : Z (vers le haut). Cap intégré : 382.7°   vitesse de rotation : 0.4 °/s   (z pour remettre à zéro, robot immobile)
+1795286489.938	13:41:29.937	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45140 lectures, 0 erreurs
+1795286489.938	13:41:29.937	Accéléromètre (g) : X -0.09  Y -0.02  Z 1.09   | gyroscope (°/s) : X -0.0  Y -0.0  Z 0.0
+1795286489.938	13:41:29.937	Axe vertical : Z (vers le haut). Cap intégré : 382.7°   vitesse de rotation : 0.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286490.024	13:41:30.024	>> e
+1795286491.039	13:41:31.039	>> e
+1795286492.053	13:41:32.052	>> e
+1795286493.068	13:41:33.068	>> e
+1795286493.582	13:41:33.581	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45500 lectures, 0 erreurs
+1795286493.582	13:41:33.581	Accéléromètre (g) : X -0.09  Y -0.02  Z 1.09   | gyroscope (°/s) : X 0.1  Y -0.0  Z 0.1
+1795286493.582	13:41:33.581	Axe vertical : Z (vers le haut). Cap intégré : 382.7°   vitesse de rotation : 0.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286494.030	13:41:34.029	>> e
+1795286494.239	13:41:34.239	Tour sur place : préparation, ne pas toucher le robot (capteur droit devant, gyroscope recalé pendant 1 s).
+1795286494.804	13:41:34.803	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45568 lectures, 0 erreurs, calibration en cours
+1795286494.804	13:41:34.803	Accéléromètre (g) : X -0.09  Y -0.02  Z 1.09   | gyroscope (°/s) : X 0.0  Y -0.0  Z -0.0
+1795286494.804	13:41:34.803	Axe vertical : Z (vers le haut). Cap intégré : 382.7°   vitesse de rotation : -0.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286495.044	13:41:35.043	>> e
+1795286495.418	13:41:35.417	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45580 lectures, 0 erreurs
+1795286495.418	13:41:35.417	Accéléromètre (g) : X -0.09  Y -0.02  Z 1.09   | gyroscope (°/s) : X 0.1  Y -0.0  Z -0.1
+1795286495.418	13:41:35.417	Axe vertical : Z (vers le haut). Cap intégré : 0.0°   vitesse de rotation : 0.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286495.733	13:41:35.733	Tour sur place : rotation vers la gauche, roues à 62 mm/s demandés. 5 ou espace pour arrêter.
+1795286496.052	13:41:36.051	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45642 lectures, 0 erreurs
+1795286496.052	13:41:36.051	Accéléromètre (g) : X -0.11  Y -0.04  Z 1.09   | gyroscope (°/s) : X -3.0  Y -1.1  Z 28.1
+1795286496.052	13:41:36.051	Axe vertical : Z (vers le haut). Cap intégré : 4.2°   vitesse de rotation : 29.2 °/s   (z pour remettre à zéro, robot immobile)
+1795286496.058	13:41:36.058	>> e
+1795286496.703	13:41:36.702	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45708 lectures, 0 erreurs
+1795286496.703	13:41:36.702	Accéléromètre (g) : X -0.11  Y -0.02  Z 1.09   | gyroscope (°/s) : X -2.8  Y -0.6  Z 28.2
+1795286496.703	13:41:36.702	Axe vertical : Z (vers le haut). Cap intégré : 23.2°   vitesse de rotation : 28.2 °/s   (z pour remettre à zéro, robot immobile)
+1795286497.071	13:41:37.071	>> e
+1795286497.302	13:41:37.302	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45768 lectures, 0 erreurs
+1795286497.302	13:41:37.302	Accéléromètre (g) : X -0.06  Y -0.01  Z 1.10   | gyroscope (°/s) : X -2.8  Y -1.7  Z 28.7
+1795286497.302	13:41:37.302	Axe vertical : Z (vers le haut). Cap intégré : 40.2°   vitesse de rotation : 27.6 °/s   (z pour remettre à zéro, robot immobile)
+1795286497.866	13:41:37.866	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45823 lectures, 0 erreurs
+1795286497.866	13:41:37.866	Accéléromètre (g) : X -0.07  Y -0.02  Z 1.08   | gyroscope (°/s) : X -3.2  Y -0.7  Z 28.8
+1795286497.866	13:41:37.866	Axe vertical : Z (vers le haut). Cap intégré : 56.0°   vitesse de rotation : 27.9 °/s   (z pour remettre à zéro, robot immobile)
+1795286498.034	13:41:38.033	>> e
+1795286498.452	13:41:38.452	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45882 lectures, 0 erreurs
+1795286498.452	13:41:38.452	Accéléromètre (g) : X -0.08  Y -0.04  Z 1.11   | gyroscope (°/s) : X -2.4  Y -0.9  Z 27.9
+1795286498.452	13:41:38.452	Axe vertical : Z (vers le haut). Cap intégré : 72.4°   vitesse de rotation : 28.5 °/s   (z pour remettre à zéro, robot immobile)
+1795286499.026	13:41:39.026	Gyroscope MPU-6050 : WHO_AM_I 0x72, 45938 lectures, 0 erreurs
+1795286499.026	13:41:39.026	Accéléromètre (g) : X -0.09  Y -0.05  Z 1.08   | gyroscope (°/s) : X -2.8  Y -0.6  Z 28.5
+1795286499.026	13:41:39.026	Axe vertical : Z (vers le haut). Cap intégré : 88.5°   vitesse de rotation : 29.3 °/s   (z pour remettre à zéro, robot immobile)
+1795286499.047	13:41:39.047	>> e
+1795286499.171	13:41:39.171	Tour sur place : 90° (30 mesures).
+1795286499.720	13:41:39.719	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46006 lectures, 0 erreurs
+1795286499.720	13:41:39.719	Accéléromètre (g) : X -0.08  Y -0.05  Z 1.10   | gyroscope (°/s) : X -2.9  Y -2.0  Z 27.2
+1795286499.720	13:41:39.719	Axe vertical : Z (vers le haut). Cap intégré : 107.6°   vitesse de rotation : 27.3 °/s   (z pour remettre à zéro, robot immobile)
+1795286500.062	13:41:40.061	>> e
+1795286500.310	13:41:40.310	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46065 lectures, 0 erreurs
+1795286500.310	13:41:40.310	Accéléromètre (g) : X -0.07  Y -0.05  Z 1.09   | gyroscope (°/s) : X -3.4  Y -1.4  Z 28.9
+1795286500.310	13:41:40.310	Axe vertical : Z (vers le haut). Cap intégré : 124.5°   vitesse de rotation : 28.1 °/s   (z pour remettre à zéro, robot immobile)
+1795286500.898	13:41:40.897	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46122 lectures, 0 erreurs
+1795286500.898	13:41:40.897	Accéléromètre (g) : X -0.09  Y -0.05  Z 1.08   | gyroscope (°/s) : X -3.1  Y -1.6  Z 27.7
+1795286500.898	13:41:40.897	Axe vertical : Z (vers le haut). Cap intégré : 140.7°   vitesse de rotation : 27.7 °/s   (z pour remettre à zéro, robot immobile)
+1795286501.027	13:41:41.027	>> e
+1795286501.465	13:41:41.465	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46179 lectures, 0 erreurs
+1795286501.465	13:41:41.465	Accéléromètre (g) : X -0.09  Y -0.04  Z 1.04   | gyroscope (°/s) : X -3.2  Y 1.2  Z 27.8
+1795286501.465	13:41:41.465	Axe vertical : Z (vers le haut). Cap intégré : 156.7°   vitesse de rotation : 27.9 °/s   (z pour remettre à zéro, robot immobile)
+1795286502.040	13:41:42.039	>> e
+1795286502.135	13:41:42.134	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46237 lectures, 0 erreurs
+1795286502.135	13:41:42.134	Accéléromètre (g) : X -0.10  Y -0.04  Z 1.07   | gyroscope (°/s) : X -2.6  Y -0.7  Z 27.1
+1795286502.135	13:41:42.134	Axe vertical : Z (vers le haut). Cap intégré : 173.1°   vitesse de rotation : 27.1 °/s   (z pour remettre à zéro, robot immobile)
+1795286502.291	13:41:42.291	Tour sur place : 180° (58 mesures).
+1795286502.691	13:41:42.690	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46300 lectures, 0 erreurs
+1795286502.691	13:41:42.690	Accéléromètre (g) : X -0.07  Y -0.03  Z 1.14   | gyroscope (°/s) : X -2.5  Y -3.2  Z 27.6
+1795286502.691	13:41:42.690	Axe vertical : Z (vers le haut). Cap intégré : 191.0°   vitesse de rotation : 27.6 °/s   (z pour remettre à zéro, robot immobile)
+1795286503.052	13:41:43.051	>> e
+1795286503.276	13:41:43.276	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46358 lectures, 0 erreurs
+1795286503.276	13:41:43.276	Accéléromètre (g) : X -0.11  Y -0.03  Z 1.09   | gyroscope (°/s) : X -2.8  Y -1.0  Z 27.7
+1795286503.276	13:41:43.276	Axe vertical : Z (vers le haut). Cap intégré : 207.5°   vitesse de rotation : 27.3 °/s   (z pour remettre à zéro, robot immobile)
+1795286503.885	13:41:43.884	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46417 lectures, 0 erreurs
+1795286503.885	13:41:43.884	Accéléromètre (g) : X -0.06  Y -0.03  Z 1.14   | gyroscope (°/s) : X -3.1  Y -3.1  Z 29.1
+1795286503.885	13:41:43.884	Axe vertical : Z (vers le haut). Cap intégré : 224.4°   vitesse de rotation : 28.1 °/s   (z pour remettre à zéro, robot immobile)
+1795286504.065	13:41:44.065	>> e
+1795286504.489	13:41:44.488	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46478 lectures, 0 erreurs
+1795286504.489	13:41:44.488	Accéléromètre (g) : X -0.07  Y -0.02  Z 1.12   | gyroscope (°/s) : X -2.9  Y -1.7  Z 27.4
+1795286504.489	13:41:44.488	Axe vertical : Z (vers le haut). Cap intégré : 241.7°   vitesse de rotation : 25.7 °/s   (z pour remettre à zéro, robot immobile)
+1795286505.029	13:41:45.029	>> e
+1795286505.129	13:41:45.128	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46541 lectures, 0 erreurs
+1795286505.129	13:41:45.128	Accéléromètre (g) : X -0.11  Y -0.04  Z 1.09   | gyroscope (°/s) : X -3.4  Y -0.9  Z 27.0
+1795286505.129	13:41:45.128	Axe vertical : Z (vers le haut). Cap intégré : 259.4°   vitesse de rotation : 27.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286505.485	13:41:45.485	Tour sur place : 270° (88 mesures).
+1795286505.728	13:41:45.728	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46600 lectures, 0 erreurs
+1795286505.728	13:41:45.728	Accéléromètre (g) : X -0.11  Y -0.04  Z 1.11   | gyroscope (°/s) : X -3.3  Y -1.8  Z 27.7
+1795286505.728	13:41:45.728	Axe vertical : Z (vers le haut). Cap intégré : 276.2°   vitesse de rotation : 27.9 °/s   (z pour remettre à zéro, robot immobile)
+1795286506.044	13:41:46.043	>> e
+1795286506.309	13:41:46.309	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46658 lectures, 0 erreurs
+1795286506.309	13:41:46.309	Accéléromètre (g) : X -0.11  Y -0.02  Z 1.11   | gyroscope (°/s) : X -2.6  Y -1.5  Z 27.9
+1795286506.309	13:41:46.309	Axe vertical : Z (vers le haut). Cap intégré : 292.7°   vitesse de rotation : 28.4 °/s   (z pour remettre à zéro, robot immobile)
+1795286506.899	13:41:46.899	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46715 lectures, 0 erreurs
+1795286506.899	13:41:46.899	Accéléromètre (g) : X -0.13  Y -0.03  Z 1.08   | gyroscope (°/s) : X -2.8  Y -0.3  Z 27.1
+1795286506.899	13:41:46.899	Axe vertical : Z (vers le haut). Cap intégré : 309.2°   vitesse de rotation : 28.1 °/s   (z pour remettre à zéro, robot immobile)
+1795286507.057	13:41:47.056	>> e
+1795286507.459	13:41:47.459	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46771 lectures, 0 erreurs
+1795286507.459	13:41:47.459	Accéléromètre (g) : X -0.10  Y -0.01  Z 1.10   | gyroscope (°/s) : X -3.0  Y -0.9  Z 27.8
+1795286507.459	13:41:47.459	Axe vertical : Z (vers le haut). Cap intégré : 325.0°   vitesse de rotation : 27.7 °/s   (z pour remettre à zéro, robot immobile)
+1795286508.053	13:41:48.052	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46829 lectures, 0 erreurs
+1795286508.053	13:41:48.052	Accéléromètre (g) : X -0.09  Y -0.02  Z 1.08   | gyroscope (°/s) : X -3.2  Y -0.7  Z 28.0
+1795286508.053	13:41:48.052	Axe vertical : Z (vers le haut). Cap intégré : 341.4°   vitesse de rotation : 28.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286508.070	13:41:48.070	>> e
+1795286508.618	13:41:48.618	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46885 lectures, 0 erreurs
+1795286508.618	13:41:48.618	Accéléromètre (g) : X -0.09  Y -0.02  Z 1.13   | gyroscope (°/s) : X -2.5  Y -1.4  Z 28.4
+1795286508.618	13:41:48.618	Axe vertical : Z (vers le haut). Cap intégré : 357.8°   vitesse de rotation : 28.4 °/s   (z pour remettre à zéro, robot immobile)
+1795286508.685	13:41:48.685	Tour sur place : 360° (116 mesures).
+1795286509.032	13:41:49.031	>> e
+1795286509.195	13:41:49.194	Gyroscope MPU-6050 : WHO_AM_I 0x72, 46943 lectures, 0 erreurs
+1795286509.195	13:41:49.194	Accéléromètre (g) : X -0.11  Y -0.04  Z 1.10   | gyroscope (°/s) : X -3.0  Y -0.6  Z 28.4
+1795286509.195	13:41:49.194	Axe vertical : Z (vers le haut). Cap intégré : 374.0°   vitesse de rotation : 28.7 °/s   (z pour remettre à zéro, robot immobile)
+1795286509.393	13:41:49.393	Tour sur place terminé : 380° en 13.7 s, 122 mesures. Roues arrêtées.
+1795286509.806	13:41:49.806	Gyroscope MPU-6050 : WHO_AM_I 0x72, 47002 lectures, 0 erreurs
+1795286509.806	13:41:49.806	Accéléromètre (g) : X -0.08  Y -0.03  Z 1.09   | gyroscope (°/s) : X -0.0  Y -0.0  Z 0.0
+1795286509.806	13:41:49.806	Axe vertical : Z (vers le haut). Cap intégré : 382.3°   vitesse de rotation : 0.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286510.044	13:41:50.044	>> e
+1795286510.606	13:41:50.605	Gyroscope MPU-6050 : WHO_AM_I 0x72, 47082 lectures, 0 erreurs
+1795286510.606	13:41:50.605	Accéléromètre (g) : X -0.08  Y -0.02  Z 1.09   | gyroscope (°/s) : X 0.1  Y 0.0  Z -0.0
+1795286510.606	13:41:50.605	Axe vertical : Z (vers le haut). Cap intégré : 382.3°   vitesse de rotation : 0.0 °/s   (z pour remettre à zéro, robot immobile)
+1795286511.056	13:41:51.056	>> e
+1795286512.068	13:41:52.067	>> e
+1795286513.030	13:41:53.030	>> e
+1795286514.043	13:41:54.042	>> e
+1795286515.057	13:41:55.056	>> e
+1795286516.069	13:41:56.068	>> e
+1795286517.031	13:41:57.030	>> e
+1795286518.044	13:41:58.043	>> e
+1795286519.055	13:41:59.055	>> e
+1795286520.071	13:42:00.071	>> e
+1795286521.035	13:42:01.034	>> e
+1795286522.048	13:42:02.048	>> e
+1795286523.062	13:42:03.062	>> e
+1795286524.024	13:42:04.023	>> e
+1795286525.036	13:42:05.036	>> e
+1795286526.048	13:42:06.048	>> e
+1795286527.061	13:42:07.061	>> e
+1795286528.028	13:42:08.027	>> e
+1795286529.044	13:42:09.044	>> e
+1795286530.058	13:42:10.058	>> e
+1795286531.070	13:42:11.070	>> e
+1795286532.035	13:42:12.035	>> e
+1795286533.050	13:42:13.050	>> e
+1795286534.065	13:42:14.065	>> e
+1795286535.028	13:42:15.028	>> e
+1795286536.043	13:42:16.043	>> e
+1795286537.057	13:42:17.056	>> e
+1795286538.069	13:42:18.068	>> e
+1795286539.034	13:42:19.033	>> e
+1795286540.048	13:42:20.047	>> e
+1795286541.064	13:42:21.063	>> e
+1795286542.028	13:42:22.027	>> e
+1795286543.044	13:42:23.044	>> e
+1795286544.060	13:42:24.060	>> e
+1795286545.024	13:42:25.024	>> e
+1795286546.037	13:42:26.037	>> e
+1795286547.054	13:42:27.053	>> e
+1795286548.066	13:42:28.065	>> e
+1795286549.029	13:42:29.029	>> e
+1795286550.044	13:42:30.043	>> e
+1795286551.058	13:42:31.057	>> e
+1795286552.023	13:42:32.023	>> e
+1795286553.036	13:42:33.036	>> e
+1795286554.050	13:42:34.050	>> e
+1795286555.067	13:42:35.066	>> e
+1795286556.031	13:42:36.030	>> e
+1795286557.044	13:42:37.043	>> e
+1795286558.057	13:42:38.057	>> e
+1795286559.071	13:42:39.070	>> e
+1795286560.035	13:42:40.034	>> e
+1795286561.053	13:42:41.053	>> e
+1795286562.070	13:42:42.070	>> e
+1795286563.034	13:42:43.034	>> e
+1795286564.048	13:42:44.047	>> e
+1795286565.064	13:42:45.063	>> e
+1795286566.029	13:42:46.028	>> e
+1795286567.043	13:42:47.043	>> e
+1795286568.061	13:42:48.061	>> e
+1795286569.024	13:42:49.023	>> e
+1795286570.038	13:42:50.037	>> e
+1795286571.053	13:42:51.053	>> e
+1795286572.069	13:42:52.068	>> e
+1795286573.032	13:42:53.032	>> e
+1795286574.047	13:42:54.046	>> e
+1795286575.061	13:42:55.061	>> e
+1795286576.026	13:42:56.026	>> e
+1795286577.039	13:42:57.039	>> e
+1795286578.053	13:42:58.053	>> e
+1795286579.067	13:42:59.066	>> e
+1795286580.032	13:43:00.031	>> e
+1795286581.046	13:43:01.046	>> e
+1795286581.908	13:43:01.908	>> j
+1795286581.913	13:43:01.913	Journal CSV désactivé.
+1795286582.923	13:43:02.923	## fin de l'enregistrement après 133.5 s

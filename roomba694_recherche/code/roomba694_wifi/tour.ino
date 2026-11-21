@@ -93,6 +93,9 @@ void tourStart() {
   else if (st.bumpsDrops & 0x03)               refus = "le pare-chocs est enfoncé";
   else if (!imu.present)                       refus = "le gyroscope est absent";
   else if (driving)                            refus = "les roues tournent déjà";
+  // v15 : un tour mesure capteur droit devant. Tourné de côté, le capteur mettrait jusqu'à 18 s à revenir (rotation lente)
+  // et le tour serait fini avant : on le refuse, à charge pour qui le demande de ramener le capteur devant d'abord.
+  else if (abs((int)radar.servoDeg) > RADAR_ZONE_VIVE) refus = "le capteur de distance est tourné de côté : le ramener devant d'abord (/api/radar?angle=0)";
   if (refus) {
     tour.etat = TOUR_INTERROMPU;
     tour.tourne = 0;

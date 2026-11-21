@@ -169,7 +169,7 @@ a{color:var(--accent)}
 </div><div class="opts">
 <label>pas <select id="rpas" onchange="radar('pas='+this.value)"><option>5</option><option>10</option><option>15</option><option>20</option></select>°</label>
 <label>balayage ±<select id="ramp" onchange="radar('amplitude='+this.value)"><option>20</option><option>30</option><option>45</option><option>60</option><option>80</option></select>°</label>
-<label>butée ±<select id="rmax" onchange="radar('butee='+this.value)"><option>15</option><option>20</option><option>30</option></select>°</label>
+<label>butée ±<select id="rmax" onchange="radar('butee='+this.value)"><option>15</option><option>20</option><option>30</option><option>45</option><option>60</option><option>90</option></select>°</label>
 <label>portée <select id="rport" onchange="if(rd)drawRadar(rd)"><option>100</option><option selected>200</option><option>400</option></select> cm</label>
 </div>
 <p class="hint">Touchez le demi-cercle pour orienter le capteur. 0° = devant, positif = gauche. Le trait pointillé est la distance d'arrêt.</p>

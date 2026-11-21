@@ -27,8 +27,10 @@
 //   arrêt     servo ramené au centre puis relâché (plus d'impulsions : il ne force pas, ne vibre pas, ne consomme rien) ;
 //   fixe      le capteur regarde dans une direction choisie (0 = devant) et mesure 10 fois par seconde ;
 //   balayage  de -amplitude à +amplitude par pas de « pas » degrés, aller puis retour (~2 s par passage à ±60°, pas 10°).
-// Les mesures remplissent une carte polaire (une case tous les 5°, de -80° à +80°) servie par /api/radar et dessinée
-// sur la page web. Angle 0 = droit devant, positif = vers la gauche (anti-horaire, comme l'angle de l'OI et le cap gyro).
+// Les mesures remplissent une carte polaire (une case tous les 5°, de -90° à +90° depuis la v15) servie par /api/radar et
+// dessinée sur la page web. Angle 0 = droit devant, positif = vers la gauche (anti-horaire, comme l'angle de l'OI et le cap gyro).
+// v15 : au-delà de ±30° le servo tourne lentement, degré par degré (voir RADAR_ZONE_VIVE et la tâche radar) ; capteur
+// tourné de côté, plus rien ne surveille l'avant que le pare-chocs du robot (limite déjà notée plus bas pour le mode fixe).
 // Distance = durée de l'écho × 0,1715 mm/µs (son à 343 m/s, aller-retour). Portée utile du HC-SR04 : 2 cm à 4 m,
 // cône de 15° environ ; les surfaces molles (rideaux, canapés) et très obliques renvoient peu d'écho.
 //
@@ -51,13 +53,24 @@ constexpr int PIN_SERVO = 18;   // D18 : signal du servo SG90 (fil orange)
 constexpr int PIN_TRIG  = 19;   // D19 : Trig du HC-SR04 (3,3 V suffisent pour le déclencher)
 constexpr int PIN_ECHO  = 23;   // D23 : Echo du HC-SR04 à travers le diviseur 1 kΩ / 2 kΩ (le 2 kΩ vers GND tient la broche à 0 V au repos ; rappel interne en plus, voir radarSetup)
 
-constexpr int      RADAR_SPAN_MAX   = 80;                                       // degrés de part et d'autre du centre (taille de la carte polaire)
+constexpr int      RADAR_SPAN_MAX   = 90;                                       // degrés de part et d'autre du centre (taille de la carte polaire ; 80 jusqu'à la v14)
 // v12 : plafond de la butée du servo, écrit dans le code. Les fils du capteur sont courts : l'utilisateur a fixé la butée
 // à 30° le 2026-11-09. Jusqu'à la v11 ce n'était qu'un réglage en mémoire : /api/radar?butee=80 le relevait, et une mémoire
-// effacée redonnait 80°. Pour aller plus loin après avoir rallongé les fils, c'est cette constante qu'il faut changer.
-constexpr int      RADAR_BUTEE_MAX  = 30;
+// effacée redonnait 80°.
+// v15 (2026-11-21) : le plafond passe à 90°, à la demande de l'utilisateur, pour lire les murs de côté en roulant (« on peut
+// aussi essayer le capteur de distance qui tourne de 90 degrés. Pas besoin de photo, fais-le. L'important, c'est que si ça
+// tourne, ça doit tourner très doucement »). Deux garde-fous vont avec :
+//   - la butée réglée (radar.butee) reste à 30° tant qu'on ne la relève pas par /api/radar?butee=N : installer la v15 ne
+//     change rien à ce que fait le servo ;
+//   - hors de la zone éprouvée depuis le 9 novembre (RADAR_ZONE_VIVE, ±30°), le servo n'avance que d'un degré à la fois, à
+//     radar.lent degrés par seconde (5 par défaut, 10 au plus) : voir la tâche radar.
+constexpr int      RADAR_BUTEE_MAX  = 90;
+constexpr int      RADAR_ZONE_VIVE  = 30;                                       // v15 : en deçà, le servo saute d'une direction à l'autre comme avant ; au-delà, rotation lente
+constexpr int      RADAR_LENT_DEFAUT = 5;                                       // v15 : vitesse de la rotation lente, degrés par seconde
+constexpr int      RADAR_LENT_MIN   = 1;
+constexpr int      RADAR_LENT_MAX   = 10;
 constexpr int      RADAR_SLOT_DEG   = 5;                                        // résolution de la carte polaire
-constexpr int      RADAR_SLOTS      = 2 * RADAR_SPAN_MAX / RADAR_SLOT_DEG + 1;  // 33 cases, de -80° à +80°
+constexpr int      RADAR_SLOTS      = 2 * RADAR_SPAN_MAX / RADAR_SLOT_DEG + 1;  // 37 cases, de -90° à +90° (33 cases, de -80° à +80°, jusqu'à la v14)
 constexpr int      RADAR_FRONT_DEG  = 15;                                       // secteur « devant » pour la sécurité
 constexpr uint32_t RADAR_SETTLE_MS  = 80;                                       // repos du servo après un pas, plus 2 ms par degré parcouru
 constexpr uint32_t RADAR_PING_MS    = 60;                                       // intervalle minimal entre deux mesures (fiche HC-SR04)
@@ -85,10 +98,12 @@ struct RadarState {
   volatile int8_t   amplitude = 60;       // demi-ouverture du balayage, degrés
   volatile int8_t   ech = 1;              // mesures par direction (1 à 3, médiane)
   volatile bool     inverse = false;      // vrai si le servo part à droite quand on lui demande la gauche (montage à l'envers)
-  volatile int8_t   butee = RADAR_BUTEE_MAX;  // butée du servo, degrés de part et d'autre du centre : aucun ordre ne la dépasse (voir radarLimit)
+  volatile int8_t   butee = RADAR_ZONE_VIVE;  // butée du servo, degrés de part et d'autre du centre : aucun ordre ne la dépasse (voir radarLimit) ; v15 : 30° tant qu'on ne la relève pas
+  volatile int8_t   lent = RADAR_LENT_DEFAUT; // v15 : vitesse de la rotation lente hors de la zone éprouvée, degrés par seconde
   volatile int8_t   fixedDeg = 0;         // direction visée en mode fixe
   // État :
-  volatile int8_t   servoDeg = 0;         // direction actuelle du capteur
+  volatile int8_t   servoDeg = 0;         // direction actuelle du capteur (v15 : elle avance degré par degré pendant une rotation lente)
+  volatile int8_t   cibleDeg = 0;         // v15 : direction vers laquelle le servo se rend (égale à servoDeg une fois arrivé)
   volatile int16_t  frontMm = -1;         // distance devant : > 0 mm, 0 = rien à portée, -1 = inconnue
   volatile uint32_t frontMs = 0;          // date de cette distance
   volatile int16_t  lastMm = -1;          // dernière mesure, quelle que soit sa direction : > 0 mm, 0 = rien à portée, -1 = aucune
@@ -104,10 +119,26 @@ portMUX_TYPE radarMux = portMUX_INITIALIZER_UNLOCKED;
 volatile uint32_t radarFwdMs = 0;
 volatile bool     radarFwdSeen = false;
 
-// Butée du servo, en degrés de part et d'autre du centre (réglage « butee », 10 à 80, conservé en flash). Ajoutée le
-// 2026-11-09 à la demande de l'utilisateur, dont les fils du capteur sont courts : tout angle demandé y est ramené, que
-// l'ordre vienne du balayage, du mode fixe, de l'API ou du dessin touché sur la page.
+// Butée du servo, en degrés de part et d'autre du centre (réglage « butee », 10 à RADAR_BUTEE_MAX, conservé en flash).
+// Ajoutée le 2026-11-09 à la demande de l'utilisateur, dont les fils du capteur sont courts : tout angle demandé y est
+// ramené, que l'ordre vienne du balayage, du mode fixe, de l'API ou du dessin touché sur la page.
 int radarLimit() { return constrain((int)radar.butee, 10, RADAR_BUTEE_MAX); }   // v12 : jamais au-delà du plafond du code
+
+// v15 : dernière direction commandée au servo, gardée dans la mémoire RTC de la carte. Cette mémoire survit à un
+// redémarrage (mise à jour, baisse de tension, plantage) mais pas à une coupure de l'alimentation. Sans elle, une carte
+// qui redémarre pendant que le capteur regarde de côté le ramènerait devant d'un coup, à pleine vitesse. Une clé liée à la
+// valeur écarte une mémoire jamais écrite ou abîmée.
+constexpr uint32_t SERVO_MEMO_CLE = 0x5E12A0C3;
+RTC_NOINIT_ATTR uint32_t servoMemoCle;
+RTC_NOINIT_ATTR int32_t  servoMemoDeg;
+void servoMemoEcrit(int deg) { servoMemoDeg = deg; servoMemoCle = SERVO_MEMO_CLE ^ (uint32_t)(deg + 128); }
+int  servoMemoLit() {            // 0 : rien de valable, ou capteur devant
+  if (esp_reset_reason() == ESP_RST_POWERON) return 0;   // mise sous tension : la mémoire RTC ne contient rien de sûr
+  int d = servoMemoDeg;
+  if (d < -RADAR_BUTEE_MAX || d > RADAR_BUTEE_MAX) return 0;
+  return (servoMemoCle == (SERVO_MEMO_CLE ^ (uint32_t)(d + 128))) ? d : 0;
+}
+volatile int8_t radarRetourDemarrage = 0;   // direction retrouvée au démarrage, pour le message de radarTick (0 : rien à dire)
 
 // ---------- Servo SG90 par LEDC (50 Hz, 16 bits : 20 000 µs sur 65 535 pas, soit 0,3 µs de résolution) ----------
 bool servoOn = false;        // impulsions en cours
@@ -123,15 +154,25 @@ void servoRelax() {           // plus d'impulsions : le servo garde sa position 
   servoRelaxed = true;
 }
 
-// Oriente le capteur vers deg (0 devant, positif à gauche). Renvoie l'ampleur du mouvement en degrés (pour l'attente).
+// v15 : impulsion pour la direction deg (0 devant, positif à gauche), bornée au plafond du code et non à la butée réglée :
+// si l'on abaisse la butée pendant que le capteur est au-delà, il doit pouvoir revenir degré par degré, sans saut.
+// Tient à jour la direction courante et sa copie en mémoire RTC. N'est appelée que par servoGoto et par la tâche radar.
+void servoEcrit(int deg) {
+  deg = constrain(deg, -RADAR_BUTEE_MAX, RADAR_BUTEE_MAX);
+  int mech = radar.inverse ? -deg : deg;
+  servoPulse((uint32_t)(SERVO_CENTER_US + mech * SERVO_US_PER_DEG));   // ±90° : 600 à 2400 µs
+  servoRelaxed = false;
+  radar.servoDeg = (int8_t)deg;
+  servoMemoEcrit(deg);
+}
+
+// Oriente le capteur vers deg d'un seul saut. Renvoie l'ampleur du mouvement en degrés (pour l'attente).
+// v15 : la tâche radar ne l'appelle que si le départ et l'arrivée sont dans la zone éprouvée (RADAR_ZONE_VIVE).
 int servoGoto(int deg) {
   int lim = radarLimit();
   deg = constrain(deg, -lim, lim);   // jamais au-delà de la butée
   int moved = servoRelaxed ? 2 * RADAR_SPAN_MAX : abs(deg - (int)radar.servoDeg);
-  int mech = radar.inverse ? -deg : deg;
-  servoPulse((uint32_t)(SERVO_CENTER_US + mech * SERVO_US_PER_DEG));
-  servoRelaxed = false;
-  radar.servoDeg = (int8_t)deg;
+  servoEcrit(deg);
   return moved;
 }
 
@@ -184,22 +225,37 @@ int16_t usCombine(const int16_t* v, int n) {
 }
 
 // ---------- Tâche radar (second cœur) ----------
+// v15 — ROTATION LENTE. Tant que le départ et l'arrivée d'un mouvement sont dans la zone éprouvée (±RADAR_ZONE_VIVE), rien
+// ne change : le servo saute à sa cible et on attend qu'il se pose. Dès que l'un des deux est au-delà, le mouvement entier
+// se fait degré par degré, à radar.lent degrés par seconde, et il reste lent jusqu'à l'arrivée, même une fois revenu dans
+// la zone. La cible est relue à chaque degré : un nouvel ordre (autre angle, mode arrêt, butée abaissée) est pris tout de
+// suite, sans attendre la fin du mouvement en cours. Une mesure est faite à chaque degré, rangée avec la direction réelle
+// du capteur : on voit le capteur répondre pendant qu'il tourne, et un fil arraché se lit aussitôt (« absent »).
+// En mode arrêt le servo revient au centre de la même façon avant d'être relâché.
 void radarTask(void*) {
   int16_t  ring[3] = { -1, -1, -1 };   // trois dernières mesures du secteur avant
   uint8_t  ringIdx = 0, faultStreak = 0, lastMode = 255;
   int      dir = 1, angle = -radar.amplitude;
-  uint32_t lastPingMs = 0;
-  servoGoto(0);                        // signe de vie au démarrage : le servo se centre, puis se relâche
-  vTaskDelay(pdMS_TO_TICKS(600));
-  servoRelax();
+  uint32_t lastPingMs = 0, dernierPasMs = 0;
+  bool     lent = false;               // v15 : un mouvement lent est en cours
+  int memo = servoMemoLit();
+  if (abs(memo) > RADAR_ZONE_VIVE) {
+    // v15 : la carte a redémarré alors que le capteur regardait de côté ; le servo y est resté. On lui redonne la même
+    // consigne (il ne bouge pas) et la boucle le ramène devant lentement, puisque le mode est « arrêt ».
+    servoEcrit(memo);
+    radarRetourDemarrage = (int8_t)memo;
+  } else {
+    servoGoto(0);                      // signe de vie au démarrage : le servo se centre, puis se relâche
+    vTaskDelay(pdMS_TO_TICKS(600));
+    servoRelax();
+  }
   for (;;) {
     uint8_t mode = radar.mode;
     if (mode != lastMode) {
       lastMode = mode;
       radar.following = false;
-      if (mode == RADAR_OFF) { servoGoto(0); vTaskDelay(pdMS_TO_TICKS(500)); servoRelax(); }
     }
-    if (mode == RADAR_OFF) { vTaskDelay(pdMS_TO_TICKS(100)); continue; }
+    if (mode == RADAR_OFF && servoRelaxed) { radar.cibleDeg = 0; vTaskDelay(pdMS_TO_TICKS(100)); continue; }   // arrêt, servo déjà au centre et relâché
 
     int  lim = radarLimit();
     int  pas = constrain((int)radar.pas, 5, 45);
@@ -213,21 +269,49 @@ void radarTask(void*) {
     radar.following = follow;
     bool fixed = (mode == RADAR_FIXED) || follow;
     int  target;
-    if (mode == RADAR_FIXED) target = tourSampling() ? 0 : constrain((int)radar.fixedDeg, -lim, lim);   // tour sur place : droit devant
+    if (mode == RADAR_OFF) target = 0;                                              // v15 : arrêt = retour au centre, puis relâchement
+    else if (mode == RADAR_FIXED) target = tourSampling() ? 0 : constrain((int)radar.fixedDeg, -lim, lim);   // tour sur place : droit devant
     else if (follow) target = 0;
     else {
       angle = constrain(angle, -amp, amp);                                          // réglages changés en route : on reste dans la plage
       angle = ((angle + (angle >= 0 ? pas / 2 : -pas / 2)) / pas) * pas;            // et sur un multiple du pas
       target = constrain(angle, -amp, amp);                                         // l'arrondi ne doit pas faire sortir de la plage
     }
-    int moved = servoGoto(target);
-    if (moved) vTaskDelay(pdMS_TO_TICKS(RADAR_SETTLE_MS + 2 * moved));           // SG90 : ~0,1 s pour 60°, puis stabilisation
+    radar.cibleDeg = (int8_t)target;
+
+    // ---- Mouvement du servo (v15) ----
+    int cur = radar.servoDeg;
+    if (servoRelaxed && abs(target) > RADAR_ZONE_VIVE) {                            // servo relâché (il l'est toujours au centre) et cible de côté :
+      int moved = servoGoto(0);                                                     // on le reprend au centre avant de partir lentement
+      vTaskDelay(pdMS_TO_TICKS(RADAR_SETTLE_MS + 2 * moved));
+      cur = 0;
+      dernierPasMs = millis();
+    }
+    if (cur != target && (lent || abs(cur) > RADAR_ZONE_VIVE || abs(target) > RADAR_ZONE_VIVE)) {
+      lent = true;                                                                  // un degré vers la cible, pas plus
+      uint32_t pasMs = 1000 / (uint32_t)constrain((int)radar.lent, RADAR_LENT_MIN, RADAR_LENT_MAX);
+      uint32_t ecoule = millis() - dernierPasMs;
+      if (ecoule < pasMs) vTaskDelay(pdMS_TO_TICKS(pasMs - ecoule));
+      servoEcrit(cur + (target > cur ? 1 : -1));
+      dernierPasMs = millis();
+      vTaskDelay(pdMS_TO_TICKS(25));                                                // le temps d'une période du servo (20 ms) avant de mesurer
+    } else {
+      int moved = servoGoto(target);
+      if (moved) vTaskDelay(pdMS_TO_TICKS(RADAR_SETTLE_MS + 2 * moved));         // SG90 : ~0,1 s pour 60°, puis stabilisation
+    }
+    int  ici = radar.servoDeg;                                                      // direction réelle du capteur pour la mesure qui suit
+    bool arrive = (ici == target);
+    if (arrive) lent = false;
+    if (mode == RADAR_OFF) {                                                        // arrêt : pas de mesure ; une fois au centre, on relâche
+      if (arrive) { vTaskDelay(pdMS_TO_TICKS(500)); servoRelax(); }
+      continue;
+    }
 
     uint32_t period = fixed ? RADAR_FIXED_MS : RADAR_PING_MS;
     uint32_t since = millis() - lastPingMs;
     if (since < period) vTaskDelay(pdMS_TO_TICKS(period - since));
 
-    int n = tourSampling() ? 1 : constrain((int)radar.ech, 1, 3);   // tour sur place : une mesure par direction, le robot tourne
+    int n = (tourSampling() || !arrive) ? 1 : constrain((int)radar.ech, 1, 3);   // tour sur place ou servo en route : une mesure par direction
     float capTir = imu.yawDeg;                                      // cap du gyroscope à l'instant du tir
     int16_t v[3];
     for (int k = 0; k < n; k++) {
@@ -239,9 +323,10 @@ void radarTask(void*) {
       if (v[k] < 0)  radar.faults = radar.faults + 1;
     }
     int16_t res = usCombine(v, n);
-    if (res >= 0 && mode == RADAR_FIXED) tourSample(capTir, res);   // rangée seulement pendant un tour sur place (tour.ino)
-    if (res >= 0) { radar.lastMm = res; radar.lastDeg = (int8_t)target; radar.lastMs = millis(); }
-    if (res > 0) carteAdd(capTir, target, res);                     // obstacle placé dans la pièce (carte.ino)
+    // v15 : chaque mesure est rangée avec la direction réelle du capteur (ici), qui n'est plus toujours la cible.
+    if (res >= 0 && mode == RADAR_FIXED && ici == 0) tourSample(capTir, res);   // rangée seulement pendant un tour sur place (tour.ino), capteur droit devant
+    if (res >= 0) { radar.lastMm = res; radar.lastDeg = (int8_t)ici; radar.lastMs = millis(); }
+    if (res > 0) carteAdd(capTir, ici, res);                        // obstacle placé dans la pièce (carte.ino)
     if (res < 0) {
       if (faultStreak < 255) faultStreak++;
       if (faultStreak >= 5) radar.absent = true;
@@ -249,12 +334,12 @@ void radarTask(void*) {
       faultStreak = 0;
       radar.absent = false;
       radar.present = true;
-      int idx = constrain((target + RADAR_SPAN_MAX + RADAR_SLOT_DEG / 2) / RADAR_SLOT_DEG, 0, RADAR_SLOTS - 1);
+      int idx = constrain((ici + RADAR_SPAN_MAX + RADAR_SLOT_DEG / 2) / RADAR_SLOT_DEG, 0, RADAR_SLOTS - 1);
       portENTER_CRITICAL(&radarMux);
       radar.mm[idx] = res;
       radar.ms[idx] = millis();
       portEXIT_CRITICAL(&radarMux);
-      if (abs(target) <= RADAR_FRONT_DEG) {
+      if (abs(ici) <= RADAR_FRONT_DEG) {
         ring[ringIdx] = res;
         ringIdx = (ringIdx + 1) % 3;
         int16_t rv[3] = { ring[0], ring[1], ring[2] };
@@ -262,7 +347,7 @@ void radarTask(void*) {
         if (m >= 0) { radar.frontMm = m; radar.frontMs = millis(); }
       }
     }
-    if (!fixed) {                                                                  // balayage : case suivante, demi-tour aux extrémités
+    if (!fixed && arrive) {                                                        // balayage : case suivante, demi-tour aux extrémités (v15 : une fois la case atteinte)
       if (angle + dir * pas > amp || angle + dir * pas < -amp) { dir = -dir; radar.sweeps = radar.sweeps + 1; }
       angle = constrain(angle + dir * pas, -amp, amp);
     }
@@ -279,7 +364,8 @@ void radarLoadSettings() {
   radar.amplitude = constrain(prefs.getInt("amp", 60), 5, RADAR_SPAN_MAX);
   radar.ech       = constrain(prefs.getInt("ech", 1), 1, 3);
   radar.inverse   = prefs.getBool("inv", false);
-  radar.butee     = constrain(prefs.getInt("max", RADAR_BUTEE_MAX), 10, RADAR_BUTEE_MAX);   // v12 : mémoire vide ou trop grande -> le plafond
+  radar.butee     = constrain(prefs.getInt("max", RADAR_ZONE_VIVE), 10, RADAR_BUTEE_MAX);   // v15 : mémoire vide -> 30° (la zone éprouvée), jamais le plafond
+  radar.lent      = constrain(prefs.getInt("lent", RADAR_LENT_DEFAUT), RADAR_LENT_MIN, RADAR_LENT_MAX);   // v15
   prefs.end();
 }
 
@@ -293,6 +379,7 @@ void radarSaveSettings() {
   prefs.putInt("ech", radar.ech);
   prefs.putBool("inv", radar.inverse);
   prefs.putInt("max", radar.butee);
+  prefs.putInt("lent", radar.lent);   // v15
   prefs.end();
 }
 
@@ -322,7 +409,12 @@ void radarSetMode(uint8_t m) {
   else                       out.println(F("Radar : arrêt, servo recentré puis relâché."));
 }
 
-void radarCycleMode() { radarSetMode(radar.mode == RADAR_OFF ? RADAR_FIXED : radar.mode == RADAR_FIXED ? RADAR_SWEEP : RADAR_OFF); }
+// Touche 'r' : arrêt -> fixe devant -> balayage. v15 : « fixe devant » remet la direction visée à 0, pour qu'une touche
+// de la console n'envoie jamais le capteur de côté (la direction visée garde sinon la dernière valeur demandée par l'API).
+void radarCycleMode() {
+  if (radar.mode == RADAR_OFF) radar.fixedDeg = 0;
+  radarSetMode(radar.mode == RADAR_OFF ? RADAR_FIXED : radar.mode == RADAR_FIXED ? RADAR_SWEEP : RADAR_OFF);
+}
 
 void radarClearMap() {
   portENTER_CRITICAL(&radarMux);
@@ -361,6 +453,11 @@ bool radarForwardBlocked() {
 void radarTick() {
   static bool wasPresent = false, wasAbsent = false;
   static uint32_t lastStopMs = 0;
+  if (radarRetourDemarrage) {   // v15 : dit une fois, après un redémarrage survenu capteur tourné de côté
+    out.printf("Radar : la carte a redémarré avec le capteur tourné à %d° ; il revient devant lentement (%d°/s), puis le servo est relâché.\n",
+               (int)radarRetourDemarrage, (int)radar.lent);
+    radarRetourDemarrage = 0;
+  }
   if (radar.present && !wasPresent) { wasPresent = true; out.println(F("Radar : capteur HC-SR04 détecté (premier écho reçu).")); }
   if (radar.absent != wasAbsent) {
     wasAbsent = radar.absent;
@@ -384,6 +481,8 @@ void radarPrintStatus() {
   out.printf("Radar à ultrasons : mode %s%s, capteur vers %d°, servo %s, HC-SR04 %s\n", radarModeName(radar.mode),
              radar.following ? " (devant : marche avant demandée ou en cours)" : "", (int)radar.servoDeg,
              servoRelaxed ? "relâché" : "maintenu", radar.absent ? "SANS RÉACTION" : radar.present ? "détecté" : "pas encore entendu");
+  if (radar.servoDeg != radar.cibleDeg) out.printf("Rotation lente en cours : vers %d°, à %d°/s\n", (int)radar.cibleDeg, (int)radar.lent);   // v15
+  out.printf("Rotation lente au-delà de ±%d° : %d°/s (réglage « lent », %d à %d)\n", RADAR_ZONE_VIVE, (int)radar.lent, RADAR_LENT_MIN, RADAR_LENT_MAX);
   if (f > 0)       out.printf("Devant : %d cm (mesure vieille de %lu ms)\n", f / 10, (unsigned long)age);
   else if (f == 0) out.printf("Devant : rien à portée (< 4 m), mesure vieille de %lu ms\n", (unsigned long)age);
   else             out.println(F("Devant : distance inconnue"));
@@ -407,12 +506,14 @@ void radarPrintStatus() {
 
 // Résumé pour /api/state (lu chaque seconde par monitor_wifi.py)
 void radarStateJson(String& j) {
-  char b[256];
+  char b[320];
   snprintf(b, sizeof(b), "\"radar\":{\"mode\":%u,\"front_mm\":%d,\"age\":%lu,\"present\":%s,\"absent\":%s,\"servo\":%d,"
-                         "\"mm\":%d,\"a\":%d,\"mm_age\":%lu,\"seuil\":%d,\"securite\":%s},",
+                         "\"mm\":%d,\"a\":%d,\"mm_age\":%lu,\"seuil\":%d,\"securite\":%s,"
+                         "\"cible\":%d,\"butee\":%d,\"lent\":%d},",   // v15 : direction visée, butée réglée, vitesse de la rotation lente
            (unsigned)radar.mode, (int)radar.frontMm, (unsigned long)(millis() - radar.frontMs), radar.present ? "true" : "false",
            radar.absent ? "true" : "false", (int)radar.servoDeg,
            (int)radar.lastMm, (int)radar.lastDeg, (unsigned long)(millis() - radar.lastMs),   // dernière mesure et sa direction
-           (int)radar.seuilCm, radar.securite ? "true" : "false");
+           (int)radar.seuilCm, radar.securite ? "true" : "false",
+           (int)radar.cibleDeg, radarLimit(), (int)radar.lent);
   j += b;
 }

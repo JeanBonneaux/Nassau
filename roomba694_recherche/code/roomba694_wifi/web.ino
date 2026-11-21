@@ -13,8 +13,10 @@
 //                       définit CLE_SONDE (voir handleSonde)
 //          /api/scan    réseaux Wi-Fi à portée (lance une recherche, puis renvoie la liste)
 //          /api/radar   radar à ultrasons (radar.ino) : état et carte polaire en JSON ; paramètres facultatifs : mode=off|fixe|balayage,
-//                       angle=-80..80, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..80, ech=1..3, inv=0|1, effacer=1,
-//                       butee=10..30 (degrés de part et d'autre du centre que le servo ne dépasse jamais ; plafond RADAR_BUTEE_MAX, v12)
+//                       angle=-90..90, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..90, ech=1..3, inv=0|1, effacer=1,
+//                       butee=10..90 (degrés de part et d'autre du centre que le servo ne dépasse jamais ; plafond RADAR_BUTEE_MAX, v12 ;
+//                       v15 : 90 au lieu de 30, et la butée réglée reste à 30 tant qu'on ne la relève pas),
+//                       lent=1..10 (v15 : degrés par seconde de la rotation lente, au-delà de ±30°)
 //          /api/tour    tour sur place (tour.ino) : état et mesures [dixièmes de degré, mm] du dernier tour ; go=1 le lance, stop=1 l'arrête
 //          /api/mouv    v10 : avance (av=MM, v=, cap=) ou rotation (rot=DEG) exécutée par le cerveau, stop=1 ; voir mouv.ino
 //          /api/pose    position du robot (position.ino) : x, y en mm, cap en degrés, tracé [x, y] ; zero=1 remet à zéro ;
@@ -86,7 +88,7 @@ void handleState() {
   j.reserve(2700);   // v13 : 2400 + la dernière ligne « bat: »
   char b[800];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v14 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
+    "{\"ms\":%lu,\"ver\":\"v15 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u,\"wall\":%u,\"cur\":[%d,%d],\"base\":%s},"
@@ -616,8 +618,16 @@ void handleRadar() {
   bool save = false;
   if (http.hasArg("butee")) {   // traitée en premier : l'angle demandé dans la même requête lui obéit déjà
     int v = http.arg("butee").toInt();
-    if (v >= 10 && v <= RADAR_BUTEE_MAX) { radar.butee = (int8_t)v; out.printf("Radar : butée du servo à %d° de chaque côté.\n", v); save = true; }
-    else out.printf("Radar : butée de %d° refusée (de 10 à %d° ; au-delà il faut changer RADAR_BUTEE_MAX dans radar.ino).\n", v, RADAR_BUTEE_MAX);   // v12
+    if (v >= 10 && v <= RADAR_BUTEE_MAX) {
+      radar.butee = (int8_t)v; save = true;
+      out.printf("Radar : butée du servo à %d° de chaque côté%s.\n", v, v > RADAR_ZONE_VIVE ? " (au-delà de 30°, rotation lente)" : "");   // v15
+    }
+    else out.printf("Radar : butée de %d° refusée (de 10 à %d°).\n", v, RADAR_BUTEE_MAX);   // v12
+  }
+  if (http.hasArg("lent")) {    // v15 : vitesse de la rotation lente au-delà de la zone éprouvée, degrés par seconde
+    int v = http.arg("lent").toInt();
+    if (v >= RADAR_LENT_MIN && v <= RADAR_LENT_MAX) { radar.lent = (int8_t)v; out.printf("Radar : rotation lente à %d°/s.\n", v); save = true; }
+    else out.printf("Radar : vitesse lente de %d°/s refusée (de %d à %d°/s).\n", v, RADAR_LENT_MIN, RADAR_LENT_MAX);
   }
   if (http.hasArg("angle")) radar.fixedDeg = (int8_t)constrain(http.arg("angle").toInt(), -radarLimit(), radarLimit());
   if (http.hasArg("mode")) {
@@ -635,19 +645,23 @@ void handleRadar() {
   if (http.hasArg("pas"))       { int v = http.arg("pas").toInt(); if (v >= 5 && v <= 45 && v % 5 == 0) { radar.pas = (int8_t)v; save = true; } }
   if (http.hasArg("amplitude")) { int v = http.arg("amplitude").toInt(); if (v >= 20 && v <= RADAR_SPAN_MAX) { radar.amplitude = (int8_t)((v / 5) * 5); save = true; } }
   if (http.hasArg("ech"))       { radar.ech = (int8_t)constrain(http.arg("ech").toInt(), 1, 3); save = true; }
-  if (http.hasArg("inv"))       { radar.inverse = http.arg("inv") == "1"; out.printf("Radar : sens du servo %s.\n", radar.inverse ? "inversé" : "normal"); save = true; }
+  if (http.hasArg("inv")) {     // v15 : le sens ne se change que capteur droit devant ; tourné de côté, le servo sauterait d'un bord à l'autre
+    if (radar.servoDeg != 0) out.printf("Radar : sens du servo inchangé, le capteur est tourné à %d° ; le ramener devant d'abord (angle=0).\n", (int)radar.servoDeg);
+    else { radar.inverse = http.arg("inv") == "1"; out.printf("Radar : sens du servo %s.\n", radar.inverse ? "inversé" : "normal"); save = true; }
+  }
   if (http.hasArg("effacer"))   radarClearMap();
   if (save) radarSaveSettings();
 
   String j;
-  j.reserve(1100);
-  char b[448];
+  j.reserve(1400);   // v15 : 37 cases au lieu de 33
+  char b[512];
   snprintf(b, sizeof(b),
-    "{\"mode\":%u,\"present\":%s,\"absent\":%s,\"following\":%s,\"servo\":%d,\"front_cm\":%.1f,\"front_age\":%lu,"
+    "{\"mode\":%u,\"present\":%s,\"absent\":%s,\"following\":%s,\"servo\":%d,\"cible\":%d,\"lent\":%d,\"front_cm\":%.1f,\"front_age\":%lu,"
     "\"seuil\":%d,\"securite\":%s,\"auto\":%s,\"pas\":%d,\"amplitude\":%d,\"butee\":%d,\"ech\":%d,\"inv\":%s,"
     "\"mesures\":%lu,\"sans_echo\":%lu,\"defauts\":%lu,\"passages\":%lu,\"arrets\":%lu,\"refus\":%lu,\"points\":[",
     (unsigned)radar.mode, radar.present ? "true" : "false", radar.absent ? "true" : "false", radar.following ? "true" : "false",
-    (int)radar.servoDeg, radar.frontMm < 0 ? -1.0 : radar.frontMm / 10.0, (unsigned long)(millis() - radar.frontMs),
+    (int)radar.servoDeg, (int)radar.cibleDeg, (int)radar.lent,   // v15 : direction visée et vitesse de la rotation lente
+    radar.frontMm < 0 ? -1.0 : radar.frontMm / 10.0, (unsigned long)(millis() - radar.frontMs),
     (int)radar.seuilCm, radar.securite ? "true" : "false", radar.autoFront ? "true" : "false", (int)radar.pas, (int)radar.amplitude,
     radarLimit(), (int)radar.ech, radar.inverse ? "true" : "false",
     (unsigned long)radar.pings, (unsigned long)radar.noEcho, (unsigned long)radar.faults, (unsigned long)radar.sweeps,
