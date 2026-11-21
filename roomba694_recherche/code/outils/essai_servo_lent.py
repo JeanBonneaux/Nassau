@@ -141,6 +141,27 @@ def tenir(angle, etape):
     return mm
 
 
+compteurs_avant = {}
+
+
+def compteurs():
+    """Mesures faites, sans écho, et SANS RÉACTION du capteur depuis le dernier appel (compteurs de /api/radar).
+    Une seule mesure sans réaction est déjà un signe : fil qui perd le contact, ou tension qui baisse."""
+    try:
+        r = get("/api/radar")
+    except Exception:
+        return ""
+    txt = ""
+    if compteurs_avant:
+        d = {k: r.get(k, 0) - compteurs_avant.get(k, 0) for k in ("mesures", "sans_echo", "defauts")}
+        txt = " | depuis le dernier point : %d mesures, %d sans écho, %d SANS RÉACTION" % (d["mesures"], d["sans_echo"], d["defauts"])
+        if journal:
+            journal.write(json.dumps(dict(t=time.time(), h=heure(), etape="compteurs", **d), ensure_ascii=False) + "\n")
+            journal.flush()
+    compteurs_avant.update({k: r.get(k, 0) for k in ("mesures", "sans_echo", "defauts")})
+    return txt
+
+
 def resume(angle, mm, profil, cap):
     vus = [x for x in mm if x and x > 0]
     rien = sum(1 for x in mm if x == 0)
@@ -149,6 +170,7 @@ def resume(angle, mm, profil, cap):
         txt += ", médiane %4d mm (de %d à %d)" % (statistics.median(vus), min(vus), max(vus))
     if rien:
         txt += ", %d fois « rien à portée »" % rien
+    txt += compteurs()
     if profil is not None and cap is not None:
         d = au_tour(profil, cap + angle)
         if d is not None:

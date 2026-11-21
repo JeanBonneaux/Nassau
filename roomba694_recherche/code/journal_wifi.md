@@ -2671,3 +2671,56 @@ Capteur de distance arrêté (`mode=off` : servo au centre, relâché ; butée 3
 **Non fait** : le côté droit ; la comparaison des distances lues de côté avec un tour sur place au même endroit (qui donnerait la place du capteur sans règle) ; la ligne droite le long d'un mur.
 
 **État à la fin** (14 h 20) : cerveau allumé, en **v15** ; capteur de distance à l'arrêt, **qui ne répond plus** (un fil à remettre, cerveau débranché, photo d'abord) ; servo au centre, relâché ; robot fermé (`s`, `x`), 1 801 mAh (87 %), pas sur sa base, à un endroit que je ne connais pas.
+
+## 64. Le fil remis par l'utilisateur ; le capteur de distance tourné jusqu'à 90° des deux côtés, sans un raté ; le retour lent après un redémarrage vérifié (2026-11-21, 14 h 23 à 14 h 32)
+
+À 14 h 23 l'utilisateur écrit : « je rebranche, reprend le test ». Il n'a pas envoyé la photo demandée au § 63 : il a rebranché lui-même, cerveau débranché puis rallumé (« mise sous tension » à 14 h 23). Je ne sais pas quel fil il a remis ni où. Robot immobile pendant toute la section ; aucun ordre de roues de ma part.
+
+### 64.1 Le capteur répond de nouveau (14 h 24 à 14 h 25)
+
+À 14 h 24 min 42 : cerveau en v15, allumé depuis 93 s ; le robot répond, en mode Safe (l'utilisateur l'avait réveillé et tourné de 47°) ; le capteur de distance avait été mis en marche un instant et avait lu 1,36 m devant. Vérification avant tout mouvement du servo, capteur devant, dix secondes : **103 mesures, aucune sans écho, aucune sans réaction** ; 1,32 à 1,34 m devant.
+
+L'outil `essai_servo_lent.py` relève désormais à chaque palier les compteurs du cerveau (mesures faites, sans écho, sans réaction) : une seule mesure sans réaction se voit, sans attendre les cinq de suite qui font dire « absent ».
+
+### 64.2 Les deux côtés jusqu'à 90° (14 h 25 min 32 à 14 h 29)
+
+Enregistrement `essai_servo_v15b_20261121_142522`. Rotation à 3° par seconde d'un bout à l'autre (0 → 45° en 15 s), 3 s à chaque palier.
+
+| Heure | Passage | Distances lues aux paliers (médiane, de … à …) | Mesures comptées | Sans réaction |
+|---|---|---|---|---|
+| 14 h 25 min 32 à 26 min 08 | droite, 45° | −45° : 1 401 mm (1 062 à 1 459) | 158 | 0 |
+| 14 h 26 min 20 à 27 min 32 | droite, 60, 75, 90° | −60° : 1 344 (1 334 à 1 411) ; −75° : 1 403 (1 395 à 1 413) ; **−90° : 1 401 (1 383 à 1 429)** | 330 | 0 |
+| 14 h 27 min 44 à 28 min 59 | gauche, 45, 60, 75, 90° | +45° : 1 327 (1 320 à 1 367) ; +60° : 1 406 (1 402 à 1 436) ; +75° : 2 364 (2 360 à 2 402) ; **+90° : 2 024 (2 012 à 2 034)** | 358 | 0 |
+
+**846 mesures pendant les rotations, 949 avec la vérification du départ : aucune sans réaction, aucune sans écho**, y compris au retour du côté gauche, là où le fil avait lâché à 14 h 15. Les mesures faites pendant les trois secondes de pause devant, au début de chaque passage, ne sont pas dans ce compte.
+
+Ce que le capteur a lu, un point par degré, 181 directions de −90° à +90°, toutes avec un écho :
+
+| Direction | −90° | −75° | −60° | −45° | −30° | −15° | 0° | +15° | +30° | +45° | +60° | +75° | +90° |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Distance (mm) | 1 401 | 1 411 | 1 371 | 1 369 | 1 341 | 1 340 | 1 346 | 1 332 | 1 338 | 1 329 | 1 406 | 2 364 | 2 037 |
+
+De −90° à +60° la distance ne bouge presque pas (1,33 à 1,41 m) : les points dessinent un arc de cercle autour du robot. C'est la façon de voir d'un capteur à ultrasons : il entend la paroi la plus proche dans un cône large, même quand il ne la regarde pas en face. Ma lecture, non vérifiée (je ne sais pas où est le robot) : une paroi devant à 1,33 m et une autre à droite à 1,40 m. **Ce que cela veut dire pour longer un mur** : tourné à 90°, le capteur donne la distance au mur même si le robot est un peu de travers, ce qui est bon pour tenir l'écart ; en revanche une lecture seule ne dit pas l'angle du robot par rapport au mur : cet angle doit venir de la pente de la distance le long du chemin, comme le fait déjà `suivi_lateral.py`.
+
+Une image de ces 181 points a été remise à l'utilisateur (`plan_lidar/essai_servo_20261121_vue.png`, sur son PC seulement).
+
+### 64.3 Le retour lent après un redémarrage (14 h 30 min 32 à 14 h 31)
+
+Dernier point de la v15 qui n'avait pas été éprouvé (§ 63.4). Capteur mené lentement à 45° à gauche (butée 45°), puis la même v15 renvoyée par `/update` pour forcer un redémarrage logiciel.
+
+- Avant : capteur à 45°, cible 45°, 1 319 mm.
+- « Mise à jour réussie, la carte redémarre. »
+- Première réponse de la carte, allumée depuis 3,2 s, « redémarrage logiciel (mise à jour) » : **servo à 39°**. Il avait donc repris d'où il était et commencé à revenir.
+- Ensuite 38, 37, 36… jusqu'à 0° : **39° en 12,8 s, soit 3,0° par seconde, jamais plus d'un degré entre deux lectures**. Mode arrêt, servo relâché à la fin.
+- Console : « Radar : la carte a redémarré avec le capteur tourné à 45° ; il revient devant lentement (3°/s), puis le servo est relâché. »
+- Butée remise à 30°.
+
+Le cas d'une coupure de l'alimentation (le servo se recentre alors d'un coup, comme avant la v15) n'a pas été essayé : il est connu et voulu.
+
+### 64.4 Ce qui reste à savoir
+
+- Quel fil avait lâché et comment il a été remis : l'utilisateur ne l'a pas dit, et je n'ai pas de photo. Le contact tient à l'arrêt et pendant trois allers et retours lents ; il n'a pas été éprouvé en roulant.
+- Si le servo force en bout de course à 90° : l'utilisateur ne l'a pas dit ; la carte n'a pas redémarré et aucune mesure n'a manqué.
+- Où est le capteur par rapport au centre du robot : il faut un tour sur place au même endroit, ou une mesure à la règle.
+
+**État à la fin** (14 h 32) : cerveau en v15 (redémarré à 14 h 30 min 46 par l'essai) ; capteur de distance à l'arrêt, devant, **qui répond** ; servo au centre, relâché ; butée 30°, rotation lente réglée à 3°/s ; robot réveillé en mode Safe (c'est l'utilisateur qui l'y a mis), immobile, 1 774 mAh (86 %), pas sur sa base, à un endroit que je ne connais pas. La séance n'est pas fermée : j'attends de savoir s'il veut enchaîner sur un essai en roulant.
