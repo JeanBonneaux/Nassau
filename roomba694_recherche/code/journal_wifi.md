@@ -2791,7 +2791,7 @@ Connaître l'angle vrai du capteur aux deux bouts de sa course : une photo du de
 
 **État à la fin** (14 h 46) : robot à l'arrêt en mode Safe, 80 cm plus loin que tout à l'heure, 0,60 m de libre devant lui, 1 744 mAh (84 %), pas sur sa base, à un endroit que je ne connais toujours pas ; cerveau en v15 ; capteur de distance en marche, devant ; butée 30°. La séance n'est pas fermée.
 
-## 66. Firmware v16 : l'utilisateur oriente lui-même le capteur de distance depuis la page de pilotage (2026-11-21, 14 h 50 à 15 h 08)
+## 66. Firmware v16 : l'utilisateur oriente lui-même le capteur de distance depuis la page de pilotage (2026-11-21, 14 h 50 à 15 h 06)
 
 Au compte rendu du § 65 (le capteur ne tourne pas de l'angle commandé) et à ma proposition de mesurer l'angle vrai par trois tours sur place, l'utilisateur répond : « Donne moi plutôt le contrôle sur le cervo dans l'interface Q l'adresse ip du robot ou je peux piloter et je vais tester moi même ». Il veut la main sur le servo, dans la page que sert le cerveau.
 
@@ -2833,4 +2833,4 @@ Le servo n'a pas dépassé 14° pendant ces vérifications ; aucun ordre de roue
 
 **Non vérifié** : la page sur le téléphone de l'utilisateur ; ce qu'il verra du capteur.
 
-**État à la fin** (15 h 08) : cerveau en **v16** ; capteur de distance à l'arrêt, devant, servo relâché, butée 30°, vitesse lente 3°/s ; robot réveillé en mode Safe, immobile, au même endroit qu'au § 65, 1 697 mAh (82 %), pas sur sa base ; la séance n'est pas fermée : l'utilisateur a la main, par la page.
+**État à la fin** (15 h 06) : cerveau en **v16** ; capteur de distance à l'arrêt, devant, servo relâché, butée 30°, vitesse lente 3°/s ; robot réveillé en mode Safe, immobile, au même endroit qu'au § 65, 1 697 mAh (82 %), pas sur sa base ; la séance n'est pas fermée : l'utilisateur a la main, par la page.
