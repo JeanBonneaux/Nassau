@@ -166,3 +166,47 @@ L'ordre : la photo des fils ; s'ils sont trop courts, quatre fils plus longs pos
 ### 8.5 Toujours en attente
 
 Les essais 6 et 7 de la revue (menés par elle, sur le mot de l'utilisateur) ; le sud de la cuisine ; l'approche lente d'un vrai mur (essai 4) ; et la réponse de l'utilisateur sur l'ordre : je propose de commencer par le trajet rejoué d'une seule commande (§ 6, point 1), qui ne change rien au robot.
+
+## 9. Le plan pour la vitesse, au 21 novembre
+
+**D'où il vient.** Le 21 novembre l'utilisateur écrit : « Tu as raison, il est lent. Et ça devrait être notre focus principal de pouvoir l'accélérer. Peut-être en pensant à la façon de voir les murs de côté », puis « n'oublie pas ma requête de vitesse ». La vitesse passe donc avant le reste. Ce paragraphe remplace l'ordre du § 8 pour tout ce qui touche à la conduite ; le § 8 reste valable pour le reste.
+
+### 9.1 Le but, en chiffres
+
+Le 15, sur six trajets : 92 m en 3 h 02, soit un demi-mètre par minute. Le robot avance 11 % du temps, attend mon ordre suivant 59 % du temps, tourne sur lui-même 19 % du temps (§ 1). Les règles du projet plafonnent la vitesse à 150 mm/s : à cette vitesse, 92 m se roulent en dix minutes. **Le but : un trajet connu dix fois plus vite qu'aujourd'hui, sans toucher au plafond de 150 mm/s.** Ce qui manque n'est pas de la vitesse de roues : c'est de ne plus s'arrêter.
+
+### 9.2 Trois freins, trois réponses
+
+| Frein (mesuré le 15) | Réponse | Ce qu'il faut |
+|---|---|---|
+| 59 % du temps à attendre mon ordre | Un programme du PC enchaîne tout un trajet connu et ne m'appelle que si quelque chose ne va pas | Le trajet rejoué d'une commande (§ 6, point 1), et un cerveau qui accepte une correction en route |
+| 19 % du temps à tourner sur place pour se situer (166 tours) | Lire un mur de côté en roulant : l'écart au mur et le cap viennent en continu | Le capteur de distance tourné à 90° (firmware v15), puis le suivi de mur |
+| Un arrêt à la fin de chaque avance (2 m au plus) et à chaque correction de cap | Corriger le cap et prolonger l'avance pendant qu'elle se fait | Firmware v16, à écrire |
+
+### 9.3 Les étapes, dans l'ordre
+
+1. **Firmware v15 : le capteur jusqu'à 90°, lentement.** Écrit et compilé le 21, pas installé (journal § 62.3). Essai robot immobile au go de l'utilisateur (`essai_servo_lent.py`).
+2. **Une ligne droite de 2 m le long d'un mur, capteur tourné**, sans rien corriger : ce que le capteur lit en roulant (bruit, trous, cadres de porte). Les lectures viennent de `/api/state`, que l'enregistreur relit jusqu'à dix fois par seconde (`--etat 0.1`) ; aucun changement de firmware.
+3. **Firmware v16 : la retouche en route.** Pendant une avance, `/api/mouv?cap=…` déplace le cap visé et `&plus=MM` prolonge la distance, sans arrêt ; si le PC se tait, l'avance va à son terme et s'arrête, comme aujourd'hui. Dans le même firmware : la dernière distance lue et l'angle du servo dans le journal à 20 lignes par seconde (§ 8.3, points 2 et 3), ce qui oblige à adapter `enregistreur.py` et `pilote.py` du même geste.
+4. **Longer un mur** (`suivi_lateral.py` de l'audit, un seul côté) : d'abord le couloir. But : 3,9 m en moins d'une minute, contre 5 min 19 le 14.
+5. **Le trajet rejoué d'une commande** : une liste de tronçons (mur à longer et à quelle distance, cap à tenir, porte, recalage sur les faisceaux de la base ou la baguette du seuil), exécutée sans moi.
+6. **Garder un œil devant.** Capteur tourné de côté, plus rien ne regarde devant que le pare-chocs. Les capteurs optiques du pare-chocs annonçaient 7 contacts sur 17 le 15 (§ 2) : un réflexe du cerveau qui ralentit quand ils voient quelque chose.
+7. **Le gyroscope compté sur son axe vrai** (journal § 62.2) : moins de cap perdu, donc moins de recalages.
+
+Chaque firmware reste une modification à la fois, vérifiée robot immobile, installée avec l'accord de l'utilisateur.
+
+### 9.4 Ce que la simulation dit déjà (21 novembre, sans le robot)
+
+Outil nouveau `code/outils/essai_longe_mur.py`. L'essai de l'audit supposait deux capteurs de côté ou un servo rapide qui alterne gauche, devant, droite. La v15 fait autre chose : au-delà de 30° le servo ne tourne qu'à 5° par seconde, donc en roulant le capteur reste tourné d'un seul côté et y lit le mur dix fois par seconde. Même couloir simulé que l'audit (95 cm, puis 84, 73 et 68 ; une ouverture de 80 cm à droite ; 3,9 m), mêmes 75 départs (décalé de 15 cm ou non, cap faux de −6 à +6°).
+
+| Réglage | Sans contact jusqu'au bout | Durée des 3,9 m | Jeu le plus petit |
+|---|---|---|---|
+| Longer le mur à la distance du départ | 46 à 50 sur 75 | 27 à 36 s | 0 à 26 mm |
+| Longer le mur à 342 mm (le milieu de la partie étroite, lu sur le plan), à 100 mm/s | 75 sur 75 | 36 s | 15 à 39 mm |
+| Le même, à 130 mm/s | 75 sur 75 | 28 à 29 s | 9 à 35 mm |
+| Le même, à 147 mm/s | 75 sur 75 | 27 à 28 s | 9 à 34 mm |
+| Le même, avec une lecture sur cinq perdue et 0,15 s de retard en plus | 75 sur 75 | 27 à 36 s | 7 à 36 mm |
+
+Trois choses à en retenir. **Un seul côté suffit**, à condition de dire au robot à quelle distance du mur rouler : « la distance du départ » échoue une fois sur trois dès que le couloir se resserre ; cette distance se lit sur le plan, tronçon par tronçon. **Le PC peut tenir la boucle** (cinq corrections par seconde, un quart de seconde de retard) : le mettre dans le cerveau ne gagne que 7 à 13 mm de jeu ; il n'y a donc pas besoin d'un gros firmware pour commencer, la retouche en route suffit. **L'axe du couloir est retrouvé à moins d'un degré** (0,2 à 0,7° en médiane, 2° au pire) par la seule pente du mur : un cap qui ne dépend pas du gyroscope. Durée : une demi-minute au lieu de cinq minutes.
+
+**Limites.** C'est une simulation, plus indulgente que l'appartement : vrais murs avec plinthes, cadres de porte, objets posés, et un capteur à ultrasons qui ne lit rien sur une surface molle ou très oblique. Le jeu de 7 à 15 mm au pire, du côté de l'ouverture, est petit. Rien de tout cela n'a roulé.
