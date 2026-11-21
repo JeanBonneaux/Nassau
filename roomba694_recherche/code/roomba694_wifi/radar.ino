@@ -104,6 +104,10 @@ struct RadarState {
   // État :
   volatile int8_t   servoDeg = 0;         // direction actuelle du capteur (v15 : elle avance degré par degré pendant une rotation lente)
   volatile int8_t   cibleDeg = 0;         // v15 : direction vers laquelle le servo se rend (égale à servoDeg une fois arrivé)
+  // v16 : « doux » est posé par /api/radar?doux=1 (la page de pilotage) : le prochain mouvement du servo se fait au pas
+  // lent d'un bout à l'autre, même à l'intérieur de ±30°. La tâche radar le lève quand ce mouvement est arrivé.
+  volatile bool     doux = false;
+  volatile bool     enLent = false;       // v16 : un mouvement lent est en cours (copie de l'état de la tâche radar, pour tour.ino)
   volatile int16_t  frontMm = -1;         // distance devant : > 0 mm, 0 = rien à portée, -1 = inconnue
   volatile uint32_t frontMs = 0;          // date de cette distance
   volatile int16_t  lastMm = -1;          // dernière mesure, quelle que soit sa direction : > 0 mm, 0 = rien à portée, -1 = aucune
@@ -255,7 +259,7 @@ void radarTask(void*) {
       lastMode = mode;
       radar.following = false;
     }
-    if (mode == RADAR_OFF && servoRelaxed) { radar.cibleDeg = 0; vTaskDelay(pdMS_TO_TICKS(100)); continue; }   // arrêt, servo déjà au centre et relâché
+    if (mode == RADAR_OFF && servoRelaxed) { radar.cibleDeg = 0; radar.enLent = false; vTaskDelay(pdMS_TO_TICKS(100)); continue; }   // arrêt, servo déjà au centre et relâché
 
     int  lim = radarLimit();
     int  pas = constrain((int)radar.pas, 5, 45);
@@ -287,7 +291,7 @@ void radarTask(void*) {
       cur = 0;
       dernierPasMs = millis();
     }
-    if (cur != target && (lent || abs(cur) > RADAR_ZONE_VIVE || abs(target) > RADAR_ZONE_VIVE)) {
+    if (cur != target && (lent || radar.doux || abs(cur) > RADAR_ZONE_VIVE || abs(target) > RADAR_ZONE_VIVE)) {   // v16 : ou mouvement demandé « doux »
       lent = true;                                                                  // un degré vers la cible, pas plus
       uint32_t pasMs = 1000 / (uint32_t)constrain((int)radar.lent, RADAR_LENT_MIN, RADAR_LENT_MAX);
       uint32_t ecoule = millis() - dernierPasMs;
@@ -301,7 +305,11 @@ void radarTask(void*) {
     }
     int  ici = radar.servoDeg;                                                      // direction réelle du capteur pour la mesure qui suit
     bool arrive = (ici == target);
-    if (arrive) lent = false;
+    if (arrive) {
+      if (lent) radar.doux = false;                                                 // v16 : la demande « doux » ne vaut que pour le mouvement qui vient de finir
+      lent = false;
+    }
+    radar.enLent = lent;
     if (mode == RADAR_OFF) {                                                        // arrêt : pas de mesure ; une fois au centre, on relâche
       if (arrive) { vTaskDelay(pdMS_TO_TICKS(500)); servoRelax(); }
       continue;

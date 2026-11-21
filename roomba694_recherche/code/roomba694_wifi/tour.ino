@@ -96,6 +96,7 @@ void tourStart() {
   // v15 : un tour mesure capteur droit devant. Tourné de côté, le capteur mettrait jusqu'à 18 s à revenir (rotation lente)
   // et le tour serait fini avant : on le refuse, à charge pour qui le demande de ramener le capteur devant d'abord.
   else if (abs((int)radar.servoDeg) > RADAR_ZONE_VIVE) refus = "le capteur de distance est tourné de côté : le ramener devant d'abord (/api/radar?angle=0)";
+  else if (radar.enLent)                       refus = "le capteur de distance est en train de tourner lentement : attendre qu'il soit arrivé";   // v16
   if (refus) {
     tour.etat = TOUR_INTERROMPU;
     tour.tourne = 0;
@@ -107,6 +108,7 @@ void tourStart() {
   tour.roues = constrain(tourRouesDemande, TOUR_WHEEL_MIN, TOUR_WHEEL_MM_S);
   tourRouesDemande = TOUR_WHEEL_MM_S;      // la vitesse demandée ne vaut que pour un tour
   tour.modeRadarAvant = radar.mode;
+  radar.doux = false;                     // v16 : le retour du capteur devant se fait d'un coup, comme toujours pour un tour
   radar.fixedDeg = 0;
   radar.mode = RADAR_FIXED;               // capteur droit devant, dix mesures par seconde
   imu.calibRequested = true;              // biais du gyroscope remesuré pendant 1 s, cap remis à zéro

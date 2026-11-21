@@ -16,7 +16,9 @@
 //                       angle=-90..90, seuil=10..150 (cm), securite=0|1, auto=0|1, pas=5..45, amplitude=20..90, ech=1..3, inv=0|1, effacer=1,
 //                       butee=10..90 (degrés de part et d'autre du centre que le servo ne dépasse jamais ; plafond RADAR_BUTEE_MAX, v12 ;
 //                       v15 : 90 au lieu de 30, et la butée réglée reste à 30 tant qu'on ne la relève pas),
-//                       lent=1..10 (v15 : degrés par seconde de la rotation lente, au-delà de ±30°)
+//                       lent=1..10 (v15 : degrés par seconde de la rotation lente, au-delà de ±30°),
+//                       doux=1 (v16 : le mouvement demandé dans la même requête est lent d'un bout à l'autre, même en deçà de 30°),
+//                       fige=1 (v16 : le capteur s'arrête là où il est)
 //          /api/tour    tour sur place (tour.ino) : état et mesures [dixièmes de degré, mm] du dernier tour ; go=1 le lance, stop=1 l'arrête
 //          /api/mouv    v10 : avance (av=MM, v=, cap=) ou rotation (rot=DEG) exécutée par le cerveau, stop=1 ; voir mouv.ino
 //          /api/pose    position du robot (position.ino) : x, y en mm, cap en degrés, tracé [x, y] ; zero=1 remet à zéro ;
@@ -88,7 +90,7 @@ void handleState() {
   j.reserve(2700);   // v13 : 2400 + la dernière ligne « bat: »
   char b[800];
   snprintf(b, sizeof(b),
-    "{\"ms\":%lu,\"ver\":\"v15 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
+    "{\"ms\":%lu,\"ver\":\"v16 %s %s\",\"host\":\"%s\",\"driving\":%s,\"speed\":%d,\"keep\":%s,\"csv\":%s,\"lecture\":\"%s\","
     "\"robot\":{\"ok\":%s,\"age\":%lu,\"v\":%u,\"i\":%d,\"t\":%d,\"q\":%u,\"qmax\":%u,\"chg\":%u,\"mode\":%u,"
     "\"bump\":[%u,%u],\"drop\":[%u,%u],\"cliff\":[%u,%u,%u,%u],\"lbits\":%u,\"light\":[%u,%u,%u,%u,%u,%u],"
     "\"enc\":[%d,%d],\"btn\":%u,\"wall\":%u,\"cur\":[%d,%d],\"base\":%s},"
@@ -629,6 +631,7 @@ void handleRadar() {
     if (v >= RADAR_LENT_MIN && v <= RADAR_LENT_MAX) { radar.lent = (int8_t)v; out.printf("Radar : rotation lente à %d°/s.\n", v); save = true; }
     else out.printf("Radar : vitesse lente de %d°/s refusée (de %d à %d°/s).\n", v, RADAR_LENT_MIN, RADAR_LENT_MAX);
   }
+  if (http.hasArg("doux")) radar.doux = http.arg("doux") == "1";   // v16, avant l'angle : le mouvement qui suit se fait lentement d'un bout à l'autre
   if (http.hasArg("angle")) radar.fixedDeg = (int8_t)constrain(http.arg("angle").toInt(), -radarLimit(), radarLimit());
   if (http.hasArg("mode")) {
     String m = http.arg("mode");
@@ -638,6 +641,11 @@ void handleRadar() {
     else { http.send(400, "text/plain; charset=utf-8", "mode inconnu : off, fixe ou balayage"); return; }
   } else if (http.hasArg("angle") && radar.mode == RADAR_FIXED) {
     out.printf("Radar : capteur vers %d°.\n", (int)radar.fixedDeg);
+  }
+  if (http.hasArg("fige")) {     // v16 : le capteur s'arrête là où il est (bouton « Stop capteur » de la page)
+    radar.fixedDeg = radar.servoDeg;
+    if (radar.mode != RADAR_FIXED) radar.mode = RADAR_FIXED;
+    out.printf("Radar : capteur arrêté à %d°.\n", (int)radar.fixedDeg);
   }
   if (http.hasArg("seuil"))     { radar.seuilCm = (int16_t)constrain(http.arg("seuil").toInt(), 10, 150); out.printf("Radar : seuil d'arrêt %d cm.\n", (int)radar.seuilCm); save = true; }
   if (http.hasArg("securite"))  { radar.securite = http.arg("securite") == "1"; out.printf("Radar : arrêt automatique %s.\n", radar.securite ? "activé" : "désactivé"); save = true; }

@@ -43,6 +43,7 @@ button.danger{color:var(--crit)}
 button[disabled]{opacity:.45}
 button.on{box-shadow:inset 0 0 0 2px var(--accent)}
 .row{display:flex;gap:8px;flex-wrap:wrap}.row>button{flex:1 1 auto}
+.row.sm>button{padding:0 8px;min-height:40px;font-size:.9rem}
 .seg{display:flex;background:var(--surface2);border-radius:12px;padding:3px;gap:2px}
 .seg button{flex:1;min-height:36px;border-radius:9px;background:transparent;padding:0 10px;font-size:.9rem;color:var(--ink2)}
 .seg button.on{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--ring)}
@@ -119,7 +120,14 @@ a{color:var(--accent)}
 <div><div class="lab">Écart au départ</div><div class="val" id="tecart">–</div></div>
 </div>
 <div class="lab" style="margin-bottom:6px">Capteur de distance</div>
-<div class="seg"><button id="rm0" onclick="radar('mode=off')">Arrêté</button><button id="rm1" onclick="radar('mode=fixe&angle=0')">Devant</button><button id="rm2" onclick="radar('mode=balayage')">Balayage</button></div>
+<div class="seg"><button id="rm0" onclick="radar('doux=1&mode=off')">Arrêté</button><button id="rm1" onclick="servo(0)">Devant</button><button id="rm2" onclick="radar('mode=balayage')">Balayage</button></div>
+<div class="lab" style="margin:12px 0 6px;display:flex;justify-content:space-between;gap:8px"><span>Orienter le capteur</span><span id="svtxt">–</span></div>
+<div class="speed" style="margin-top:0"><span>gauche</span><input type="range" id="sv" min="-90" max="90" step="5" value="0" aria-label="Direction du capteur de distance"><span>droite</span></div>
+<div class="row sm" style="margin-top:8px"><button onclick="servo(90)">90° G</button><button onclick="servo(45)">45° G</button><button onclick="servo(0)">Devant</button><button onclick="servo(-45)">45° D</button><button onclick="servo(-90)">90° D</button></div>
+<div class="row sm" style="margin-top:8px"><button onclick="servoPas(5)">◀ 5°</button><button class="danger" onclick="radar('fige=1')">Stop capteur</button><button onclick="servoPas(-5)">5° ▶</button></div>
+<div class="opts"><label>vitesse <select id="slent" onchange="radar('lent='+this.value)"><option>1</option><option>2</option><option>3</option><option>5</option><option>8</option><option>10</option></select>°/s</label>
+<label>limite ±<select id="smax" onchange="radar('butee='+this.value)"><option>15</option><option>20</option><option>30</option><option>45</option><option>60</option><option>75</option><option>90</option></select>°</label></div>
+<p class="hint" id="svhint"></p>
 <div class="lab" style="margin:12px 0 6px">Carte</div>
 <div class="row"><button id="btour" onclick="tour()">Tour sur place</button><button onclick="poseZero()">Nouveau départ</button><button onclick="carteClear()">Effacer les obstacles</button></div>
 <p class="hint" id="maphint">Le haut de la carte est l'avant du robot au départ. « Tour sur place » : le robot tourne sur lui-même et dessine ce qui l'entoure.</p>
@@ -169,7 +177,7 @@ a{color:var(--accent)}
 </div><div class="opts">
 <label>pas <select id="rpas" onchange="radar('pas='+this.value)"><option>5</option><option>10</option><option>15</option><option>20</option></select>°</label>
 <label>balayage ±<select id="ramp" onchange="radar('amplitude='+this.value)"><option>20</option><option>30</option><option>45</option><option>60</option><option>80</option></select>°</label>
-<label>butée ±<select id="rmax" onchange="radar('butee='+this.value)"><option>15</option><option>20</option><option>30</option><option>45</option><option>60</option><option>90</option></select>°</label>
+<label>butée ±<select id="rmax" onchange="radar('butee='+this.value)"><option>15</option><option>20</option><option>30</option><option>45</option><option>60</option><option>75</option><option>90</option></select>°</label>
 <label>portée <select id="rport" onchange="if(rd)drawRadar(rd)"><option>100</option><option selected>200</option><option>400</option></select> cm</label>
 </div>
 <p class="hint">Touchez le demi-cercle pour orienter le capteur. 0° = devant, positif = gauche. Le trait pointillé est la distance d'arrêt.</p>
@@ -201,6 +209,21 @@ function ask(c,q){if(confirm(q))cmd(c);}
 function sendKey(){const k=$('key').value;if(k){cmd(k[0]);$('key').value='';}}
 $('key').addEventListener('keydown',e=>{if(e.key==='Enter')sendKey();});
 function openLog(){$('dlog').open=true;}
+
+// ---- Orientation du capteur de distance (v16) ----
+// Positif = vers la gauche, comme partout ailleurs ; le curseur va de la gauche (90° à gauche) à la droite.
+// « doux=1 » demande au cerveau de faire tout le mouvement lentement, même en deçà de 30°.
+const svTxt=a=>a===0?'devant':Math.abs(a)+'° à '+(a>0?'gauche':'droite');
+let svDrag=false,svHint=0;
+function servo(a){const r=S&&S.radar,lim=r&&r.butee?r.butee:30;a=Math.round(a);
+ if(Math.abs(a)>lim){$('svhint').textContent="La limite est à ±"+lim+"° : choisissez d'abord une limite plus grande, juste au-dessus de ce texte.";svHint=Date.now();return;}
+ if(r){r.cible=a;r.mode=1;}
+ radar('mode=fixe&doux=1&angle='+a);}
+function servoPas(d){const r=S&&S.radar;if(!r)return;const lim=r.butee||30;servo(Math.max(-lim,Math.min(lim,(r.mode===1?r.cible:r.servo)+d)));}
+$('sv').addEventListener('pointerdown',()=>{svDrag=true;});
+['pointerup','pointercancel'].forEach(ev=>$('sv').addEventListener(ev,()=>{svDrag=false;}));
+$('sv').addEventListener('input',()=>{$('svtxt').textContent='demandé : '+svTxt(-$('sv').value);});
+$('sv').addEventListener('change',()=>{svDrag=false;servo(-$('sv').value);});
 
 // ---- État général ----
 let S=null,busy=false;
@@ -257,10 +280,19 @@ async function refresh(){
  if(r.mode){
   if(r.absent){ds='le capteur ne réagit pas';}
   else if(r.mm<0||r.mm_age>2500){d='…';ds='mesure en cours';}
-  else{d=r.mm>0?cm(r.mm):'> 4 m';ds=(r.mm>0?'':'rien à portée, ')+(r.a===0?'droit devant':'à '+Math.abs(r.a)+'° sur la '+(r.a>0?'gauche':'droite'));}
+  else{d=r.mm>0?cm(r.mm):'> 4 m';ds=(r.mm>0?'':'rien à portée, ')+(r.a===0?'droit devant':'capteur tourné de '+Math.abs(r.a)+'° (demandés) vers la '+(r.a>0?'gauche':'droite'));}
  }
  $('dist').textContent=d;$('distsub').textContent=ds;
  for(let k=0;k<3;k++)setCls($('rm'+k),'on',r.mode===k);
+ $('rm1').textContent=r.mode===1&&r.cible?'Tourné':'Devant';
+ // orientation du capteur (v16) : angle demandé au servo, vitesse, limite
+ if(r.cible!==undefined){
+  if(!svDrag){$('sv').value=-(r.mode===1?r.cible:r.servo);
+   $('svtxt').textContent=!r.mode&&r.servo===0?'au repos, devant':r.servo!==r.cible?svTxt(r.servo)+' → '+svTxt(r.cible):svTxt(r.servo);}
+  if(document.activeElement!==$('slent'))$('slent').value=r.lent;
+  if(document.activeElement!==$('smax'))$('smax').value=r.butee;
+  if(Date.now()-svHint>7000)$('svhint').textContent="Le capteur tourne lentement vers l'angle demandé, jamais au-delà de la limite. Ces angles sont ceux qu'on demande au servo : regardez le capteur pour voir où il va vraiment.";
+ }
  // position
  if(p){const cap=((p.cap+180)%360+360)%360-180;
   $('tcap').textContent=cap.toFixed(0)+'°';$('tpos').textContent=(p.x/10).toFixed(0)+' ; '+(p.y/10).toFixed(0)+' cm';

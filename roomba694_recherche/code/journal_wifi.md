@@ -2790,3 +2790,47 @@ Connaître l'angle vrai du capteur aux deux bouts de sa course : une photo du de
 **Mon erreur** : avoir annoncé que le capteur atteignait 90° d'après l'ordre envoyé au servo, sur deux sections et trois messages à l'utilisateur. Un ordre n'est pas une position : il fallait la comparer au tour sur place avant de l'écrire.
 
 **État à la fin** (14 h 46) : robot à l'arrêt en mode Safe, 80 cm plus loin que tout à l'heure, 0,60 m de libre devant lui, 1 744 mAh (84 %), pas sur sa base, à un endroit que je ne connais toujours pas ; cerveau en v15 ; capteur de distance en marche, devant ; butée 30°. La séance n'est pas fermée.
+
+## 66. Firmware v16 : l'utilisateur oriente lui-même le capteur de distance depuis la page de pilotage (2026-11-21, 14 h 50 à 15 h 08)
+
+Au compte rendu du § 65 (le capteur ne tourne pas de l'angle commandé) et à ma proposition de mesurer l'angle vrai par trois tours sur place, l'utilisateur répond : « Donne moi plutôt le contrôle sur le cervo dans l'interface Q l'adresse ip du robot ou je peux piloter et je vais tester moi même ». Il veut la main sur le servo, dans la page que sert le cerveau.
+
+### 66.1 Ce que la page gagne
+
+Dans la carte du milieu, sous les trois boutons du capteur de distance, un bloc « Orienter le capteur » :
+
+- un curseur, de 90° à gauche à 90° à droite, par pas de 5° ; l'ordre part quand on le lâche ;
+- cinq boutons : 90° G, 45° G, Devant, 45° D, 90° D ; deux boutons de 5° ; **« Stop capteur »**, qui l'arrête où il est ;
+- la vitesse de rotation (1 à 10° par seconde) et **la limite** (la butée du servo, de 15 à 90°). Un angle au-delà de la limite n'est pas envoyé : la page dit de relever la limite d'abord ;
+- en face du titre, où en est le capteur : « 37° à gauche → 90° à gauche », puis « 90° à gauche » ; le bouton du milieu des trois dit « Tourné » quand le capteur ne regarde pas devant.
+
+Tout mouvement demandé par ce bloc, et par les boutons « Arrêté » et « Devant », est lent d'un bout à l'autre, même à l'intérieur de ±30°. La page rappelle que **les angles sont ceux qu'on demande au servo**, pas ceux où le capteur va vraiment (§ 65).
+
+### 66.2 Ce qui change dans le cerveau
+
+Deux paramètres de plus à `/api/radar` : `doux=1` (le mouvement demandé dans la même requête se fait au pas lent partout ; la tâche du capteur lève la demande à l'arrivée) et `fige=1` (la direction visée devient la direction actuelle). Un tour sur place est refusé tant qu'un mouvement lent du capteur est en cours, et il lève une demande `doux` restée en attente : son retour devant se fait d'un coup, comme toujours. Rien d'autre ne change par rapport à la v15.
+
+### 66.3 Vérifié avant d'installer
+
+- La page, extraite de `pages.h` et ouverte dans un navigateur de test sans le robot, avec de fausses réponses du cerveau : aucune erreur de script ; chaque bouton envoie la requête attendue (`mode=fixe&doux=1&angle=45`, `fige=1`, `doux=1&mode=off`…) ; un angle au-delà de la limite n'envoie rien ; trois pressions rapides sur « 5° » donnent 5, 10 puis 15° ; le curseur à droite envoie un angle négatif ; l'affichage tient sur un écran de téléphone (375 points de large).
+  **Une faute rattrapée par cet essai** : mes premières retouches, écrites depuis la ligne de commande, avaient perdu leurs barres obliques inverses ; le script de la page et une ligne de `web.ino` étaient cassés. Corrigé avant toute compilation.
+- Le modèle de la boucle du servo, complété de la demande `doux` : 200 000 itérations d'ordres au hasard, aucun saut de plus d'un degré hors de ±30° ni pendant un mouvement demandé doux ; le balayage à ±30° saute toujours de 10° en 10°.
+- Compilation : 1 156 342 octets (88 %), « v16 Nov 21 2026 15:02:40 » ; binaire gardé (`build/roomba694_v16.bin`, sha256 `c4e97fed…`), celui de la v15 aussi.
+
+### 66.4 Installé et vérifié robot immobile
+
+Envoi par le Wi-Fi à 15 h 03 min 48, robot immobile, capteur devant : « Mise à jour réussie », carte revenue en quatre secondes (« redémarrage logiciel (mise à jour) »), le robot répond en mode Safe, butée 30°, vitesse lente 3°/s.
+
+| Vérification | Résultat |
+|---|---|
+| la page servie par le cerveau | 41 186 caractères, identique à celle essayée dans le navigateur de test |
+| `mode=fixe&doux=1&angle=20` (dans la zone de ±30°) | 1, 2, 3… 12° en 3,7 s : un degré à la fois, 3°/s, au lieu du saut d'avant |
+| `fige=1` pendant ce mouvement | arrêté à 13°, toujours à 13° une seconde et demie plus tard |
+| `doux=1&mode=off` | 14, 13, 12… 0° en 4,6 s, puis mode arrêt, servo relâché |
+| compteurs du capteur | 34 mesures, aucune sans écho, aucune sans réaction |
+
+Le servo n'a pas dépassé 14° pendant ces vérifications ; aucun ordre de roues.
+
+**Non vérifié** : la page sur le téléphone de l'utilisateur ; ce qu'il verra du capteur.
+
+**État à la fin** (15 h 08) : cerveau en **v16** ; capteur de distance à l'arrêt, devant, servo relâché, butée 30°, vitesse lente 3°/s ; robot réveillé en mode Safe, immobile, au même endroit qu'au § 65, 1 697 mAh (82 %), pas sur sa base ; la séance n'est pas fermée : l'utilisateur a la main, par la page.

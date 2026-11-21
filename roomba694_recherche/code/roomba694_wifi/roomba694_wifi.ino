@@ -1,5 +1,15 @@
 /*
   roomba694_wifi.ino — Roomba 694 piloté par un ESP32 : console et page web par Wi-Fi, gyroscope, mises à jour du firmware par Wi-Fi.
+  Version 16 — 2026-11-21 : un seul ajout, demandé par l'utilisateur : orienter lui-même le capteur de distance depuis la
+    page de pilotage (« Donne-moi plutôt le contrôle sur le servo dans l'interface à l'adresse IP du robot où je peux
+    piloter et je vais tester moi-même »). La page gagne un bloc « Orienter le capteur » : un curseur de 90° à gauche à
+    90° à droite, des boutons 90°, 45°, Devant, des pas de 5°, « Stop capteur », la vitesse de rotation (1 à 10°/s) et la
+    limite (la butée, 15 à 90°). Un angle au-delà de la limite n'est pas envoyé : la page demande de la relever d'abord.
+    Côté cerveau, deux paramètres de plus à /api/radar : doux=1 (le mouvement demandé est lent d'un bout à l'autre, même
+    en deçà de 30° ; la page l'envoie toujours) et fige=1 (le capteur s'arrête où il est). Un tour sur place est refusé
+    tant qu'un mouvement lent du capteur est en cours. Rien d'autre ne change : butée, rotation lente au-delà de 30°,
+    retour lent à l'arrêt et après un redémarrage restent ceux de la v15. Les angles sont ceux qu'on demande au servo :
+    mesuré le 21 novembre, 90° demandés n'en font qu'une soixantaine en vrai (journal_wifi.md § 65).
   Version 15 — 2026-11-21 : un seul changement, demandé par l'utilisateur pour lire les murs de côté en roulant : le capteur
     de distance peut tourner jusqu'à 90° de chaque côté, très lentement (« on peut aussi essayer le capteur de distance qui
     tourne de 90 degrés. Pas besoin de photo, fais-le. L'important, c'est que si ça tourne, ça doit tourner très doucement »).
@@ -1259,7 +1269,7 @@ void printInfo() {
              st.ok ? "joignable" : "sans réponse", (unsigned long)(millis() - st.lastOkMs),
              useSplitGroups ? "lecture par les groupes 6 et 101" : "lecture par le groupe 100",
              driving ? "en mouvement" : "arrêtées", driveSpeed, keepAwake ? "actif" : "inactif", csvEnabled ? "actif" : "inactif");
-  out.printf("Firmware roomba694_wifi v15, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
+  out.printf("Firmware roomba694_wifi v16, compilé le %s %s, en marche depuis %lu s, dernier redémarrage : %s\n",
              __DATE__, __TIME__, (unsigned long)(millis() / 1000), resetReasonText());
   out.printf("Depuis le démarrage de la carte : robot vu redémarrer %lu fois ; retrouvé à 19200 bauds et ramené à 115200 : %lu fois.\n",
              (unsigned long)robotBoots, (unsigned long)baudRescues);
@@ -1272,7 +1282,7 @@ void printInfo() {
 
 void printHelp() {
   out.println(F(
-    "\n=== Roomba 694 — console Wi-Fi v15 ===\n"
+    "\n=== Roomba 694 — console Wi-Fi v16 ===\n"
     " ?  aide                         w  impulsion BRC (réveil)\n"
     " s  Start -> Passive             f  Safe (contrôle, sécurités actives)\n"
     " c  Clean                        h  retour à la base\n"
