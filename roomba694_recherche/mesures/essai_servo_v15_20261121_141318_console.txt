@@ -1,0 +1,65 @@
+# essai_servo_v15_20261121_141318 — carte 192.168.18.25 — début 14:13:18.713 le 2026-11-21
+# Premier essai du capteur de distance tourne au-dela de 30 degres, firmware v15 installe a 14 h 13 sur le go de l'utilisateur (« Go »). Robot immobile, aucun ordre de roues. Outil essai_servo_lent.py : paliers 45, 60, 75, 90 degres de chaque cote, rotation lente.
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1795288398.961	14:13:18.960	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1795288398.961	14:13:18.960	Client TCP connecté : 192.168.18.6
+1795288407.663	14:13:27.662	Radar : rotation lente à 3°/s.
+1795288407.683	14:13:27.683	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1795288408.211	14:13:28.211	Radar : capteur HC-SR04 détecté (premier écho reçu).
+1795288412.475	14:13:32.474	Radar : butée du servo à 45° de chaque côté (au-delà de 30°, rotation lente).
+1795288412.527	14:13:32.527	Radar : mode fixe, capteur vers 5° (0 = devant, positif = gauche), 10 mesures/s.
+1795288412.878	14:13:32.877	Radar : mode fixe, capteur vers 10° (0 = devant, positif = gauche), 10 mesures/s.
+1795288413.180	14:13:33.180	Radar : mode fixe, capteur vers 15° (0 = devant, positif = gauche), 10 mesures/s.
+1795288413.517	14:13:33.516	Radar : mode fixe, capteur vers 20° (0 = devant, positif = gauche), 10 mesures/s.
+1795288413.792	14:13:33.791	Radar : mode fixe, capteur vers 25° (0 = devant, positif = gauche), 10 mesures/s.
+1795288414.133	14:13:34.133	Radar : mode fixe, capteur vers 30° (0 = devant, positif = gauche), 10 mesures/s.
+1795288414.440	14:13:34.440	Radar : mode fixe, capteur vers 35° (0 = devant, positif = gauche), 10 mesures/s.
+1795288416.039	14:13:36.038	Radar : mode fixe, capteur vers 40° (0 = devant, positif = gauche), 10 mesures/s.
+1795288417.695	14:13:37.695	Radar : mode fixe, capteur vers 45° (0 = devant, positif = gauche), 10 mesures/s.
+1795288422.474	14:13:42.474	Radar : mode fixe, capteur vers 40° (0 = devant, positif = gauche), 10 mesures/s.
+1795288424.153	14:13:44.152	Radar : mode fixe, capteur vers 35° (0 = devant, positif = gauche), 10 mesures/s.
+1795288425.756	14:13:45.756	Radar : mode fixe, capteur vers 30° (0 = devant, positif = gauche), 10 mesures/s.
+1795288427.346	14:13:47.345	Radar : mode fixe, capteur vers 25° (0 = devant, positif = gauche), 10 mesures/s.
+1795288427.631	14:13:47.630	Radar : mode fixe, capteur vers 20° (0 = devant, positif = gauche), 10 mesures/s.
+1795288427.949	14:13:47.949	Radar : mode fixe, capteur vers 15° (0 = devant, positif = gauche), 10 mesures/s.
+1795288428.236	14:13:48.235	Radar : mode fixe, capteur vers 10° (0 = devant, positif = gauche), 10 mesures/s.
+1795288428.540	14:13:48.540	Radar : mode fixe, capteur vers 5° (0 = devant, positif = gauche), 10 mesures/s.
+1795288428.862	14:13:48.862	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1795288432.171	14:13:52.170	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1795288432.568	14:13:52.567	Radar : butée du servo à 30° de chaque côté.
+1795288481.515	14:14:41.515	Radar : rotation lente à 3°/s.
+1795288481.551	14:14:41.550	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1795288486.329	14:14:46.329	Radar : butée du servo à 60° de chaque côté (au-delà de 30°, rotation lente).
+1795288486.404	14:14:46.403	Radar : mode fixe, capteur vers 35° (0 = devant, positif = gauche), 10 mesures/s.
+1795288497.931	14:14:57.930	Radar : mode fixe, capteur vers 40° (0 = devant, positif = gauche), 10 mesures/s.
+1795288499.579	14:14:59.579	Radar : mode fixe, capteur vers 45° (0 = devant, positif = gauche), 10 mesures/s.
+1795288501.256	14:15:01.255	Radar : mode fixe, capteur vers 50° (0 = devant, positif = gauche), 10 mesures/s.
+1795288502.993	14:15:02.992	Radar : mode fixe, capteur vers 55° (0 = devant, positif = gauche), 10 mesures/s.
+1795288504.454	14:15:04.454	Radar : mode fixe, capteur vers 60° (0 = devant, positif = gauche), 10 mesures/s.
+1795288509.446	14:15:09.445	Radar : butée du servo à 75° de chaque côté (au-delà de 30°, rotation lente).
+1795288509.493	14:15:09.493	Radar : mode fixe, capteur vers 65° (0 = devant, positif = gauche), 10 mesures/s.
+1795288511.198	14:15:11.198	Radar : mode fixe, capteur vers 70° (0 = devant, positif = gauche), 10 mesures/s.
+1795288512.703	14:15:12.703	Radar : mode fixe, capteur vers 75° (0 = devant, positif = gauche), 10 mesures/s.
+1795288517.623	14:15:17.623	Radar : butée du servo à 90° de chaque côté (au-delà de 30°, rotation lente).
+1795288517.688	14:15:17.687	Radar : mode fixe, capteur vers 80° (0 = devant, positif = gauche), 10 mesures/s.
+1795288519.352	14:15:19.352	Radar : mode fixe, capteur vers 85° (0 = devant, positif = gauche), 10 mesures/s.
+1795288521.020	14:15:21.019	Radar : mode fixe, capteur vers 90° (0 = devant, positif = gauche), 10 mesures/s.
+1795288525.854	14:15:25.853	Radar : mode fixe, capteur vers 85° (0 = devant, positif = gauche), 10 mesures/s.
+1795288527.337	14:15:27.337	Radar : mode fixe, capteur vers 80° (0 = devant, positif = gauche), 10 mesures/s.
+1795288528.998	14:15:28.998	Radar : mode fixe, capteur vers 75° (0 = devant, positif = gauche), 10 mesures/s.
+1795288530.851	14:15:30.850	Radar : mode fixe, capteur vers 70° (0 = devant, positif = gauche), 10 mesures/s.
+1795288532.393	14:15:32.392	Radar : mode fixe, capteur vers 65° (0 = devant, positif = gauche), 10 mesures/s.
+1795288534.119	14:15:34.118	Radar : mode fixe, capteur vers 60° (0 = devant, positif = gauche), 10 mesures/s.
+1795288535.678	14:15:35.677	Radar : mode fixe, capteur vers 55° (0 = devant, positif = gauche), 10 mesures/s.
+1795288537.530	14:15:37.529	Radar : mode fixe, capteur vers 50° (0 = devant, positif = gauche), 10 mesures/s.
+1795288539.075	14:15:39.075	Radar : mode fixe, capteur vers 45° (0 = devant, positif = gauche), 10 mesures/s.
+1795288540.713	14:15:40.712	Radar : mode fixe, capteur vers 40° (0 = devant, positif = gauche), 10 mesures/s.
+1795288542.415	14:15:42.414	Radar : mode fixe, capteur vers 35° (0 = devant, positif = gauche), 10 mesures/s.
+1795288544.055	14:15:44.055	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1795288546.308	14:15:46.307	Radar : le capteur ne réagit pas (Echo jamais haut) : vérifier Vcc->5 V, Gnd->GND, Trig->D19, Echo->1 k->D23 (+2 k vers GND).
+1795288546.632	14:15:46.632	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1795288554.650	14:15:54.650	Radar : le capteur réagit de nouveau.
+1795288555.841	14:15:55.840	Radar : butée du servo à 30° de chaque côté.
+1795288564.113	14:16:04.112	Radar : le capteur ne réagit pas (Echo jamais haut) : vérifier Vcc->5 V, Gnd->GND, Trig->D19, Echo->1 k->D23 (+2 k vers GND).
+1795288703.096	14:18:23.096	Radar : arrêt, servo recentré puis relâché.
+1795288705.644	14:18:25.644	## fin de l'enregistrement après 306.9 s

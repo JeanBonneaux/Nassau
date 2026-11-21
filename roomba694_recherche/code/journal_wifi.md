@@ -2604,3 +2604,70 @@ Je n'envoyais rien. À 13 h 57 le robot répondait encore, en mode Safe. À 14 h
 À 14 h 10 min 39, nouvelle lecture : **le cerveau venait d'être remis sous tension** (allumé depuis deux minutes, « mise sous tension », position remise à zéro, capteur de distance à l'arrêt) et le robot répondait de nouveau, en mode Safe, 33 mm roulés depuis ce démarrage : l'utilisateur s'en occupe lui-même. Tout ce que je savais de l'endroit et de l'orientation du robot (les deux tours de 13 h 41) est donc à refaire avant l'essai du servo.
 
 **État à 14 h 11** : robot réveillé, en mode Safe, 1 820 mAh (88 %), pas sur sa base, à un endroit que je ne connais pas ; cerveau en v14, rallumé vers 14 h 09 ; capteur de distance à l'arrêt, devant ; rien n'a été envoyé au servo ; aucun ordre de roues de ma part hormis les deux tours sur place de 13 h 41. La séance n'est pas fermée (`s` puis `x`) : l'utilisateur a la main.
+
+## 63. Firmware v15 installé ; le capteur de distance tourné lentement jusqu'à 90° à gauche ; au retour il cesse de répondre : un de ses fils a perdu le contact (2026-11-21, 14 h 12 à 14 h 20)
+
+À ma question de 14 h 11 (« Go pour installer la version 15 et lancer l'essai, ou pas encore ? »), l'utilisateur répond « Go » à 14 h 12. Il n'a pas répondu à l'autre question (a-t-il touché aux fils du capteur). Robot immobile pendant toute la section ; aucun ordre de roues.
+
+### 63.1 L'installation (14 h 12 min 50 à 14 h 13 min 10)
+
+Avant : cerveau en v14, rallumé à 14 h 09, robot en mode Safe, à l'arrêt, capteur de distance à l'arrêt. Envoi par le Wi-Fi du binaire gardé (`build/roomba694_v15.bin`, sha256 `75a8b6cf…`) : `curl -F "firmware=@…" http://ADRESSE/update`, dix secondes, « Mise à jour réussie, la carte redémarre. »
+
+Après, robot immobile : « v15 Nov 21 2026 13:52:12 », dernier redémarrage « redémarrage logiciel (mise à jour) », le robot répond (mode Safe), capteur de distance : mode arrêt, vers 0°, `cible` 0, **`butee` 30**, `lent` 5. La butée réglée est donc bien restée à 30° : l'installation seule ne change rien à ce que fait le servo.
+
+### 63.2 L'essai, côté gauche (14 h 13 min 29 à 14 h 15 min 26)
+
+Enregistrement `essai_servo_v15_20261121_141318` (`_servo.jsonl` : une ligne par lecture de `/api/state`, cinq fois par seconde ; `_console.txt` ; `_etat.jsonl`). Outil `essai_servo_lent.py`.
+
+| Heure | Passage | Résultat |
+|---|---|---|
+| 14 h 13 min 29 à 52 | gauche, palier 45°, 3°/s, retour | 15 lectures à 45° : médiane 1 505 mm (1 500 à 1 551). Devant : « rien à portée ». Aucun décrochage |
+| 14 h 14 min 43 à 15 min 26 | gauche, paliers 60, 75 et 90°, 3°/s | 60° : 1 433 mm (1 427 à 1 445) ; 75° : 1 430 mm (1 425 à 1 515) ; **90° : 1 513 mm (1 446 à 1 532)** ; 16 lectures à chaque palier |
+
+**Un défaut de mon outil au premier passage**, corrigé avant le second : il demandait le trajet par bonds de 5°, et tant que le bond restait dans la zone de ±30° le firmware le faisait d'un coup, comme avant la v15 (six petits bonds rapides entre 0 et 30°, à l'aller et au retour). L'outil vise maintenant d'une traite l'autre bout de la traversée de la zone (0 → 35°, 35 → 0°), que le firmware fait au pas lent.
+
+Au second passage la rotation est lente d'un bout à l'autre : 0 → 35° en 11,5 s, soit 3°/s comme demandé. **Une lecture à chacun des 91 degrés de l'aller**, rangée avec la direction réelle du capteur :
+
+| Direction du capteur | Distance lue (médiane) |
+|---|---|
+| 0 à 6° | rien à portée |
+| 7 à 18° | 3,29 m |
+| 19 à 32° | 1,76 m |
+| 33 à 49° | 1,51 à 1,53 m |
+| 50 à 89° | 1,42 à 1,45 m |
+| 90° | 1,52 m (deux valeurs qui alternent : 1,45 et 1,52) |
+
+Je ne sais pas ce que sont ces parois : je ne connais pas l'endroit où est le robot, et les deux tours de 13 h 41 ne valent plus (le cerveau a été rallumé et le robot a bougé depuis).
+
+### 63.3 Au retour, le capteur cesse de répondre (14 h 15 min 26 à 14 h 16 min 04)
+
+| Heure | Ce qui se passe |
+|---|---|
+| 14 h 15 min 26 à 44 | retour lent de 90° vers 35° : une lecture à chaque degré, 1,43 à 1,53 m, comme à l'aller |
+| 14 h 15 min 44,7 | dernière lecture : 1 526 mm à 33° |
+| 14 h 15 min 45 à 54 | **plus aucune réaction du capteur de 32° à 4°** (29 degrés, dix secondes) ; console : « Radar : le capteur ne réagit pas (Echo jamais haut) » à 14 h 15 min 46,3 |
+| 14 h 15 min 46,6 | l'outil voit `absent`, s'arrête et demande le retour devant ; le firmware continue son retour lent |
+| 14 h 15 min 54,6 | « le capteur réagit de nouveau » : quatre lectures « rien à portée » à 3, 2, 1 et 0° |
+| 14 h 15 min 55,8 | capteur devant, butée remise à 30° |
+| 14 h 16 min 04,1 | de nouveau « le capteur ne réagit pas », **capteur immobile, devant** ; depuis, toutes les mesures échouent (dix par seconde ; 1 286 échecs au compteur à 14 h 18) |
+
+**Ce que ce n'est pas.** Pas la direction regardée : à l'aller, les mêmes directions (de 4 à 32°) donnaient un écho à chaque degré (3,29 m puis 1,76 m). Pas un redémarrage de la carte : son horloge a couru sans saut du démarrage de 14 h 13 à 14 h 18 (323 s), il n'y a donc pas eu de chute de tension qui l'ait relancée. Pas un Echo resté haut : les échecs se suivent à dix par seconde, ce qui n'arrive que si la ligne Echo est basse au moment du tir.
+
+**Ce que c'est, très probablement** : un des quatre fils du capteur (Vcc, Trig, Echo ou Gnd) a perdu le contact pendant le retour, l'a retrouvé un instant, puis l'a perdu pour de bon. Je ne sais pas lequel. Les quatre décrochages suivis de reprises notés entre 13 h 43 et 14 h 08 (§ 62.6), avant tout mouvement du servo, vont dans le même sens : ce contact était déjà fragile. Non vérifié : il faut voir les fils.
+
+### 63.4 Ce que l'essai dit
+
+- **Le firmware v15 fait ce qui était prévu** : butée inchangée à l'installation, relevée palier par palier puis remise à 30° ; rotation lente à la vitesse demandée ; une mesure par degré avec la vraie direction ; arrêt de l'outil et retour lent quand le capteur se tait. Le retour lent après un redémarrage de la carte (mémoire RTC) n'a pas été mis à l'épreuve : la carte n'a pas redémarré.
+- **Le servo va à 90° à gauche** sans que la carte redémarre. Je ne sais pas s'il forçait en bout de course : l'utilisateur était à côté et n'a rien signalé ; à lui demander.
+- **Les fils ne suivent pas**, même à 3° par seconde : c'est la limite notée le 9 novembre. Avant de continuer il faut voir quel fil a lâché, le remettre, et sans doute rallonger les quatre ou les faire passer autrement. Le côté droit n'a pas été essayé.
+- **Pour la vitesse** : tourné à 90°, le capteur lit une paroi à 1,5 m de façon stable (16 lectures en 3 s entre 1 446 et 1 532 mm, deux valeurs qui alternent à 7 cm l'une de l'autre). C'est assez régulier pour longer un mur ; à refaire devant un mur connu.
+
+### 63.5 Fermeture (14 h 18 à 14 h 19)
+
+Capteur de distance arrêté (`mode=off` : servo au centre, relâché ; butée 30° ; réglage `lent` resté à 3), enregistreur arrêté proprement (1 500 lectures de l'état, aucune en échec), puis `5`, `s`, `x` : le robot ne répond plus au cerveau (dernier mode lu : passif), il peut dormir. Je l'ai fermé de moi-même, sans que l'utilisateur le demande, parce que la suite est une intervention sur les fils, carte débranchée.
+
+**Mon erreur de la section** : l'outil d'essai faisait faire au servo de petits bonds rapides dans la zone de ±30° au premier passage, alors que l'utilisateur avait demandé une rotation très lente ; vu dans les mesures après coup, corrigé pour le second passage.
+
+**Non fait** : le côté droit ; la comparaison des distances lues de côté avec un tour sur place au même endroit (qui donnerait la place du capteur sans règle) ; la ligne droite le long d'un mur.
+
+**État à la fin** (14 h 20) : cerveau allumé, en **v15** ; capteur de distance à l'arrêt, **qui ne répond plus** (un fil à remettre, cerveau débranché, photo d'abord) ; servo au centre, relâché ; robot fermé (`s`, `x`), 1 801 mAh (87 %), pas sur sa base, à un endroit que je ne connais pas.

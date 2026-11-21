@@ -106,8 +106,16 @@ def aller(angle, etape):
     while cur != angle:
         bond = max(-a.pas, min(a.pas, angle - cur))
         vise = cur + bond
+        # Ne jamais viser un point de la zone éprouvée (±30°) quand le mouvement en sort ou y rentre : le firmware ferait
+        # ce bond-là d'un coup, comme avant la v15 (vu au premier palier du 2026-11-21 : six bonds rapides de 5° entre
+        # 0 et 30°). On vise alors l'autre bout de la traversée : le firmware la fait d'une traite, au pas lent.
+        if abs(vise) <= ZONE and (abs(cur) > ZONE or abs(angle) > ZONE):
+            if abs(angle) > ZONE:
+                vise = (1 if angle > 0 else -1) * min(abs(angle), ZONE + a.pas)   # sortie : jusqu'à 35° d'une traite
+            else:
+                vise = angle                                                       # rentrée : jusqu'à la cible d'une traite
         get("/api/radar?mode=fixe&angle=%d" % vise)
-        limite = time.time() + abs(bond) / max(1, a.lent) + 4.0
+        limite = time.time() + abs(vise - cur) / max(1, a.lent) + 5.0
         while True:
             time.sleep(0.2)
             e = lire(etape=etape, vise=vise)
