@@ -2946,7 +2946,7 @@ Compteurs du capteur depuis le démarrage du cerveau à 15 h 19 : 17 836 mesures
 
 **État à la fin** (15 h 56) : robot fermé, 1 572 mAh (76 %), pas sur sa base, à un endroit que je ne connais pas ; cerveau allumé, en v16 ; capteur de distance au repos, devant ; limite du servo à 90°, vitesse 10°/s.
 
-## 69. Firmware v17 écrit et compilé, pas installé : corriger une avance en cours, ralentir sur les capteurs optiques ; le programme qui longe un mur ; la simulation refaite avec le bruit réel (2026-11-21, 15 h 57 à 16 h 20)
+## 69. Firmware v17 écrit et compilé, pas installé : corriger une avance en cours, ralentir sur les capteurs optiques ; le programme qui longe un mur ; la simulation refaite avec le bruit réel (2026-11-21, 15 h 57 à 16 h 10)
 
 La suite demandée par l'utilisateur (« Ok côté droit puis la suite »), et sa demande d'y associer les capteurs optiques (« n'oublions pas d'inclure les capteurs optiques dans le plan du code pour bien longer », note P § 9.5). Rien n'a été envoyé au robot pendant cette section : il dort depuis 15 h 55.
 
@@ -2990,4 +2990,4 @@ Durée des 3,9 m : 27 à 37 s dans tous les cas.
 
 **Limites.** Une simulation, plus indulgente que l'appartement sur les parois et sur le capteur. Le firmware v17 et `longe_mur.py` n'ont pas roulé.
 
-**État à la fin** (16 h 20) : robot fermé depuis 15 h 55, pas sur sa base, 76 % à la dernière lecture ; cerveau allumé, en **v16** ; la v17 est sur le PC, pas installée. En attente du go de l'utilisateur pour l'installer et l'essayer.
+**État à la fin** (16 h 10) : robot fermé depuis 15 h 55, pas sur sa base, 76 % à la dernière lecture ; cerveau allumé, en **v16** ; la v17 est sur le PC, pas installée. En attente du go de l'utilisateur pour l'installer et l'essayer.
