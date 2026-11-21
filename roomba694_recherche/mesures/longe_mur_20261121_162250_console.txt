@@ -1,0 +1,94 @@
+# longe_mur_20261121_162250 — carte 192.168.18.25 — début 16:22:50.880 le 2026-11-21
+# Suivi d'un mur, capteur de distance tourne a droite, firmware v17. L'utilisateur a place le robot le long d'un mur degage (« C'est fait, mur a droite », 16 h 22). longe_mur.py, 100 mm/s.
+# colonnes : secondes PC (epoch) <tab> heure PC <tab> ligne reçue ; « >> » = touche envoyée par l'outil
+1795296171.001	16:22:51.001	Console Roomba 694 par Wi-Fi. Une touche puis Entrée, '?' pour l'aide.
+1795296171.001	16:22:51.001	Client TCP connecté : 192.168.18.6
+1795296171.906	16:22:51.905	>> j
+1795296171.933	16:22:51.933	Journal CSV activé (une ligne à chaque lecture du robot, 20 par seconde, sur l'USB et la console TCP).
+1795296172.412	16:22:52.412	>> e
+1795296173.421	16:22:53.421	>> e
+1795296174.432	16:22:54.431	>> e
+1795296175.442	16:22:55.441	>> e
+1795296176.451	16:22:56.450	>> e
+1795296176.579	16:22:56.578	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1795296177.461	16:22:57.460	>> e
+1795296178.419	16:22:58.418	>> e
+1795296179.363	16:22:59.362	Radar : butée du servo à 90° de chaque côté (au-delà de 30°, rotation lente).
+1795296179.430	16:22:59.430	>> e
+1795296179.433	16:22:59.432	Radar : mode fixe, capteur vers -35° (0 = devant, positif = gauche), 10 mesures/s.
+1795296180.442	16:23:00.441	>> e
+1795296181.451	16:23:01.451	>> e
+1795296182.412	16:23:02.412	>> e
+1795296183.323	16:23:03.322	Radar : mode fixe, capteur vers -40° (0 = devant, positif = gauche), 10 mesures/s.
+1795296183.424	16:23:03.424	>> e
+1795296183.921	16:23:03.920	Radar : mode fixe, capteur vers -45° (0 = devant, positif = gauche), 10 mesures/s.
+1795296184.435	16:23:04.434	>> e
+1795296184.577	16:23:04.576	Radar : mode fixe, capteur vers -50° (0 = devant, positif = gauche), 10 mesures/s.
+1795296185.143	16:23:05.142	Radar : mode fixe, capteur vers -55° (0 = devant, positif = gauche), 10 mesures/s.
+1795296185.447	16:23:05.447	>> e
+1795296185.766	16:23:05.766	Radar : mode fixe, capteur vers -60° (0 = devant, positif = gauche), 10 mesures/s.
+1795296186.318	16:23:06.317	Radar : mode fixe, capteur vers -65° (0 = devant, positif = gauche), 10 mesures/s.
+1795296186.457	16:23:06.457	>> e
+1795296186.930	16:23:06.929	Radar : mode fixe, capteur vers -70° (0 = devant, positif = gauche), 10 mesures/s.
+1795296187.416	16:23:07.416	>> e
+1795296187.542	16:23:07.541	Radar : mode fixe, capteur vers -75° (0 = devant, positif = gauche), 10 mesures/s.
+1795296188.109	16:23:08.109	Radar : mode fixe, capteur vers -80° (0 = devant, positif = gauche), 10 mesures/s.
+1795296188.426	16:23:08.426	>> e
+1795296188.727	16:23:08.727	Radar : mode fixe, capteur vers -85° (0 = devant, positif = gauche), 10 mesures/s.
+1795296189.282	16:23:09.281	Radar : mode fixe, capteur vers -90° (0 = devant, positif = gauche), 10 mesures/s.
+1795296189.437	16:23:09.436	>> e
+1795296190.446	16:23:10.446	>> e
+1795296191.456	16:23:11.455	>> e
+1795296191.587	16:23:11.586	Mouvement 3 : vitesse plafonnée à 60 mm/s tant qu'un capteur optique de devant lit 100 ou plus.
+1795296191.587	16:23:11.586	Mouvement 3 : avance de 500 mm à 100 mm/s au plus, cap tenu à +0.0° du cap actuel. 5 ou espace pour arrêter.
+1795296192.415	16:23:12.415	>> e
+1795296193.426	16:23:13.425	>> e
+1795296194.438	16:23:14.437	>> e
+1795296195.447	16:23:15.447	>> e
+1795296196.456	16:23:16.456	>> e
+1795296197.415	16:23:17.415	>> e
+1795296198.424	16:23:18.424	>> e
+1795296199.435	16:23:19.435	>> e
+1795296200.446	16:23:20.445	>> e
+1795296201.456	16:23:21.456	>> e
+1795296202.417	16:23:22.416	>> e
+1795296203.425	16:23:23.425	>> e
+1795296204.434	16:23:24.434	>> e
+1795296204.541	16:23:24.540	Mouvement 3 : 1399 mm pour 1400 mm demandés, cap -16.1°, distance atteinte. Roues arrêtées.
+1795296204.541	16:23:24.540	Mouvement 3 : 55 retouche(s) ; capteurs optiques de devant : seuil 100, plus forte lecture 17, 0 ordre(s) de roues ralenti(s).
+1795296205.445	16:23:25.445	>> e
+1795296205.996	16:23:25.996	Radar : mode fixe, capteur vers 0° (0 = devant, positif = gauche), 10 mesures/s.
+1795296206.457	16:23:26.456	>> e
+1795296207.417	16:23:27.416	>> e
+1795296208.431	16:23:28.430	>> e
+1795296209.442	16:23:29.441	>> e
+1795296210.452	16:23:30.452	>> e
+1795296211.413	16:23:31.413	>> e
+1795296212.424	16:23:32.423	>> e
+1795296213.435	16:23:33.434	>> e
+1795296214.447	16:23:34.446	>> e
+1795296215.457	16:23:35.456	>> e
+1795296216.417	16:23:36.416	>> e
+1795296217.425	16:23:37.425	>> e
+1795296218.435	16:23:38.435	>> e
+1795296219.446	16:23:39.445	>> e
+1795296220.457	16:23:40.456	>> e
+1795296221.417	16:23:41.416	>> e
+1795296222.429	16:23:42.428	>> e
+1795296223.438	16:23:43.437	>> e
+1795296224.448	16:23:44.448	>> e
+1795296225.457	16:23:45.457	>> e
+1795296226.418	16:23:46.418	>> e
+1795296227.430	16:23:47.429	>> e
+1795296228.437	16:23:48.437	>> e
+1795296229.447	16:23:49.447	>> e
+1795296230.457	16:23:50.457	>> e
+1795296231.416	16:23:51.416	>> e
+1795296232.424	16:23:52.424	>> e
+1795296233.435	16:23:53.435	>> e
+1795296234.446	16:23:54.445	>> e
+1795296235.457	16:23:55.457	>> e
+1795296236.420	16:23:56.420	>> e
+1795296236.420	16:23:56.420	>> j
+1795296236.517	16:23:56.516	Journal CSV désactivé.
+1795296237.528	16:23:57.528	## fin de l'enregistrement après 66.6 s

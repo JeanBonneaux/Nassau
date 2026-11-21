@@ -51,6 +51,7 @@ p.add_argument("--opt", type=int, default=100, help="seuil des capteurs optiques
 p.add_argument("--flanc", type=int, default=100, help="seuil du capteur optique du flanc, côté mur (0 : pas de garde)")
 p.add_argument("--horizon", type=int, default=500, help="mm : le but est tenu à cette distance devant le robot")
 p.add_argument("--marge", type=int, default=450, help="place qui doit rester devant après le trajet, mm")
+p.add_argument("--mur-max", type=int, default=2000, help="mm : à l'arrêt, le mur doit être lu à moins que cela, sinon rien ne bouge (le 2026-11-21 un tour sur place avait fait croire à un mur qui n'y était pas)")
 p.add_argument("--ouverture", type=int, default=250, help="mm : un mur lu plus loin que la consigne de cette valeur est tenu pour une ouverture")
 p.add_argument("--lent", type=int, default=0, help="vitesse de rotation du capteur, degrés par seconde (0 : celle déjà réglée)")
 p.add_argument("--pas", type=int, default=5)
@@ -198,6 +199,9 @@ try:
     if len(vus) < 4 or len(vus) * 2 < len(A0):
         raise Arret("pas de mur à moins de %d mm de ce côté (%d lectures utiles sur %d)" % (PORTEE_MUR, len(vus), len(A0)))
     d0 = statistics.median(vus)
+    if d0 > a.mur_max or max(vus) - min(vus) > 120:
+        raise Arret("ce que le capteur lit de ce côté ne ressemble pas au mur attendu : %d mm (de %d à %d), pour %d mm au plus et 120 mm de dispersion" % (
+            d0, min(vus), max(vus), a.mur_max))
     ecart = a.ecart or d0
     print("%s  mur lu à %d mm (de %d à %d) ; écart à tenir : %d mm ; vitesse %d mm/s ; optique devant %s, flanc %s." % (
         heure(), d0, min(vus), max(vus), ecart, a.vitesse, a.opt or "sans", a.flanc or "sans"))

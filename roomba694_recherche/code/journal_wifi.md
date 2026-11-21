@@ -3056,3 +3056,41 @@ Tour sur place d'abord : une paroi proche à droite (0,43 m, de −110 à −80�
 **Mes erreurs de la section** : choisi la droite d'après le tour sans voir que la paroi proche était en arrière du robot ; le suivi lancé avec une longueur de pente trop courte pour le bruit mesuré une heure plus tôt.
 
 **État à la fin** (16 h 19) : robot à l'arrêt en mode Safe, 2,1 m plus loin qu'à 16 h 13, 0,77 m de libre devant lui, 75 % de batterie, pas sur sa base ; cerveau en **v17** ; capteur de distance en marche, devant ; limite du servo 90°, vitesse 10°/s. La séance n'est pas fermée.
+
+## 71. Premier mur longé sans arrêt : 1,4 m à 108 mm/s, à 2 cm près sur le premier mètre (2026-11-21, 16 h 22 à 16 h 24)
+
+À ma demande (§ 70 : il me faut un vrai mur), l'utilisateur a conduit le robot le long d'un mur dégagé et écrit à 16 h 22 : « C'est fait, mur à droite ». Je ne sais pas de quel mur il s'agit. Enregistrement `longe_mur_20261121_162250`. Firmware v17.
+
+`longe_mur.py --cote d --distance 1400 --vitesse 100 --opt 100 --flanc 100 --mur-max 800`. L'outil a une vérification de plus : il ne part que si le capteur tourné lit, à l'arrêt, un mur à moins de `--mur-max` avec moins de 12 cm de dispersion (leçon du § 70).
+
+| Étape | Résultat |
+|---|---|
+| capteur devant | 1 944 mm de libre : trajet ramené de 2 m à 1,4 m |
+| capteur tourné à droite, à l'arrêt | **mur à 433 mm** (432 à 438) : c'est la consigne |
+| le trajet | **1 399 mm pour 1 400 en 13,0 s, soit 108 mm/s en moyenne (82 à 140), d'un seul trait ; aucun contact** |
+| le mur | **lu 117 fois sur 117**, une lecture tous les 12 mm |
+| retouches | 55 envoyées, 55 prises ; 13,5 lectures de l'état par seconde |
+| capteurs optiques | devant : 17 au plus, aucun ralentissement ; flanc droit : garde jamais déclenchée |
+| à l'arrêt | mur à 477 mm ; capteur ramené devant : 665 mm devant |
+
+**L'écart au mur le long du trajet** (lecture moins la consigne) :
+
+| Chemin | Écart à la consigne | Cap du robot |
+|---|---|---|
+| de 0 à 40 cm | de 0 à +19 mm (médian +9) | 0° |
+| de 40 à 90 cm | de −1 à +19 mm (médian +10) | de 0 à −1,5° |
+| de 90 cm à 1 m | −4 à +7 mm | −1,5 à −0,3° |
+| à 1,07 m | +41 mm | −0,3° |
+| à 1,15 m | **+111 mm** | −3° |
+| de 1,24 à 1,38 m | +89, +67, +44 mm | −9, −14, −16° |
+
+**Sur le premier mètre le robot tient le mur à 2 cm près**, avec des corrections de cap de 2,6° au plus. Vers 1,05 m **le mur recule de 11 cm** (je ne sais pas ce que c'est : un renfoncement, un montant, la fin d'un meuble) ; moins de 25 cm, donc pas une ouverture pour le programme, qui le suit : il tourne vers le mur jusqu'à 16° et a déjà repris 7 des 11 cm quand le trajet s'arrête.
+
+### Ce que cela dit
+
+- **Longer un mur sans s'arrêter marche** : écart tenu à 2 cm près tant que le mur est droit, à 108 mm/s, avec la boucle sur le PC et une lecture tous les 12 mm. Le 14, le couloir mené par arrêts avançait à 12 mm/s de moyenne (3,9 m en 319 s).
+- **La réaction à un décrochement de 11 cm est trop vive** : 16° de cap pour 11 cm. La correction d'écart est plafonnée à 10°, mais l'axe du mur, relu dans la pente, a pris ce recul pour un mur qui tourne (−14°) et s'y est ajouté. À régler : ne pas laisser l'axe suivre un recul aussi court, ou plafonner la somme. Rien n'est changé pour l'instant.
+- **Le ralentissement optique et la garde du flanc n'ont pas eu à jouer** : toujours pas éprouvés.
+- **Un seul trajet, un seul mur, un seul sens** ; le côté gauche n'a pas été essayé avec ce programme, ni une vitesse au-dessus de 100 mm/s demandés.
+
+**État à la fin** (16 h 24) : robot à l'arrêt en mode Safe au bout de son trajet, tourné de 16° vers le mur, à 48 cm de lui au capteur, 0,66 m de libre devant ; 73 % de batterie, pas sur sa base ; cerveau en v17 ; capteur de distance en marche, devant. La séance n'est pas fermée.
