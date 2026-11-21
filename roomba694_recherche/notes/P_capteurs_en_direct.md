@@ -188,9 +188,9 @@ Le 15, sur six trajets : 92 m en 3 h 02, soit un demi-mètre par minute. Le robo
 1. **Firmware v15 : le capteur jusqu'à 90°, lentement.** Écrit et compilé le 21, pas installé (journal § 62.3). Essai robot immobile au go de l'utilisateur (`essai_servo_lent.py`).
 2. **Une ligne droite de 2 m le long d'un mur, capteur tourné**, sans rien corriger : ce que le capteur lit en roulant (bruit, trous, cadres de porte). Les lectures viennent de `/api/state`, que l'enregistreur relit jusqu'à dix fois par seconde (`--etat 0.1`) ; aucun changement de firmware.
 3. **Firmware v16 : la retouche en route.** Pendant une avance, `/api/mouv?cap=…` déplace le cap visé et `&plus=MM` prolonge la distance, sans arrêt ; si le PC se tait, l'avance va à son terme et s'arrête, comme aujourd'hui. Dans le même firmware : la dernière distance lue et l'angle du servo dans le journal à 20 lignes par seconde (§ 8.3, points 2 et 3), ce qui oblige à adapter `enregistreur.py` et `pilote.py` du même geste.
-4. **Longer un mur** (`suivi_lateral.py` de l'audit, un seul côté) : d'abord le couloir. But : 3,9 m en moins d'une minute, contre 5 min 19 le 14.
+4. **Longer un mur** (`suivi_lateral.py` de l'audit, un seul côté) : d'abord le couloir. But : 3,9 m en moins d'une minute, contre 5 min 19 le 14. **Avec les capteurs optiques dès le départ** (demande de l'utilisateur du 21, § 9.5) : le capteur de distance donne l'écart au mur, le capteur optique du flanc, du côté du mur, dit quand le robot le serre de trop près.
 5. **Le trajet rejoué d'une commande** : une liste de tronçons (mur à longer et à quelle distance, cap à tenir, porte, recalage sur les faisceaux de la base ou la baguette du seuil), exécutée sans moi.
-6. **Garder un œil devant.** Capteur tourné de côté, plus rien ne regarde devant que le pare-chocs. Les capteurs optiques du pare-chocs annonçaient 7 contacts sur 17 le 15 (§ 2) : un réflexe du cerveau qui ralentit quand ils voient quelque chose.
+6. **Garder un œil devant.** Capteur tourné de côté, plus rien ne regarde devant que le pare-chocs. Les capteurs optiques du pare-chocs annonçaient 7 contacts sur 17 le 15 (§ 2) : un réflexe du cerveau qui ralentit quand ils voient quelque chose. À faire avec le suivi de mur et non après lui (§ 9.5).
 7. **Le gyroscope compté sur son axe vrai** (journal § 62.2) : moins de cap perdu, donc moins de recalages.
 
 Chaque firmware reste une modification à la fois, vérifiée robot immobile, installée avec l'accord de l'utilisateur.
@@ -210,3 +210,23 @@ Outil nouveau `code/outils/essai_longe_mur.py`. L'essai de l'audit supposait deu
 Trois choses à en retenir. **Un seul côté suffit**, à condition de dire au robot à quelle distance du mur rouler : « la distance du départ » échoue une fois sur trois dès que le couloir se resserre ; cette distance se lit sur le plan, tronçon par tronçon. **Le PC peut tenir la boucle** (cinq corrections par seconde, un quart de seconde de retard) : le mettre dans le cerveau ne gagne que 7 à 13 mm de jeu ; il n'y a donc pas besoin d'un gros firmware pour commencer, la retouche en route suffit. **L'axe du couloir est retrouvé à moins d'un degré** (0,2 à 0,7° en médiane, 2° au pire) par la seule pente du mur : un cap qui ne dépend pas du gyroscope. Durée : une demi-minute au lieu de cinq minutes.
 
 **Limites.** C'est une simulation, plus indulgente que l'appartement : vrais murs avec plinthes, cadres de porte, objets posés, et un capteur à ultrasons qui ne lit rien sur une surface molle ou très oblique. Le jeu de 7 à 15 mm au pire, du côté de l'ouverture, est petit. Rien de tout cela n'a roulé.
+
+### 9.5 Ce que les essais du 21 et l'utilisateur ajoutent au plan
+
+**Ce qui est acquis le 21** (journal § 62 à § 67) : le capteur de distance tourne lentement au-delà de 30° (firmware v15), l'utilisateur l'oriente lui-même depuis la page (v16), et, tourné à gauche, il lit un mur pendant que le robot roule : son relief et sa fin au bon endroit du trajet, une lecture tous les 13 mm, un bruit de 2 cm en roulant (1 cm à l'arrêt). Le côté droit ne lisait pas ce qu'il devait à 15 h 15 ; l'utilisateur dit l'avoir réparé, ce n'est pas remesuré.
+
+**Le côté droit compte pour plus tard** (remarque de l'utilisateur) : la brosse latérale est à droite. Pour nettoyer le sol au pied d'un mur, le mur devra être à droite du robot. Un seul côté suffit pour aller vite ; les deux serviront pour nettoyer.
+
+**Le capteur de distance peut servir même tout près du mur** (correction de l'utilisateur à ce que j'avais écrit) : j'avais dit qu'il ne conviendrait pas pour serrer un mur à 1 ou 2 cm, parce qu'il ne mesure pas en dessous de 2 cm. C'était mal raisonné : le capteur est sur le dessus du robot, vers son axe, et non sur son flanc. Flanc du robot à 1 ou 2 cm du mur, il en est encore à une quinzaine de centimètres (le demi-diamètre du robot, 17 cm, moins son propre décalage vers le mur, plus l'écart). Ce qui reste à mesurer n'est pas sa portée mais sa précision à cette distance.
+
+**Les capteurs optiques entrent dans le suivi de mur dès le départ** (demande de l'utilisateur : « n'oublions pas d'inclure les capteurs optiques dans le plan du code pour bien longer »). Trois entrées, trois rôles :
+
+| Capteur | Ce qu'il donne | Rôle dans le suivi de mur |
+|---|---|---|
+| capteur de distance, tourné du côté du mur | l'écart au mur, de 15 cm à 2 m, à 1 ou 2 cm près, dix fois par seconde | tenir l'écart et, par la pente de l'écart le long du chemin, l'angle du robot par rapport au mur |
+| capteur optique du flanc, du côté du mur (celui de droite est aussi le « capteur de mur » du robot, note J) | une valeur qui monte quand une paroi est à moins de 6 cm du flanc (§ 3) ; pas une distance | garde-fou : s'écarter quand il monte ; plus tard, serrer le mur de près pour le nettoyage |
+| capteurs optiques de devant (quatre) | une valeur qui monte devant un obstacle proche ; 7 contacts sur 17 annoncés le 15 (§ 2) | ralentir, puis s'arrêter : capteur de distance tourné de côté, c'est le seul regard vers l'avant avec le pare-chocs |
+
+Ces six capteurs sont déjà lus par le cerveau vingt fois par seconde (`robot.light` dans `/api/state`, colonnes `lb_*` du journal). Le garde-fou du flanc et le ralentissement devant doivent vivre **dans le cerveau**, où ils ne dépendent pas du Wi-Fi ; la tenue de l'écart au mur peut rester sur le PC (§ 9.4). Les seuils sont à tirer des enregistrements du 15 et du 21, pas à deviner.
+
+Ordre révisé : (a) firmware v17 : retouche du cap et de la distance pendant une avance, et ralentissement sur les capteurs optiques de devant ; (b) la boucle du PC qui longe un mur, avec le capteur du flanc comme garde-fou ; (c) le trajet rejoué d'une commande. Chaque firmware reste une modification vérifiée robot immobile et installée avec l'accord de l'utilisateur.
