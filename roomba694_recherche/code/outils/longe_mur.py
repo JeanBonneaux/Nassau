@@ -34,6 +34,7 @@ import time
 import urllib.request
 
 from suivi_lateral import SuiviLateral
+from suivi_mur import SuiviMur
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -60,6 +61,10 @@ p.add_argument("--mediane", type=int, default=5)
 p.add_argument("--pente-min", type=float, default=400.0, help="mm de paroi qu'il faut avoir longés avant d'en lire la pente (l'axe du mur)")
 p.add_argument("--gain", type=float, default=1.0, help="radians de correction de cap par mètre d'écart")
 p.add_argument("--cap-max", type=float, default=10.0, help="correction de cap la plus forte, degrés")
+p.add_argument("--suivi", choices=["mur", "lateral"], default="mur", help="mur : le suivi par droite (suivi_mur.py, journal § 72) ; lateral : celui du premier mur longé (journal § 71), qui tournait de 16° devant un recul du mur en pente")
+p.add_argument("--saut", type=float, default=30.0, help="suivi « mur » : mm d'écart à la droite du mur au-delà desquels une lecture est une autre paroi")
+p.add_argument("--adopte", type=float, default=400.0, help="suivi « mur » : mm sur lesquels une autre paroi doit tenir en ligne droite avant de devenir le mur")
+p.add_argument("--avance-capteur", type=float, default=130.0, help="suivi « mur » : mm du centre du robot à l'axe du servo, vers l'avant (estimé, pas mesuré à la règle)")
 a = p.parse_args()
 ZONE = 30
 ANGLE = 90 if a.cote == "g" else -90
@@ -205,9 +210,15 @@ try:
     ecart = a.ecart or d0
     print("%s  mur lu à %d mm (de %d à %d) ; écart à tenir : %d mm ; vitesse %d mm/s ; optique devant %s, flanc %s." % (
         heure(), d0, min(vus), max(vus), ecart, a.vitesse, a.opt or "sans", a.flanc or "sans"))
-    suivi = SuiviLateral(axe=0.0, gain=a.gain, cap_max=a.cap_max, fenetre=a.fenetre, portee=PORTEE_MUR, v_max=a.vitesse,
-                         v_serre=min(80, a.vitesse), rayon=150.0, mediane=a.mediane, pente_min=a.pente_min)
-    suivi.pose = (ecart, ecart)
+    if a.suivi == "mur":
+        suivi = SuiviMur(a.cote, ecart, gain=a.gain, cap_max=a.cap_max, fenetre=a.fenetre, pente_min=a.pente_min, saut=a.saut,
+                         ouverture=a.ouverture, adopte=a.adopte, avance_capteur=a.avance_capteur, portee=PORTEE_MUR,
+                         v_max=a.vitesse, v_serre=min(80, a.vitesse), rayon=150.0, mediane=a.mediane)
+        suivi.amorce(d0)
+    else:
+        suivi = SuiviLateral(axe=0.0, gain=a.gain, cap_max=a.cap_max, fenetre=a.fenetre, portee=PORTEE_MUR, v_max=a.vitesse,
+                             v_serre=min(80, a.vitesse), rayon=150.0, mediane=a.mediane, pente_min=a.pente_min)
+        suivi.pose = (ecart, ecart)
     # 3. le départ
     r = get("/api/mouv?av=%d&v=%d%s" % (min(a.horizon, a.distance), a.vitesse, ("&opt=%d" % a.opt) if a.opt else ""))
     if r.get("etat") != 1:
@@ -225,7 +236,11 @@ try:
     fin = None
     while True:
         time.sleep(0.03)
-        e = lire("longe", cv=round(cap_vise, 1), vv=round(v_vise))
+        if a.suivi == "mur":                 # ce que le suivi retenait à la lecture d'avant : où il croit le mur, et son axe
+            e = lire("longe", cv=round(cap_vise, 1), vv=round(v_vise), et=suivi.etat, ax=round(suivi.axe, 1),
+                     di=None if suivi.dist is None else round(suivi.dist))
+        else:
+            e = lire("longe", cv=round(cap_vise, 1), vv=round(v_vise))
         mv, ra, rb = e["mouv"], e["radar"], e["robot"]
         now = time.time()
         s = mv["fait_mm"]
@@ -239,7 +254,14 @@ try:
         lecture = None
         if ra.get("a") == ANGLE and ra.get("mm_age", 9999) < 400:
             tm = round((e["ms"] - ra["mm_age"]) / 20.0)
-            if tm not in vus_m:
+            if tm not in vus_m and a.suivi == "mur":
+                # Le suivi par droite fait lui-même la part du mur, d'une avancée, d'un renfoncement et d'une ouverture.
+                vus_m.add(tm)
+                lecture = ra["mm"] if 0 < ra["mm"] <= PORTEE_MUR else None
+                s_m = s - v_est * ra["mm_age"] / 1000.0
+                cap_vise, v_vise = suivi.pas(s_m, mv["fait_deg"], lecture)
+                R.append((s_m, ra["mm"], mv["fait_deg"], cap_vise))
+            elif tm not in vus_m:
                 vus_m.add(tm)
                 lecture = ra["mm"] if 0 < ra["mm"] <= PORTEE_MUR else None
                 # Un mur qui RECULE D'UN COUP de plus de --ouverture est une ouverture (porte, fin du mur) : avec un seul
@@ -298,8 +320,13 @@ try:
         print("              mur lu %d fois sur %d lectures (une tous les %.0f mm) : médiane %d mm, de %d à %d ; écart à la consigne : médian %+d mm, pire %+d mm, écart-type %.0f mm" % (
             len(V), len(R), (mj.get("fait_mm") or 0) / max(1, len(R)), statistics.median([mm for _, mm in V]), min(mm for _, mm in V),
             max(mm for _, mm in V), statistics.median(ec), max(ec, key=abs), statistics.pstdev(ec)))
-        print("              mur perdu sur %.0f mm de chemin (%d ouverture(s)) ; axe du mur trouvé à %+.1f° du cap de départ ; dernier cap visé %+.1f°" % (
-            perdu_mm, n_ouvert, suivi.axe, cap_vise))
+        if a.suivi == "mur":
+            print("              autres parois : %d avancée(s), %d recul(s) ou renfoncement(s), %d ouverture(s), %d prise(s) pour le mur ; "
+                  "%.0f mm faits sur la droite du mur gardée à l'estime ; axe du mur trouvé à %+.1f° du cap de départ ; dernier cap visé %+.1f°" % (
+                      suivi.n_pres, suivi.n_loin, suivi.n_ouvert, suivi.n_adopte, suivi.tenu_mm, suivi.axe, cap_vise))
+        else:
+            print("              mur perdu sur %.0f mm de chemin (%d ouverture(s)) ; axe du mur trouvé à %+.1f° du cap de départ ; dernier cap visé %+.1f°" % (
+                perdu_mm, n_ouvert, suivi.axe, cap_vise))
     A1 = lectures("cote_arret_apres", 1.2, ANGLE)
     v1 = [x for x in A1 if x > 0]
     if v1:

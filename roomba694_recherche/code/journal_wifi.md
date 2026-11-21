@@ -3094,3 +3094,87 @@ Tour sur place d'abord : une paroi proche à droite (0,43 m, de −110 à −80�
 - **Un seul trajet, un seul mur, un seul sens** ; le côté gauche n'a pas été essayé avec ce programme, ni une vitesse au-dessus de 100 mm/s demandés.
 
 **État à la fin** (16 h 24) : robot à l'arrêt en mode Safe au bout de son trajet, tourné de 16° vers le mur, à 48 cm de lui au capteur, 0,66 m de libre devant ; 73 % de batterie, pas sur sa base ; cerveau en v17 ; capteur de distance en marche, devant. La séance n'est pas fermée.
+
+## 72. Pourquoi le robot a tourné de 16° devant un recul du mur ; le suivi refait : le mur suivi comme une droite ; vérifié en simulation et sur l'enregistrement du § 71, rien n'a roulé (2026-11-21, 16 h 27 à 16 h 48)
+
+Une nouvelle session reprend le pilotage à 16 h 27 : celle des § 62 à 71 passe la main, elle n'envoie plus rien au robot et n'écrit plus dans le dépôt. État relu à 16 h 28 puis à 16 h 46 (`etat_cerveau.py`) : inchangé depuis le § 71 (mode Safe, à l'arrêt, 666 mm devant, capteur à 0°, v17 ; batterie 73 % puis 71 %). **Rien n'a été envoyé au robot pendant cette section** : la question du § 71 (le retour le long du même mur) attend toujours la réponse de l'utilisateur.
+
+### 72.1 La cause : le mur ne recule pas d'un coup, il recule en pente
+
+Les lectures du capteur à la fin du trajet du § 71 (`longe_mur_20261121_162250_longe.jsonl`), une ligne par lecture nouvelle :
+
+| Chemin | Lecture | Cap du robot |
+|---|---|---|
+| 980 mm | 430 | −0,5° |
+| 1 003, 1 016 mm | 440, 441 | −0,3° |
+| 1 032, 1 044 mm | 454, 465 | −0,3° |
+| 1 060, 1 073 mm | 471, 474 | −0,3° |
+| 1 083, 1 095 mm | 501, 515 | −0,5° |
+| 1 134, 1 150 mm | 552, 544 | −2,2 puis −3,0° |
+
+Le mur recule de 11 cm **sur 15 cm de chemin**, pendant que le robot roule encore droit : une pente, pas une marche (je ne sais pas ce que c'est : un pan coupé, un battant de porte de biais, ou l'arête d'un meuble que le cône du capteur quitte peu à peu). Le suivi de l'audit (`suivi_lateral.py`) ne commence une nouvelle paroi que si deux lectures de suite diffèrent de plus de 30 mm ; ici elles diffèrent de 1 à 27 mm. La pente est donc restée dans la même « paroi », la droite calculée sur les 600 derniers millimètres s'est inclinée, et l'axe du mur retenu est passé de −0,2° à −13,5° en 35 cm. La correction d'écart (3 à 6°) s'y est ajoutée : 16,6° demandés. Le rejeu de l'enregistrement avec ce suivi (`rejeu_longe.py --suivi lateral`, outil nouveau) redonne le cap demandé ce jour-là, à 0,5° près, jusqu'à 16,7°.
+
+### 72.2 Le suivi refait (`code/outils/suivi_mur.py`, classe `SuiviMur`)
+
+Le prototype de l'audit était fait pour deux côtés ; pour un seul mur j'ai écrit un suivi à part, sans toucher au sien.
+
+- Chaque lecture devient un point de la paroi dans un repère local tenu à l'estime (chemin des roues, cap du gyroscope), en comptant le capteur à 130 mm en avant du centre (estimation du § 68, pas une mesure).
+- **« Le mur » est une droite** qui passe par les points des 600 derniers millimètres. Un point est comparé à cette droite, et non à la lecture d'avant : une pente ne passe plus dessous.
+- À moins de 30 mm de la droite, le point est le mur. Sinon c'est **une autre paroi, mise en observation**, et le mur reste où il était :
+  - plus près (un montant, un meuble) : dès la deuxième lecture le robot règle son écart sur elle ;
+  - plus loin (un renfoncement, le mur qui recule) : le robot garde la droite du mur, à l'estime ;
+  - plus loin de 25 cm, ou rien : une ouverture, même conduite, et rien n'est observé.
+- Si les lectures reviennent sur la droite du mur, l'autre paroi est oubliée (un cadre de porte, un meuble, du bruit). Si elle tient en ligne droite sur 40 cm, elle devient le mur.
+- L'axe du mur n'est relu que sur une droite d'au moins 40 cm, et il rejoint cette lecture en 15 cm de chemin.
+- Le cap demandé reste « l'axe, plus une correction d'écart plafonnée à 10° » ; l'axe ne vient plus que de droites posées, la somme ne peut plus s'emballer.
+
+`longe_mur.py` s'en sert par défaut (`--suivi mur` ; `--suivi lateral` redonne celui du § 71), lui donne la lecture faite à l'arrêt avant de partir, et écrit à chaque ligne ce que le suivi retient (état, axe, distance au mur). Options nouvelles : `--saut`, `--adopte`, `--avance-capteur`.
+
+### 72.3 Essai sur des parois dessinées (`code/outils/essai_profil_mur.py`, outil nouveau)
+
+Le simulateur du couloir ne sait pas dessiner une paroi qui recule en pente. Cet essai-ci donne au suivi ce que le capteur lirait le long d'une paroi décrite par son profil ; le robot simulé tient son cap comme le cerveau (1,6 degré par seconde par degré d'erreur, relevé sur l'enregistrement du § 71), tire de 0,6° d'un côté, est lu dix fois par seconde et retouché cinq fois par seconde avec un quart de seconde de retard. Mur à droite, consigne 433 mm, 100 mm/s, bruit de 20 mm par lecture, 10 tirages par paroi, 3 m.
+
+| Paroi | Suivi du § 71 : cap le plus fort (médiane, pire) | Suivi par droite (médiane, pire) | Jeu le plus petit : § 71, par droite |
+|---|---|---|---|
+| mur droit | 2,2° ; 3,3° | 1,4° ; 2,3° | 245 ; 246 mm |
+| **recul de 11 cm en pente (celle du § 71)** | **14,3° ; 16,5°** | **5,3° ; 6,8°** | 188 ; 251 mm |
+| la même prise dans l'autre sens (le mur avance) | 12,8° ; 14,8° | 5,8° ; 6,2° | 193 ; 187 mm |
+| recul net de 11 cm | 6,2° ; 7,3° | 5,5° ; 6,3° | 249 ; 251 mm |
+| avancée nette de 11 cm | 6,1° ; 6,5° | 5,8° ; 6,2° | 192 ; 189 mm |
+| renfoncement de 11 cm sur 40 cm (cadre de porte) | 6,2° ; 7,3° | 1,3° ; 2,2° | 207 ; 241 mm |
+| bosse de 6 cm sur 30 cm (meuble) | 7,6° ; 9,5° | 2,7° ; 6,3° | 195 ; 192 mm |
+| porte de 80 cm | 1,7° ; 3,0° | 1,6° ; 2,3° | 212 ; 232 mm |
+| mur qui s'écarte de 8° | 10,4° ; 11,5° | 10,6° ; 12,9° | 253 ; 250 mm |
+| mur qui se rapproche de 8° | 10,1° ; 11,4° | 10,1° ; 12,0° | 208 ; 191 mm |
+| marches de 2 cm tous les 30 cm | 3,3° ; 5,1° | 3,1° ; 4,7° | 203 ; 234 mm |
+
+Aucun contact, ni pour l'un ni pour l'autre. **L'essai reproduit le défaut du § 71** (16,5° simulés pour 16° roulés) et le suivi par droite le ramène à 5 ou 6°, la seule correction d'écart. Il ignore un cadre de porte (1,3° au lieu de 6,2°). À 150 mm/s les chiffres sont les mêmes à 1° près (recul en pente : 14,6° contre 6,1°), mur à gauche aussi. Avec des départs de travers (±6°) et décalés (±10 cm), 36 départs par paroi : aucun contact, jeu le plus petit 113 à 149 mm pour les deux suivis.
+
+**Un point où il fait moins bien** : devant un mur qui se rapproche de biais, il garde 17 mm de jeu en moins (191 contre 208 mm) : son axe suit plus lentement un mur qui tourne. Dans un appartement les murs font des marches plutôt que des biais ; à surveiller.
+
+### 72.4 Le couloir simulé (`essai_longe_mur.py --suivi mur`, option nouvelle)
+
+Même couloir et mêmes réglages qu'au § 69.3 (`--cible 342 --bruit 20 --fenetre 600 --mediane 5 --ouverture 250 --pente-min 400`), 45 départs par réglage, boucle sur le PC, à 100, 130 et 147 mm/s.
+
+| Suivi | Mur de gauche : sans contact | Mur de droite : sans contact |
+|---|---|---|
+| celui du § 71 | 43, 43 et 43 sur 45 | 41, 40 et 39 sur 45 |
+| par droite, gain 1 | 43, 43 et 43 sur 45 | 42, 42 et 41 sur 45 |
+| par droite, gain 1,5 | **45, 45 et 45 sur 45** | 43, 44 et 44 sur 45 |
+| par droite, gain 2 | **45, 45 et 45 sur 45** | 44, 44 et 44 sur 45 |
+
+Le gain est le nombre de radians de correction de cap par mètre d'écart au mur (1 jusqu'ici : 5,7° pour 10 cm). Durée des 3,9 m : 27 à 37 s dans tous les cas. Les contacts qui restent sont ceux du § 69.3 : une avancée du mur devant le robot, que le capteur tourné de côté ne voit qu'une fois dessus (dans ce simulateur le capteur n'est qu'à 27 mm en avant du centre). Un gain plus fort amène le robot à sa consigne avant l'avancée ; avec le gain 2 le jeu le plus petit des trajets réussis passe de 4 à 9 mm à 11 ou 12 mm du côté gauche. Sur les parois dessinées, les gains 1,5 et 2 restent stables à 100 et à 150 mm/s ; ils tournent plus fort devant une marche de 11 cm (8 et 10° au lieu de 6°), ce qui est leur rôle. **Retenu** : gain 1 pour le premier essai réel du nouveau suivi, sur le mur dégagé, pour le comparer au § 71 à réglage égal ; puis 1,5 et 2 sur ce même mur, avant le couloir.
+
+### 72.5 Le rejeu sur l'enregistrement réel (`code/outils/rejeu_longe.py`)
+
+Les lectures du § 71 redonnées au suivi par droite (`rejeu_longe.py ../../mesures/longe_mur_20261121_162250_longe.jsonl`) : jusqu'à 1,03 m il demande la même chose que le suivi du jour, à 1° près. À 1,09 m il classe le recul comme une autre paroi, plus loin, et garde la droite du mur : son axe reste à −0,6° (−13,5° ce jour-là) et **le cap le plus fort qu'il demande est 3,6° (16,7° ce jour-là)**. À la fin il situe le mur d'avant à 367 mm du capteur, à l'estime ; or le capteur lisait 477 mm à l'arrêt sur la paroi reculée de 110 mm, soit 367 mm : l'estime et la lecture tombent d'accord. À lire avec la réserve écrite en tête de l'outil : le robot roulait sous les ordres de l'ancien suivi, le rejeu dit ce que le nouveau comprend des mêmes lectures, pas le trajet qu'il aurait fait.
+
+### 72.6 Mes erreurs de la section, et ce qui n'est pas vérifié
+
+- Ma première version prenait une paroi plus proche pour le mur dès la première lecture : un écart de bruit suffisait à lui faire perdre le vrai mur pendant 28 cm (un tirage sur cinq en simulation). Corrigé : le mur reste le mur tant qu'une autre paroi n'a pas tenu 40 cm.
+- Sans la lecture faite à l'arrêt, trois premières lectures hautes de suite ont donné un premier axe faux de 7° (un tirage sur huit). Corrigé : `amorce()`.
+- **Rien de cela n'a roulé.** La simulation est plus indulgente que l'appartement, et son bruit (20 mm) est plus fort que celui du § 71 (une dizaine de millimètres d'une lecture à l'autre).
+- La place du capteur (130 mm en avant du centre) est une estimation ; elle ne joue que pendant que le robot tourne (2 mm par degré).
+- Le ralentissement optique et la garde du flanc ne sont toujours pas éprouvés.
+
+**État à la fin** (16 h 48) : robot à l'arrêt en mode Safe au même endroit qu'au § 71, 71 % de batterie à 16 h 46, pas sur sa base ; cerveau en v17 ; capteur de distance en marche, devant. La séance n'est pas fermée. En attente du go de l'utilisateur pour le retour le long du même mur.

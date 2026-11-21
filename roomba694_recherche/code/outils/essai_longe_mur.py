@@ -34,21 +34,33 @@ import numpy as np
 import simulateur as sim
 from essai_centrage import monde_couloir, jeu_mini
 from suivi_lateral import SuiviLateral
+from suivi_mur import SuiviMur
 
 
 def essai(decalage, cap_faux, graine, cote, qui, v_max, cible=None, k_vrai=1.0045, pertes=0.0, retard_plus=0.0, detail=False,
-          bruit=4.0, fenetre=300.0, mediane=3, ouverture=0.0, pente_min=120.0):
+          bruit=4.0, fenetre=300.0, mediane=3, ouverture=0.0, pente_min=120.0, quel="lateral", gain=1.0, options=None):
     # bruit : écart-type d'une lecture du capteur (mm) ; 4 dans le simulateur d'origine, 20 mesurés en roulant le 2026-11-21
+    # quel  : "lateral" (suivi_lateral.SuiviLateral, celui du journal § 71) ou "mur" (suivi_mur.SuiviMur, journal § 72)
     d, dist = monde_couloir()
     x, y, c = d["depart"]
     d["depart"] = (x, y + decalage, c + cap_faux)
     monde = sim.Monde(**d)
     robot = sim.RobotSimule(monde, graine=graine, echelle_gyro=k_vrai, firmware=10)
     rng = random.Random(2000 + graine)
-    suivi = SuiviLateral(axe=0.0, mediane=mediane, fenetre=fenetre, v_max=v_max, v_serre=min(80, v_max), pente_min=pente_min)
-    if cible is not None:
-        suivi.pose = (cible, cible)
     signe = 1.0 if cote == "g" else -1.0
+    if quel == "mur":
+        # la lecture à l'arrêt avant de partir, comme le fait longe_mur.py (une quinzaine de lectures : 3 mm de bruit)
+        P0 = np.array([robot.x, robot.y]) + sim.DX * np.array([math.cos(robot.th), math.sin(robot.th)])
+        r0 = monde.sonar(P0, robot.th + signe * math.pi / 2, bruit=3.0, rng=robot.rng)
+        suivi = SuiviMur(cote, cible if cible is not None else r0, gain=gain, fenetre=max(fenetre, 600.0), mediane=mediane,
+                         pente_min=max(pente_min, 400.0), ouverture=ouverture or 250.0, v_max=v_max, v_serre=min(80, v_max),
+                         avance_capteur=sim.DX, rayon=sim.RAYON, **(options or {}))
+        suivi.amorce(r0 if r0 > 0 else None)
+        ouverture = 0.0                              # la règle de l'ouverture est dans ce suivi
+    else:
+        suivi = SuiviLateral(axe=0.0, mediane=mediane, fenetre=fenetre, v_max=v_max, v_serre=min(80, v_max), pente_min=pente_min)
+        if cible is not None:
+            suivi.pose = (cible, cible)
     dt = 0.05
     periode, retard = {"cerveau": (0.1, 0.0), "pc": (0.2, 0.25)}[qui]
     retard += retard_plus
@@ -89,7 +101,7 @@ def essai(decalage, cap_faux, graine, cote, qui, v_max, cible=None, k_vrai=1.004
                 if vue is not None:
                     ref = vue if ref is None else 0.7 * ref + 0.3 * vue
             gg, dd = (vue, None) if cote == "g" else (None, vue)
-            cv, vv = suivi.pas(chemin, robot.bcap, gg, dd)
+            cv, vv = suivi.pas(chemin, robot.bcap, vue) if quel == "mur" else suivi.pas(chemin, robot.bcap, gg, dd)
             if ouverture and vue is None and ouvert:
                 cv = suivi.axe                       # ouverture : tout droit dans l'axe du mur
             file_cmd.append((maintenant + retard, cv, vv))
@@ -112,7 +124,7 @@ def essai(decalage, cap_faux, graine, cote, qui, v_max, cible=None, k_vrai=1.004
             perdu_mm += ds
         robot.dormir(dt)
         if detail and int(chemin / 250) != int((chemin - ds) / 250):
-            print(f"      {chemin:5.0f} mm : mur lu à {lec if lec is None else round(lec)}, écart {suivi.y:+5.0f} mm, axe {suivi.axe:+5.1f}°, "
+            print(f"      {chemin:5.0f} mm : mur lu à {lec if lec is None else round(lec)}, écart {(suivi.ecart if quel == 'mur' else suivi.y):+5.0f} mm, axe {suivi.axe:+5.1f}°, "
                   f"cap visé {cap_vise:+5.1f}°, cap compté {robot.bcap:+5.1f}°, cap vrai {math.degrees(robot.th):+5.1f}°, y vrai {robot.y:5.0f}")
     return {"ok": fin == "distance faite", "fin": fin, "contacts": int(contact), "jeu": jeu_mini(monde, robot.trace), "duree": robot.t - t0,
             "axe": suivi.axe, "cap_faux": cap_faux, "avance": robot.x - x, "y_fin": robot.y, "perdu": perdu_mm}
@@ -134,6 +146,8 @@ def main():
     q.add_argument("--mediane", type=int, default=3, help="nombre de lectures de la médiane glissante")
     q.add_argument("--pente-min", type=float, default=120.0, help="mm de paroi longés avant de lire sa pente")
     q.add_argument("--ouverture", type=float, default=0.0, help="mm : au-delà de la consigne plus cette valeur, le mur est tenu pour perdu (0 : règle d'origine)")
+    q.add_argument("--suivi", choices=["lateral", "mur"], default="lateral", help="lateral : le suivi du journal § 71 ; mur : le suivi par droite du § 72 (suivi_mur.py)")
+    q.add_argument("--gain", type=float, default=1.0, help="suivi « mur » : radians de correction de cap par mètre d'écart")
     a = q.parse_args()
     departs = [(dy, dc) for dy in (-150.0, 0.0, 150.0) for dc in (-6.0, -3.0, 0.0, 3.0, 6.0)]
     print("=== couloir simulé (95, 84, 73 puis 68 cm ; ouverture de 80 cm à droite), 3,9 m, sans arrêt, UN mur lu de côté à 10 Hz ===")
@@ -143,7 +157,8 @@ def main():
     for cote, nom_c in (("g", "mur de gauche"), ("d", "mur de droite")):
         for qui, nom_q in (("pc", "retouche par le PC     "), ("cerveau", "retouche par le cerveau")):
             for v_max in (100, 130, 147):
-                R = [essai(dy, dc, g, cote, qui, v_max, cible=a.cible, pertes=a.pertes, retard_plus=a.retard, bruit=a.bruit, fenetre=a.fenetre, mediane=a.mediane, ouverture=a.ouverture, pente_min=a.pente_min)
+                R = [essai(dy, dc, g, cote, qui, v_max, cible=a.cible, pertes=a.pertes, retard_plus=a.retard, bruit=a.bruit, fenetre=a.fenetre, mediane=a.mediane, ouverture=a.ouverture, pente_min=a.pente_min,
+                           quel=a.suivi, gain=a.gain)
                      for dy, dc in departs for g in range(1, a.graines + 1)]
                 ok = [r for r in R if r["ok"] and not r["contacts"]]
                 txt = f"{nom_c}, {nom_q}, {v_max:3d} mm/s : {len(ok):2d} sur {len(R)} sans contact"
