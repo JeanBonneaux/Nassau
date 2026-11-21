@@ -2658,7 +2658,7 @@ Je ne sais pas ce que sont ces parois : je ne connais pas l'endroit où est le r
 ### 63.4 Ce que l'essai dit
 
 - **Le firmware v15 fait ce qui était prévu** : butée inchangée à l'installation, relevée palier par palier puis remise à 30° ; rotation lente à la vitesse demandée ; une mesure par degré avec la vraie direction ; arrêt de l'outil et retour lent quand le capteur se tait. Le retour lent après un redémarrage de la carte (mémoire RTC) n'a pas été mis à l'épreuve : la carte n'a pas redémarré.
-- **Le servo va à 90° à gauche** sans que la carte redémarre. Je ne sais pas s'il forçait en bout de course : l'utilisateur était à côté et n'a rien signalé ; à lui demander.
+- **Le servo va à 90° à gauche** (c'est l'ordre envoyé ; l'angle vrai est d'environ 60°, voir § 65) sans que la carte redémarre. Je ne sais pas s'il forçait en bout de course : l'utilisateur était à côté et n'a rien signalé ; à lui demander.
 - **Les fils ne suivent pas**, même à 3° par seconde : c'est la limite notée le 9 novembre. Avant de continuer il faut voir quel fil a lâché, le remettre, et sans doute rallonger les quatre ou les faire passer autrement. Le côté droit n'a pas été essayé.
 - **Pour la vitesse** : tourné à 90°, le capteur lit une paroi à 1,5 m de façon stable (16 lectures en 3 s entre 1 446 et 1 532 mm, deux valeurs qui alternent à 7 cm l'une de l'autre). C'est assez régulier pour longer un mur ; à refaire devant un mur connu.
 
@@ -2700,7 +2700,7 @@ Ce que le capteur a lu, un point par degré, 181 directions de −90° à +90°,
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Distance (mm) | 1 401 | 1 411 | 1 371 | 1 369 | 1 341 | 1 340 | 1 346 | 1 332 | 1 338 | 1 329 | 1 406 | 2 364 | 2 037 |
 
-De −90° à +60° la distance ne bouge presque pas (1,33 à 1,41 m) : les points dessinent un arc de cercle autour du robot. C'est la façon de voir d'un capteur à ultrasons : il entend la paroi la plus proche dans un cône large, même quand il ne la regarde pas en face. Ma lecture, non vérifiée (je ne sais pas où est le robot) : une paroi devant à 1,33 m et une autre à droite à 1,40 m. **Ce que cela veut dire pour longer un mur** : tourné à 90°, le capteur donne la distance au mur même si le robot est un peu de travers, ce qui est bon pour tenir l'écart ; en revanche une lecture seule ne dit pas l'angle du robot par rapport au mur : cet angle doit venir de la pente de la distance le long du chemin, comme le fait déjà `suivi_lateral.py`.
+**[Corrigé au § 65 : le capteur ne tournait pas de l'angle commandé ; ce qui suit ne tient pas.]** De −90° à +60° la distance ne bouge presque pas (1,33 à 1,41 m) : les points dessinent un arc de cercle autour du robot. C'est la façon de voir d'un capteur à ultrasons : il entend la paroi la plus proche dans un cône large, même quand il ne la regarde pas en face. Ma lecture, non vérifiée (je ne sais pas où est le robot) : une paroi devant à 1,33 m et une autre à droite à 1,40 m. **Ce que cela veut dire pour longer un mur** : tourné à 90°, le capteur donne la distance au mur même si le robot est un peu de travers, ce qui est bon pour tenir l'écart ; en revanche une lecture seule ne dit pas l'angle du robot par rapport au mur : cet angle doit venir de la pente de la distance le long du chemin, comme le fait déjà `suivi_lateral.py`.
 
 Une image de ces 181 points a été remise à l'utilisateur (`plan_lidar/essai_servo_20261121_vue.png`, sur son PC seulement).
 
@@ -2724,3 +2724,69 @@ Le cas d'une coupure de l'alimentation (le servo se recentre alors d'un coup, co
 - Où est le capteur par rapport au centre du robot : il faut un tour sur place au même endroit, ou une mesure à la règle.
 
 **État à la fin** (14 h 32) : cerveau en v15 (redémarré à 14 h 30 min 46 par l'essai) ; capteur de distance à l'arrêt, devant, **qui répond** ; servo au centre, relâché ; butée 30°, rotation lente réglée à 3°/s ; robot réveillé en mode Safe (c'est l'utilisateur qui l'y a mis), immobile, 1 774 mAh (86 %), pas sur sa base, à un endroit que je ne connais pas. La séance n'est pas fermée : j'attends de savoir s'il veut enchaîner sur un essai en roulant.
+
+## 65. Premier essai en roulant, capteur tourné : l'avance est bonne, mais le capteur ne regarde pas où le firmware le croit ; « 90° » commandés font environ 60° en vrai (2026-11-21, 14 h 35 à 14 h 46)
+
+À ma question (« Go pour l'essai en roulant : un tour sur place, puis 80 cm tout droit, capteur tourné ? ») l'utilisateur répond « Go » à 14 h 35. Enregistrement `essai_roulant_v15_20261121_143616` (`_tour1.json`, `_lateral.jsonl`, console, journal à 20 lignes par seconde). Outil nouveau `code/outils/essai_lecture_laterale.py`.
+
+### 65.1 Le tour sur place (14 h 36 min 22 à 38)
+
+Tour ordinaire, capteur devant : 380,0° en 13,7 s, 122 mesures. Ce qui entoure le robot, dans le repère de son cap à la fin du tour (0° = devant lui, positif = à gauche) :
+
+| Direction | de −27 à +19° | de +23 à +38° | de +44 à +63° | **de +66 à +114°** | de +117 à +170° | autour de 180° | de −100 à −80° |
+|---|---|---|---|---|---|---|---|
+| Distance lue | 1,31 à 1,35 m | 1,41 à 1,44 m | 1,81 à 2,03 m | **1,52 à 1,56 m** | 0,91 à 1,05 m | 0,78 à 0,85 m | 1,77 à 1,82 m |
+
+Une paroi devant à 1,31 m, et une paroi nette à gauche à 1,53 m, vue sur près de 50° de large : c'est elle que je voulais longer.
+
+### 65.2 L'avance (14 h 38 min 52 à 14 h 40 min 05)
+
+| Étape | Résultat |
+|---|---|
+| capteur devant, 2 s | 1 309 mm (1 305 à 1 344) : assez de place pour 800 mm, il restera 505 mm |
+| capteur tourné lentement à gauche, « 90° » commandés | une lecture par degré ; à l'arrêt : 2 276 mm (2 254 à 2 353) |
+| `/api/mouv?av=800&v=100` | **799 mm pour 800 demandés, en 7,3 s, cap tenu à +0,1°, aucun contact** ; vitesse lue en croisière : 118 mm/s pour 100 demandés |
+| à l'arrêt après | 818 mm (803 à 842) |
+| capteur ramené devant | 604 mm devant |
+
+Le capteur a répondu tout du long : **216 mesures, aucune sans écho, aucune sans réaction** ; les fils ont tenu en roulant. Pendant l'avance, 65 lectures distinctes ont été saisies en relisant `/api/state` : 8,9 par seconde, une tous les 12 mm.
+
+### 65.3 Ce que le capteur a lu : pas un mur que l'on longe
+
+La distance « de côté » est tombée de 2,27 m à 0,83 m en 80 cm : deux valeurs qui alternent au départ (2,27 et 1,78 m), puis 1,60 m à 30 cm, 1,31 m à 34 cm, 1,08 m à 50 cm, 0,90 m à 70 cm. Sur les 47 derniers centimètres elle baisse de 1,12 mm par millimètre roulé (écart des lectures à la droite : 36 mm), et de 0,85 sur les 30 derniers (écart : 19 mm). Une paroi longée garderait sa distance ; une distance qui baisse au rythme où le robot avance est celle d'une chose placée **devant** lui, pas à côté. Et la paroi de gauche du tour (1,53 m) n'apparaît nulle part.
+
+### 65.4 Pourquoi : le capteur ne tourne pas d'autant qu'on le lui demande
+
+Au même endroit, robot immobile, j'ai deux séries : le tour (c'est le robot qui tourne, la direction est celle du gyroscope) et la rotation lente du capteur avant l'avance (c'est le servo qui tourne, la direction est celle qu'on lui commande).
+
+| Ce qu'on lit | Quand le robot tourne (direction vraie) | Quand le servo tourne (angle commandé) |
+|---|---|---|
+| 1,31 à 1,35 m | jusqu'à +21° | jusqu'à 29° |
+| 1,39 à 1,44 m | de +23 à +38° | de 30 à 60° |
+| 1,81 à 1,84 m | de +44 à +57° | de 63 à 84° |
+| plus de 2 m | à +41° et à +60° | à 87 et 90° |
+| 1,52 à 1,56 m (la paroi de gauche) | de +66 à +114° | jamais |
+
+Les mêmes paliers reviennent dans le même ordre, mais aux deux tiers de l'angle : 29° commandés pour 21° vrais, 62° pour 40°, 88° pour 60°. **À gauche, le capteur tourne d'environ 0,67° par degré commandé : « 90° » en font 60.** La paroi de gauche, qui est à 90° vrais, n'a donc jamais été regardée.
+
+Pour le côté droit je n'ai que le balayage du § 64.2, fait avant le tour dans une orientation décalée de 22°. En cherchant le décalage et les deux rapports qui font le mieux coller ce balayage au tour : le « devant » du capteur serait tourné de 12° ou plus vers la gauche, le rapport vaudrait 0,60 à 0,65 à gauche et 0,50 ou moins à droite (69 % des degrés retombent alors à moins de 8 cm du tour, contre 41 % si l'angle vrai était l'angle commandé). Ces valeurs sont au bord de ce que j'ai essayé, dans une pièce encombrée, avec un capteur au cône large : **c'est un ajustement, pas une mesure**. Il dit que le côté droit tourne encore moins que le gauche, peut-être 35 à 45° en vrai.
+
+Causes possibles, aucune vérifiée : le servo tourne moins de degrés par microseconde que le firmware ne le suppose (`SERVO_US_PER_DEG = 10`) ; les fils, courts, retiennent la tête du capteur ; le support du capteur glisse sur l'axe du servo. La carte n'a pas redémarré et aucune mesure n'a manqué, ce qui ne va pas avec un servo bloqué en force, mais ne l'exclut pas.
+
+### 65.5 Ce que cela corrige dans les sections d'avant
+
+- **§ 63 et § 64 : « le capteur va à 90° »** est faux au sens propre. Le servo a reçu l'ordre 90° ; le capteur, lui, a tourné d'une soixantaine de degrés à gauche et sans doute moins à droite. Je l'ai annoncé sans le vérifier par une mesure indépendante.
+- **§ 64.2 : « l'arc de cercle »**. J'y lisais un effet du cône large du capteur. Plus simplement : de −90° à +60° commandés, le capteur n'a balayé qu'environ −35° à +50° vrais, et il y regardait la paroi de devant (1,31 à 1,44 m au tour). La conclusion tirée pour le suivi de mur (« le capteur donne l'écart au mur même si le robot est de travers ») ne repose donc sur rien de mesuré.
+- Les distances « à 90° » des § 63 et § 64 (1,5 m, 1,40 m, 2,02 m) ne sont pas des distances de côté.
+
+### 65.6 Ce qui tient
+
+Le firmware v15 fait ce qu'il doit du côté des ordres : rotation lente, butée, retour après redémarrage. Le capteur répond sans raté, à l'arrêt comme en roulant. L'avance du cerveau est juste à 1 mm et 0,1° près sur 80 cm. On saisit neuf lectures par seconde par le Wi-Fi.
+
+### 65.7 Ce qu'il faut maintenant
+
+Connaître l'angle vrai du capteur aux deux bouts de sa course : une photo du dessus prise par l'utilisateur capteur tourné, ou un tour du robot sur lui-même capteur tourné, comparé au tour ordinaire (le décalage entre les deux profils est l'angle vrai, sans règle et sans connaître la pièce). Puis, selon la cause : élargir les impulsions du servo dans le firmware, donner du mou aux fils, ou remonter le support du capteur décalé sur l'axe pour qu'un côté au moins atteigne 90°. Sans un vrai 90° (ou au moins 70°), le capteur n'entend pas un mur parallèle à la marche.
+
+**Mon erreur** : avoir annoncé que le capteur atteignait 90° d'après l'ordre envoyé au servo, sur deux sections et trois messages à l'utilisateur. Un ordre n'est pas une position : il fallait la comparer au tour sur place avant de l'écrire.
+
+**État à la fin** (14 h 46) : robot à l'arrêt en mode Safe, 80 cm plus loin que tout à l'heure, 0,60 m de libre devant lui, 1 744 mAh (84 %), pas sur sa base, à un endroit que je ne connais toujours pas ; cerveau en v15 ; capteur de distance en marche, devant ; butée 30°. La séance n'est pas fermée.
